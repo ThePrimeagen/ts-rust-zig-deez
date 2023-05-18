@@ -1,0 +1,5 @@
+/target
+zig-cache
+zig-out
+node_modules
+
