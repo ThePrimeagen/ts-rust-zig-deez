@@ -66,7 +66,7 @@ pub const Lexer = struct {
     }
 };
 
-const expectEqualDeep = std.testing.expectEqualDeep;
+const expectEqual = std.testing.expectEqual;
 test "Lexer" {
     const input = "=+(){},;";
     var lex = Lexer.init(input);
@@ -86,6 +86,6 @@ test "Lexer" {
     for (tokens) |token| {
         const tok = lex.next_token();
 
-        try expectEqualDeep(token, tok);
+        try expectEqual(token, tok);
     }
 }
