@@ -5,32 +5,29 @@ const Token = union(enum) {
     integer: []const u8,
     let: []const u8,
 
-    illegal: void,
-    eof: void,
-    equal: void,
-    plus: void,
-    comma: void,
-    semicolon: void,
-    lparen: void,
-    rparen: void,
-    lsquirly: void,
-    rsquirly: void,
-    function: void,
+    illegal,
+    eof,
+    equal,
+    plus,
+    comma,
+    semicolon,
+    lparen,
+    rparen,
+    lsquirly,
+    rsquirly,
+    function,
 };
 
 pub const Lexer = struct {
     const Self = @This();
 
-    read_position: usize,
-    position: usize,
-    ch: u8,
+    read_position: usize = 0,
+    position: usize = 0,
+    ch: u8 = 0,
     input: []const u8,
 
     pub fn init(input: []const u8) Self {
         var lex = Self{
-            .read_position = 0,
-            .position = 0,
-            .ch = 0,
             .input = input,
         };
 
@@ -40,17 +37,17 @@ pub const Lexer = struct {
     }
 
     pub fn next_token(self: *Self) Token {
-        const tok = switch (self.ch) {
-            '{' => Token{ .lsquirly = {} },
-            '}' => Token{ .rsquirly = {} },
-            '(' => Token{ .lparen = {} },
-            ')' => Token{ .rparen = {} },
-            ',' => Token{ .comma = {} },
-            ';' => Token{ .semicolon = {} },
-            '+' => Token{ .plus = {} },
-            '=' => Token{ .equal = {} },
-            0 => Token{ .eof = {} },
-            else => Token{ .illegal = {} },
+        const tok: Token = switch (self.ch) {
+            '{' => .lsquirly,
+            '}' => .rsquirly,
+            '(' => .lparen,
+            ')' => .rparen,
+            ',' => .comma,
+            ';' => .semicolon,
+            '+' => .plus,
+            '=' => .equal,
+            0 => .eof,
+            else => .illegal,
         };
 
         self.read_char();
@@ -75,15 +72,15 @@ test "Lexer" {
     var lex = Lexer.init(input);
 
     var tokens = [_]Token{
-        Token{ .equal = {} },
-        Token{ .plus = {} },
-        Token{ .lparen = {} },
-        Token{ .rparen = {} },
-        Token{ .lsquirly = {} },
-        Token{ .rsquirly = {} },
-        Token{ .comma = {} },
-        Token{ .semicolon = {} },
-        Token{ .eof = {} },
+        .equal,
+        .plus,
+        .lparen,
+        .rparen,
+        .lsquirly,
+        .rsquirly,
+        .comma,
+        .semicolon,
+        .eof,
     };
 
     for (tokens) |token| {
