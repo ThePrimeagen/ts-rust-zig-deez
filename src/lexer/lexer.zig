@@ -88,4 +88,10 @@ test "Lexer" {
 
         try expectEqual(token, tok);
     }
+
+    // uncomment to print out Token.Tag fields
+    // std.log.warn("Token.Tag fields:", .{});
+    // inline for (std.meta.fields(Token.Tag)) |f| {
+    //     std.log.warn("{s}", .{f.name});
+    // }
 }
