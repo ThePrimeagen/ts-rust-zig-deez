@@ -1,7 +1,6 @@
 /target
 zig-cache
 zig-out
-node_modules
+node_module
 
-# C
 /cbuild
