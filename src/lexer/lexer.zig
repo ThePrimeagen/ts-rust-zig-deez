@@ -2,9 +2,9 @@ const std = @import("std");
 
 const Token = union(enum) {
     ident: []const u8,
-    integer: []const u8,
-    let: []const u8,
+    int: []const u8,
 
+    let,
     illegal,
     eof,
     equal,
@@ -16,7 +16,24 @@ const Token = union(enum) {
     lsquirly,
     rsquirly,
     function,
+
+    fn keyword(ident: []const u8) ?Token {
+        if (std.mem.eql(u8, ident, "let")) {
+            return .let;
+        } else if (std.mem.eql(u8, ident, "fn")) {
+            return .function;
+        }
+        return null;
+    }
 };
+
+fn isLetter(ch: u8) bool {
+    return ('a' <= ch and ch <= 'z') or ('A' <= ch and ch <= 'Z') or ch == '_';
+}
+
+fn isInt(ch: u8) bool {
+    return '0' <= ch and ch <= '9';
+}
 
 pub const Lexer = struct {
     const Self = @This();
@@ -37,6 +54,7 @@ pub const Lexer = struct {
     }
 
     pub fn next_token(self: *Self) Token {
+        self.skip_whitespace();
         const tok: Token = switch (self.ch) {
             '{' => .lsquirly,
             '}' => .rsquirly,
@@ -47,6 +65,17 @@ pub const Lexer = struct {
             '+' => .plus,
             '=' => .equal,
             0 => .eof,
+            'a'...'z', 'A'...'Z', '_' => {
+                const ident = self.read_identifier();
+                if (Token.keyword(ident)) |token| {
+                    return token;
+                }
+                return .{ .ident = ident };
+            },
+            '0'...'9' => {
+                const int = self.read_int();
+                return .{ .int = int };
+            },
             else => .illegal,
         };
 
@@ -64,9 +93,35 @@ pub const Lexer = struct {
         self.position = self.read_position;
         self.read_position += 1;
     }
+
+    fn read_identifier(self: *Self) []const u8 {
+        const position = self.position;
+
+        while (isLetter(self.ch)) {
+            self.read_char();
+        }
+
+        return self.input[position..self.position];
+    }
+
+    fn read_int(self: *Self) []const u8 {
+        const position = self.position;
+
+        while (isInt(self.ch)) {
+            self.read_char();
+        }
+
+        return self.input[position..self.position];
+    }
+
+    fn skip_whitespace(self: *Self) void {
+        while (self.ch == ' ' or self.ch == '\t' or self.ch == '\n' or self.ch == '\r') {
+            self.read_char();
+        }
+    }
 };
 
-const expectEqual = std.testing.expectEqual;
+const expectEqualDeep = std.testing.expectEqualDeep;
 test "Lexer" {
     const input = "=+(){},;";
     var lex = Lexer.init(input);
@@ -86,7 +141,7 @@ test "Lexer" {
     for (tokens) |token| {
         const tok = lex.next_token();
 
-        try expectEqual(token, tok);
+        try expectEqualDeep(token, tok);
     }
 
     // uncomment to print out Token.Tag fields
@@ -94,4 +149,62 @@ test "Lexer" {
     // inline for (std.meta.fields(Token.Tag)) |f| {
     //     std.log.warn("{s}", .{f.name});
     // }
+}
+
+test "Lexer - Full" {
+    const input =
+        \\let five = 5;
+        \\let ten = 10;
+        \\let add = fn(x, y) {
+        \\    x + y;
+        \\};
+        \\let result = add(five, ten);
+    ;
+    var lex = Lexer.init(input);
+
+    var tokens = [_]Token{
+        .let,
+        .{ .ident = "five" },
+        .equal,
+        .{ .int = "5" },
+        .semicolon,
+        .let,
+        .{ .ident = "ten" },
+        .equal,
+        .{ .int = "10" },
+        .semicolon,
+        .let,
+        .{ .ident = "add" },
+        .equal,
+        .function,
+        .lparen,
+        .{ .ident = "x" },
+        .comma,
+        .{ .ident = "y" },
+        .rparen,
+        .lsquirly,
+        .{ .ident = "x" },
+        .plus,
+        .{ .ident = "y" },
+        .semicolon,
+        .rsquirly,
+        .semicolon,
+        .let,
+        .{ .ident = "result" },
+        .equal,
+        .{ .ident = "add" },
+        .lparen,
+        .{ .ident = "five" },
+        .comma,
+        .{ .ident = "ten" },
+        .rparen,
+        .semicolon,
+        .eof,
+    };
+
+    for (tokens) |token| {
+        const tok = lex.next_token();
+
+        try expectEqualDeep(token, tok);
+    }
 }
