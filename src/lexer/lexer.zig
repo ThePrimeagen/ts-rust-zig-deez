@@ -18,21 +18,20 @@ const Token = union(enum) {
     function,
 
     fn keyword(ident: []const u8) ?Token {
-        if (std.mem.eql(u8, ident, "let")) {
-            return .let;
-        } else if (std.mem.eql(u8, ident, "fn")) {
-            return .function;
-        }
-        return null;
+        const map = std.ComptimeStringMap(Token, .{
+            .{ "let", .let },
+            .{ "fn", .function },
+        });
+        return map.get(ident);
     }
 };
 
 fn isLetter(ch: u8) bool {
-    return ('a' <= ch and ch <= 'z') or ('A' <= ch and ch <= 'Z') or ch == '_';
+    return std.ascii.isAlphabetic(ch) or ch == '_';
 }
 
 fn isInt(ch: u8) bool {
-    return '0' <= ch and ch <= '9';
+    return std.ascii.isDigit(ch);
 }
 
 pub const Lexer = struct {
@@ -115,7 +114,7 @@ pub const Lexer = struct {
     }
 
     fn skip_whitespace(self: *Self) void {
-        while (self.ch == ' ' or self.ch == '\t' or self.ch == '\n' or self.ch == '\r') {
+        while (std.ascii.isWhitespace(self.ch)) {
             self.read_char();
         }
     }
