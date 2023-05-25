@@ -15,11 +15,14 @@ class Tests {
                 TokenType.RSQIRLY,
                 TokenType.COMMA,
                 TokenType.SEMI,
+                TokenType.EOF,
         };
 
         for (TokenType t : expected) {
-            boolean equals = t.equals(l.nextToken().type());
-            assert (equals);
+            TokenType g = l.nextToken().type();
+            if (!t.equals(g)) {
+                throw new AssertionError(String.format("Wanted %s, got %s\n", t.name(), g.name()));
+            }
         }
     }
 }
