@@ -1,0 +1,7 @@
+(library
+ (name monkey)
+ (inline_tests)
+ (libraries base fmt ppx_inline_test ppx_expect)
+ (preprocess
+  (pps ppx_expect
+    ppx_deriving.show ppx_deriving.ord ppx_deriving.eq)))
