@@ -14,13 +14,13 @@ struct SLexer {
 
 static void _lexerReadChar(Lexer lexer);
 static void _lexerSkipWhitespace(Lexer lexer);
-static char *_lexerReadIdent(Lexer lexer);
-static char *_lexerReadInt(Lexer lexer);
+static const char *_lexerReadIdent(Lexer lexer, size_t *pLen);
+static const char *_lexerReadInt(Lexer lexer, size_t *pLen);
 
 static uint8_t _isLetter(char ch);
 static uint8_t _isNumber(char ch);
 
-static TokenType _getTokenTypeFromLiteral(const char *literal);
+static TokenType _getTokenTypeFromLiteral(const char *literal, size_t len);
 
 /******************************************************************************
                               PUBLIC FUNCTIONS                                *
@@ -77,22 +77,24 @@ Token lexerNext(Lexer lexer) {
   }
 
   if (_isLetter(lexer->character)) {
-    /*
-     * TODO: Refactor and optimize
-     * at the moment memory is always alocated for identifier
-     * it's not necessery for keywords
-     */
-    char *ident = _lexerReadIdent(lexer);
-    TokenType type = _getTokenTypeFromLiteral(ident);
-    if (type != TokenTypeIdent) {
-      free(ident);
-      ident = NULL;
+    size_t len = 0;
+    char *literal = NULL;
+    const char *ident = _lexerReadIdent(lexer, &len);
+
+    TokenType type = _getTokenTypeFromLiteral(ident, len);
+    if (type == TokenTypeIdent) {
+      literal = strndup(ident, len);
     }
-    tok = tokenCreate(type, ident);
+
+    tok = tokenCreate(type, literal);
     return tok;
   } else if (_isNumber(lexer->character)) {
-    char *ident = _lexerReadInt(lexer);
-    tok = tokenCreate(TokenTypeInt, ident);
+    size_t len = 0;
+    char *literal = NULL;
+    const char *ident = _lexerReadInt(lexer, &len);
+
+    literal = strndup(ident, len);
+    tok = tokenCreate(TokenTypeInt, literal);
     return tok;
   }
 
@@ -152,46 +154,46 @@ static void _lexerSkipWhitespace(Lexer lexer) {
   }
 }
 
-static char *_lexerReadIdent(Lexer lexer) {
+static const char *_lexerReadIdent(Lexer lexer, size_t *pLen) {
   char *result = NULL;
   size_t position = lexer->position;
-  size_t len = 0;
 
   while (_isLetter(lexer->character)) {
     _lexerReadChar(lexer);
-    len++;
   }
 
-  result = strndup(lexer->input + position, len);
+  if (pLen) {
+    *pLen = lexer->position - position;
+  }
 
-  return result;
+  return lexer->input + position;
 }
 
-static char *_lexerReadInt(Lexer lexer) {
+static const char *_lexerReadInt(Lexer lexer, size_t *pLen) {
   char *result = NULL;
   size_t position = lexer->position;
-  size_t len = 0;
 
   while (_isNumber(lexer->character)) {
     _lexerReadChar(lexer);
-    len++;
   }
 
-  result = strndup(lexer->input + position, len);
+  if (pLen) {
+    *pLen = lexer->position - position;
+  }
 
-  return result;
+  return lexer->input + position;
 }
 
 static uint8_t _isLetter(char ch) {
-  return 'a' <= ch && 'z' >= ch || 'A' <= ch && 'Z' >= ch || ch == '_';
+  return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_';
 }
 
 static uint8_t _isNumber(char ch) { return '0' <= ch && '9' >= ch; }
 
-static TokenType _getTokenTypeFromLiteral(const char *literal) {
-  if (strcmp(literal, "let") == 0) {
+static TokenType _getTokenTypeFromLiteral(const char *literal, size_t len) {
+  if (strncmp(literal, "let", len) == 0) {
     return TokenTypeLet;
-  } else if (strcmp(literal, "fn") == 0) {
+  } else if (strncmp(literal, "fn", len) == 0) {
     return TokenTypeFunction;
   }
 
