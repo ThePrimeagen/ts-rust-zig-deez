@@ -7,109 +7,100 @@ type t =
   }
 [@@deriving show]
 
-let advance t =
-  if t.position >= String.length t.input - 1
-  then { t with ch = None }
-  else
-    { t with ch = Some (String.get t.input (t.position + 1)); position = t.position + 1 }
-;;
-
-let peek_char t =
-  if t.position >= String.length t.input - 1
-  then None
-  else Some (String.get t.input (t.position + 1))
-;;
-
-let seek t f =
-  let rec loop t = if f t.ch then loop @@ advance t else t in
-  let t = loop t in
-  t, t.position
-;;
-
-let read_while t f =
-  let pos_start = t.position in
-  let t, pos_end =
-    seek t (fun ch ->
-      match ch with
-      | Some character -> f character
-      | None -> false)
-  in
-  t, String.sub t.input ~pos:pos_start ~len:(pos_end - pos_start)
-;;
-
-let is_identifier ch = Char.(ch = '_' || is_alpha ch)
-
-let read_identifier t =
-  let t, ident = read_while t is_identifier in
-  t, Token.lookup_ident ident
-;;
-
-let is_number ch = Char.is_digit ch
-
-let read_number t =
-  let t, int = read_while t is_number in
-  t, Token.Integer int
-;;
-
-let skip_whitespace t =
-  let t, _ =
-    seek t (fun ch ->
-      match ch with
-      | Some ch -> Char.is_whitespace ch
-      | None -> false)
-  in
-  t
-;;
-
-let if_peeked t ch ~default ~matched =
-  let result =
-    match peek_char t with
-    | Some peeked when Char.(peeked = ch) -> matched
-    | _ -> default
-  in
-  advance t, result
-;;
-
 let init input =
   if String.is_empty input
   then { input; position = 0; ch = None }
   else { input; position = 0; ch = Some (String.get input 0) }
 ;;
 
-let next_token t =
-  let t = skip_whitespace t in
+let rec next_token parser =
+  let parser = skip_whitespace parser in
   let open Token in
-  match t.ch with
-  | None -> t, None
+  match parser.ch with
+  | None -> parser, None
   | Some ch ->
-    let peek = if_peeked t in
-    let t, token =
+    let peek = if_peeked parser in
+    let parser, token =
       match ch with
-      | ';' -> advance t, Semicolon
-      | '(' -> advance t, LeftParen
-      | ')' -> advance t, RightParen
-      | ',' -> advance t, Comma
-      | '+' -> advance t, Plus
-      | '-' -> advance t, Minus
-      | '/' -> advance t, Slash
-      | '*' -> advance t, Asterisk
-      | '<' -> advance t, LessThan
-      | '>' -> advance t, GreaterThan
-      | '{' -> advance t, LeftBrace
-      | '}' -> advance t, RightBrace
+      | ';' -> advance parser, Semicolon
+      | '(' -> advance parser, LeftParen
+      | ')' -> advance parser, RightParen
+      | ',' -> advance parser, Comma
+      | '+' -> advance parser, Plus
+      | '-' -> advance parser, Minus
+      | '/' -> advance parser, Slash
+      | '*' -> advance parser, Asterisk
+      | '<' -> advance parser, LessThan
+      | '>' -> advance parser, GreaterThan
+      | '{' -> advance parser, LeftBrace
+      | '}' -> advance parser, RightBrace
       | '!' -> peek '=' ~default:Bang ~matched:NotEqual
       | '=' -> peek '=' ~default:Assign ~matched:Equal
-      | ch when is_identifier ch -> read_identifier t
-      | ch when is_number ch -> read_number t
+      | ch when is_identifier ch -> read_identifier parser
+      | ch when is_number ch -> read_number parser
       | ch -> Fmt.failwith "unknown char: %c" ch
     in
-    t, Some token
-;;
+    parser, Some token
+
+and advance parser =
+  if parser.position >= String.length parser.input - 1
+  then { parser with ch = None }
+  else (
+    let position = parser.position + 1 in
+    { parser with position; ch = Some (String.get parser.input position) })
+
+and peek_char parser =
+  if parser.position >= String.length parser.input - 1
+  then None
+  else Some (String.get parser.input (parser.position + 1))
+
+and seek parser condition =
+  let rec loop parser = if condition parser.ch then loop @@ advance parser else parser in
+  let parser = loop parser in
+  parser, parser.position
+
+and read_while parser condition =
+  let pos_start = parser.position in
+  let parser, pos_end =
+    seek parser (fun ch ->
+      match ch with
+      | Some character -> condition character
+      | None -> false)
+  in
+  parser, String.sub parser.input ~pos:pos_start ~len:(pos_end - pos_start)
+
+and read_identifier parser =
+  let parser, ident = read_while parser is_identifier in
+  parser, Token.lookup_ident ident
+
+and read_number parser =
+  let parser, int = read_while parser is_number in
+  parser, Token.Integer int
+
+and skip_whitespace parser =
+  let parser, _ =
+    seek parser (fun ch ->
+      match ch with
+      | Some ch -> Char.is_whitespace ch
+      | None -> false)
+  in
+  parser
+
+and if_peeked parser ch ~default ~matched =
+  let result =
+    match peek_char parser with
+    | Some peeked when Char.(peeked = ch) -> matched
+    | _ -> default
+  in
+  advance parser, result
+
+and is_identifier ch = Char.(ch = '_' || is_alpha ch)
+and is_number ch = Char.is_digit ch
 
 module Test = struct
   let input_to_tokens input =
     let lexer = init input in
-    let tokens = Vect.create 0 Token.EOF in
+    let tokens = Vect.create 0 Token.Illegal in
     let rec loop lexer =
       match next_token lexer with
       | lexer, Some token ->

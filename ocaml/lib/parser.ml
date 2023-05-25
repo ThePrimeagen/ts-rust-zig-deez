@@ -1,5 +1,7 @@
 open Base
 
+let show_expression = Ast.show_expression
+
 (** Bind operation for Base.Result *)
 let ( let* ) res f = Base.Result.bind res ~f
 
@@ -159,10 +161,10 @@ and parse_identifier parser =
 and parse_expression parser prec =
   let* parser, left = parse_prefix_expression parser in
   let rec parse_expression' parser left =
-    let peeked = parser.peek |> Option.value ~default:Token.EOF in
+    let peeked = parser.peek |> Option.value ~default:Token.Illegal in
     Fmt.pr "parse_expr' checking: %a vs %a@." Token.pp peeked pp_precedence prec;
     let prec_peek = token_prec peeked in
-    if peek_is parser Token.Semicolon || prec_greater  prec prec_peek
+    if peek_is parser Token.Semicolon || prec_greater prec prec_peek
     then (
       Fmt.pr "  parse_expr': skipped %b@." (prec_greater prec_peek prec);
       Ok (parser, left))
@@ -245,17 +247,11 @@ and expr_parse_grouped parser =
 
 let rec string_of_statement = function
   | Ast.Let stmt ->
-    Fmt.str "LET: let %s = %s" (string_of_ident stmt.name) (string_of_expr stmt.value)
-  | Ast.Return stmt -> Fmt.str "RETURN %s" (string_of_expr stmt.expr)
-  | ExpressionStatement expr -> Fmt.str "EXPR: %s;" (string_of_expr expr)
+    Fmt.str "LET: let %s = %s" (string_of_ident stmt.name) (show_expression stmt.value)
+  | Ast.Return stmt -> Fmt.str "RETURN %s" (show_expression stmt.expr)
+  | ExpressionStatement expr -> Fmt.str "EXPR: %s;" (show_expression expr)
 
 and string_of_ident ident = ident.value
-
-and string_of_expr = function
-  | Ast.Identifier ident -> string_of_ident ident
-  | Ast.Integer int -> Int.to_string int
-  | expr -> Ast.show_expression expr
-;;
 
 let print_node = function
   | Ast.Program program ->
@@ -292,8 +288,8 @@ let b = false;
     parse_expr' checking: Token.Semicolon vs `Lowest
       parse_expr': skipped true
     Program: [
-      LET: let x = 5
-      LET: let y = foo
+      LET: let x = (Ast.Integer 5)
+      LET: let y = (Ast.Identifier { Ast.token = (Token.Ident "foo"); value = "foo" })
       LET: let a = (Ast.Boolean true)
       LET: let b = (Ast.Boolean false)
     ] |}]
@@ -306,7 +302,7 @@ let%expect_test "single let statement" =
     parse_expr' checking: Token.Semicolon vs `Lowest
       parse_expr': skipped true
     Program: [
-      LET: let x = 5
+      LET: let x = (Ast.Integer 5)
     ] |}]
 ;;
 
@@ -317,7 +313,7 @@ let%expect_test "expression statement" =
     parse_expr' checking: Token.Semicolon vs `Lowest
       parse_expr': skipped true
     Program: [
-      EXPR: 35;
+      EXPR: (Ast.Integer 35);
     ] |}]
 ;;
 
@@ -338,13 +334,13 @@ let%expect_test "let statement with infix" =
     \n                                      current = (Some Token.Plus);\
     \n                                      peek = (Some (Token.Integer \"2\")) }")
   Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
-  Called from Monkey__Parser.parse_prefix_expression in file "lib/parser.ml", line 189, characters 17-88
-  Called from Monkey__Parser.parse_expression in file "lib/parser.ml", line 160, characters 22-52
-  Called from Monkey__Parser.parse_expression_statement in file "lib/parser.ml", line 150, characters 22-53
-  Called from Monkey__Parser.parse.parse' in file "lib/parser.ml", line 117, characters 12-34
-  Called from Monkey__Parser.parse in file "lib/parser.ml", line 125, characters 23-39
-  Called from Monkey__Parser.expect_program in file "lib/parser.ml", line 271, characters 16-28
-  Called from Monkey__Parser.(fun) in file "lib/parser.ml", line 325, characters 2-33
+  Called from Monkey__Parser.parse_prefix_expression in file "lib/parser.ml", line 191, characters 17-88
+  Called from Monkey__Parser.parse_expression in file "lib/parser.ml", line 162, characters 22-52
+  Called from Monkey__Parser.parse_expression_statement in file "lib/parser.ml", line 152, characters 22-53
+  Called from Monkey__Parser.parse.parse' in file "lib/parser.ml", line 119, characters 12-34
+  Called from Monkey__Parser.parse in file "lib/parser.ml", line 127, characters 23-39
+  Called from Monkey__Parser.expect_program in file "lib/parser.ml", line 267, characters 16-28
+  Called from Monkey__Parser.(fun) in file "lib/parser.ml", line 321, characters 2-33
   Called from Expect_test_collector.Make.Instance_io.exec in file "collector/expect_test_collector.ml", line 262, characters 12-19
 
   Trailing output

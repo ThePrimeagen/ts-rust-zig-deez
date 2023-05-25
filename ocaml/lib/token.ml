@@ -1,6 +1,5 @@
 type t =
   | Illegal
-  | EOF
   (* Identifiers *)
   | Ident of string
   | Integer of string
