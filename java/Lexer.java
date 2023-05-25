@@ -31,7 +31,11 @@ class Lexer {
             case '\0' -> tt = TokenType.EOF;
         }
 
-        t = this.createToken(tt, String.valueOf(this.getCc()));
+        if (tt.equals(TokenType.EOF)) {
+            t = this.createToken(tt, "eof");
+        } else {
+            t = this.createToken(tt, String.valueOf(this.getCc()));
+        }
 
         if (this.isLetter(this.getCc())) {
             String ident = this.indent();
