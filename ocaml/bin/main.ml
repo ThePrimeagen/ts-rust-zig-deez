@@ -1,3 +1,3 @@
 open Monkey
 
-let () = Format.printf "@.hello world: %s@." (Token.show Illegal)
+let () = Format.printf "Monkey interpreter... tbd what this does"
