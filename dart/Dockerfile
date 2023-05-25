@@ -9,6 +9,7 @@ COPY . .
 
 RUN dart pub get --offline
 
+RUN dart test
 RUN dart compile exe bin/dart_deez.dart -o bin/main
 
 FROM scratch
