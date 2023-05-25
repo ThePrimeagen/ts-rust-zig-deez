@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names, unnecessary_string_escapes
+// ignore_for_file: unnecessary_string_escapes
 
 enum TokenType {
   illegal,

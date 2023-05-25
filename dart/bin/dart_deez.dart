@@ -1,4 +1,4 @@
-import 'package:dart/dart.dart';
+import 'package:dart_deez/dart_deez.dart';
 import 'dart:io';
 
 void main(List<String> arguments) async {
