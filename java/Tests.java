@@ -2,6 +2,7 @@ class Tests {
     public static void main(String[] args) {
         Tests.singleCharacterTokenTests();
         Tests.multiCharacterTokenTests();
+        System.out.println("All tests ran successfully");
     }
 
     public static void singleCharacterTokenTests() {
