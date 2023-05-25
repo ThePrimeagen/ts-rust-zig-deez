@@ -1,0 +1,6 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+COPY lexer /app
+
+ENTRYPOINT [ "python", "main.py" ]
