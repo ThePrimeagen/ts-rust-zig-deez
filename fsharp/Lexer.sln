@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Lexer", "Lexer\Lexer.fsproj", "{4C173638-76E3-448A-B115-0FB60BF9044C}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Lexer.Tests", "Lexer.Tests\Lexer.Tests.fsproj", "{EA162EBF-3F8A-40B2-99DA-7DF705C30177}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4C173638-76E3-448A-B115-0FB60BF9044C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C173638-76E3-448A-B115-0FB60BF9044C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C173638-76E3-448A-B115-0FB60BF9044C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C173638-76E3-448A-B115-0FB60BF9044C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA162EBF-3F8A-40B2-99DA-7DF705C30177}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA162EBF-3F8A-40B2-99DA-7DF705C30177}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA162EBF-3F8A-40B2-99DA-7DF705C30177}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA162EBF-3F8A-40B2-99DA-7DF705C30177}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
