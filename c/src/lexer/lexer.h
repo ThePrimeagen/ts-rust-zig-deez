@@ -13,7 +13,7 @@ typedef enum {
   TokenTypeEqual,
   TokenTypePlus,
   TokenTypeComma,
-  TokenTypeSemi,
+  TokenTypeSemicolon,
   TokenTypeLParen,
   TokenTypeRParen,
   TokenTypeLSquirly,
@@ -24,7 +24,7 @@ typedef enum {
 
 typedef struct SToken {
   TokenType type;
-  const char *literal;
+  char *literal;
 } *Token;
 
 typedef struct SLexer *Lexer;
@@ -33,6 +33,7 @@ Lexer lexerCreate(const char *input);
 Token lexerNext(Lexer lexer);
 void lexerCleanup(Lexer *pLexer);
 
+Token tokenCreate(TokenType type, char *literal);
 void tokenCleanup(Token *pToken);
 
 #ifdef __cplusplus
