@@ -17,6 +17,5 @@ public enum Tokens
     RSquirly,
     Function,
     String,
-    Space,
     Identifier
 }

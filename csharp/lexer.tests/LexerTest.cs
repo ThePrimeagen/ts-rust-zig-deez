@@ -84,6 +84,7 @@ public class Tests
             Tokens.Identifier, // ten
             Tokens.RParen,     // )
             Tokens.Semicolon,  // ;
+            Tokens.Eof
         };
 
         

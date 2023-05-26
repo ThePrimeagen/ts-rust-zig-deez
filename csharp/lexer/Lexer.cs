@@ -9,6 +9,12 @@ public static class Lexer
         {
             var c = input[position];
             
+            if(char.IsWhiteSpace(c))
+            {
+                position++;
+                continue;
+            }
+            
             if (char.IsLetter(c))
             {
                 var start = position;
@@ -22,10 +28,9 @@ public static class Lexer
                 {
                     "let" => Tokens.Let,
                     "fn" => Tokens.Function,
-                    _ => Tokens.Illegal
+                    _ => Tokens.Identifier
                 };
                 yield return (token, value);
-                position++;
                 continue;
             }
             
@@ -40,7 +45,6 @@ public static class Lexer
 
                 var value = input.Substring(start, position - start);
                 yield return (Tokens.Integer, int.Parse(value));
-                position++;
                 continue;
             }
 
@@ -78,7 +82,6 @@ public static class Lexer
                 ')' => (Tokens.RParen, ')'),
                 '{' => (Tokens.LSquirly, '{'),
                 '}' => (Tokens.RSquirly, '}'),
-                ' ' => (Tokens.Space, ' '),
                 _ => (Tokens.Illegal, c)
             };
             
