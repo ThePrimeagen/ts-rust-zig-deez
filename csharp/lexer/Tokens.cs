@@ -15,5 +15,8 @@ public enum Tokens
     RParen,
     LSquirly,
     RSquirly,
-    Function
+    Function,
+    String,
+    Space,
+    Identifier
 }
