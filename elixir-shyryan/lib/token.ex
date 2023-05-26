@@ -4,38 +4,38 @@ defmodule Monkey.Token do
   """
 
   @type token_type ::
-    :illegal
-    | :eof
-    | :ident
-    | :int
-    | :assign
-    | :plus
-    | :minus
-    | :asterisk
-    | :slash
-    | :bang
-    | :equal_equal
-    | :not_equal
-    | :greater_than
-    | :less_than
-    | :comma
-    | :semicolon
-    | :lparen
-    | :rparen
-    | :lsquirly
-    | :rsquirly
-    | :fn
-    | :let
-    | true
-    | false
-    | :if
-    | :else
-    | :return
+          :illegal
+          | :eof
+          | :ident
+          | :int
+          | :assign
+          | :plus
+          | :minus
+          | :asterisk
+          | :slash
+          | :bang
+          | :equal_equal
+          | :not_equal
+          | :greater_than
+          | :less_than
+          | :comma
+          | :semicolon
+          | :lparen
+          | :rparen
+          | :lsquirly
+          | :rsquirly
+          | :fn
+          | :let
+          | true
+          | false
+          | :if
+          | :else
+          | :return
 
   @type t :: %__MODULE__{
-    type: token_type(),
-    literal: String.t()
-  }
+          type: token_type(),
+          literal: String.t()
+        }
 
   @enforce_keys [:type, :literal]
   defstruct [:type, :literal]
@@ -52,12 +52,10 @@ defmodule Monkey.Token do
 
   @literals %{
     illegal: "ILLEGAL",
-    eof: "EOF",
-    # identifiers and literals
+    eof: "",
     ident: "IDENT",
-    # 123
     int: "INT",
-    # operators
+    # Operators
     assign: "=",
     plus: "+",
     minus: "-",
@@ -68,9 +66,9 @@ defmodule Monkey.Token do
     not_equal: "!=",
     greater_than: ">",
     less_than: "<",
-    # delimiters
+    # Delimiters
     comma: ",",
-    semicolon: ",",
+    semicolon: ";",
     lparen: "(",
     rparen: ")",
     lsquirly: "{",
@@ -89,8 +87,14 @@ defmodule Monkey.Token do
   @doc """
   Create a new token struct.
   """
+  @spec new(token_type()) :: t()
   def new(type) when type in @token_types do
-    %__MODULE__{type: type, literal: @literals[type]}
+    new(type, Map.fetch!(@literals, type))
+  end
+
+  @spec new(token_type(), String.t()) :: t()
+  def new(type, literal) when type in @token_types and is_binary(literal) do
+    %__MODULE__{type: type, literal: literal}
   end
 
   @doc """

@@ -1,0 +1,59 @@
+name: Elixir (ShyRyan)
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - elixir-shyryan/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - elixir-shyryan/**
+jobs:
+  test:
+    name: Elixir Test
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: ['ubuntu-latest']
+        elixir: ['1.14.x']
+        otp: ['25.x']
+    env:
+      work_dir: elixir-shyryan
+    defaults:
+      run:
+        working-directory: ${{env.work_dir}}
+    steps:
+      # Checkout the repo.
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      # Setup Elixir.
+      - name: Set up Elixir
+        id: beam
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{matrix.elixir}}
+          otp-version: ${{matrix.otp}}
+      # Build cache.
+      - name: Build cache
+        uses: actions/cache@v3
+        with:
+          path: ${{env.work_dir}}/_build
+          key: build-${{matrix.os}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('elixir-shyryan/lib/**/*.ex') }}
+          restore-keys: build-${{matrix.os}}-${{matrix.otp}}-${{matrix.elixir}}-
+      # Get and compile elixir deps.
+      - name: Elixir Deps cache
+        uses: actions/cache@v3
+        with:
+          path: ${{env.work_dir}}/deps
+          key: mix-${{ matrix.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('elixir-shyryan/**/mix.lock') }}
+          restore-keys: mix-${{ matrix.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
+      - run: mix deps.get
+      - run: mix deps.compile
+      # Compile :dev and :test.
+      - run: MIX_ENV=test mix compile --warnings-as-errors
+      # Check for unused dependencies.
+      - run: mix deps.unlock --check-unused
+      # Run the tests.
+      - run: mix test --warnings-as-errors
