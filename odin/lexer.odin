@@ -1,16 +1,18 @@
 package lexer
 // Usage: `odin test .` in this folder to exec tests
+// Tests at end of file
 Lexer :: struct {
 	data:   []u8,
 	offset: int,
-	// r:      u8,
 	tokens: [dynamic]Token,
 }
+
 Token :: struct {
 	offset: int,
 	kind:   Token_Kind,
 	text:   string,
 }
+
 Token_Kind :: enum {
 	Illegal,
 	Equal,
@@ -29,85 +31,98 @@ Token_Kind :: enum {
 }
 
 init_lexer :: proc(data: string) -> Lexer {
-	t := Lexer {
+	lexer := Lexer {
 		data   = transmute([]u8)data,
-		offset = 0,
+        tokens = make([dynamic]Token),
 	}
-	return t
+	return lexer
 }
+
+destroy_lexer::proc(l:^Lexer) {
+    delete(l.tokens)
+}
+
 scan_tokens :: proc(l: ^Lexer) {
 	for !is_at_end(l) {
 		scan_token(l)
 	}
 	append(&l.tokens, Token{offset=l.offset,kind = .EOF})
 }
-scan_token :: proc(t: ^Lexer) {
-	c := next(t)
+
+scan_token :: proc(l: ^Lexer) {
+	c := next(l)
+    start:=l.offset-1
     // fmt.print(rune(c))
 	switch c {
 	case '(':
-		append(&t.tokens, Token{t.offset-1, .Lparen, "("})
+		append(&l.tokens, Token{start, .Lparen, "("})
 	case ')':
-		append(&t.tokens, Token{t.offset-1, .Rparen, ")"})
+		append(&l.tokens, Token{start, .Rparen, ")"})
 	case '{':
-		append(&t.tokens, Token{t.offset-1, .LSquirly, "{"})
+		append(&l.tokens, Token{start, .LSquirly, "{"})
 	case '}':
-		append(&t.tokens, Token{t.offset-1, .RSquirly, "}"})
+		append(&l.tokens, Token{start, .RSquirly, "}"})
 	case ';':
-		append(&t.tokens, Token{t.offset-1, .Semicolon, ":"})
+		append(&l.tokens, Token{start, .Semicolon, ":"})
     case '=':
-        append(&t.tokens, Token{t.offset-1, .Equal, "="})
+        append(&l.tokens, Token{start, .Equal, "="})
     case '+':
-        append(&t.tokens, Token{t.offset-1, .Plus, "+"})
+        append(&l.tokens, Token{start, .Plus, "+"})
 	case ',':
-		append(&t.tokens, Token{t.offset-1, .Comma, ","})
-	case ' ', '\n', '\r': // nop
+		append(&l.tokens, Token{start, .Comma, ","})
+	case ' ', '\n', '\r', '\t': // nop
 	case:
 		if is_digit(c) {
-			number(t)
+			number(l)
 		} else if is_alpha(c) {
-            if let(t) do break
-            if fn(t) do break
-            ident(t)
+            if let(l) do break
+            if fn(l) do break
+            ident(l)
 		} else {
-			append(&t.tokens, Token{t.offset-1, .Illegal,""})
+			append(&l.tokens, Token{start, .Illegal,""})
 		}
 	}
 }
-is_at_end :: proc(lexer: ^Lexer) -> bool {
-	return lexer.offset >= len(lexer.data)
+
+is_at_end :: proc(l: ^Lexer) -> bool {
+	return l.offset >= len(l.data)
 }
-next :: proc(lexer: ^Lexer) -> u8 #no_bounds_check {
+
+next :: proc(l: ^Lexer) -> u8 #no_bounds_check {
 	next: u8
-	if lexer.offset < len(lexer.data) {
-		next = lexer.data[lexer.offset]
-		lexer.offset += 1
+	if l.offset < len(l.data) {
+		next = l.data[l.offset]
+		l.offset += 1
 	}
 	return next
 }
-peek :: proc(t: ^Lexer) -> u8 #no_bounds_check {
-	if t.offset >= len(t.data) {
+
+peek :: proc(l: ^Lexer) -> u8 #no_bounds_check {
+	if l.offset >= len(l.data) {
 		return 0x0
 	} else {
-		return t.data[t.offset]
+		return l.data[l.offset]
 	}
 }
 
 is_digit :: proc(c: u8) -> bool {
 	return c >= '0' && c <= '9'
 }
+
 is_alpha :: proc(c: u8) -> bool {
 	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_'
 }
+
 is_alpha_numeric :: proc(c: u8) -> bool {
 	return is_alpha(c) || is_digit(c)
 }
-//
-number :: proc(t: ^Lexer) {
-	start := t.offset - 1
-	for is_digit(peek(t)) do next(t)
-	append(&t.tokens, Token{start, .Number, string(t.data[start:t.offset])})
+
+number :: proc(l: ^Lexer) {
+	start := l.offset - 1
+	for is_digit(peek(l)) do next(l)
+	append(&l.tokens, Token{start, .Number, string(l.data[start:l.offset])})
 }
+
 let :: proc(l: ^Lexer) -> bool {
     start := l.offset - 1
 
@@ -123,6 +138,7 @@ let :: proc(l: ^Lexer) -> bool {
 
     return true
 }
+
 fn :: proc(l: ^Lexer) -> bool {
     start := l.offset - 1
     if l.offset + 1 >= len(l.data) || 
@@ -135,11 +151,10 @@ fn :: proc(l: ^Lexer) -> bool {
     return true
 }
 
-
-ident :: proc(t: ^Lexer) {
-	start := t.offset - 1
-	for is_alpha_numeric(peek(t)) do next(t)
-	append(&t.tokens, Token{start, .Ident, string(t.data[start:t.offset])})
+ident :: proc(l: ^Lexer) {
+	start := l.offset - 1
+	for is_alpha_numeric(peek(l)) do next(l)
+	append(&l.tokens, Token{start, .Ident, string(l.data[start:l.offset])})
 }
 
 import "core:testing"
@@ -164,9 +179,8 @@ tokens_are_equal :: proc(a: Token, b: Token) {
 @(test)
 test_lexer :: proc(t: ^testing.T) {
     data := "=+(){},;"
-    lexer := init_lexer(data);
-    scan_tokens(&lexer);
-    // fmt.println(lexer.tokens)
+    lexer := init_lexer(data)
+    scan_tokens(&lexer)
 
     expected_tokens := []Token{
         {0,  .Equal,    "="},
@@ -178,10 +192,10 @@ test_lexer :: proc(t: ^testing.T) {
         {6,  .Comma,    ","},
         {7,  .Semicolon,":"},
         {8,  .EOF,      ""},
-    };
+    }
 
     for token,i in lexer.tokens {
-        tokens_are_equal(lexer.tokens[i], expected_tokens[i]);
+        tokens_are_equal(lexer.tokens[i], expected_tokens[i])
     }
 }
 
@@ -193,9 +207,10 @@ test_lexer_full :: proc(t: ^testing.T) {
         "let add = fn(x, y) {\n" +
         "    x + y;\n" +
         "};\n" +
-        "let result = add(five, ten);\n";
-    lexer := init_lexer(data);
-    scan_tokens(&lexer);
+        "let result = add(five, ten);\n"
+    lexer := init_lexer(data)
+    defer destroy_lexer(&lexer)
+    scan_tokens(&lexer)
 
     expected_tokens := []Token{
         {0,  .Let,      "let"},
@@ -234,10 +249,10 @@ test_lexer_full :: proc(t: ^testing.T) {
         {86, .Ident,    "ten"},
         {89, .Rparen,   ")"},
         {90, .Semicolon,":"},
-        {92, .EOF,      ""}
-    };
+        {92, .EOF,      ""},
+    }
 
-    for i := 0; i < len(expected_tokens); i += 1 {
-        tokens_are_equal(lexer.tokens[i], expected_tokens[i]);
+    for token,i in lexer.tokens {
+        tokens_are_equal(token, expected_tokens[i])
     }
 }
