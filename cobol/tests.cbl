@@ -12,7 +12,7 @@
        PROCEDURE DIVISION.
        MAIN-LOGIC.
            PERFORM LEXER-INIT-PROCEDURE.
-      * COBOL is 0 indexed btw
+      * COBOL is 1 indexed btw
            MOVE "=+,;(}" TO LEXER-INPUT-LINES (1).
       * setting up multiple lines to see if it actually works
            MOVE "){" TO LEXER-INPUT-LINES (2).
