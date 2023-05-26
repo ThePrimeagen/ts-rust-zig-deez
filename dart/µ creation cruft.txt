@@ -1,0 +1,14 @@
+/*
+ * Project: ts-rust-zig-deez
+ * Created Date: Thursday May 25th 2023 10:06:30 am
+ * Author: Fa C Shus (paul@facshus.com)
+ * -----
+ * Last Modified: Thursday, 25th May 2023 10:06:30 am
+ * Modified By: Fa C Shus (paul@facshus.com)
+ * -----
+ * Copyright (c) 2021 - 2023 FaCShus Systems
+ * License: MIT
+ */
+
+very_good create dart_cli monkeydart --description "Thorsten Ball monkey interpreter written in Dart" --publishable --executable-name mkay
+

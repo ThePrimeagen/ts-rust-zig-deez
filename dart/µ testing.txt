@@ -1,0 +1,19 @@
+/*
+ * Project: ts-rust-zig-deez
+ * Created Date: Thursday May 25th 2023 10:07:54 am
+ * Author: Fa C Shus (paul@facshus.com)
+ * -----
+ * Last Modified: Thursday, 25th May 2023 10:07:55 am
+ * Modified By: Fa C Shus (paul@facshus.com)
+ * -----
+ * Copyright (c) 2021 - 2023 FaCShus Systems
+ * License: MIT
+ */
+
+## Activate package `coverage` (if needed):
+dart pub global activate coverage
+dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage
+
+dart run test --coverage=./coverage
+genhtml -o ./coverage/report ./coverage/lcov.info
+open ./coverage/report/index.html
