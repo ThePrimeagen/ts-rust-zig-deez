@@ -3,11 +3,6 @@
  * Created Date: Thursday May 25th 2023 10:52:58 am
  * Author: Fa C Shus (paul@facshus.com)
  * -----
- * Last Modified: Thursday, 25th May 2023 10:52:58 am
- * Modified By: Fa C Shus (paul@facshus.com)
- * -----
- * Copyright (c) 2021 - 2023 FaCShus Systems
- * License: MIT
  */
 
 import 'package:equatable/equatable.dart';

@@ -13,3 +13,6 @@ coverage/
 
 # Android studio and IntelliJ
 .idea
+
+# macOS artifact
+.DS_Store
