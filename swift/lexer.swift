@@ -36,7 +36,7 @@ final class Lexer {
         }
         
         if isNumber(currentChar) {
-            let num = self.readNumber()
+            let num = readNumber()
             advance()
             return createToken(type: .int, literal: num)
         }
@@ -73,7 +73,7 @@ final class Lexer {
         if pos >= input.count || pos < 0 {
             return "\0"
         }
-        let index = input.index(input.startIndex, offsetBy: self.pos)
+        let index = input.index(input.startIndex, offsetBy: pos)
         return input[index]
     }
 
@@ -94,7 +94,7 @@ final class Lexer {
         while isNumber(currentChar) {
             advance()
         }
-        let endPos = input.index(input.startIndex, offsetBy: self.pos)
+        let endPos = input.index(input.startIndex, offsetBy: pos)
         return String(input[input.index(input.startIndex, offsetBy: startPos)..<endPos])
     }
 
@@ -103,7 +103,7 @@ final class Lexer {
         while isLetter(currentChar) {
             advance()
         }
-        let endPos = input.index(input.startIndex, offsetBy: self.pos)
+        let endPos = input.index(input.startIndex, offsetBy: pos)
         return String(input[input.index(input.startIndex, offsetBy: startPos)..<endPos])
     }
 
