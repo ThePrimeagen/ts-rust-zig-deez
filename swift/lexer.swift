@@ -16,40 +16,47 @@ final class Lexer {
     }
     
     func nextToken() -> Token {
-        self.skipWhitespace()
-
-        var token: Token
-        var tokenType: TokenType = .illegal
-        switch currentChar {
-            case "{": tokenType = .lSqirly
-            case "}": tokenType = .rSqirly
-            case "(": tokenType = .lParen
-            case ")": tokenType = .rParen
-            case ",": tokenType = .comma
-            case ";": tokenType = .semi
-            case "+": tokenType = .plus
-            case "=": tokenType = .equal
-            case "\0": tokenType = .eof
-            default: break
+        skipWhitespace()
+        
+        if currentChar == "\0" {
+            advance()
+            return createToken(type: .eof, literal: "eof")
         }
-
-        if tokenType == .eof {
-            token = createToken(type: tokenType, literal: "eof")
-        } else if isLetter(currentChar) {
+        
+        if isLetter(currentChar) {
             let ident = readIdentifier()
+            advance()
             if let keyword = keywordMap[ident] {
                 return keyword
             } else {
                 return createToken(type: .ident, literal: ident)
             }
-        } else if isNumber(currentChar) {
-            return createToken(type: .int, literal: self.readNumber())
-        } else {
-            token = createToken(type: tokenType, literal: String(currentChar))
+        }
+        
+        if isNumber(currentChar) {
+            let num = self.readNumber()
+            advance()
+            return createToken(type: .int, literal: num)
+        }
+
+        let specialChars: [Character: TokenType] = [
+            "{": .lSqirly,
+            "}": .rSqirly,
+            "(": .lParen,
+            ")": .rParen,
+            ",": .comma,
+            ";": .semi,
+            "+": .plus,
+            "=": .equal
+        ]
+
+        if let tokenType = specialChars[currentChar] {
+            advance()
+            return createToken(type: tokenType, literal: String(currentChar))
         }
         
         advance()
-        return token
+        return createToken(type: .illegal, literal: String(currentChar))
     }
 
     private func advance() {
