@@ -11,16 +11,17 @@ defmodule Monkey.Lexer do
   Turn some input into a list of tokens.
   """
   @spec lex(String.t()) :: [Token.t()]
-  def lex(input) do
-    input
-    |> tokenize([])
-    |> Enum.reverse()
+  def lex(input) when is_binary(input) do
+    tokenize(input, [])
   end
 
+  # Recursive base-case. When the input is empty, then we add an EOF token.
   defp tokenize(<<>>, tokens) do
-    [Token.new(:eof) | tokens]
+    [Token.new(:eof) | tokens] |> Enum.reverse()
   end
 
+  # Recursively go through the input, tokenizing each character.
+  # Uses binary pattern-matching to match on the first character(s).
   defp tokenize(input, tokens) do
     case input do
       <<c::8, _::binary>> when is_letter(c) -> read_identifier(input, tokens)
@@ -31,8 +32,8 @@ defmodule Monkey.Lexer do
       <<",", rest::binary>> -> tokenize(rest, [Token.new(:comma) | tokens])
       <<"(", rest::binary>> -> tokenize(rest, [Token.new(:lparen) | tokens])
       <<")", rest::binary>> -> tokenize(rest, [Token.new(:rparen) | tokens])
-      <<"{", rest::binary>> -> tokenize(rest, [Token.new(:lbrace) | tokens])
-      <<"}", rest::binary>> -> tokenize(rest, [Token.new(:rbrace) | tokens])
+      <<"{", rest::binary>> -> tokenize(rest, [Token.new(:lsquirly) | tokens])
+      <<"}", rest::binary>> -> tokenize(rest, [Token.new(:rsquirly) | tokens])
       <<"=", rest::binary>> -> tokenize(rest, [Token.new(:assign) | tokens])
       <<"+", rest::binary>> -> tokenize(rest, [Token.new(:plus) | tokens])
       <<"-", rest::binary>> -> tokenize(rest, [Token.new(:minus) | tokens])
@@ -57,18 +58,20 @@ defmodule Monkey.Lexer do
     tokenize(rest, [token | tokens])
   end
 
-  defp accumulate_identifier(rest, identifier) when not is_letter(c), do: {identifier, rest}
-  defp accumulate_identifier(<<c::binary-size(1), rest::binary>>, identifier, tokens) do
-    accumulate_identifier(rest, identifier <> c, tokens)
+  defp accumulate_identifier(<<c::8, rest::binary>>, acc) when is_letter(c) do
+    accumulate_identifier(rest, acc <> <<c>>)
   end
+
+  defp accumulate_identifier(rest, identifier), do: {identifier, rest}
 
   defp read_number(input, tokens) do
     {number, rest} = accumulate_number(input, "")
-    tokenize(rest, [Token.new(:int, number) | tokens])
+    tokenize(rest, [Token.new(:int) | tokens])
   end
 
-  defp accumulate_number(rest, number) when not is_digit(c), do: {number, rest}
-  defp accumulate_number(<<c::binary-size(1), rest::binary>>, tokens) do
-    accumulate_number(rest, number <> c, tokens)
+  defp accumulate_number(rest, number) , do: {number, rest}
+
+  defp accumulate_number(<<c::8, rest::binary>>, acc) when is_digit(c) do
+    accumulate_number(rest, acc <> <<c>>)
   end
 end
