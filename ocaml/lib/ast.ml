@@ -16,26 +16,29 @@ and expression =
       ; operator : Token.t
       ; right : expression
       }
+  | If of
+      { condition : expression
+      ; consequence : block
+      ; alternative : block option
+      }
+  | FunctionLiteral of
+      { parameters : identifier list
+      ; body : block
+      }
 [@@deriving show]
 
 and statement =
   | Let of
-      { token : Token.t
-      ; name : identifier
+      { name : identifier
       ; value : expression
       }
-  | Return of
-      { token : Token.t
-      ; expr : expression
-      }
+  | Return of expression
   | ExpressionStatement of expression
+  | BlockStatement of block
 [@@deriving show]
 
-and identifier =
-  { token : Token.t
-  ; value : string
-  }
-
+and identifier = { identifier : string }
+and block = { block : statement list }
 and program = { statements : statement list }
 
 let token_literal = function

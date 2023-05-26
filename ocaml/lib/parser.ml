@@ -16,17 +16,7 @@ type precedence =
   ]
 [@@deriving show, ord]
 
-let prec_greater a b =
-  (* Fmt.pr *)
-  (*   "comparing: %a %a -> %d@." *)
-  (*   pp_precedence *)
-  (*   a *)
-  (*   pp_precedence *)
-  (*   b *)
-  (*   (compare_precedence a b); *)
-  let compared = compare_precedence a b in
-  compared = 1 || compared = 0
-;;
+let prec_gte a b = compare_precedence a b >= 0
 
 let token_prec : Token.t -> precedence = function
   | Equal | NotEqual -> `Equals
@@ -81,7 +71,7 @@ let expect_peek parser condition =
   | Some tok ->
     if condition tok
     then Ok (advance parser)
-    else Error (Fmt.str "missing peeked: %a" pp parser)
+    else Error (Fmt.failwith "missing peeked: %a" pp parser)
   | None -> Error "no peek token"
 ;;
 
@@ -90,6 +80,30 @@ let peek_is parser token = Option.equal Token.equal parser.peek (Some token)
 let expect_assign parser =
   expect_peek parser (function
     | Token.Assign -> true
+    | _ -> false)
+;;
+
+let expect_lparen parser =
+  expect_peek parser (function
+    | Token.LeftParen -> true
+    | _ -> false)
+;;
+
+let expect_rparen parser =
+  expect_peek parser (function
+    | Token.RightParen -> true
+    | _ -> false)
+;;
+
+let expect_lbrace parser =
+  expect_peek parser (function
+    | Token.LeftBrace -> true
+    | _ -> false)
+;;
+
+let expect_rbrace parser =
+  expect_peek parser (function
+    | Token.RightBrace -> true
     | _ -> false)
 ;;
 
@@ -130,23 +144,23 @@ let rec parse parser =
 
 and parse_statement parser =
   match parser.current with
-  | Some (Token.Let as token) -> parse_let parser token
-  | Some (Token.Return as token) -> parse_return parser token
+  | Some Token.Let -> parse_let parser
+  | Some Token.Return -> parse_return parser
   | Some _ -> parse_expression_statement parser
   | None -> Error "no more toks"
 
-and parse_let parser token =
+and parse_let parser =
   let* parser, name = parse_identifier parser in
   let* parser = expect_assign parser in
   (* move parser onto the beginning of the expression *)
   let parser = advance parser in
   let* parser, value = parse_expression parser `Lowest in
   let parser = chomp_semicolon parser in
-  Ok (parser, Ast.Let { token; name; value })
+  Ok (parser, Ast.Let { name; value })
 
-and parse_return parser token =
+and parse_return parser =
   let* parser, expr = parse_expression parser `Lowest in
-  Ok (parser, Ast.Return { token; expr })
+  Ok (parser, Ast.Return expr)
 
 and parse_expression_statement parser =
   let* parser, expr = parse_expression parser `Lowest in
@@ -155,19 +169,29 @@ and parse_expression_statement parser =
 
 and parse_identifier parser =
   match parser.peek with
-  | Some (Ident ident as token) -> Ok (advance parser, { token; value = ident })
+  | Some (Ident identifier) -> Ok (advance parser, { identifier })
   | _ -> Error "missing ident"
+
+and parse_block parser =
+  let parser = advance parser in
+  let rec parse_block' parser statements =
+    match parser.current with
+    | Some Token.RightBrace | None -> Ok (parser, statements)
+    | _ ->
+      let* parser, statement = parse_statement parser in
+      parse_block' (advance parser) (statement :: statements)
+  in
+  let* parser, block = parse_block' parser [] in
+  let block = List.rev block in
+  Ok (parser, Ast.{ block })
 
 and parse_expression parser prec =
   let* parser, left = parse_prefix_expression parser in
   let rec parse_expression' parser left =
     let peeked = parser.peek |> Option.value ~default:Token.Illegal in
-    Fmt.pr "parse_expr' checking: %a vs %a@." Token.pp peeked pp_precedence prec;
     let prec_peek = token_prec peeked in
-    if peek_is parser Token.Semicolon || prec_greater prec prec_peek
-    then (
-      Fmt.pr "  parse_expr': skipped %b@." (prec_greater prec_peek prec);
-      Ok (parser, left))
+    if peek_is parser Token.Semicolon || prec_gte prec prec_peek
+    then Ok (parser, left)
     else (
       match get_infix_fn parser with
       | Some infix_fn ->
@@ -179,15 +203,18 @@ and parse_expression parser prec =
   parse_expression' parser left
 
 and parse_prefix_expression parser =
+  let map_parser = Result.map ~f:(fun v -> parser, v) in
   let token = parser.current |> Option.value_exn in
   match token with
-  | Token.Ident _ -> expr_parse_identifier parser token
-  | Token.Integer _ -> expr_parse_number parser
+  | Token.Ident _ -> expr_parse_identifier parser |> map_parser
+  | Token.Integer _ -> expr_parse_number parser |> map_parser
   | Token.Bang -> expr_parse_prefix parser token
   | Token.Minus -> expr_parse_prefix parser token
   | Token.True -> expr_parse_bool parser token
   | Token.False -> expr_parse_bool parser token
   | Token.LeftParen -> expr_parse_grouped parser
+  | Token.If -> expr_parse_if parser
+  | Token.Function -> expr_parse_fn parser
   | tok -> Error (Fmt.failwith "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
 
 and parse_infix_expression parser left =
@@ -199,7 +226,7 @@ and parse_infix_expression parser left =
 
 and get_infix_fn parser =
   let open Token in
-  match parser.current with
+  match parser.peek with
   | Some Plus
   | Some Minus
   | Some Slash
@@ -210,14 +237,14 @@ and get_infix_fn parser =
   | Some GreaterThan -> Some parse_infix_expression
   | _ -> None
 
-and expr_parse_identifier parser token =
+and expr_parse_identifier parser =
   match parser.current with
-  | Some (Ident ident) -> Ok (parser, Ast.Identifier { token; value = ident })
+  | Some (Ident identifier) -> Ok (Ast.Identifier { identifier })
   | _ -> Error "missing number"
 
 and expr_parse_number parser =
   match parser.current with
-  | Some (Integer num) -> Ok (parser, Ast.Integer (Int.of_string num))
+  | Some (Integer num) -> Ok (Ast.Integer (Int.of_string num))
   | _ -> Error "missing number"
 
 and expr_parse_prefix parser operator =
@@ -243,15 +270,61 @@ and expr_parse_grouped parser =
       | _ -> false)
   in
   Ok (parser, expr)
+
+and expr_parse_if parser =
+  let* parser = expect_lparen parser in
+  let parser = advance parser in
+  let* parser, condition = parse_expression parser `Lowest in
+  let* parser = expect_rparen parser in
+  let* parser = expect_lbrace parser in
+  let* parser, consequence = parse_block parser in
+  let* parser, alternative =
+    match parser.peek with
+    | Some Token.Else ->
+      let parser = advance parser in
+      let* parser = expect_lbrace parser in
+      let* parser, block = parse_block parser in
+      Ok (parser, Some block)
+    | _ -> Ok (parser, None)
+  in
+  Ok (parser, Ast.If { condition; consequence; alternative })
+
+and expr_parse_fn parser =
+  let _read_identifier parser =
+    match parser.current with
+    | Some (Token.Ident identifier) -> Ok Ast.{ identifier }
+    | _ -> Error "expected to read identifier"
+  in
+  let expr_parse_fn_parameters parser =
+    match parser.peek with
+    | Some Token.RightParen -> Ok (advance parser, [])
+    | Some (Token.Ident identifier) ->
+      let identifier = Ast.{ identifier } in
+      let parameters = ref [ identifier ] in
+      (* while peek_is parser Token.Comma do *)
+      (*   let parser = advance parser in *)
+      (*   let parser = advance parser in *)
+      (*   let* parser, identifer = read_identifier parser in *)
+      (*   parameters := parameters @ [ identifier ] *)
+      (* done; *)
+      Ok (parser, !parameters)
+    | _ -> Error "musst be identifier for parameter list"
+  in
+  let* parser = expect_lparen parser in
+  let* parser, parameters = expr_parse_fn_parameters parser in
+  let* parser = expect_lbrace parser in
+  let* parser, body = parse_block parser in
+  Ok (parser, Ast.FunctionLiteral { parameters; body })
 ;;
 
 let rec string_of_statement = function
   | Ast.Let stmt ->
     Fmt.str "LET: let %s = %s" (string_of_ident stmt.name) (show_expression stmt.value)
-  | Ast.Return stmt -> Fmt.str "RETURN %s" (show_expression stmt.expr)
+  | Return expr -> Fmt.str "RETURN %s" (show_expression expr)
   | ExpressionStatement expr -> Fmt.str "EXPR: %s;" (show_expression expr)
+  | BlockStatement _ -> assert false
 
-and string_of_ident ident = ident.value
+and string_of_ident ident = ident.identifier
 
 let print_node = function
   | Ast.Program program ->
@@ -279,17 +352,9 @@ let b = false;
     |};
   [%expect
     {|
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
     Program: [
       LET: let x = (Ast.Integer 5)
-      LET: let y = (Ast.Identifier { Ast.token = (Token.Ident "foo"); value = "foo" })
+      LET: let y = (Ast.Identifier { Ast.identifier = "foo" })
       LET: let a = (Ast.Boolean true)
       LET: let b = (Ast.Boolean false)
     ] |}]
@@ -297,10 +362,7 @@ let b = false;
 
 let%expect_test "single let statement" =
   expect_program "let x = 5;";
-  [%expect
-    {|
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
+  [%expect {|
     Program: [
       LET: let x = (Ast.Integer 5)
     ] |}]
@@ -308,10 +370,7 @@ let%expect_test "single let statement" =
 
 let%expect_test "expression statement" =
   expect_program "35;";
-  [%expect
-    {|
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
+  [%expect {|
     Program: [
       EXPR: (Ast.Integer 35);
     ] |}]
@@ -319,33 +378,12 @@ let%expect_test "expression statement" =
 
 let%expect_test "let statement with infix" =
   expect_program "let x = 1 + 2;";
-  [%expect.unreachable]
-  [@@expect.uncaught_exn
+  [%expect
     {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-
-  (Failure
-     "unexpected prefix expr: Token.Plus\
-    \n { Parser.lexer =\
-    \n                                      { Lexer.input = \"let x = 1 + 2;\";\
-    \n                                        position = 13; ch = (Some ';') };\
-    \n                                      current = (Some Token.Plus);\
-    \n                                      peek = (Some (Token.Integer \"2\")) }")
-  Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
-  Called from Monkey__Parser.parse_prefix_expression in file "lib/parser.ml", line 191, characters 17-88
-  Called from Monkey__Parser.parse_expression in file "lib/parser.ml", line 162, characters 22-52
-  Called from Monkey__Parser.parse_expression_statement in file "lib/parser.ml", line 152, characters 22-53
-  Called from Monkey__Parser.parse.parse' in file "lib/parser.ml", line 119, characters 12-34
-  Called from Monkey__Parser.parse in file "lib/parser.ml", line 127, characters 23-39
-  Called from Monkey__Parser.expect_program in file "lib/parser.ml", line 267, characters 16-28
-  Called from Monkey__Parser.(fun) in file "lib/parser.ml", line 321, characters 2-33
-  Called from Expect_test_collector.Make.Instance_io.exec in file "collector/expect_test_collector.ml", line 262, characters 12-19
-
-  Trailing output
-  ---------------
-  parse_expr' checking: Token.Plus vs `Lowest |}]
+    Program: [
+      LET: let x = Ast.Infix {left = (Ast.Integer 1); operator = Token.Plus;
+      right = (Ast.Integer 2)}
+    ] |}]
 ;;
 
 let%expect_test "let statement errors" =
@@ -364,14 +402,6 @@ let 838383; |} in
   end;
   [%expect
     {|
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
-    parse_expr' checking: Token.Semicolon vs `Prefix
-      parse_expr': skipped false
-    parse_expr' checking: Token.Semicolon vs `Lowest
-      parse_expr': skipped true
     { Parser.msg = "missing ident";
       parser =
       { Parser.lexer =
@@ -379,15 +409,69 @@ let 838383; |} in
           position = 47; ch = (Some ';') };
         current = (Some Token.Let); peek = (Some (Token.Integer "838383")) };
       statements =
-      [Ast.Let {token = Token.Let;
-         name = { Ast.token = (Token.Ident "z"); value = "z" };
+      [Ast.Let {name = { Ast.identifier = "z" };
          value = Ast.Prefix {operator = Token.Bang; right = (Ast.Integer 10)}};
-        Ast.Let {token = Token.Let;
-          name = { Ast.token = (Token.Ident "y"); value = "y" };
-          value = (Ast.Integer 10)};
-        Ast.Let {token = Token.Let;
-          name = { Ast.token = (Token.Ident "x"); value = "x" };
-          value = (Ast.Integer 5)}
-        ]
+        Ast.Let {name = { Ast.identifier = "y" }; value = (Ast.Integer 10)};
+        Ast.Let {name = { Ast.identifier = "x" }; value = (Ast.Integer 5)}]
       } |}]
+;;
+
+let%expect_test "grouped expressions" =
+  expect_program "((1 + foo) *   12)";
+  [%expect
+    {|
+    Program: [
+      EXPR: Ast.Infix {
+      left =
+      Ast.Infix {left = (Ast.Integer 1); operator = Token.Plus;
+        right = (Ast.Identifier { Ast.identifier = "foo" })};
+      operator = Token.Asterisk; right = (Ast.Integer 12)};
+    ] |}]
+;;
+
+let%expect_test "if expressions" =
+  expect_program "if (x < y) { x }";
+  expect_program "if (x < y) { x } else { y }";
+  [%expect
+    {|
+    Program: [
+      EXPR: Ast.If {
+      condition =
+      Ast.Infix {left = (Ast.Identifier { Ast.identifier = "x" });
+        operator = Token.LessThan;
+        right = (Ast.Identifier { Ast.identifier = "y" })};
+      consequence =
+      { Ast.block =
+        [(Ast.ExpressionStatement (Ast.Identifier { Ast.identifier = "x" }))] };
+      alternative = None};
+    ]
+    Program: [
+      EXPR: Ast.If {
+      condition =
+      Ast.Infix {left = (Ast.Identifier { Ast.identifier = "x" });
+        operator = Token.LessThan;
+        right = (Ast.Identifier { Ast.identifier = "y" })};
+      consequence =
+      { Ast.block =
+        [(Ast.ExpressionStatement (Ast.Identifier { Ast.identifier = "x" }))] };
+      alternative =
+      (Some { Ast.block =
+              [(Ast.ExpressionStatement (Ast.Identifier { Ast.identifier = "y" }))
+                ]
+              })};
+    ] |}]
+;;
+
+let%expect_test "function literals" =
+  (* expect_program "fn(x, y) { return x + y }"; *)
+  [%expect {||}]
+;;
+
+let%expect_test "precedence comparisons" =
+  let cmp a b = Fmt.pr "%a > %a -> %b@." pp_precedence a pp_precedence b (prec_gte a b) in
+  cmp `Lowest `Call;
+  cmp `Lowest `Lowest;
+  [%expect {|
+    `Lowest > `Call -> false
+    `Lowest > `Lowest -> true |}]
 ;;
