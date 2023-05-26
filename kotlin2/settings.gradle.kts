@@ -1,1 +1,1 @@
-rootProject.name = "monkeylang-lexer"
+rootProject.name = "monkeylang"

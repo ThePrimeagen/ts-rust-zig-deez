@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "1.8.0"
+    id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
 }
 
 group = "dev.hermannm"
@@ -14,9 +15,14 @@ dependencies {
 }
 
 tasks.test {
+    testLogging {
+        showStandardStreams = true
+        events("passed", "skipped", "failed")
+    }
+
     useJUnitPlatform()
 }
 
 kotlin {
-    jvmToolchain(8)
+    jvmToolchain(11)
 }
