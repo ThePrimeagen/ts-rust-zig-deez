@@ -15,6 +15,8 @@ final class Lexer {
         ]
     }
     
+    /// Generates the next token from the input string, facilitating the tokenization process for subsequent parsing.
+    /// - Returns: The next token in the input string.
     func nextToken() -> Token {
         skipWhitespace()
         
