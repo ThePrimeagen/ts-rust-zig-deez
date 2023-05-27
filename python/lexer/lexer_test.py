@@ -1,22 +1,23 @@
 import unittest
 
 from lexer import Lexer
-from tokens import Token, TokenType
+import tokens as tok
+from tokens import Token
 
 
 class Test(unittest.TestCase):
     def test_get_next_token_1(self):
-        input = '=+(){},;'
-        
+        input = "=+(){},;"
+
         tokens = [
-        TokenType.Equal,
-        TokenType.Plus,
-        TokenType.LParen,
-        TokenType.RParen,
-        TokenType.LSquirly,
-        TokenType.RSquirly,
-        TokenType.Comma,
-        TokenType.Semicolon,
+            tok.ASSING,
+            tok.PLUS,
+            tok.LPAREN,
+            tok.RPAREN,
+            tok.LSQUIRLY,
+            tok.RSQUIRLY,
+            tok.COMMA,
+            tok.SEMICOLON,
         ]
 
         lex = Lexer(input)
@@ -24,53 +25,89 @@ class Test(unittest.TestCase):
             self.assertEqual(lex.get_next_token().type, token)
 
     def test_get_next_token_2(self):
-        input ='''\
+        input = """\
 let five = 5;
 let ten = 10;
 let add = fn(x, y) {
     x + y;
 };
 let result = add(five, ten);
-'''
+!-/*5;
+5 < 10 > 5;
+if (5 < 10) {
+return true;
+} else {
+return false;
+}
+"""
         lex = Lexer(input)
         tokens = [
-        Token(TokenType.Let, "let"),
-        Token(TokenType.Ident, "five" ),
-        Token(TokenType.Equal, "="),
-        Token(TokenType.Int, "5" ),
-        Token(TokenType.Semicolon, ";"),
-        Token(TokenType.Let, "let"),
-        Token(TokenType.Ident, "ten" ),
-        Token(TokenType.Equal, "="),
-        Token(TokenType.Int, "10" ),
-        Token(TokenType.Semicolon, ";"),
-        Token(TokenType.Let, "let"),
-        Token(TokenType.Ident, "add" ),
-        Token(TokenType.Equal, "="),
-        Token(TokenType.Function, "fn"),
-        Token(TokenType.LParen, "("),
-        Token(TokenType.Ident, "x" ),
-        Token(TokenType.Comma, ","),
-        Token(TokenType.Ident, "y" ),
-        Token(TokenType.RParen, ")"),
-        Token(TokenType.LSquirly, "{"),
-        Token(TokenType.Ident, "x" ),
-        Token(TokenType.Plus, "+"),
-        Token(TokenType.Ident, "y" ),
-        Token(TokenType.Semicolon, ";"),
-        Token(TokenType.RSquirly, "}"),
-        Token(TokenType.Semicolon, ";"),
-        Token(TokenType.Let, "let"),
-        Token(TokenType.Ident, "result" ),
-        Token(TokenType.Equal, "="),
-        Token(TokenType.Ident, "add" ),
-        Token(TokenType.LParen, "("),
-        Token(TokenType.Ident, "five" ),
-        Token(TokenType.Comma, ","),
-        Token(TokenType.Ident, "ten" ),
-        Token(TokenType.RParen, ")"),
-        Token(TokenType.Semicolon, ";"),
-        Token(TokenType.Eof, "EOF"),
-        ] 
+            Token(tok.LET, "let"),
+            Token(tok.IDENT, "five"),
+            Token(tok.ASSING, "="),
+            Token(tok.INT, "5"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.LET, "let"),
+            Token(tok.IDENT, "ten"),
+            Token(tok.ASSING, "="),
+            Token(tok.INT, "10"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.LET, "let"),
+            Token(tok.IDENT, "add"),
+            Token(tok.ASSING, "="),
+            Token(tok.FUNCTION, "fn"),
+            Token(tok.LPAREN, "("),
+            Token(tok.IDENT, "x"),
+            Token(tok.COMMA, ","),
+            Token(tok.IDENT, "y"),
+            Token(tok.RPAREN, ")"),
+            Token(tok.LSQUIRLY, "{"),
+            Token(tok.IDENT, "x"),
+            Token(tok.PLUS, "+"),
+            Token(tok.IDENT, "y"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.RSQUIRLY, "}"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.LET, "let"),
+            Token(tok.IDENT, "result"),
+            Token(tok.ASSING, "="),
+            Token(tok.IDENT, "add"),
+            Token(tok.LPAREN, "("),
+            Token(tok.IDENT, "five"),
+            Token(tok.COMMA, ","),
+            Token(tok.IDENT, "ten"),
+            Token(tok.RPAREN, ")"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.BANG, "!"),
+            Token(tok.MINUS, "-"),
+            Token(tok.SLASH, "/"),
+            Token(tok.ASTERISK, "*"),
+            Token(tok.INT, "5"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.INT, "5"),
+            Token(tok.LESSTHAN, "<"),
+            Token(tok.INT, "10"),
+            Token(tok.GREATERTHAN, ">"),
+            Token(tok.INT, "5"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.IF, "if"),
+            Token(tok.LPAREN, "("),
+            Token(tok.INT, "5"),
+            Token(tok.LESSTHAN, "<"),
+            Token(tok.INT, "10"),
+            Token(tok.RPAREN, ")"),
+            Token(tok.LSQUIRLY, "{"),
+            Token(tok.RETURN, "return"),
+            Token(tok.TRUE, "true"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.RSQUIRLY, "}"),
+            Token(tok.ELSE, "else"),
+            Token(tok.LSQUIRLY, "{"),
+            Token(tok.RETURN, "return"),
+            Token(tok.FALSE, "false"),
+            Token(tok.SEMICOLON, ";"),
+            Token(tok.RSQUIRLY, "}"),
+            Token(tok.EOF, "EOF"),
+        ]
         for token in tokens:
             self.assertEqual(lex.get_next_token(), token)
