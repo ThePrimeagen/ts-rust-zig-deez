@@ -37,7 +37,7 @@ newLexer input =
             }
 
 tokenize :: String -> [Token]
-tokenize input = tokenize' $ newLexer input
+tokenize = takeWhile (/= Lexer.Eof) . tokenize' . newLexer
 
 tokenize' :: Lexer -> [Token]
 tokenize' lexer = tok : tokenize' lexer'

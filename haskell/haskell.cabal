@@ -32,10 +32,10 @@ version:            0.1.0.0
 license:            MIT
 
 -- The file containing the license text.
-license-file:       LICENSE
+-- license-file:
 
 -- The package author(s).
-author:             Alex Jercan
+author:             Twitch Chat
 
 -- An email address to which users can send suggestions, bug reports, and patches.
 maintainer:         jercan_alex27@yahoo.com

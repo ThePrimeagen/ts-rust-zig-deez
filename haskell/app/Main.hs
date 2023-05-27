@@ -1,6 +1,6 @@
 module Main where
 
-import Lexer qualified (Token (..), tokenize)
+import Lexer qualified (tokenize)
 
 main :: IO ()
-main = interact $ show . takeWhile (/= Lexer.Eof) . Lexer.tokenize
+main = interact $ show . Lexer.tokenize
