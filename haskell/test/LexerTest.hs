@@ -1,7 +1,14 @@
 module LexerTest where
 
-import Lexer (Token (..), tokenize)
+import Lexer (Token (..), mkLexer, nextToken)
 import Test.HUnit
+
+tokenize :: String -> [Token]
+tokenize = go . mkLexer
+  where
+    go lexer = case nextToken lexer of
+        (_, Eof) -> [Eof]
+        (lexer', token) -> token : go lexer'
 
 testToknizeInitial :: Test
 testToknizeInitial = TestCase $ do
