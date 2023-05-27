@@ -44,7 +44,7 @@ class Tokenizer {
   Token _lookupIdent(String ident) {
     return switch (ident) {
       "let" => Token.let(),
-      "fn" => Token.function(),
+      "fn" => Token.fn(),
       _ => Token.ident(ident),
     };
   }

@@ -65,7 +65,7 @@ class Token {
       : type = TokenType.rSquirly,
         literal = "}";
 
-  const Token.function()
+  const Token.fn()
       : type = TokenType.function,
         literal = "fn";
 
