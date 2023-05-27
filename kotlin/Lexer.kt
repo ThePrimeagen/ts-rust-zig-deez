@@ -1,16 +1,16 @@
 object Lexer {
     fun parseToken(value: String) : Sequence<Token>  = sequence {
-        val input = LexerInput(value)
-        while(input.hasNext()) {
-            val next = input.peek()
+        val tokenizer = Tokenizer(value)
+        while(tokenizer.hasNext()) {
+            val next = tokenizer.peek()
             when {
                 next.isLetter() ->
-                    yield(input.nextUntil { !it.isLetterOrDigit() && !it.isUnderscore() }.asToken())
+                    yield(tokenizer.nextUntil { !it.isLetterOrDigit() && !it.isUnderscore() }.asToken())
                 next.isDigit() ->
-                    yield(Token(type = TokenType.INT, value = input.nextUntil { !it.isDigit() }))
+                    yield(Token(type = TokenType.INT, value = tokenizer.nextUntil { !it.isDigit() }))
                 next.isDoubleQuote() ->
-                    yield(Token(type = TokenType.STRING, value = input.nextTo(true) { it.isDoubleQuote() }))
-                else -> yield(input.next().asToken())
+                    yield(Token(type = TokenType.STRING, value = tokenizer.nextTo(true) { it.isDoubleQuote() }))
+                else -> yield(tokenizer.next().asToken())
             }
         }
 
@@ -18,7 +18,7 @@ object Lexer {
     }
 }
 
-class LexerInput(value: String) {
+class Tokenizer(value: String) {
     private var position = 0
     private val value = value.trim()
 
