@@ -1,5 +1,5 @@
-import tokens
-from tokens import Token, FIXED_TOKENS, RESERVED_KEYWORDS
+import monkey.token_types as TokenType
+from monkey.token import Token, FIXED_TOKENS, RESERVED_KEYWORDS
 
 
 def is_letter(ch):
@@ -34,22 +34,24 @@ class Lexer:
         # I dont wanna write if else for each character
         tok = FIXED_TOKENS.get(self.ch,None)
         match tok:
-            case Token(tokens.ASSING):
+            case Token(TokenType.ASSING):
                 #PEEK
                 if self.peek_char() == "=":
+                    self.read_char()
                     tok = FIXED_TOKENS.get("==")
-            case Token(tokens.BANG):
+            case Token(TokenType.BANG):
                 #PEEK
                 if self.peek_char() == "=":
+                    self.read_char()
                     tok = FIXED_TOKENS.get("!=")
             case None:
                 if is_letter(self.ch):
-                    indent = self.read_ident()
-                    tok = RESERVED_KEYWORDS.get(indent,Token(tokens.IDENT,indent))
+                    ident = self.read_ident()
+                    tok = RESERVED_KEYWORDS.get(ident,Token(TokenType.IDENT,ident))
                     return tok
                 elif self.ch.isdigit():
-                    return Token(tokens.INT, self.read_int())
-                tok = Token(tokens.ILLEGAL,tokens.ILLEGAL)
+                    return Token(TokenType.INT, self.read_int())
+                tok = Token(TokenType.ILLEGAL,TokenType.ILLEGAL)
         
         self.read_char()
         return tok
