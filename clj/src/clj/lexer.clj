@@ -8,7 +8,8 @@
   (Character/isWhitespace chr))
 
 (defn letter? [^Character chr]
-  (Character/isLetter chr))
+  (or (Character/isLetter chr)
+      (= chr \_)))
 
 (defn digit? [^Character chr]
   (Character/isDigit chr))
