@@ -25,7 +25,11 @@ and expression =
       { parameters : identifier list
       ; body : block
       }
-[@@deriving show]
+  | Call of
+      { fn : expression
+      ; args : expression list
+      }
+[@@deriving show { with_path = false }, sexp]
 
 and statement =
   | Let of
@@ -35,9 +39,9 @@ and statement =
   | Return of expression
   | ExpressionStatement of expression
   | BlockStatement of block
-[@@deriving show]
+[@@deriving show { with_path = false }, sexp]
 
-and identifier = { identifier : string }
+and identifier = { identifier : string } [@@deriving sexp]
 and block = { block : statement list }
 and program = { statements : statement list }
 

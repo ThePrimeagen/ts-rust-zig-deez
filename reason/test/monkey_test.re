@@ -3,17 +3,18 @@ open Monkey;
 
 let testable_token = testable(Token.pp, (a, b) => a == b);
 let test_token_sequence = (input, expected_tokens) => {
-  let lexer = ref(Lexer.init(input));
+  let rec loop = (lexer, expected_tokens, index) =>
+    switch (expected_tokens) {
+    | [] => ()
+    | [expected_token, ...rest] =>
+      let (new_lexer, token) = Lexer.next_token(lexer);
 
-  List.iter2(
-    (expected_token, token_index) => {
-      let (new_lexer, token) = Lexer.next_token(lexer^);
-      check(testable_token, token_index, expected_token, token);
-      lexer := new_lexer;
-    },
-    expected_tokens,
-    List.init(List.length(expected_tokens), i => string_of_int(i)),
-  );
+      check(testable_token, string_of_int(index), expected_token, token);
+
+      loop(new_lexer, rest, index + 1);
+    };
+
+  loop(Lexer.init(input), expected_tokens, 0);
 };
 
 let next_token = () => {
@@ -62,7 +63,7 @@ let test_illegal_characters = () => {
   let lexer = Lexer.init(input);
   let (_new_lexer, token) = Lexer.next_token(lexer);
 
-  check(testable_token, "Illegal Characters", Token.Illegal, token);
+  check(testable_token, "Illegal character", Token.Illegal, token);
 };
 
 let test_mixed_input = () => {

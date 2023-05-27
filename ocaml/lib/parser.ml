@@ -23,6 +23,7 @@ let token_prec : Token.t -> precedence = function
   | LessThan | GreaterThan -> `LessGreater
   | Plus | Minus -> `Sum
   | Slash | Asterisk -> `Product
+  | LeftParen -> `Call
   | _ -> `Lowest
 ;;
 
@@ -129,17 +130,13 @@ let init lexer =
 let rec parse parser =
   let rec parse' parser statements =
     match parser.current with
-    | Some _ -> begin
-      match parse_statement parser with
-      | Ok (parser, stmt) ->
-        let parser = advance parser in
-        parse' parser (stmt :: statements)
-      | Error msg -> err parser msg statements
-    end
-    | None -> Ok (parser, statements)
+    | Some _ ->
+      (match parse_statement parser with
+       | Ok (parser, stmt) -> parse' (advance parser) (stmt :: statements)
+       | Error msg -> err parser msg statements)
+    | None -> Ok (parser, List.rev statements)
   in
   let* _, statements = parse' parser [] in
-  let statements = List.rev statements in
   Ok (Ast.Program { statements })
 
 and parse_statement parser =
@@ -147,7 +144,7 @@ and parse_statement parser =
   | Some Token.Let -> parse_let parser
   | Some Token.Return -> parse_return parser
   | Some _ -> parse_expression_statement parser
-  | None -> Error "no more toks"
+  | None -> Error "no more tokens"
 
 and parse_let parser =
   let* parser, name = parse_identifier parser in
@@ -159,7 +156,10 @@ and parse_let parser =
   Ok (parser, Ast.Let { name; value })
 
 and parse_return parser =
+  (* Move parser onto expression *)
+  let parser = advance parser in
   let* parser, expr = parse_expression parser `Lowest in
+  let parser = chomp_semicolon parser in
   Ok (parser, Ast.Return expr)
 
 and parse_expression_statement parser =
@@ -176,13 +176,13 @@ and parse_block parser =
   let parser = advance parser in
   let rec parse_block' parser statements =
     match parser.current with
-    | Some Token.RightBrace | None -> Ok (parser, statements)
-    | _ ->
+    | Some Token.RightBrace -> Ok (parser, List.rev statements)
+    | Some _ ->
       let* parser, statement = parse_statement parser in
       parse_block' (advance parser) (statement :: statements)
+    | None -> Error "unexpected eof"
   in
   let* parser, block = parse_block' parser [] in
-  let block = List.rev block in
   Ok (parser, Ast.{ block })
 
 and parse_expression parser prec =
@@ -215,7 +215,7 @@ and parse_prefix_expression parser =
   | Token.LeftParen -> expr_parse_grouped parser
   | Token.If -> expr_parse_if parser
   | Token.Function -> expr_parse_fn parser
-  | tok -> Error (Fmt.failwith "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
+  | tok -> Error (Fmt.str "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
 
 and parse_infix_expression parser left =
   let operator = parser.current |> Option.value_exn in
@@ -223,6 +223,25 @@ and parse_infix_expression parser left =
   let parser = advance parser in
   let* parser, right = parse_expression parser prec in
   Ok (parser, Ast.Infix { left; operator; right })
+
+and parse_call_expression parser fn =
+  let rec parse_list_of_arguments parser args =
+    match parser.peek with
+    | Some Token.RightParen -> Ok (advance parser, Ast.Call { fn; args = List.rev args })
+    | Some Token.Comma ->
+      let parser = advance parser in
+      let parser = advance parser in
+      let* parser, expr = parse_expression parser `Lowest in
+      parse_list_of_arguments parser (expr :: args)
+    | _ -> Error "unexpected next token"
+  in
+  match parser.peek with
+  | Some Token.RightParen -> parse_list_of_arguments parser []
+  | Some _ ->
+    let parser = advance parser in
+    let* parser, expr = parse_expression parser `Lowest in
+    parse_list_of_arguments parser [ expr ]
+  | None -> Error "hit eof"
 
 and get_infix_fn parser =
   let open Token in
@@ -235,6 +254,7 @@ and get_infix_fn parser =
   | Some NotEqual
   | Some LessThan
   | Some GreaterThan -> Some parse_infix_expression
+  | Some LeftParen -> Some parse_call_expression
   | _ -> None
 
 and expr_parse_identifier parser =
@@ -289,42 +309,49 @@ and expr_parse_if parser =
   in
   Ok (parser, Ast.If { condition; consequence; alternative })
 
+and read_identifier parser =
+  match parser.current with
+  | Some (Token.Ident identifier) -> Ok Ast.{ identifier }
+  | _ -> Error "expected to read identifier"
+
 and expr_parse_fn parser =
-  let _read_identifier parser =
-    match parser.current with
-    | Some (Token.Ident identifier) -> Ok Ast.{ identifier }
-    | _ -> Error "expected to read identifier"
-  in
-  let expr_parse_fn_parameters parser =
+  let rec parse_list_of_parameters parser parameters =
     match parser.peek with
-    | Some Token.RightParen -> Ok (advance parser, [])
-    | Some (Token.Ident identifier) ->
-      let identifier = Ast.{ identifier } in
-      let parameters = ref [ identifier ] in
-      (* while peek_is parser Token.Comma do *)
-      (*   let parser = advance parser in *)
-      (*   let parser = advance parser in *)
-      (*   let* parser, identifer = read_identifier parser in *)
-      (*   parameters := parameters @ [ identifier ] *)
-      (* done; *)
-      Ok (parser, !parameters)
-    | _ -> Error "musst be identifier for parameter list"
+    | Some Token.RightParen -> Ok (advance parser, parameters)
+    | Some Token.Comma ->
+      let parser = advance parser in
+      let parser = advance parser in
+      let* ident = read_identifier parser in
+      parse_list_of_parameters parser (ident :: parameters)
+    | Some tok -> Error (Fmt.str "unexpected next parameter token %a" Token.pp tok)
+    | None -> Error "unexpected end of stream"
   in
   let* parser = expect_lparen parser in
-  let* parser, parameters = expr_parse_fn_parameters parser in
+  let* parser, parameters =
+    match parser.peek with
+    | Some Token.RightParen -> parse_list_of_parameters parser []
+    | Some (Token.Ident _) ->
+      let parser = advance parser in
+      let* identifier = read_identifier parser in
+      parse_list_of_parameters parser [ identifier ]
+    | _ -> Error "unexpected start of parameter list"
+  in
   let* parser = expect_lbrace parser in
   let* parser, body = parse_block parser in
   Ok (parser, Ast.FunctionLiteral { parameters; body })
 ;;
 
-let rec string_of_statement = function
+let string_of_statement = function
   | Ast.Let stmt ->
-    Fmt.str "LET: let %s = %s" (string_of_ident stmt.name) (show_expression stmt.value)
+    Fmt.str
+      "LET: let %s = %s"
+      (Ast.show_identifier stmt.name)
+      (show_expression stmt.value)
   | Return expr -> Fmt.str "RETURN %s" (show_expression expr)
   | ExpressionStatement expr -> Fmt.str "EXPR: %s;" (show_expression expr)
   | BlockStatement _ -> assert false
 
-and string_of_ident ident = ident.identifier
+and string_of_ident ident = Ast.(ident.identifier)
 
 let print_node = function
   | Ast.Program program ->
@@ -334,74 +361,74 @@ let print_node = function
   | _ -> failwith "yaya"
 ;;
 
-let expect_program input =
-  let lexer = Lexer.init input in
-  let parser = init lexer in
-  let program = parse parser in
-  match program with
-  | Ok program -> print_node program
-  | Error msg -> Fmt.failwith "%a@." pp_parse_error msg
-;;
+module Tests = struct
+  let expect_program input =
+    let lexer = Lexer.init input in
+    let parser = init lexer in
+    let program = parse parser in
+    match program with
+    | Ok program -> print_node program
+    | Error msg -> Fmt.failwith "%a@." pp_parse_error msg
+  ;;
 
-let%expect_test "series of let statements" =
-  expect_program {|
+  let%expect_test "series of let statements" =
+    expect_program {|
 let x = 5;
 let y = foo;
 let a = true;
 let b = false;
     |};
-  [%expect
-    {|
+    [%expect
+      {|
     Program: [
-      LET: let x = (Ast.Integer 5)
-      LET: let y = (Ast.Identifier { Ast.identifier = "foo" })
-      LET: let a = (Ast.Boolean true)
-      LET: let b = (Ast.Boolean false)
+      LET: let { identifier = "x" } = (Integer 5)
+      LET: let { identifier = "y" } = (Identifier { identifier = "foo" })
+      LET: let { identifier = "a" } = (Boolean true)
+      LET: let { identifier = "b" } = (Boolean false)
     ] |}]
-;;
+  ;;
 
-let%expect_test "single let statement" =
-  expect_program "let x = 5;";
-  [%expect {|
+  let%expect_test "single let statement" =
+    expect_program "let x = 5;";
+    [%expect {|
     Program: [
-      LET: let x = (Ast.Integer 5)
+      LET: let { identifier = "x" } = (Integer 5)
     ] |}]
-;;
+  ;;
 
-let%expect_test "expression statement" =
-  expect_program "35;";
-  [%expect {|
+  let%expect_test "expression statement" =
+    expect_program "35;";
+    [%expect {|
     Program: [
-      EXPR: (Ast.Integer 35);
+      EXPR: (Integer 35);
     ] |}]
-;;
+  ;;
 
-let%expect_test "let statement with infix" =
-  expect_program "let x = 1 + 2;";
-  [%expect
-    {|
+  let%expect_test "let statement with infix" =
+    expect_program "let x = 1 + 2;";
+    [%expect
+      {|
     Program: [
-      LET: let x = Ast.Infix {left = (Ast.Integer 1); operator = Token.Plus;
-      right = (Ast.Integer 2)}
+      LET: let { identifier = "x" } = Infix {left = (Integer 1); operator = Token.Plus; right = (Integer 2)}
     ] |}]
-;;
+  ;;
 
-let%expect_test "let statement errors" =
-  let input = {|
+  let%expect_test "let statement errors" =
+    let input = {|
 let x = 5;
 let y = 10;
 let z = !10;
 let 838383; |} in
-  let lexer = Lexer.init input in
-  let parser = init lexer in
-  let program = parse parser in
-  begin
-    match program with
-    | Ok _ -> failwith "should not succeed"
-    | Error msg -> Fmt.pr "%a@." pp_parse_error msg
-  end;
-  [%expect
-    {|
+    let lexer = Lexer.init input in
+    let parser = init lexer in
+    let program = parse parser in
+    begin
+      match program with
+      | Ok _ -> failwith "should not succeed"
+      | Error msg -> Fmt.pr "%a@." pp_parse_error msg
+    end;
+    [%expect
+      {|
     { Parser.msg = "missing ident";
       parser =
       { Parser.lexer =
@@ -409,69 +436,106 @@ let 838383; |} in
           position = 47; ch = (Some ';') };
         current = (Some Token.Let); peek = (Some (Token.Integer "838383")) };
       statements =
-      [Ast.Let {name = { Ast.identifier = "z" };
-         value = Ast.Prefix {operator = Token.Bang; right = (Ast.Integer 10)}};
-        Ast.Let {name = { Ast.identifier = "y" }; value = (Ast.Integer 10)};
-        Ast.Let {name = { Ast.identifier = "x" }; value = (Ast.Integer 5)}]
+      [Let {name = { identifier = "z" };
+         value = Prefix {operator = Token.Bang; right = (Integer 10)}};
+        Let {name = { identifier = "y" }; value = (Integer 10)};
+        Let {name = { identifier = "x" }; value = (Integer 5)}]
       } |}]
-;;
+  ;;
 
-let%expect_test "grouped expressions" =
-  expect_program "((1 + foo) *   12)";
-  [%expect
-    {|
+  let%expect_test "grouped expressions" =
+    expect_program "((1 + foo) *   12)";
+    [%expect
+      {|
     Program: [
-      EXPR: Ast.Infix {
+      EXPR: Infix {
       left =
-      Ast.Infix {left = (Ast.Integer 1); operator = Token.Plus;
-        right = (Ast.Identifier { Ast.identifier = "foo" })};
-      operator = Token.Asterisk; right = (Ast.Integer 12)};
+      Infix {left = (Integer 1); operator = Token.Plus;
+        right = (Identifier { identifier = "foo" })};
+      operator = Token.Asterisk; right = (Integer 12)};
     ] |}]
-;;
+  ;;
 
-let%expect_test "if expressions" =
-  expect_program "if (x < y) { x }";
-  expect_program "if (x < y) { x } else { y }";
-  [%expect
-    {|
+  let%expect_test "if expressions" =
+    expect_program "if (x < y) { x }";
+    expect_program "if (x < y) { x } else { y }";
+    expect_program "if (x < y) { return x } else { return y }";
+    [%expect
+      {|
     Program: [
-      EXPR: Ast.If {
+      EXPR: If {
       condition =
-      Ast.Infix {left = (Ast.Identifier { Ast.identifier = "x" });
-        operator = Token.LessThan;
-        right = (Ast.Identifier { Ast.identifier = "y" })};
+      Infix {left = (Identifier { identifier = "x" }); operator = Token.LessThan;
+        right = (Identifier { identifier = "y" })};
       consequence =
-      { Ast.block =
-        [(Ast.ExpressionStatement (Ast.Identifier { Ast.identifier = "x" }))] };
+      { block = [(ExpressionStatement (Identifier { identifier = "x" }))] };
       alternative = None};
     ]
     Program: [
-      EXPR: Ast.If {
+      EXPR: If {
       condition =
-      Ast.Infix {left = (Ast.Identifier { Ast.identifier = "x" });
-        operator = Token.LessThan;
-        right = (Ast.Identifier { Ast.identifier = "y" })};
+      Infix {left = (Identifier { identifier = "x" }); operator = Token.LessThan;
+        right = (Identifier { identifier = "y" })};
       consequence =
-      { Ast.block =
-        [(Ast.ExpressionStatement (Ast.Identifier { Ast.identifier = "x" }))] };
+      { block = [(ExpressionStatement (Identifier { identifier = "x" }))] };
       alternative =
-      (Some { Ast.block =
-              [(Ast.ExpressionStatement (Ast.Identifier { Ast.identifier = "y" }))
-                ]
-              })};
+      (Some { block = [(ExpressionStatement (Identifier { identifier = "y" }))] })};
+    ]
+    Program: [
+      EXPR: If {
+      condition =
+      Infix {left = (Identifier { identifier = "x" }); operator = Token.LessThan;
+        right = (Identifier { identifier = "y" })};
+      consequence = { block = [(Return (Identifier { identifier = "x" }))] };
+      alternative =
+      (Some { block = [(Return (Identifier { identifier = "y" }))] })};
     ] |}]
-;;
+  ;;
 
-let%expect_test "function literals" =
-  (* expect_program "fn(x, y) { return x + y }"; *)
-  [%expect {||}]
-;;
+  let%expect_test "function literals" =
+    expect_program "fn(x, y) { return x + y; }";
+    [%expect
+      {|
+      Program: [
+        EXPR: FunctionLiteral {parameters = [{ identifier = "y" }; { identifier = "x" }];
+        body =
+        { block =
+          [(Return
+              Infix {left = (Identifier { identifier = "x" });
+                operator = Token.Plus; right = (Identifier { identifier = "y" })})
+            ]
+          }};
+      ] |}]
+  ;;
 
-let%expect_test "precedence comparisons" =
-  let cmp a b = Fmt.pr "%a > %a -> %b@." pp_precedence a pp_precedence b (prec_gte a b) in
-  cmp `Lowest `Call;
-  cmp `Lowest `Lowest;
-  [%expect {|
+  let%expect_test "function calls" =
+    expect_program "let x = add(a, b);";
+    expect_program "let x = empty();";
+    expect_program "let x = single(a);";
+    [%expect
+      {|
+    Program: [
+      LET: let { identifier = "x" } = Call {fn = (Identifier { identifier = "add" });
+      args =
+      [(Identifier { identifier = "a" }); (Identifier { identifier = "b" })]}
+    ]
+    Program: [
+      LET: let { identifier = "x" } = Call {fn = (Identifier { identifier = "empty" }); args = []}
+    ]
+    Program: [
+      LET: let { identifier = "x" } = Call {fn = (Identifier { identifier = "single" });
+      args = [(Identifier { identifier = "a" })]}
+    ] |}]
+  ;;
+
+  let%expect_test "precedence comparisons" =
+    let cmp a b =
+      Fmt.pr "%a > %a -> %b@." pp_precedence a pp_precedence b (prec_gte a b)
+    in
+    cmp `Lowest `Call;
+    cmp `Lowest `Lowest;
+    [%expect {|
     `Lowest > `Call -> false
     `Lowest > `Lowest -> true |}]
-;;
+  ;;
+end
