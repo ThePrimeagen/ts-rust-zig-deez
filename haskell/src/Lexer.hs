@@ -51,7 +51,7 @@ nextToken lexer = case peek lexer of
         | isSpace x -> nextToken $ advance lexer
         | isIdentChar x -> readIdent lexer
         | isDigit x -> readInt lexer
-    _ -> (lexer, Illegal)
+    _ -> (advance lexer, Illegal)
 
 readIdent :: Lexer -> (Lexer, Token)
 readIdent lexer = identToken <$> until (not . isIdentChar . peek . fst) step (lexer, "")
