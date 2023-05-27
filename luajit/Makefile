@@ -27,5 +27,6 @@ lint:
 
 test:
 	@echo "===> Testing"
-	# TODO: add yours
+	@pwd
+	luajit ./lexer/test.lua
 
