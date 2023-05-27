@@ -1,3 +1,5 @@
+.PHONY: help ready docker-build docker-ready fmt lint test
+
 ##
 # Static part, don't change these:
 ##
