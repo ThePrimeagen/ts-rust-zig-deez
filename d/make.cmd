@@ -41,12 +41,13 @@
 
 :"fmt"
 	@echo "===> Formatting"
-	@rem TODO: add yours
+	dfmt -i source/*
 	@if %ready%=="yes" goto "lint" else goto exit
 
 :"lint"
 	@echo "===> Linting"
-	@rem TODO: add yours
+	dscanner --syntaxCheck source/*
+	dscanner --styleCheck source/*
 	@if %ready%=="yes" goto "test" else goto exit
 
 :"test"

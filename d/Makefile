@@ -19,11 +19,12 @@ docker-ready: docker-build
 
 fmt:
 	@echo "===> Formatting"
-	# TODO: add yours
+	dfmt -i source/*
 
 lint:
 	@echo "===> Linting"
-	# TODO: add yours
+	dscanner --syntaxCheck source/*
+	dscanner --styleCheck source/*
 
 test:
 	@echo "===> Testing"

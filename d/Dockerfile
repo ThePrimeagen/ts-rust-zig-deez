@@ -9,10 +9,13 @@ RUN apt-get update && \
     apt install -y software-properties-common git curl build-essential && \
     add-apt-repository --yes ppa:neovim-ppa/unstable && \
     apt-get install -y neovim
-# TODO: add yours
 
 # Extra dependencies
-# TODO: add yours
+RUN curl -fsS https://dlang.org/install.sh | bash -s dmd
+RUN apt-get install -y dub
+
+dub run dfmt -- -h
+dub run dscanner -- -h
 
 # Commands for docker run
 CMD make fmt && \

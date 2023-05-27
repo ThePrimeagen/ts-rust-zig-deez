@@ -665,3 +665,20 @@ tags
 # Persistent undo
 [._]*.un~
 
+#Dlang specific
+.dub
+docs.json
+__dummy.html
+docs/
+/lexer
+liblexer.so
+liblexer.dylib
+liblexer.dll
+liblexer.a
+liblexer.lib
+liblexer-test-*
+lib*.exe
+*.pdb
+*.o
+*.obj
+*.lst

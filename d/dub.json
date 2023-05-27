@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"ToraKuma42"
+	],
+	"copyright": "Copyright © 2023, ToraKuma42",
+	"description": "DLang lexer for Degens Interpreter Competition",
+	"license": "MIT",
+	"name": "lexer"
+}
