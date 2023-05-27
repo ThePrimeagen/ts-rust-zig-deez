@@ -1,0 +1,43 @@
+*.annot
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+
+# ocamlbuild working directory
+_build/
+
+# ocamlbuild targets
+*.byte
+*.native
+
+# oasis generated files
+setup.data
+setup.log
+
+# Merlin configuring file for Vim and Emacs
+.merlin
+
+# Dune generated files
+*.install
+
+# Local OPAM switch
+_opam/
+
+# duniverse is from opam-monorepo
+duniverse/
+
+*.scip
+
+db.sqlite
+database/
+
+node_modules/
+_esy/
+esy.lock/
+
+profile.dump
