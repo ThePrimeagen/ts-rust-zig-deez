@@ -1,23 +1,8 @@
 module Lexer (tokenize, Token (..)) where
 
+import Data.Bifunctor (Bifunctor (first))
 import Data.Char (isDigit, isLetter, isSpace)
-
-data Token
-    = Ident String
-    | Int String
-    | Illegal
-    | Eof
-    | Equal
-    | Comma
-    | Plus
-    | Semicolon
-    | LParen
-    | RParen
-    | LSquirly
-    | RSquirly
-    | Function
-    | Let
-    deriving (Show, Eq)
+import Token (Token (..), identToken)
 
 isIdentChar :: Char -> Bool
 isIdentChar c = isLetter c || c == '_'
@@ -26,38 +11,36 @@ tokenize :: String -> [Token]
 tokenize input = lexer input []
 
 lexer :: String -> [Token] -> [Token]
-lexer [] tokens = reverse $ Eof : tokens
-lexer input@(x : xs) tokens
-    | isSpace x = lexer xs tokens
-    | otherwise = lexer rest (token : tokens)
+lexer [] = reverse . (Eof :)
+lexer input@(x : xs)
+    | isSpace x = lexer xs
+    | otherwise = lexer rest . (token :)
   where
     (token, rest) = nextToken input
 
 nextToken :: String -> (Token, String)
 nextToken [] = (Eof, [])
-nextToken ('=' : xs) = (Equal, xs)
-nextToken (',' : xs) = (Comma, xs)
+nextToken ('=' : xs) = (Assign, xs)
 nextToken ('+' : xs) = (Plus, xs)
+nextToken ('-' : xs) = (Minus, xs)
+nextToken ('!' : xs) = (Bang, xs)
+nextToken ('*' : xs) = (Asterisk, xs)
+nextToken ('/' : xs) = (Slash, xs)
+nextToken ('<' : xs) = (LessThan, xs)
+nextToken ('>' : xs) = (GreaterThan, xs)
+nextToken (',' : xs) = (Comma, xs)
 nextToken (';' : xs) = (Semicolon, xs)
 nextToken ('(' : xs) = (LParen, xs)
 nextToken (')' : xs) = (RParen, xs)
 nextToken ('{' : xs) = (LSquirly, xs)
 nextToken ('}' : xs) = (RSquirly, xs)
-nextToken input@(x : xs)
+nextToken input@(x : _)
     | isIdentChar x = readIdent input
     | isDigit x = readInt input
-    | otherwise = (Illegal, xs)
+nextToken _ = (Illegal, [])
 
 readIdent :: String -> (Token, String)
-readIdent input = (token, rest)
-  where
-    (ident, rest) = span isIdentChar input
-    token = case ident of
-        "fn" -> Function
-        "let" -> Let
-        _ -> Ident ident
+readIdent = first identToken . span isIdentChar
 
 readInt :: String -> (Token, String)
-readInt input = (Int int, rest)
-  where
-    (int, rest) = span isDigit input
+readInt = first Int . span isDigit

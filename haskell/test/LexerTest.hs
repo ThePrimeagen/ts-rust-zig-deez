@@ -3,19 +3,26 @@ module LexerTest where
 import Lexer (Token (..), tokenize)
 import Test.HUnit
 
-testGetNextToken :: Test
-testGetNextToken = TestCase $ do
+testToknizeInitial :: Test
+testToknizeInitial = TestCase $ do
     let input = "=+(){},;"
-    let expected = [Equal, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon]
-    let tokens = take (length expected) $ tokenize input
-    assertEqual "testGetNextToken" expected tokens
+    let expected = [Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon, Eof]
+    let tokens = tokenize input
+    assertEqual "testToknizeInitial" expected tokens
 
-testGetNextComplete :: Test
-testGetNextComplete = TestCase $ do
+testTokenizeBasic :: Test
+testTokenizeBasic = TestCase $ do
     let input = unlines ["let five = 5;", "let ten = 10;", "let add = fn(x, y) {", "x + y;", "};", "let result = add(five, ten);"]
-    let expected = [Let, Ident "five", Equal, Int "5", Semicolon, Let, Ident "ten", Equal, Int "10", Semicolon, Let, Ident "add", Equal, Function, LParen, Ident "x", Comma, Ident "y", RParen, LSquirly, Ident "x", Plus, Ident "y", Semicolon, RSquirly, Semicolon, Let, Ident "result", Equal, Ident "add", LParen, Ident "five", Comma, Ident "ten", RParen, Semicolon]
-    let tokens = take (length expected) $ tokenize input
-    assertEqual "testGetNextComplete" expected tokens
+    let expected = [Let, Ident "five", Assign, Int "5", Semicolon, Let, Ident "ten", Assign, Int "10", Semicolon, Let, Ident "add", Assign, Function, LParen, Ident "x", Comma, Ident "y", RParen, LSquirly, Ident "x", Plus, Ident "y", Semicolon, RSquirly, Semicolon, Let, Ident "result", Assign, Ident "add", LParen, Ident "five", Comma, Ident "ten", RParen, Semicolon, Eof]
+    let tokens = tokenize input
+    assertEqual "testTokenizeBasic" expected tokens
+
+testTokenizeExtended :: Test
+testTokenizeExtended = TestCase $ do
+    let input = unlines ["let five = 5;", "", "let ten = 10;", "", "let add = fn(x, y) {", "    x + y;", "};", "", "let result = add(five, ten);", "!-/*5;", "5 < 10 > 5;", "", "if (5 < 10) {", "    return true;", "} else {", "    return false;", "}"]
+    let expected = [Let, Ident "five", Assign, Int "5", Semicolon, Let, Ident "ten", Assign, Int "10", Semicolon, Let, Ident "add", Assign, Function, LParen, Ident "x", Comma, Ident "y", RParen, LSquirly, Ident "x", Plus, Ident "y", Semicolon, RSquirly, Semicolon, Let, Ident "result", Assign, Ident "add", LParen, Ident "five", Comma, Ident "ten", RParen, Semicolon, Bang, Minus, Slash, Asterisk, Int "5", Semicolon, Int "5", LessThan, Int "10", GreaterThan, Int "5", Semicolon, If, LParen, Int "5", LessThan, Int "10", RParen, LSquirly, Return, TrueTok, Semicolon, RSquirly, Else, LSquirly, Return, FalseTok, Semicolon, RSquirly, Eof]
+    let tokens = tokenize input
+    assertEqual "testTokenizeExtended" expected tokens
 
 lexerTests :: Test
-lexerTests = TestList [TestLabel "testGetNextToken" testGetNextToken, TestLabel "testGetNextComplete" testGetNextComplete]
+lexerTests = TestList [TestLabel "testToknizeInitial" testToknizeInitial, TestLabel "testTokenizeBasic" testTokenizeBasic, TestLabel "testTokenizeExtended" testTokenizeExtended]

@@ -62,7 +62,7 @@ library
     exposed-modules:  Lexer
 
     -- Modules included in this library but not exported.
-    -- other-modules:
+    other-modules:    Token
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
