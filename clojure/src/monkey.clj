@@ -1,4 +1,5 @@
-(ns monkey)
+(ns monkey
+  (:import [java.lang Character]))
 
 (def keywords
   {"fn" :function
@@ -9,69 +10,56 @@
   (contains? keywords word))
 
 (defn letter?
-  [ch]
-  (or (and (>= (int ch) (int \a))
-           (<= (int ch) (int \z)))
-      (and (>= (int ch) (int \A))
-           (<= (int ch) (int \Z)))
-      (= ch \_)))
-
-(defn read-word
-  [input]
-  (loop [[ch & rest] input
-         pos 0
-         word []]
-    (if (letter? ch)
-      (recur rest (inc pos) (conj word ch))
-      [(apply str word) pos])))
+  [^Character ch]
+  (or (Character/isLetter ch)
+      (= \_ ch)))
 
 (defn read-word-or-token
   [input]
-  (let [[word pos] (read-word input)]
-    [(if (monkey-keyword? word)
+  (let [[word rest] (split-with letter? input)
+        word (apply str word)]
+    [rest
+     (if (monkey-keyword? word)
        {:token (get keywords word)}
-       {:token :ident, :literal word})
-     pos]))
+       {:token :ident, :literal word})]))
 
 (defn monkey-number?
-  [ch]
-  (and (>= (int ch) (int \0))
-       (<= (int ch) (int \9))))
+  [^Character ch]
+  (Character/isDigit ch))
 
 (defn read-number
   [input]
-  (loop [[ch & rest] input
-         pos 0
-         num []]
-    (if (monkey-number? ch)
-      (recur rest (inc pos) (conj num ch))
-      [{:token :int, :literal (Integer/parseInt (apply str num))} pos])))
+  (let [[word rest] (split-with monkey-number? input)
+        word (apply str word)]
+    [rest
+     {:token :int, :literal (Integer/parseInt word)}]))
 
 (defn skip-whitespace
   [input]
-  (drop-while #(contains? #{\return \newline \tab \space} %) input))
+  (drop-while #(Character/isWhitespace %) input))
 
-(defn make-token
-  [type]
-  [{:token type} 1])
+(defn ch->token
+  [ch]
+  (case ch
+    \{ {:token :lbrace}
+    \} {:token :rbrace}
+    \( {:token :lparen}
+    \) {:token :rparen}
+    \, {:token :comma}
+    \; {:token :semicolon}
+    \+ {:token :plus}
+    \= {:token :equal}
+    {:token :illegal, :literal ch}))
 
-(defn tokenize
-  ([input] (tokenize (skip-whitespace input) []))
+(defn parse
+  ([input] (parse (skip-whitespace input) []))
   ([input tokens]
    (if (empty? input)
      (conj tokens {:token :eof})
-     (let [current (first input)
-           [token n] (cond
-                       (= \{ current) (make-token :lbrace)
-                       (= \} current) (make-token :rbrace)
-                       (= \( current) (make-token :lparen)
-                       (= \) current) (make-token :rparen)
-                       (= \, current) (make-token :comma)
-                       (= \; current) (make-token :semicolon)
-                       (= \+ current) (make-token :plus)
-                       (= \= current) (make-token :equal)
-                       (letter? current) (read-word-or-token input)
-                       (monkey-number? current) (read-number input)
-                       :else {:token :illegal, :literal current})]
-       (recur (skip-whitespace (drop n input))
+     (let [[ch & rest] input
+           [rest token] (cond
+                          (letter? ch) (read-word-or-token input)
+                          (monkey-number? ch) (read-number input)
+                          :else [rest (ch->token ch)])]
+       (recur (skip-whitespace rest)
               (conj tokens token))))))
