@@ -19,91 +19,45 @@ data Token
     | Let
     deriving (Show, Eq)
 
-data Lexer = Lexer
-    { input :: String
-    , position :: Int
-    , readPosition :: Int
-    , ch :: Char
-    }
-
-newLexer :: String -> Lexer
-newLexer input =
-    readChar
-        Lexer
-            { input = input
-            , position = 0
-            , readPosition = 0
-            , ch = '\0'
-            }
+isIdentChar :: Char -> Bool
+isIdentChar c = isLetter c || c == '_'
 
 tokenize :: String -> [Token]
-tokenize = takeWhile (/= Lexer.Eof) . tokenize' . newLexer
+tokenize input = lexer input []
 
-tokenize' :: Lexer -> [Token]
-tokenize' lexer = tok : tokenize' lexer'
+lexer :: String -> [Token] -> [Token]
+lexer [] tokens = reverse $ Eof : tokens
+lexer input@(x : xs) tokens
+    | isSpace x = lexer xs tokens
+    | otherwise = lexer rest (token : tokens)
   where
-    (lexer', tok) = nextToken lexer
+    (token, rest) = nextToken input
 
-nextToken :: Lexer -> (Lexer, Token)
-nextToken lexer =
-    let
-        lexer' = skipWhitespace lexer
-        (lexer'', tok) = case ch lexer' of
-            '=' -> (readChar lexer', Equal)
-            ';' -> (readChar lexer', Semicolon)
-            '(' -> (readChar lexer', LParen)
-            ')' -> (readChar lexer', RParen)
-            ',' -> (readChar lexer', Comma)
-            '+' -> (readChar lexer', Plus)
-            '{' -> (readChar lexer', LSquirly)
-            '}' -> (readChar lexer', RSquirly)
-            '\0' -> (readChar lexer', Eof)
-            _ ->
-                if ch lexer' `elem` ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['_']
-                    then
-                        let (lexer''', ident) = readIdent lexer'
-                         in case ident of
-                                "fn" -> (lexer''', Function)
-                                "let" -> (lexer''', Let)
-                                _ -> (lexer''', Ident ident)
-                    else
-                        if isDigit $ ch lexer'
-                            then Int <$> readInt lexer'
-                            else (lexer', Illegal)
-     in
-        (lexer'', tok)
+nextToken :: String -> (Token, String)
+nextToken [] = (Eof, [])
+nextToken ('=' : xs) = (Equal, xs)
+nextToken (',' : xs) = (Comma, xs)
+nextToken ('+' : xs) = (Plus, xs)
+nextToken (';' : xs) = (Semicolon, xs)
+nextToken ('(' : xs) = (LParen, xs)
+nextToken (')' : xs) = (RParen, xs)
+nextToken ('{' : xs) = (LSquirly, xs)
+nextToken ('}' : xs) = (RSquirly, xs)
+nextToken input@(x : xs)
+    | isIdentChar x = readIdent input
+    | isDigit x = readInt input
+    | otherwise = (Illegal, xs)
 
-readChar :: Lexer -> Lexer
-readChar lexer@Lexer{input, readPosition} =
-    lexer
-        { ch = if readPosition >= length input then '\0' else input !! readPosition
-        , position = readPosition
-        , readPosition = readPosition + 1
-        }
-
-skipWhitespace :: Lexer -> Lexer
-skipWhitespace lexer@Lexer{ch}
-    | isSpace ch = skipWhitespace $ readChar lexer
-    | otherwise = lexer
-
-skipIdentChars :: Lexer -> Lexer
-skipIdentChars lexer@Lexer{ch}
-    | isLetter ch || ch == '_' = skipIdentChars $ readChar lexer
-    | otherwise = lexer
-
-readIdent :: Lexer -> (Lexer, String)
-readIdent lexer@Lexer{input, position = pos} = (lexer', ident)
+readIdent :: String -> (Token, String)
+readIdent input = (token, rest)
   where
-    lexer' = skipIdentChars lexer
-    ident = take (position lexer' - pos) $ drop pos input
+    (ident, rest) = span isIdentChar input
+    token = case ident of
+        "fn" -> Function
+        "let" -> Let
+        _ -> Ident ident
 
-skipIntChars :: Lexer -> Lexer
-skipIntChars lexer@Lexer{ch}
-    | isDigit ch = skipIntChars $ readChar lexer
-    | otherwise = lexer
-
-readInt :: Lexer -> (Lexer, String)
-readInt lexer@Lexer{input, position = pos} = (lexer', int)
+readInt :: String -> (Token, String)
+readInt input = (Int int, rest)
   where
-    lexer' = skipIntChars lexer
-    int = take (position lexer' - pos) $ drop pos input
+    (int, rest) = span isDigit input
