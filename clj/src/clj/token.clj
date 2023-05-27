@@ -1,6 +1,6 @@
 (ns clj.token)
 
-(defn chr->token-type [chr]
+(defn chr->kind [chr]
   (case chr 
     \= :assign
     \+ :plus
@@ -12,17 +12,22 @@
     \} :r_squirly
        nil))
 
-(def chr-token? chr->token-type)
+(def chr-token? chr->kind)
 
-(defn ident->token-type [ident]
+(defn ident->kind [ident]
   (case ident
-    "fn"  :fn
-    "let" :let
-          :ident))
+    "fn"     :fn
+    "let"    :let
+    "true"   :true
+    "false"  :false
+    "if"     :if
+    "else"   :else
+    "return" :return
+             :ident))
 
-(defn token [type literal position]
-  [type literal position])
+(defn create [kind literal position]
+  [kind literal position])
 
-(def token-type first)
-(def literal    second)
-(def position   #(nth % 2 nil)) ;; third element
+(def kind     first)
+(def literal  second)
+(def position #(nth % 2 nil)) ;; third element

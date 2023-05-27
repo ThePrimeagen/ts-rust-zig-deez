@@ -1,6 +1,7 @@
 (ns clj.lexer-test
   (:use [clojure.test]
-        [clj.token]
+        [clj.util]
+        [clj.token :as token]
         [clj.lexer]
         [clojure.string :only [split]]))
 
@@ -20,7 +21,7 @@
   (testing "input.monkey with literals only"
     (let [input (slurp "./test/clj/input.monkey")
           deez  (->> (lex input)
-                     (mapv literal)
+                     (mapv token/literal)
                      (mapv to-str)
                      (butlast)) ;; skipping eof chr
           nuts  ["let" "five" "=" "5" ";" "let" "ten" "=" "10" ";" "let" "add" "=" "fn" "(" "x" "," "y" ")" "{" "x" "+" "y" ";" "}" ";" "let" "result" "=" "add" "(" "five" "," "ten" ")" ";"]]
