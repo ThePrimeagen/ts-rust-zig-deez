@@ -1,5 +1,6 @@
 (ns clj.token
-  (:use [clj.util :only [third]]))
+  (:use [clj.util :only [third]]
+        [clojure.pprint :only [pprint]]))
 
 (defn chr->kind [chr]
   (case chr 
@@ -32,3 +33,7 @@
 (def kind     first)
 (def literal  second)
 (def position third)
+
+(defn pp [token]
+  (-> (zipmap [:kind :literal :position] token)
+      (pprint)))
