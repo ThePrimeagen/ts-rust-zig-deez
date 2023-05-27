@@ -15,6 +15,9 @@ error_integer_overflow db "ERROR: Integer overflow", 10, 0
 string_format_read_file_error db "%s: '%s'", 10, 0
 string_format_location db "%s at (%u:%u): ", 0
 string_format_unexpected_character db "ERROR: Unexpected character \x%x ('%c')", 10, 0
+string_format_string db "%s", 0
+string_format_integer_token_value db " %llu", 10, 0
+string_format_ident_token_value db " %.*s", 10, 0
 
 string_open_mode_read db "rb", 0
 
@@ -30,8 +33,23 @@ TK_LPAREN    equ 8
 TK_RPAREN    equ 9
 TK_LBRACE    equ 10
 TK_RBRACE    equ 11
-TK_FUNCTION  equ 12
-TK_LET       equ 13
+TK_EQ_EQ     equ 12
+TK_NOT       equ 13
+TK_NE        equ 14
+TK_MINUS     equ 15
+TK_SLASH     equ 16
+TK_STAR      equ 17
+TK_LT        equ 18
+TK_GT        equ 19
+
+%define KW_START 20
+TK_FUNCTION  equ KW_START
+TK_LET       equ KW_START + 1
+TK_RETURN    equ KW_START + 2
+TK_TRUE      equ KW_START + 3
+TK_FALSE     equ KW_START + 4
+TK_IF        equ KW_START + 5
+TK_ELSE      equ KW_START + 6
 
 %define TOKEN_STRING_LENGTH 16     ; Max len of token name is 16 bytes
 %define TOKEN_STRING_LENGTH_LOG2 4 ; log2(TOKEN_STRING_LENGTH)
@@ -57,9 +75,22 @@ table_token_names:
     defstr ")"
     defstr "{"
     defstr "}"
+    defstr "=="
+    defstr "!"
+    defstr "!="
+    defstr "-"
+    defstr "/"
+    defstr "*"
+    defstr "<"
+    defstr ">"
 table_keywords:
     defstr "fn"
     defstr "let"
+    defstr "return"
+    defstr "true"
+    defstr "false"
+    defstr "if"
+    defstr "else"
 table_keywords_end:
 
 %unmacro defstr 1
@@ -85,6 +116,7 @@ token_location resd 2 ; First dword is start, second dword is end.
 ;; External functions.
 ;;
 section .text
+extern putchar
 extern puts
 extern printf
 extern strncmp
@@ -360,7 +392,7 @@ next_token:
     mov dword [token_location + 4], 0
     mov qword [token_type], TK_INVALID
 
-    ;; Single-character tokens: =+,;(){}
+;; Single-character tokens: +,;(){}-/*<>
 %macro test_single_char 2
     cmp eax, %1
     jne %%next
@@ -371,8 +403,25 @@ next_token:
 %%next:
 %endmacro
 
+;; Single or double-character tokens: =, ==, !, !=
+%macro test_double_char 4
+    cmp eax, %1
+    jne %%next
+    call next_char
+    cmp eax, %2
+    je %%double
+    mov qword [token_type], %3
+    mov dword [token_location + 4], 1
+    ret
+%%double:
+    call next_char
+    mov qword [token_type], %4
+    mov dword [token_location + 4], 2
+    ret
+%%next:
+%endmacro
+
     test_single_char  0,  TK_EOF
-    test_single_char '=', TK_ASSIGN
     test_single_char '+', TK_PLUS
     test_single_char ',', TK_COMMA
     test_single_char ';', TK_SEMICOLON
@@ -380,8 +429,17 @@ next_token:
     test_single_char ')', TK_RPAREN
     test_single_char '{', TK_LBRACE
     test_single_char '}', TK_RBRACE
+    test_single_char '-', TK_MINUS
+    test_single_char '*', TK_STAR
+    test_single_char '/', TK_SLASH
+    test_single_char '<', TK_LT
+    test_single_char '>', TK_GT
+
+    test_double_char '=', '=', TK_ASSIGN, TK_EQ_EQ
+    test_double_char '!', '=', TK_NOT, TK_NE
 
 %unmacro test_single_char 2
+%unmacro test_double_char 4
 
     ;; Integer.
     lea rsi, [rax - '0']
@@ -542,9 +600,44 @@ print_location:
 ;;
 print_token:
     sub rsp, 8 ; Align the stack.
+
+    ;; Print location.
     call print_location
+
+    ;; Print token type.
+    mov rsi, qword [token_type]
+    shl rsi, TOKEN_STRING_LENGTH_LOG2
+    lea rsi, [table_token_names + rsi]
+    lea rdi, [string_format_string]
+    xor eax, eax
+    call printf
+
+    ;; Print integer value and identifier name, if applicable.
+    mov rax, qword [token_type]
+    cmp rax, TK_INTEGER
+    je .print_integer
+    cmp rax, TK_IDENT
+    je .print_ident
+
+    mov edi, `\n`
+    call putchar
+    jmp .return
+
+.print_integer:
+    lea rdi, [string_format_integer_token_value]
+    mov rsi, qword [token_int_value]
+    xor eax, eax
+    call printf
+    jmp .return
+
+.print_ident:
+    lea rdi, [string_format_ident_token_value]
+    mov esi, dword [token_location + 4] ; Length first because this is a `%*s` specifier.
+    mov edx, dword [token_location]
+    add rdx, [file_contents]
+    xor eax, eax
+    call printf
+
+.return:
     add rsp, 8
-    mov rdi, qword [token_type]
-    shl rdi, TOKEN_STRING_LENGTH_LOG2
-    lea rdi, [table_token_names + rdi]
-    jmp puts
+    ret

@@ -26,6 +26,7 @@ lint:
 test: lexer
 	@echo "===> Testing"
 	./lexer test/example.monkey
+	./lexer test/example2.monkey
 
 lexer: src/main.s
 	nasm -felf64 src/main.s -o main.o
