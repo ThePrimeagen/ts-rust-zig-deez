@@ -24,5 +24,18 @@ testTokenizeExtended = TestCase $ do
     let tokens = tokenize input
     assertEqual "testTokenizeExtended" expected tokens
 
+testTokenizeEqual :: Test
+testTokenizeEqual = TestCase $ do
+    let input = "a == b != c"
+    let expected = [Ident "a", Equal, Ident "b", NotEqual, Ident "c", Eof]
+    let tokens = tokenize input
+    assertEqual "testTokenizeEqual" expected tokens
+
 lexerTests :: Test
-lexerTests = TestList [TestLabel "testToknizeInitial" testToknizeInitial, TestLabel "testTokenizeBasic" testTokenizeBasic, TestLabel "testTokenizeExtended" testTokenizeExtended]
+lexerTests =
+    TestList
+        [ TestLabel "testToknizeInitial" testToknizeInitial
+        , TestLabel "testTokenizeBasic" testTokenizeBasic
+        , TestLabel "testTokenizeExtended" testTokenizeExtended
+        , TestLabel "testTokenizeEqual" testTokenizeEqual
+        ]
