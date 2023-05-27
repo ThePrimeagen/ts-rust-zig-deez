@@ -33,8 +33,12 @@ let rec next_token lexer =
       | '>' -> advance lexer, GreaterThan
       | '{' -> advance lexer, LeftBrace
       | '}' -> advance lexer, RightBrace
+      | ':' -> advance lexer, Colon
+      | '[' -> advance lexer, LeftBracket
+      | ']' -> advance lexer, RightBracket
       | '!' -> if_peeked lexer '=' ~default:Bang ~matched:NotEqual
       | '=' -> if_peeked lexer '=' ~default:Assign ~matched:Equal
+      | '"' -> read_string lexer
       | ch when is_identifier ch -> read_identifier lexer
       | ch when is_number ch -> read_number lexer
       | ch -> Fmt.failwith "unknown char: %c" ch
@@ -75,6 +79,12 @@ and read_identifier lexer =
 and read_number lexer =
   let lexer, int = read_while lexer is_number in
   lexer, Token.Integer int
+
+and read_string lexer =
+  let lexer = advance lexer in
+  let lexer, str = read_while lexer (fun ch -> Char.(ch <> '"')) in
+  let lexer = advance lexer in
+  lexer, Token.String str
 
 and skip_whitespace lexer =
   let lexer, _ =
@@ -242,5 +252,53 @@ if (5 < 10) {
       Token.Equal
       Token.True
       Token.Semicolon |}]
+  ;;
+
+  let%expect_test "strings" =
+    input_to_tokens "\"hello, world!\"" |> print_tokens;
+    [%expect {| (Token.String "hello, world!") |}]
+  ;;
+
+  let%expect_test "arrays" =
+    input_to_tokens "[1, 2, 3];" |> print_tokens;
+    [%expect
+      {|
+      Token.LeftBracket
+      (Token.Integer "1")
+      Token.Comma
+      (Token.Integer "2")
+      Token.Comma
+      (Token.Integer "3")
+      Token.RightBracket
+      Token.Semicolon |}]
+  ;;
+
+  let%expect_test "hash" =
+    input_to_tokens "{ 1:true };" |> print_tokens;
+    [%expect
+      {|
+      Token.LeftBrace
+      (Token.Integer "1")
+      Token.Colon
+      Token.True
+      Token.RightBrace
+      Token.Semicolon |}]
+  ;;
+
+  let%expect_test "macro" =
+    input_to_tokens "macro(x, y) { x, y }" |> print_tokens;
+    [%expect
+      {|
+      Token.Macro
+      Token.LeftParen
+      (Token.Ident "x")
+      Token.Comma
+      (Token.Ident "y")
+      Token.RightParen
+      Token.LeftBrace
+      (Token.Ident "x")
+      Token.Comma
+      (Token.Ident "y")
+      Token.RightBrace |}]
   ;;
 end
