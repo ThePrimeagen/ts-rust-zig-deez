@@ -2,4 +2,10 @@
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {lambdaisland/kaocha {:mvn/version "1.84.1335"}}
-                  :main-opts ["-m" "kaocha.runner"]}}}
+                  :main-opts ["-m" "kaocha.runner"]}
+           :cljfmt {:extra-paths ["test"]
+                    :extra-deps {cljfmt/cljfmt {:mvn/version "0.9.2"}}
+                    :main-opts ["-m" "cljfmt.main"]}
+           :lint {:extra-paths ["test"]
+                  :extra-deps {clj-kondo/clj-kondo {:mvn/version "2023.05.18"}}
+                  :main-opts ["-m" "clj-kondo.main"]}}}

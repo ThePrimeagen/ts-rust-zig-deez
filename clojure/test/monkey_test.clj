@@ -1,4 +1,5 @@
 (ns monkey-test
+  #_{:clj-kondo/ignore [:refer-all]}
   (:require [clojure.test :refer :all]
             [monkey :refer :all]
             [clojure.data]))
