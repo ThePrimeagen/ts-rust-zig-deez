@@ -2,6 +2,9 @@
 
 (set! *warn-on-reflection* true)
 
+(defn third [coll]
+  (nth coll 2 nil))
+
 ;; used ^Type to avoid reflection to boost performance
 (defn space? [^Character chr]
   (Character/isWhitespace chr))

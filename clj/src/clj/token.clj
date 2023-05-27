@@ -1,4 +1,5 @@
-(ns clj.token)
+(ns clj.token
+  (:use [clj.util :only [third]]))
 
 (defn chr->kind [chr]
   (case chr 
@@ -30,4 +31,4 @@
 
 (def kind     first)
 (def literal  second)
-(def position #(nth % 2 nil)) ;; third element
+(def position third)
