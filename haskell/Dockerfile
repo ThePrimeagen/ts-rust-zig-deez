@@ -11,8 +11,6 @@ RUN apt-get update && \
     apt-get install -y neovim
 
 # Build the project
-WORKDIR /deez
-
 RUN cabal update
 
 COPY . .
