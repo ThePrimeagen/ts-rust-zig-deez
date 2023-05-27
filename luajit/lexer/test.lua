@@ -78,7 +78,7 @@ test["Lexer - Full"] = function ()
 
     for ind, exp_tok in ipairs(tokens) do
         local fnd_tok = lex:next_token()
-        assert(exp_tok.type == fnd_tok.type)
+        assert(exp_tok.type == fnd_tok.type and exp_tok.literal_str == fnd_tok.literal_str)
     end
 
 end

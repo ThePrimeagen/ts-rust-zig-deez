@@ -76,14 +76,8 @@ setmetatable(token,
     local token_type = args[2]
     ---@type string
     local literal = args[3]
-
-    local c_str = nil
-    if type(literal) == "string" then
-      c_str = ffi.new("char[?]", #literal + 1)
-      ffi.copy(c_str, literal)
-    end
-
-    return token_mt(token_type, c_str)
+    assert(type(literal) == "string" or not literal)
+    return token_mt(token_type, literal)
   end
 })
 
