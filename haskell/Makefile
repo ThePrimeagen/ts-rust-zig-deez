@@ -10,7 +10,7 @@ help:
 ready: fmt lint test
 
 docker-build:
-	docker build . -t deez_$(notdir $(shell pwd))
+	docker build --no-cache . -t deez_$(notdir $(shell pwd))
 
 docker-ready: docker-build
 	docker run -t deez_$(notdir $(shell pwd))
@@ -21,11 +21,11 @@ docker-ready: docker-build
 
 fmt:
 	@echo "===> Formatting"
-	# fourmolu --mode check src test app
+	fourmolu --mode inplace .
 
 lint:
 	@echo "===> Linting"
-	hlint src test app
+	hlint .
 
 test:
 	@echo "===> Testing"
