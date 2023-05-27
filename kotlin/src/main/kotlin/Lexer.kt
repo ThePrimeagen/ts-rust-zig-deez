@@ -8,11 +8,11 @@ object Lexer {
             val next = tokenizer.peek()
             when {
                 next.isLetter() ->
-                    yield(tokenizer.nextUntil { !it.isLetterOrDigit() && !it.isUnderscore() }.asToken())
+                    yield(tokenizer.readUntil { !it.isLetterOrDigit() && !it.isUnderscore() }.asToken())
                 next.isDigit() ->
-                    yield(Token(type = TokenType.INT, value = tokenizer.nextUntil { !it.isDigit() }))
+                    yield(Token(type = TokenType.INT, value = tokenizer.readUntil { !it.isDigit() }))
                 next.isDoubleQuote() ->
-                    yield(Token(type = TokenType.STRING, value = tokenizer.nextTo(true) { it.isDoubleQuote() }))
+                    yield(Token(type = TokenType.STRING, value = tokenizer.readTo(true) { it.isDoubleQuote() }))
                 else -> yield(tokenizer.next().asToken())
             }
         }

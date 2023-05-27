@@ -14,7 +14,7 @@ class Tokenizer(value: String) {
         return value[position++]
     }
 
-    fun nextUntil(skipCurrent: Boolean = false, predicate: (Char) -> Boolean): String {
+    fun readUntil(skipCurrent: Boolean = false, predicate: (Char) -> Boolean): String {
         skipWhitespace()
         if (skipCurrent) position++
         val oldPosition = position
@@ -22,8 +22,8 @@ class Tokenizer(value: String) {
         return value.substring(oldPosition, position)
     }
 
-    fun nextTo(skipCurrent: Boolean = false, predicate: (Char) -> Boolean): String {
-        val result = nextUntil(skipCurrent, predicate)
+    fun readTo(skipCurrent: Boolean = false, predicate: (Char) -> Boolean): String {
+        val result = readUntil(skipCurrent, predicate)
         position++
         return result
     }
