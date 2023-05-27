@@ -19,10 +19,7 @@ void main(List<String> arguments) async {
 
   final lexer = Tokenizer(contents);
 
-  Token tok = lexer.nextToken();
-
-  while (tok.type != TokenType.eof) {
+  for (final tok in lexer.iter()) {
     print(tok);
-    tok = lexer.nextToken();
   }
 }
