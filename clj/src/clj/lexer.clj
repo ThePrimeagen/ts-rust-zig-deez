@@ -28,4 +28,5 @@
 (comment
   (lex "=+(){},;")
   (lex "== != <= >= < > = /")
-  (lex (slurp "./test/clj/input.monkey")))
+  (lex (slurp "./test/clj/input.monkey"))
+  ())
