@@ -12,6 +12,7 @@ import Token (Token (..), Tokenizer, identToken)
 newtype Position = Position Int
     deriving (Eq, Show)
 
+-- | Basically a `ReaderT ByteString (State Position)` monad.
 newtype Lexer a = Lexer {runLexer :: ByteString -> Position -> (a, Position)}
     deriving (Functor)
 
