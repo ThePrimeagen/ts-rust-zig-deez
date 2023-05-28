@@ -5,8 +5,7 @@ default rel
 ;; Constant data.
 ;;
 section .rodata
-error_usage db "Usage: ./lexer <filename>", 0
-error_no_file db "ERROR: An input file is required", 10, 0
+error_usage db "Usage: ./lexer [<filename>]", 0
 error_duplicate_filename db "ERROR: Must not specify more than one input file", 10, 0
 error_open_read_failed db "ERROR: Could not open file for reading", 0
 error_read_failed db "ERROR: Could not read from file", 0
@@ -18,8 +17,13 @@ string_format_unexpected_character db "ERROR: Unexpected character \x%x ('%c')",
 string_format_string db "%s", 0
 string_format_integer_token_value db " %llu", 10, 0
 string_format_ident_token_value db " %.*s", 10, 0
+string_format_read_errno db "ERROR: Read failed with errno %d", 10, 0
 
 string_open_mode_read db "rb", 0
+string_dot_exit db ".exit", 10, 0
+string_default_filename db "<input>", 0
+string_default_prompt db ">> ", 0
+DEFAULT_PROMPT_SIZE equ $ - string_default_prompt - 1
 
 TK_INVALID   equ 0
 TK_EOF       equ 1
@@ -41,6 +45,11 @@ TK_SLASH     equ 16
 TK_STAR      equ 17
 TK_LT        equ 18
 TK_GT        equ 19
+
+%define SYS_read 0
+%define SYS_write 1
+%define SYS_open 2
+%define SYS_close 3
 
 %define KW_START 20
 TK_FUNCTION  equ KW_START
@@ -103,6 +112,9 @@ filename resq 1
 file_contents resq 1
 file_size resq 1
 
+prompt resq 1
+prompt_size resq 1
+
 ;; Lexer state.
 lastc resb 1
 has_error resb 1
@@ -120,14 +132,10 @@ extern putchar
 extern puts
 extern printf
 extern strncmp
-extern fopen
-extern fclose
-extern fread
-extern fwrite
 extern exit
+extern abort
 extern realloc
 extern free
-extern stdout ; Works with glibc, not sure about other implementations.
 
 ;;
 ;; Entry point.
@@ -136,20 +144,21 @@ global main
 main:
     sub rsp, 8 ; Align stack
     call parse_args
-    cmp rax, 0
+    test rax, rax
     jnz .error_usage
 
     mov rdi, [filename]
-    cmp rdi, 0
+    test rdi, rdi
     jz .no_file
 
-    call compiler_main
-    mov rdi, rax
+    call interpret_file
+    mov edi, eax
     jmp exit
 
 .no_file:
-    lea rdi, [error_no_file]
-    call puts
+    call repl
+    mov edi, eax
+    jmp exit
 
 .error_usage: 
     lea rdi, [error_usage]
@@ -160,18 +169,108 @@ main:
     jmp exit
 
 ;;
-;; Compiler main function.
+;; Interpret a file.
 ;;
 ;; Returns 0 on success, 1 on failure.
-compiler_main:
+interpret_file:
     sub rsp, 8 ; Align stack
 
     mov rdi, [filename]
     lea rsi, [file_contents]
     lea rdx, [file_size]
     call read_file
-    cmp rax, 0
+    add rsp, 8
+
+    ;; Interpret the code or return error.
+    test rax, rax
+    jz interpret
+    ret
+
+;;
+;; Run a REPL.
+;;
+repl:
+    push rbx
+    push r12 ; fd
+    push r13 ; Buffer data
+    push r14 ; Buffer size
+    push r15 ; Buffer capacity.
+
+    xor ebx, ebx
+    xor r12, r12
+    xor r13, r13
+    xor r15, r15
+
+.read:
+    ;; Write prompt.
+    mov eax, SYS_write
+    mov rdi, 1 ; fd of stdout == 1
+    mov rsi, [prompt]
+    mov rdx, [prompt_size]
+    syscall
+
+    ;; Read input.
+    xor r14, r14
+    xor r12, r12 ; fd of stdin == 0
+    call read
+    test rax, rax
     jnz .error
+
+    ;; Empty line.
+    test r14, r14
+    jz .read
+
+    ;; ".exit" to exit.
+    mov rdx, r14
+    cmp rdx, 6 ; strlen(".exit") == 5
+    jne .eval_print
+    lea rdi, [string_dot_exit]
+    mov rsi, r13
+    call strncmp ; Note: rdx is already 5 if we get here.
+    jz .exit_repl
+
+.eval_print:
+    call eval
+    test eax, eax
+    jnz .error
+    jmp .read
+
+.exit_repl:
+    xor r15, r15 ; Return value.
+    jmp .free_buffer
+
+.error:
+    mov r15, 1 ; Return value.
+
+.free_buffer:
+    mov rdi, r13
+    call free
+
+.return:
+    mov rax, r15
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    ret
+
+;;
+;; Prepare string for evaluation and evaluate it.
+;;
+eval:
+    lea rax, [string_default_filename]
+    mov [filename], rax
+    mov [file_contents], r13
+    mov [file_size], r14
+    jmp interpret
+
+;;
+;; Interpreter main function.
+;;
+interpret:
+    sub rsp, 8 ; Align stack.
+    mov byte [has_error], 0
 
     ;; Prime the lexer.
     call lexer_init
@@ -184,12 +283,6 @@ compiler_main:
     jne .read_next_token
 
     movsx eax, byte [has_error]
-    jmp .return
-
-.error:
-    mov eax, 1
-
-.return:
     add rsp, 8
     ret
 
@@ -202,13 +295,18 @@ parse_args:
     sub rsp, 8 ; Align stack
     add rsi, 8 ; argv+1
 
+    ;; Set default prompt.
+    lea rdi, [string_default_prompt]
+    mov [prompt], rdi
+    mov qword [prompt_size], DEFAULT_PROMPT_SIZE
+
 .parse_one_arg:
     mov rdi, [rsi]
-    cmp rdi, 0
+    test rdi, rdi
     jz .last_arg
 
     mov rdx, [filename]
-    cmp rdx, 0
+    test rdx, rdx
     jnz .duplicate_file ; duplicate filename
 
     mov [filename], rdi
@@ -229,19 +327,77 @@ parse_args:
     ret
 
 ;;
+;; Read as much data as possible from a file descriptor.
+;;
+;; r12: fd
+;; r13: buffer data
+;; r14: buffer size
+;; r15: buffer capacity
+;;
+;; returns: 1 on error, 0 on success.
+read:
+    push rbx
+
+    ;; Check if we have space in the buffer.
+.read_loop:
+    cmp r14, r15
+    jb .perform_read
+
+    ;; If not, increase the capacity
+    add r15, 2048
+    shl r15, 1
+    mov rdi, r13
+    mov rsi, r15
+    call realloc
+    mov r13, rax
+
+.perform_read:
+    mov eax, SYS_read
+    mov rdi, r12
+    lea rsi, [r13 + r14]
+    mov rdx, r15
+    sub rdx, r14
+    mov rbx, rdx
+    syscall
+
+    ;; Check for errors.
+    test rax, rax
+    jl .read_error
+
+    ;; If we read less than requested, then we’re done.
+    add r14, rax
+    cmp rax, rbx
+    je .read_loop
+
+    xor eax, eax
+    jmp .return
+
+.read_error:
+    lea rdi, [string_format_read_errno]
+    mov esi, eax
+    neg esi
+    xor eax, eax
+    call printf
+    mov eax, 1
+
+.return:
+    pop rbx
+    ret
+
+;;
 ;; Read a file into memory.
 ;;
 ;; rdi: u8* filename
 ;; rsi: u8** file_contents
 ;; rdx: u64* file_size
 ;;
-;; returns: 0 on success, 1 on failure
+;; returns: 0 on success, 1 on failure.
 read_file:
     ;; Scratch regs
-    push r12 ; FILE*
-    push r13 ; bytes read
-    push r14 ; buffer
-    push r15 ; buffer size
+    push r12 ; fd
+    push r13 ; buffer
+    push r14 ; buffer size
+    push r15 ; buffer capacity
 
     ;; Save parameters
     push rdi
@@ -249,54 +405,32 @@ read_file:
     push rdx
 
     ;; Zero scratch regs.
-    xor r12d, r12d
-    xor r13d, r13d
-    xor r14d, r14d
-    xor r15d, r15d
+    xor r12, r12
+    xor r13, r13
+    xor r14, r14
+    xor r15, r15
 
     ;; Open file.
-    mov rsi, string_open_mode_read
-    call fopen
-    cmp rax, 0
-    jz .error_open
+    xor esi, esi ; O_RDONLY
+    mov eax, SYS_open
+    syscall
+    test rax, rax
+    jl .error_open
 
-    ;; Save FILE* and initialise vars.
+    ;; Save fd.
     mov r12, rax
-
-.read_chunk:
-    ;; Grow buffer.
-    mov rdi, r14
-    add r15, 4096
-    mov rsi, r15
-    call realloc
-    mov r14, rax
-
-    ;; Read data.
-    mov rdi, r14
-    add rdi, r13 ; Append to end of buffer.
-    mov esi, 1
-    mov rdx, r15
-    sub rdx, r13 ; Read `buffer size - bytes read` bytes.
-    mov rcx, r12
-    call fread
-
-    ;; Increment bytes read.
-    add r13, rax
-
-    ;; Check for errors and EOF.
-    cmp rax, 0
-    jl .error_read
-    jnz .read_chunk
+    call read
+    jnz .error_read
 
     ;; Save file size and buffer.
     mov rax, [rsp]
-    mov [rax], r13
-    mov rax, [rsp + 8]
     mov [rax], r14
+    mov rax, [rsp + 8]
+    mov [rax], r13
 
     ;; Done.
-    xor eax, eax
-    jmp .return
+    xor r15, r15 ; Return value.
+    jmp .close_file
 
 .error_read:
     lea rsi, [error_read_failed]
@@ -310,22 +444,22 @@ read_file:
     mov rdx, [rsp + 16]
     lea rdi, [string_format_read_file_error]
     call printf
+    mov r15, 1 ; Return value.
 
-    ;; Close file if open.
-    cmp r12, 0
-    jz .file_closed
-    mov rdi, r12
-    call fclose
-
-.file_closed:
-    ;; Free buffer.
-    mov rdi, r14
+    ;; Free the buffer.
+    mov rdi, r13
     call free
 
-    ;; Return 1.
-    mov eax, 1
+    ;; Close file if open.
+.close_file:
+    test r12, r12
+    jz .return
+    mov rdi, r12
+    mov eax, SYS_close
+    syscall
 
 .return:
+    mov rax, r15 ; Return value.
     add rsp, 24
     pop r15
     pop r14
@@ -363,7 +497,7 @@ next_char:
 
 .eof:
     mov byte [lastc], 0
-    xor rax, rax
+    xor eax, eax
 
 .return:
     ret
@@ -376,7 +510,7 @@ next_token:
 
     ;; Keep returning EOF if we’re at eof.
     movzx eax, byte [lastc]
-    cmp eax, 0
+    test eax, eax
     jne .init_token
 
     ;; Return eof.
