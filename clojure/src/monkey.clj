@@ -1,65 +1,61 @@
 (ns monkey
   (:import [java.lang Character]))
 
-(def keywords
-  {"fn" :function
-   "let" :let})
-
-(defn monkey-keyword?
-  [word]
-  (contains? keywords word))
+(def kind first)
+(def position second)
+(def literal #(nth % 2 nil))
 
 (defn letter?
   [^Character ch]
   (or (Character/isLetter ch)
       (= \_ ch)))
 
-(defn read-word-or-token
-  [input]
-  (let [[word rest] (split-with letter? input)
-        word (apply str word)]
-    [rest
-     (if (monkey-keyword? word)
-       {:token (get keywords word)}
-       {:token :ident, :literal word})]))
-
-(defn monkey-number?
+(defn digit?
   [^Character ch]
   (Character/isDigit ch))
 
-(defn read-number
-  [input]
-  (let [[word rest] (split-with monkey-number? input)
-        word (apply str word)]
-    [rest
-     {:token :int, :literal (Integer/parseInt word)}]))
-
-(defn skip-whitespace
-  [input]
-  (drop-while #(Character/isWhitespace %) input))
+(defn space?
+  [^Character ch]
+  (Character/isWhitespace ch))
 
 (defn ch->token
   [ch]
   (case ch
-    \{ {:token :lbrace}
-    \} {:token :rbrace}
-    \( {:token :lparen}
-    \) {:token :rparen}
-    \, {:token :comma}
-    \; {:token :semicolon}
-    \+ {:token :plus}
-    \= {:token :equal}
-    {:token :illegal, :literal ch}))
+    \{ :lbrace
+    \} :rbrace
+    \( :lparen
+    \) :rparen
+    \, :comma
+    \; :semicolon
+    \+ :plus
+    \= :equal
+    nil))
+
+(def ch-token? ch->token)
+
+(defn ident->kind
+  [ident]
+  (case ident
+    "fn" :function
+    "let" :let
+    :ident))
 
 (defn parse
-  ([input] (parse (skip-whitespace input) []))
-  ([input tokens]
+  ([input] (parse input 0 []))
+  ([[ch & rest :as input] pos tokens]
    (if (empty? input)
-     (conj tokens {:token :eof})
-     (let [[ch & rest] input
-           [rest token] (cond
-                          (letter? ch) (read-word-or-token input)
-                          (monkey-number? ch) (read-number input)
-                          :else [rest (ch->token ch)])]
-       (recur (skip-whitespace rest)
-              (conj tokens token))))))
+     (conj tokens [:eof pos])
+     (cond (space? ch) (recur rest (inc pos) tokens)
+           (ch-token? ch) (recur rest (inc pos) (conj tokens [(ch->token ch) pos]))
+           (digit? ch) (parse input pos tokens digit? :int)
+           (letter? ch) (parse input pos tokens letter? nil)
+           :else (recur rest (inc pos) (conj tokens [:illegal pos ch])))))
+  ([input pos tokens pred kind]
+   (let [[word rest] (split-with pred input)
+         word (apply str word)
+         npos (+ pos (count word))
+         kind (or kind (ident->kind word))]
+     (parse rest npos (conj tokens (case kind
+                                     :ident [kind pos word]
+                                     :int [kind pos (Integer/parseInt word)]
+                                     [kind pos]))))))

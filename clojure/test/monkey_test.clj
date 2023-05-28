@@ -5,49 +5,49 @@
 
 (deftest parse-monkey
   (testing "let five = 5;"
-    (let [result [{:token :let}
-                  {:token :ident, :literal "five"}
-                  {:token :equal}
-                  {:token :int, :literal 5}
-                  {:token :semicolon}
-                  {:token :eof}]]
+    (let [result [[:let 0]
+                  [:ident 4 "five"]
+                  [:equal 9]
+                  [:int 11 5]
+                  [:semicolon 12]
+                  [:eof 13]]]
       (is (= result (parse "let five = 5;")))))
   (testing "complex program"
-    (let [result [{:token :let}
-                  {:token :ident, :literal "five"}
-                  {:token :equal}
-                  {:token :int, :literal 5}
-                  {:token :semicolon}
-                  {:token :let}
-                  {:token :ident, :literal "ten"}
-                  {:token :equal}
-                  {:token :int, :literal 10}
-                  {:token :semicolon}
-                  {:token :let}
-                  {:token :ident, :literal "add"}
-                  {:token :equal}
-                  {:token :function}
-                  {:token :lparen}
-                  {:token :ident, :literal "x"}
-                  {:token :comma}
-                  {:token :ident, :literal "y"}
-                  {:token :rparen}
-                  {:token :lbrace}
-                  {:token :ident, :literal "x"}
-                  {:token :plus}
-                  {:token :ident, :literal "y"}
-                  {:token :semicolon}
-                  {:token :rbrace}
-                  {:token :semicolon}
-                  {:token :let}
-                  {:token :ident, :literal "result"}
-                  {:token :equal}
-                  {:token :ident, :literal "add"}
-                  {:token :lparen}
-                  {:token :ident, :literal "five"}
-                  {:token :comma}
-                  {:token :ident, :literal "ten"}
-                  {:token :rparen}
-                  {:token :semicolon}
-                  {:token :eof}]]
+    (let [result [[:let 0]
+                  [:ident 4 "five"]
+                  [:equal 9]
+                  [:int 11 5]
+                  [:semicolon 12]
+                  [:let 14]
+                  [:ident 18 "ten"]
+                  [:equal 22]
+                  [:int 24 10]
+                  [:semicolon 26]
+                  [:let 28]
+                  [:ident 32 "add"]
+                  [:equal 36]
+                  [:function 38]
+                  [:lparen 40]
+                  [:ident 41 "x"]
+                  [:comma 42]
+                  [:ident 44 "y"]
+                  [:rparen 45]
+                  [:lbrace 47]
+                  [:ident 53 "x"]
+                  [:plus 55]
+                  [:ident 57 "y"]
+                  [:semicolon 58]
+                  [:rbrace 60]
+                  [:semicolon 61]
+                  [:let 63]
+                  [:ident 67 "result"]
+                  [:equal 74]
+                  [:ident 76 "add"]
+                  [:lparen 79]
+                  [:ident 80 "five"]
+                  [:comma 84]
+                  [:ident 86 "ten"]
+                  [:rparen 89]
+                  [:semicolon 90]
+                  [:eof 92]]]
       (is (= result (parse (slurp "input.monkey")))))))
