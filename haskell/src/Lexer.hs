@@ -5,10 +5,10 @@ import Data.Char (isDigit, isLetter, isSpace)
 import Token (Token (..), identToken)
 
 tokenize :: String -> [Token]
-tokenize = flip (++) [Eof] . takeWhile (/= Eof) . lexer
+tokenize = takeUntil (== Eof) . lexer
 
 lexer :: String -> [Token]
-lexer = uncurry (:) . fmap lexer . nextToken
+lexer =  uncurry (:) . fmap lexer . nextToken
 
 nextToken :: String -> (Token, String)
 nextToken [] = (Eof, [])
@@ -42,3 +42,9 @@ readInt = first Int . span isDigit
 
 isIdentChar :: Char -> Bool
 isIdentChar c = isLetter c || c == '_'
+
+takeUntil :: (a -> Bool) -> [a] -> [a]
+takeUntil _ [] = []
+takeUntil p (x : xs)
+    | p x = [x]
+    | otherwise = x : takeUntil p xs
