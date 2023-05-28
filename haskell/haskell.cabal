@@ -59,7 +59,7 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  Lexer, Token
+    exposed-modules:  Lexer, Token, Lexer.Monad
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -68,7 +68,7 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.1.0
+    build-depends:    base ^>=4.17.1.0, bytestring ^>= 0.11.0.0
 
     -- Directories containing source files.
     hs-source-dirs:   src
