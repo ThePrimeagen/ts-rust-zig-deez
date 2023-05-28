@@ -39,8 +39,8 @@
     "return" :return
              :ident))
 
-(defn create [kind literal position]
-  [kind literal position])
+(defmacro create [kind literal position]
+  `(list ~kind ~literal ~position))
 
 (def kind     first)
 (def literal  second)

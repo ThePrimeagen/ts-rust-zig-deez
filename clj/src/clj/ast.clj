@@ -5,41 +5,41 @@
   ;; statements
 (def stmt-kind first)
 
-(defn let [ident value]
-  [:let ident value])
+(defmacro let [ident value]
+  `(list :let ~ident ~value))
 
 (def let-ident second)
 (def let-value third)
 
 
-(defn expr [expr]
-  [:expr expr])
+(defmacro expr [expr]
+  `(list :expr ~expr))
 
 (def expr-expr second)
 
 
 ;; expressions
-(defn ident [literal]
-  [:ident literal])
+(defmacro ident [literal]
+  `(list :ident ~literal))
 
 (def ident-literal second)
 
 
-(defn int [val]
-  [:int val])
+(defmacro int [val]
+  `(list :int ~val))
 
 (def int-value second)
 
 
-(defn prefix [op right]
-  [:prefix op right])
+(defmacro prefix [op right]
+  `(list :prefix ~op ~right))
 
 (def prefix-op    first)
 (def prefix-right second)
 
 
-(defn infix [left op right]
-  [:infix left op right])
+(defmacro infix [left op right]
+  `(list :infix ~left ~op ~right))
 
 (def infix-left  first)
 (def infix-op    second)

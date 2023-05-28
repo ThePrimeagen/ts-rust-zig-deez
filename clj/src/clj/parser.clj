@@ -3,8 +3,8 @@
             [clj.ast   :as ast]
             [clj.lexer :as lexer]))
 
-(defn return [parsed rest-tokens]
-  [parsed rest-tokens])
+(defmacro return [parsed rest-tokens]
+  `(list ~parsed ~rest-tokens))
 
 (declare parse-expr)
 
