@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"lucas"
+	],
+	"copyright": "Copyright © 2023, lucas",
+	"description": "Interpreter in D",
+	"license": "MIT",
+	"name": "d"
+}
