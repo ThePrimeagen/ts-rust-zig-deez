@@ -1,15 +1,22 @@
-module Lexer (mkLexer, nextToken, Token (..)) where
+module Lexer (mkLexer, nextToken, Token (..), tokenize) where
 
 import Control.Arrow ((&&&))
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Char (isDigit, isLetter, isSpace)
-import Token (Token (..), identToken)
+import Token (Token (..), Tokenizer, identToken)
 
 data Lexer = Lexer
     { inputLoc :: Int
     , inputStr :: String
     }
     deriving (Show, Eq)
+
+tokenize :: Tokenizer
+tokenize = go . mkLexer
+  where
+    go lexer = case nextToken lexer of
+        (_, Eof) -> [Eof]
+        (lexer', token) -> token : go lexer'
 
 advance :: Lexer -> Lexer
 advance (Lexer loc []) = Lexer loc []
