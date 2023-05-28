@@ -222,11 +222,11 @@ repl:
 
     ;; ".exit" to exit.
     mov rdx, r14
-    cmp rdx, 6 ; strlen(".exit") == 5
+    cmp rdx, 6 ; strlen(".exit\n") == 6
     jne .eval_print
     lea rdi, [string_dot_exit]
     mov rsi, r13
-    call strncmp ; Note: rdx is already 5 if we get here.
+    call strncmp ; Note: rdx is already 6 if we get here.
     jz .exit_repl
 
 .eval_print:
