@@ -52,6 +52,6 @@
 
 :"test"
 	@echo "===> Testing"
-	@rem TODO: add yours
+	dub test
 	@goto exit
 

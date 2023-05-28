@@ -28,5 +28,5 @@ lint:
 
 test:
 	@echo "===> Testing"
-	# TODO: add yours
+	dub test
 
