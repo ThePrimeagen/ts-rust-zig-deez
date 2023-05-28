@@ -1,6 +1,6 @@
 (ns clj.lexer
   (:use [clj.util]
-        [clj.token :as token :only [chr-token?]]))
+        [clj.token :as token :only [chr-token? two-op?]]))
 
 (defn lex
   ([input]
@@ -9,8 +9,7 @@
     (let [op (str ch pk)]
     (cond (empty? input)  (list (token/create :eof nil pos))
           (space? ch)     (lex (inc pos) (next input)) ;; skips whitespaces
-          (#{">=" "<=" "==" "!="} op)
-                          (cons (token/create (token/chr->kind op) op pos)
+          (two-op? op)    (cons (token/create (token/chr->kind op) op pos)
                                 (lazy-seq (lex (+ 2 pos) rst)))
           (chr-token? ch) (cons (token/create (token/chr->kind ch) ch pos)
                                 (lazy-seq (lex (inc pos) (next input))))

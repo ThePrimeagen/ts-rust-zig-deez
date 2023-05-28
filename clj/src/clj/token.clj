@@ -26,6 +26,8 @@
 
 (def chr-token? chr->kind)
 
+(def two-op? #{">=" "<=" "==" "!="})
+
 (defn ident->kind [ident]
   (case ident
     "fn"     :fn
