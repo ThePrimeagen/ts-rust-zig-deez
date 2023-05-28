@@ -1,14 +1,7 @@
 module LexerTest where
 
-import Lexer (Token (..), mkLexer, nextToken)
+import Lexer (Token (..), tokenize)
 import Test.HUnit
-
-tokenize :: String -> [Token]
-tokenize = go . mkLexer
-  where
-    go lexer = case nextToken lexer of
-        (_, Eof) -> [Eof]
-        (lexer', token) -> token : go lexer'
 
 testToknizeInitial :: Test
 testToknizeInitial = TestCase $ do
@@ -33,8 +26,8 @@ testTokenizeExtended = TestCase $ do
 
 testTokenizeEqual :: Test
 testTokenizeEqual = TestCase $ do
-    let input = "a == b != c"
-    let expected = [Ident "a", Equal, Ident "b", NotEqual, Ident "c", Eof]
+    let input = "a == b ? != c"
+    let expected = [Ident "a", Equal, Ident "b", Illegal, NotEqual, Ident "c", Eof]
     let tokens = tokenize input
     assertEqual "testTokenizeEqual" expected tokens
 
