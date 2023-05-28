@@ -2,8 +2,7 @@
 
 (set! *warn-on-reflection* true)
 
-(defn third [coll]
-  (nth coll 2 nil))
+(def third (comp second next))
 
 ;; used ^Type to avoid reflection to boost performance
 (defn space? [^Character chr]
@@ -17,5 +16,5 @@
   (Character/isDigit chr))
 
 (defn to-str [chrs]
-  (cond (char? chrs) (str chrs) 
-        :else        (apply str chrs)))
+  (cond (seqable? chrs) (apply str chrs) 
+        :else           (str chrs)))

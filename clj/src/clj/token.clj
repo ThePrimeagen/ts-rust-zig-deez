@@ -4,15 +4,25 @@
 
 (defn chr->kind [chr]
   (case chr 
-    \= :assign
-    \+ :plus
-    \, :comma
-    \; :semicolon
-    \( :l_paren
-    \) :r_paren
-    \{ :l_squirly
-    \} :r_squirly
-       nil))
+    \=   :assign
+    \+   :plus
+    \-   :minus
+    \!   :bang
+    \*   :astrisk
+    \/   :slash
+    \<   :lt
+    \>   :gt
+    \,   :comma
+    \;   :semicolon
+    \(   :l_paren
+    \)   :r_paren
+    \{   :l_squirly
+    \}   :r_squirly
+    "<=" :lteq
+    ">=" :gteq
+    "==" :eq
+    "!=" :noteq
+         nil))
 
 (def chr-token? chr->kind)
 

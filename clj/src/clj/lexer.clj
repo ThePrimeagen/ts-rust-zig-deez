@@ -5,14 +5,18 @@
 (defn lex
   ([input]
     (lex 0 input))
-  ([pos [ch & rst :as input]]
+  ([pos [ch pk & rst :as input]]
+    (let [op (str ch pk)]
     (cond (empty? input)  (list (token/create :eof nil pos))
-          (space? ch)     (lex (inc pos) rst) ;; skips whitespaces
+          (space? ch)     (lex (inc pos) (next input)) ;; skips whitespaces
+          (#{">=" "<=" "==" "!="} op)
+                          (cons (token/create (token/chr->kind op) op pos)
+                                (lazy-seq (lex (+ 2 pos) rst)))
           (chr-token? ch) (cons (token/create (token/chr->kind ch) ch pos)
-                                (lazy-seq (lex (inc pos) rst)))
+                                (lazy-seq (lex (inc pos) (next input))))
           (digit? ch)     (lex digit? pos input :int)
           (letter? ch)    (lex letter? pos input nil)
-          :else           (list (token/create :illegal ch pos))))
+          :else           (list (token/create :illegal ch pos)))))
   ([pred pos input kind]
     "for lexing ints, keywords, idents based on predicate"
     (let [[chrs rst] (split-with pred input)
@@ -24,4 +28,5 @@
 
 (comment
   (lex "=+(){},;")
+  (lex "== != <= >= < > = /")
   (lex (slurp "./test/clj/input.monkey")))
