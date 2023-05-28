@@ -17,8 +17,8 @@ enum Token:
   case Integer(value: Int)      extends Token
 
 // Identifiers must start with a letter or underscore, and can contain further letters, numbers and underscores
-private val initialIdentifierChars = (('A' to 'Z') ++ ('a' to 'z') ++ Seq('_')).toSet
-private val identifierChars        = initialIdentifierChars ++ ('0' to '9').toSet
+private val InitialIdentifierChars = (('A' to 'Z') ++ ('a' to 'z') ++ Seq('_')).toSet
+private val IdentifierChars        = InitialIdentifierChars ++ ('0' to '9').toSet
 
 def parseTokens(input: String): Seq[Token] = Seq.unfold(input.toList) {
   case Nil                         => None
@@ -34,9 +34,9 @@ def parseTokens(input: String): Seq[Token] = Seq.unfold(input.toList) {
   case ')' :: tail                 => Some((Token.RParen, tail))
   case 'l' :: 'e' :: 't' :: tail   => Some((Token.Let, tail))
   case 'f' :: 'n' :: tail          => Some((Token.Function, tail))
-  case all @ c :: _ if initialIdentifierChars.contains(c) =>
-    val (identifierStr, tail) = all.span(identifierChars.contains)
-    Some((Token.Identifier(identifierStr.mkString), tail))
+  case all @ c :: _ if InitialIdentifierChars.contains(c) =>
+    val (identifierChars, tail) = all.span(IdentifierChars.contains)
+    Some((Token.Identifier(identifierChars.mkString), tail))
   case '"' :: tailWithLiteralValue =>
     val (literalChars, tailWithClosingQuote) = tailWithLiteralValue.span(_ != '"')
     Some((Token.Str(literalChars.mkString), tailWithClosingQuote.tail))

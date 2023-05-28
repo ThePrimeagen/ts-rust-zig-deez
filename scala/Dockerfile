@@ -20,9 +20,6 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y scala-cli
 
-# Extra dependencies
-# TODO: add yours
-
 # Commands for docker run
 CMD make fmt && \
     make lint && \

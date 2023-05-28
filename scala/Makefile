@@ -1,7 +1,3 @@
-##
-# Static part, don't change these:
-##
-
 help:
 	@cat Makefile | grep -E "^\w+$:"
 
@@ -12,10 +8,6 @@ docker-build:
 
 docker-ready: docker-build
 	docker run -v $(shell pwd):/deez -t deez_$(notdir $(shell pwd))
-
-##
-# Update those:
-##
 
 fmt:
 	@echo "===> Formatting"
