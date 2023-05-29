@@ -5,9 +5,12 @@ import Prelude
 import Control.Alt ((<|>))
 import Data.CodePoint.Unicode (isLetter)
 import Parsing (Parser, ParserT)
-import Parsing.String (char, string)
+import Parsing.String (anyCodePoint, char, string)
 import Parsing.String.Basic (number, takeWhile1)
 import Token (Token(..))
+
+illegalP :: forall a. ParserT String a Token
+illegalP = (\_ -> Illegal) <$> (anyCodePoint)
 
 letP :: forall a. ParserT String a Token
 letP = (\_ -> Let) <$> (string "let")
@@ -59,6 +62,7 @@ token =
     <|> rParenP
     <|> lSquirlyP
     <|> rSquirlyP
+    <|> illegalP
 
 parser :: Parser String Token
 parser = token
