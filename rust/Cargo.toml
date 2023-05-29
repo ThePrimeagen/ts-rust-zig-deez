@@ -3,7 +3,14 @@ name = "ts-rust-zig-deez"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "monka"
+file = "src/lib.rs"
+
+[[bin]]
+name = "monka-repl"
+file = "src/bin/repl/main.rs"
 
 [dependencies]
 anyhow = "1.0.71"
+thiserror = "1.0.40"

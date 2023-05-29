@@ -1,8 +1,5 @@
-mod lexer;
-
+use monka::{lexer::Token, Lexer};
 use std::io::{self, Stdin, Stdout, Write};
-
-use crate::lexer::{Lexer, Token};
 
 const TITLE: &str = r#"
     =
