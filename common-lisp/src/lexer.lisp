@@ -1,7 +1,8 @@
 (defpackage #:deez/lexer
   (:use #:cl)
   (:import-from #:deez/runtime
-                #:|==|)
+                #:|==|
+                #:|!=|)
   (:import-from #:deez/user)
   (:export
    #:lex
@@ -14,7 +15,8 @@
   '(#\( #\)
     #\[ #\]
     #\{ #\}
-    #\; #\, #\: #\=
+    #\; #\, #\:
+    #\= #\! #\< #\>
     #\+ #\- #\* #\/))
 
 (defparameter *user-package* (find-package '#:deez/user))
@@ -44,6 +46,11 @@
         (peek-char nil nil nil)
       (unread-char c))))
 
+(defun char-2= (char equal-to peek-2-equal-to)
+  "Like CHAR= but peeks another char and compares it."
+  (and (char= char equal-to)
+       (char= (or (peek-2) #\Nul) peek-2-equal-to)))
+
 (defun lex ()
   (let ((c (peek-char t nil nil)))
     (cond
@@ -53,11 +60,14 @@
       ((and (char= c #\-)
             (digit-char-p (peek-2)))
        (parse-integer (read-integer)))
-      ((and (char= c #\=)
-            (char= (or (peek-2) #\Nul) #\=))
+      ((char-2= c #\= #\=)
        (read-char)
        (read-char)
        '|==|)
+      ((char-2= c #\! #\=)
+       (read-char)
+       (read-char)
+       '|!=|)
       ((and (char= c #\/)
             (char= (peek-2) #\/))
        (read-char)

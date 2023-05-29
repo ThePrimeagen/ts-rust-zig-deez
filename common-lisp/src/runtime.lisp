@@ -8,6 +8,7 @@
    #:|true|
    #:|false|
    #:|==|
+   #:|!=|
    #:|len|
    #:|push|
    #:|first|
