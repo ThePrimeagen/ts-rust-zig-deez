@@ -3,19 +3,13 @@
 import kotlin.text.isWhitespace
 
 class Lexer(private val input: String) {
-    private var currentCharacter: Char = Char.MIN_VALUE
-    private var currentPosition: Int = 0
-    private var nextPosition: Int = 0
-
-    init {
-        readCharacter()
-    }
+    private var currentIndex: Int = 0
 
     /** @throws IllegalStateException If the input is invalid. */
     fun nextToken(): Token {
         skipWhitespace()
 
-        val token = when (currentCharacter) {
+        val token = when (getCurrentCharacter()) {
             '+' -> Token.Plus
             '-' -> Token.Minus
             '/' -> Token.Slash
@@ -32,16 +26,16 @@ class Lexer(private val input: String) {
             '[' -> Token.LeftBracket
             ']' -> Token.RightBracket
             '=' -> {
-                if (peekCharacter() == '=') {
-                    readCharacter()
+                if (getNextCharacter() == '=') {
+                    currentIndex++
                     Token.Equals
                 } else {
                     Token.Assign
                 }
             }
             '!' -> {
-                if (peekCharacter() == '=') {
-                    readCharacter()
+                if (getNextCharacter() == '=') {
+                    currentIndex++
                     Token.NotEquals
                 } else {
                     Token.Bang
@@ -67,49 +61,46 @@ class Lexer(private val input: String) {
                 val string = readString()
                 return Token.StringLiteral(string)
             }
-            Char.MIN_VALUE -> Token.EndOfFile
+            null -> Token.EndOfFile
             else -> Token.Illegal
         }
 
-        readCharacter()
+        currentIndex++
         return token
     }
 
-    private fun readCharacter() {
-        currentCharacter = if (nextPosition < input.length) {
-            input[nextPosition]
-        } else {
-            Char.MIN_VALUE
-        }
-
-        currentPosition = nextPosition
-        nextPosition++
+    private fun getCurrentCharacter(): Char? {
+        return input.getOrNull(currentIndex)
     }
 
-    private fun peekCharacter(): Char {
-        return if (nextPosition < input.length) {
-            input[nextPosition]
-        } else {
-            Char.MIN_VALUE
-        }
+    private fun getNextCharacter(): Char? {
+        return input.getOrNull(currentIndex + 1)
     }
 
     private fun readIdentifier(): String {
-        val startPosition = currentPosition
-        while (currentCharacter.isLetter() || currentCharacter == '_') {
-            readCharacter()
+        val startIndex = currentIndex
+
+        while (true) {
+            val currentCharacter = getCurrentCharacter() ?: break
+
+            if (currentCharacter.isLetter() || currentCharacter == '_') {
+                currentIndex++
+            } else {
+                break
+            }
         }
-        return input.substring(startPosition, currentPosition)
+
+        return input.substring(startIndex, currentIndex)
     }
 
     /** @throws IllegalStateException If parsing integer from current position in input failed. */
     private fun readInteger(): Int {
-        val startPosition = currentPosition
-        while (currentCharacter.isDigit()) {
-            readCharacter()
+        val startIndex = currentIndex
+        while (getCurrentCharacter()?.isDigit() == true) {
+            currentIndex++
         }
 
-        val string = input.substring(startPosition, currentPosition)
+        val string = input.substring(startIndex, currentIndex)
 
         return try { string.toInt() } catch (err: Exception) {
             throw IllegalStateException("Failed to read integer '$string' from input", err)
@@ -118,11 +109,11 @@ class Lexer(private val input: String) {
 
     /** @throws IllegalStateException If input ended before closing quote for the string. */
     private fun readString(): String {
-        val startPosition = currentPosition + 1
+        val startPosition = currentIndex + 1
 
         while (true) {
-            readCharacter()
-            when (currentCharacter) {
+            currentIndex++
+            when (getCurrentCharacter()) {
                 '"' -> break
                 Char.MIN_VALUE -> throw IllegalStateException(
                     "Input ended before closing quote of string",
@@ -130,17 +121,17 @@ class Lexer(private val input: String) {
             }
         }
 
-        val string = input.substring(startPosition, currentPosition)
+        val string = input.substring(startPosition, currentIndex)
 
         // Skip closing quote
-        readCharacter()
+        currentIndex++
 
         return string
     }
 
     private fun skipWhitespace() {
-        while (currentCharacter.isWhitespace()) {
-            readCharacter()
+        while (getCurrentCharacter()?.isWhitespace() == true) {
+            currentIndex++
         }
     }
 }
