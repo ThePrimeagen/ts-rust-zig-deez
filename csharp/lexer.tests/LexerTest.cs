@@ -14,7 +14,7 @@ public class Tests
     {
         const string testInput = "=+(){},;";
 
-        var result = new Lexer(testInput).ParseTokens();
+        var lexer = new Lexer(testInput);
 
         var expectedResult = new List<TokenInfo>
         {
@@ -29,7 +29,11 @@ public class Tests
             new TokenInfo(Token.Eof)
         };
 
-        Assert.That(result, Is.EquivalentTo(expectedResult));
+        foreach(var expected in expectedResult)
+        {
+            var result = lexer.NextToken();
+            Assert.That(result, Is.EqualTo(expected));
+        }
     }
     
     [Test]
@@ -55,7 +59,7 @@ public class Tests
                                 10 != 9;
                                 """;
 
-        var tokens = new Lexer(testInput).ParseTokens();
+        var lexer = new Lexer(testInput);
 
         var expectedResult = new List<TokenInfo>
         {
@@ -124,7 +128,6 @@ public class Tests
             new TokenInfo(Token.False), // false
             new TokenInfo(Token.Semicolon), // ;
             new TokenInfo(Token.RSquirly), // }
-            new TokenInfo(Token.Eof),
             new TokenInfo(Token.Integer, 10), // 10
             new TokenInfo(Token.EQ), // ==
             new TokenInfo(Token.Integer, 10), // 10
@@ -133,10 +136,13 @@ public class Tests
             new TokenInfo(Token.NOT_EQ), // !=
             new TokenInfo(Token.Integer, 9), // 9
             new TokenInfo(Token.Semicolon), // ;
-
+            new TokenInfo(Token.Eof),
         };
 
-        
-        Assert.That(tokens, Is.EquivalentTo(expectedResult));
+        foreach (var expected in expectedResult)
+        {
+            var result = lexer.NextToken();
+            Assert.That(result, Is.EqualTo(expected));
+        }
     }
 }
