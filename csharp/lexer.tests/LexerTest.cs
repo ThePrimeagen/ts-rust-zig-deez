@@ -1,3 +1,5 @@
+using monkey;
+
 namespace lexer.tests;
 
 public class Tests

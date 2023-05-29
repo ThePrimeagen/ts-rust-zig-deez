@@ -16,92 +16,18 @@ public struct Lexer
         _current_char = '\0';
         _input = input.AsMemory();
 
-        ReadCharacter();
+        ReadChar();
     }
 
-    private void ReadCharacter()
+    public IEnumerable<TokenInfo> ParseTokens()
     {
-        if (_read_position >= _input.Length)
+        TokenInfo tok;
+        while ((tok = NextToken()).Type != Token.Eof)
         {
-            _current_char = '\0';
-        }
-        else
-        {
-            _current_char = _inputSpan[_read_position];
+            yield return tok;
         }
 
-        _position = _read_position;
-        _read_position++;
-    }
-
-    private char PeekCharacter()
-    {
-        if (_read_position >= _input.Length)
-        {
-            return '\0';
-        }
-        else
-        {
-            return _inputSpan[_read_position];
-        }
-    }
-
-    private void SkipWhitespace()
-    {
-        while (char.IsWhiteSpace(_current_char))
-        {
-            ReadCharacter();
-        }
-    }
-
-    private ReadOnlySpan<char> ReadIdent()
-    {
-        var start = _position;
-
-        while (char.IsLetter(_current_char) || _current_char == '_')
-        {
-            ReadCharacter();
-        }
-
-        return _inputSpan[start.._position];
-    }
-
-    private ReadOnlySpan<char> ReadString()
-    {
-        if (_current_char == '\"')
-        {
-            ReadCharacter();
-        }
-
-        var start = _position;
-
-        while (_current_char != '\0' && _current_char != '\"')
-        {
-            ReadCharacter();
-        }
-
-        if (_current_char == '\0')
-        {
-            throw new Exception("Unterminated string literal.");
-        }
-
-        var stringValue = _inputSpan[start.._position];
-
-        ReadCharacter();
-
-        return stringValue;
-    }
-
-    private int ReadInt()
-    {
-        var start = _position;
-
-        while (char.IsDigit(_current_char))
-        {
-            ReadCharacter();
-        }
-
-        return int.Parse(_inputSpan[start.._position]);
+        yield return tok;
     }
 
     public TokenInfo NextToken()
@@ -136,16 +62,16 @@ public struct Lexer
 
         var token = _current_char switch
         {
-            '=' => PeekCharacter() switch
+            '=' => Peek() switch
             {
                 '=' => SkipAndReturn(new TokenInfo(Token.EQ)),
-                _   => new TokenInfo(Token.Assign),
+                _ => new TokenInfo(Token.Assign),
             }
             ,
-            '!' => PeekCharacter() switch
+            '!' => Peek() switch
             {
                 '=' => SkipAndReturn(new TokenInfo(Token.NOT_EQ)),
-                _   => new TokenInfo(Token.Bang),
+                _ => new TokenInfo(Token.Bang),
             },
             '-' => new TokenInfo(Token.Minus),
             '/' => new TokenInfo(Token.Slash),
@@ -163,25 +89,96 @@ public struct Lexer
             _ => new TokenInfo(Token.Illegal, _current_char),
         };
 
-        ReadCharacter();
+        ReadChar();
 
         return token;
     }
 
-    private TokenInfo SkipAndReturn(TokenInfo tokenInfo)
-    {
-        ReadCharacter();
-        return tokenInfo;
-    }
 
-    public IEnumerable<TokenInfo> ParseTokens()
+    private void ReadChar()
     {
-        TokenInfo tok;
-        while ((tok = NextToken()).Type != Token.Eof)
+        if (_read_position >= _input.Length)
         {
-            yield return tok;
+            _current_char = '\0';
+        }
+        else
+        {
+            _current_char = _inputSpan[_read_position];
         }
 
-        yield return tok;
+        _position = _read_position;
+        _read_position++;
+    }
+
+    private char Peek()
+    {
+        if (_read_position >= _input.Length)
+        {
+            return '\0';
+        }
+        else
+        {
+            return _inputSpan[_read_position];
+        }
+    }
+
+    private void SkipWhitespace()
+    {
+        ReadWhile(char.IsWhiteSpace);
+    }
+
+    private ReadOnlySpan<char> ReadIdent()
+    {
+        var start = _position;
+
+        ReadWhile(c => char.IsLetter(c) || c == '_');
+
+        return _inputSpan[start.._position];
+    }
+
+    private ReadOnlySpan<char> ReadString()
+    {
+        if (_current_char == '\"')
+        {
+            ReadChar();
+        }
+
+        var start = _position;
+
+        ReadWhile(c => c != '\0' && c != '\"');
+
+        if (_current_char == '\0')
+        {
+            throw new Exception("Unterminated string literal.");
+        }
+
+        var stringValue = _inputSpan[start.._position];
+
+        ReadChar();
+
+        return stringValue;
+    }
+
+    private void ReadWhile(Func<char, bool> predicate)
+    {
+        while (predicate(_current_char))
+        {
+            ReadChar();
+        }
+    }
+
+    private int ReadInt()
+    {
+        var start = _position;
+
+        ReadWhile(char.IsDigit);
+
+        return int.Parse(_inputSpan[start.._position]);
+    }
+
+    private TokenInfo SkipAndReturn(TokenInfo tokenInfo)
+    {
+        ReadChar();
+        return tokenInfo;
     }
 }
