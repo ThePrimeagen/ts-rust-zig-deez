@@ -27,10 +27,10 @@
                                           #\{ "name" #\: "Anna" #\, "age" #\: 24 #\} #\,
                                           #\{ "name" #\: "Bob" #\, "age" #\: 99 #\} #\] #\;)))
         for tokens = (lex-from-string code)
-        do (is-true (equalp tokens expected-tokens))))
+        do (is-true (equal tokens expected-tokens))))
 
 (def-test fibonacci ()
-  (is-true (equalp (lex-from-string "
+  (is-true (equal (lex-from-string "
 // Define a `fibonacci` function
 let fibonacci = fn(x) {
   if (x == 0) {
@@ -43,20 +43,21 @@ let fibonacci = fn(x) {
     }
   }
 };")
-                   '((comment "Define a `fibonacci` function")
-                     deez/runtime:|let| deez/user::|fibonacci| #\= deez/runtime:|fn| #\( deez/user::|x| #\) #\{
-                     deez/runtime:|if| #\( deez/user::|x| deez/runtime:|==| 0 #\) #\{
-                     0 (comment "Monkey supports implicit returning of values")
-                     #\} deez/runtime:|else| #\{
-                     deez/runtime:|if| #\( deez/user::|x| deez/runtime:|==| 1 #\) #\{
-                     deez/runtime:|return| 1 #\; (comment "... and explicit return statements")
-                     #\} deez/runtime:|else| #\{
-                     deez/user::|fibonacci| #\( deez/user::|x| #\- 1 #\) #\+ deez/user::|fibonacci| #\( deez/user::|x| #\- 2 #\) #\; (comment "Recursion! Yay!")
-                     #\}
-                     #\}
-                     #\} #\;))))
+                  '((comment "Define a `fibonacci` function")
+                    deez/runtime:|let| deez/user::|fibonacci| #\= deez/runtime:|fn| #\( deez/user::|x| #\) #\{
+                    deez/runtime:|if| #\( deez/user::|x| deez/runtime:|==| 0 #\) #\{
+                    0 (comment "Monkey supports implicit returning of values")
+                    #\} deez/runtime:|else| #\{
+                    deez/runtime:|if| #\( deez/user::|x| deez/runtime:|==| 1 #\) #\{
+                    deez/runtime:|return| 1 #\; (comment "... and explicit return statements")
+                    #\} deez/runtime:|else| #\{
+                    deez/user::|fibonacci| #\( deez/user::|x| #\- 1 #\) #\+ deez/user::|fibonacci| #\( deez/user::|x| #\- 2 #\) #\; (comment "Recursion! Yay!")
+                    #\}
+                    #\}
+                    #\} #\;))))
+
 (def-test map ()
-  (is-true (equalp (lex-from-string "
+  (is-true (equal (lex-from-string "
 // Define the higher-order function `map`, that calls the given function `f`
 // on each element in `arr` and returns an array of the produced values.
 let map = fn(arr, f) {
@@ -74,21 +75,21 @@ let map = fn(arr, f) {
 // Now let's take the `people` array and the `getName` function from above and
 // use them with `map`.
 map(people, getName); // => [\"Anna\", \"Bob\"]")
-                   '((comment "Define the higher-order function `map`, that calls the given function `f`")
-                     (comment "on each element in `arr` and returns an array of the produced values.")
-                     deez/runtime:|let| deez/user::|map| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|f| #\) #\{
-                     deez/runtime:|let| deez/user::|iter| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|accumulated| #\) #\{
-                     deez/runtime:|if| #\( deez/runtime:|len| #\( deez/user::|arr| #\) deez/runtime:== 0 #\) #\{
-                     deez/user::|accumulated|
-                     #\} deez/runtime:|else| #\{
-                     deez/user::|iter| #\( deez/runtime:|rest| #\( deez/user::|arr| #\) #\, deez/runtime:|push| #\( deez/user::|accumulated| #\, deez/user::|f| #\( deez/runtime:|first| #\( deez/user::|arr| #\) #\) #\) #\) #\;
-                     #\}
-                     #\} #\;
+                  '((comment "Define the higher-order function `map`, that calls the given function `f`")
+                    (comment "on each element in `arr` and returns an array of the produced values.")
+                    deez/runtime:|let| deez/user::|map| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|f| #\) #\{
+                    deez/runtime:|let| deez/user::|iter| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|accumulated| #\) #\{
+                    deez/runtime:|if| #\( deez/runtime:|len| #\( deez/user::|arr| #\) deez/runtime:== 0 #\) #\{
+                    deez/user::|accumulated|
+                    #\} deez/runtime:|else| #\{
+                    deez/user::|iter| #\( deez/runtime:|rest| #\( deez/user::|arr| #\) #\, deez/runtime:|push| #\( deez/user::|accumulated| #\, deez/user::|f| #\( deez/runtime:|first| #\( deez/user::|arr| #\) #\) #\) #\) #\;
+                    #\}
+                    #\} #\;
 
-                     deez/user::|iter| #\( deez/user::|arr| #\, #\[ #\] #\) #\;
-                     #\} #\;
+                    deez/user::|iter| #\( deez/user::|arr| #\, #\[ #\] #\) #\;
+                    #\} #\;
 
-                     (comment "Now let's take the `people` array and the `getName` function from above and")
-                     (comment "use them with `map`.")
-                     deez/user::|map| #\( deez/user::|people| #\, deez/user::|getName| #\) #\;
-                     (comment "=> [\"Anna\", \"Bob\"]")))))
+                    (comment "Now let's take the `people` array and the `getName` function from above and")
+                    (comment "use them with `map`.")
+                    deez/user::|map| #\( deez/user::|people| #\, deez/user::|getName| #\) #\;
+                    (comment "=> [\"Anna\", \"Bob\"]")))))
