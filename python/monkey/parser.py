@@ -17,18 +17,21 @@ class Precedence(IntEnum):
     PREFIX = 6 # -X or !X
     CALL = 7 # myFunction(X)
 
+precedences = {
+TokenType.EQUAL: Precedence.EQUALS,
+TokenType.NOTEQUAL: Precedence.EQUALS,
+TokenType.LESSTHAN: Precedence.LESSGREATER,
+TokenType.GREATERTHAN: Precedence.LESSGREATER,
+TokenType.PLUS: Precedence.SUM,
+TokenType.MINUS: Precedence.SUM,
+TokenType.SLASH: Precedence.PRODUCT,
+TokenType.ASTERISK: Precedence.PRODUCT,
+}
+
 def token_type_to_precedence(type):
-    match type:
-        case (TokenType.EQUAL | TokenType.NOTEQUAL):
-            return Precedence.EQUALS
-        case (TokenType.LESSTHAN | TokenType.GREATERTHAN):
-            return Precedence.LESSGREATER
-        case (TokenType.PLUS | TokenType.MINUS):
-            return Precedence.SUM
-        case (TokenType.SLASH | TokenType.ASTERISK):
-            return Precedence.PRODUCT
-        case _:
-            return Precedence.LOWEST
+    if type in precedences:
+        return precedences[type]
+    return Precedence.LOWEST
 
 class Parser:
     def __init__(self, lexer: Lexer) -> None:
