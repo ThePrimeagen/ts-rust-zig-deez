@@ -4,38 +4,7 @@ import (
 	"unicode"
 )
 
-type TokenType string
-
-const (
-	ILLEGAL   TokenType = "ILLEGAL"
-	EOF       TokenType = "EOF"
-	IDENT     TokenType = "IDENT"
-	INT       TokenType = "INT"
-	EQUAL     TokenType = "="
-	PLUS      TokenType = "+"
-	COMMA     TokenType = ","
-	SEMICOLON TokenType = ";"
-	LPAREN    TokenType = "("
-	RPAREN    TokenType = ")"
-	LSQUIRLY  TokenType = "{"
-	RSQUIRLY  TokenType = "}"
-	FUNCTION  TokenType = "FUNCTION"
-	LET       TokenType = "LET"
-)
-
-type Token struct {
-	Type    TokenType
-	Literal string
-}
-
-func NewToken(tokenType TokenType, literal string) Token {
-	return Token{Type: tokenType, Literal: literal}
-}
-
-var Keywords = map[string]TokenType{
-	"fn":  FUNCTION,
-	"let": LET,
-}
+type TokenType uint8
 
 type Lexer struct {
 	input        string
@@ -44,53 +13,79 @@ type Lexer struct {
 	ch           rune
 }
 
+type Token struct {
+	Type    TokenType
+	Literal string
+}
+
+const (
+	Illegal TokenType = iota
+	Eof
+	Ident
+	Int
+	Equal
+	Plus
+	Comma
+	Semicolon
+	LParen
+	RParen
+	LSquirly
+	RSquirly
+	Function
+	Let
+)
+
+var keywords = map[string]TokenType{
+	"fn":  Function,
+	"let": Let,
+}
+
+var tokens = map[rune]Token{
+	'=': NewToken(Equal, "="),
+	'+': NewToken(Plus, "+"),
+	',': NewToken(Comma, ","),
+	';': NewToken(Semicolon, ";"),
+	'(': NewToken(LParen, "("),
+	')': NewToken(RParen, ")"),
+	'{': NewToken(LSquirly, "{"),
+	'}': NewToken(RSquirly, "}"),
+}
+
 func NewLexer(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
 	return l
 }
 
+func NewToken(tokenType TokenType, literal string) Token {
+	return Token{Type: tokenType, Literal: literal}
+}
+
 func (l *Lexer) NextToken() Token {
 	l.skipWhitespace()
 
-	if token, ok := getTokenFromMap(l.ch); ok {
+	if token, ok := tokens[l.ch]; ok {
 		l.readChar()
 		return token
 	}
 
 	if l.ch == 0 {
-		return NewToken(EOF, "")
+		return NewToken(Eof, "")
 	}
 
 	if unicode.IsLetter(l.ch) {
 		literal := l.readIdentifier()
-		if keywordType, ok := Keywords[literal]; ok {
+		if keywordType, ok := keywords[literal]; ok {
 			return NewToken(keywordType, literal)
 		}
-		return NewToken(IDENT, literal)
+		return NewToken(Ident, literal)
 	}
 
 	if unicode.IsDigit(l.ch) {
-		return NewToken(INT, l.readNumber())
+		return NewToken(Int, l.readNumber())
 	}
 
-	return NewToken(ILLEGAL, string(l.ch))
-}
-
-func getTokenFromMap(ch rune) (Token, bool) {
-	var tokenMap = map[rune]Token{
-		'=': NewToken(EQUAL, "="),
-		'+': NewToken(PLUS, "+"),
-		',': NewToken(COMMA, ","),
-		';': NewToken(SEMICOLON, ";"),
-		'(': NewToken(LPAREN, "("),
-		')': NewToken(RPAREN, ")"),
-		'{': NewToken(LSQUIRLY, "{"),
-		'}': NewToken(RSQUIRLY, "}"),
-	}
-
-	token, ok := tokenMap[ch]
-	return token, ok
+	return NewToken(Illegal, string(l.ch))
 }
 
 func (l *Lexer) readChar() {
