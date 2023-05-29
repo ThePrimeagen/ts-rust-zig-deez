@@ -156,10 +156,16 @@
     (if-not infix                                        (return left-expr rest-tokens)
     (when-let [left-expr (infix left-expr rest-tokens)]  (apply parse-expr prece left-expr)))))))
 
-(defn parse-let [[ident op & rest-tokens]]
-  (when (= :assign (token/kind op))
+(defn parse-let [[ident :as tokens]]
+  (when-let [rest-tokens       (expect-peek tokens :ident)]
+  (when-let [rest-tokens       (expect-peek rest-tokens :assign)]
   (when-let [[val rest-tokens] (parse-expr LOWEST rest-tokens)]
-    (return (ast/let (token/literal ident) val) (chomp-semicolon rest-tokens)))))
+    (return (ast/let (token/literal ident) val) 
+            (chomp-semicolon rest-tokens))))))
+
+(defn parse-return [tokens]
+  (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
+    (return (ast/return expr) (chomp-semicolon rest-tokens))))
 
 (defn parse-expr-stmt [tokens]
   (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
@@ -178,7 +184,7 @@
 (defn parse-stmt [[cur :as tokens]]
   (case (token/kind cur)
     :let    (parse-let (rest tokens))
-    :return nil
+    :return (parse-return (rest tokens))
             (parse-expr-stmt tokens)))
 
 (defn parse-program [[cur :as tokens]]
@@ -213,6 +219,8 @@
   (parse-program (lexer/lex "fn(x, y) { x + y; }(2, 3)"))
   (parse-program (lexer/lex "callsFunction(2, 3, fn(x, y) { x + y; });"))
   (parse-program (lexer/lex "add(1, 2 * 3, 4 + 5);"))
+  (parse-program (lexer/lex "if (x < y) { return 5 } else { return 7 };"))
+  (parse-program (lexer/lex "if (x < y) { return 5 };"))
   (parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5"))
   ())
 

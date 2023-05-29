@@ -23,6 +23,12 @@
 
 (def block-stmts second)
 
+
+(defmacro return [expr]
+  `(list :return ~expr))
+
+(def return-expr second)
+
 ;; expressions
 (defmacro ident [literal]
   `(list :ident ~literal))
