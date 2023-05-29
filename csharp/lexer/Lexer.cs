@@ -1,4 +1,4 @@
-﻿namespace lexer;
+﻿namespace monkey;
 
 public struct Lexer
 {
@@ -21,7 +21,7 @@ public struct Lexer
 
     private void ReadCharacter()
     {
-        if(_read_position >= _input.Length)
+        if (_read_position >= _input.Length)
         {
             _current_char = '\0';
         }
@@ -34,9 +34,21 @@ public struct Lexer
         _read_position++;
     }
 
+    private char PeekCharacter()
+    {
+        if (_read_position >= _input.Length)
+        {
+            return '\0';
+        }
+        else
+        {
+            return _inputSpan[_read_position];
+        }
+    }
+
     private void SkipWhitespace()
     {
-        while(char.IsWhiteSpace(_current_char))
+        while (char.IsWhiteSpace(_current_char))
         {
             ReadCharacter();
         }
@@ -46,7 +58,7 @@ public struct Lexer
     {
         var start = _position;
 
-        while(char.IsLetter(_current_char) || _inputSpan[_read_position] == '_')
+        while (char.IsLetter(_current_char) || _current_char == '_')
         {
             ReadCharacter();
         }
@@ -56,19 +68,19 @@ public struct Lexer
 
     private ReadOnlySpan<char> ReadString()
     {
-        if(_current_char == '\"')
+        if (_current_char == '\"')
         {
             ReadCharacter();
         }
 
         var start = _position;
 
-        while(_current_char != '\0' && _current_char != '\"')
+        while (_current_char != '\0' && _current_char != '\"')
         {
             ReadCharacter();
         }
 
-        if(_current_char == '\0')
+        if (_current_char == '\0')
         {
             throw new Exception("Unterminated string literal.");
         }
@@ -84,7 +96,7 @@ public struct Lexer
     {
         var start = _position;
 
-        while(char.IsDigit(_current_char))
+        while (char.IsDigit(_current_char))
         {
             ReadCharacter();
         }
@@ -96,7 +108,7 @@ public struct Lexer
     {
         SkipWhitespace();
 
-        if(_current_char == '\"')
+        if (_current_char == '\"')
         {
             return new TokenInfo(Token.String, ReadString().ToString());
         }
@@ -108,18 +120,38 @@ public struct Lexer
             {
                 "fn" => new TokenInfo(Token.Function),
                 "let" => new TokenInfo(Token.Let),
+                "true" => new TokenInfo(Token.True),
+                "false" => new TokenInfo(Token.False),
+                "if" => new TokenInfo(Token.If),
+                "else" => new TokenInfo(Token.Else),
+                "return" => new TokenInfo(Token.Return),
                 _ => new TokenInfo(Token.Ident, ident.ToString())
             };
         }
 
-        if(char.IsDigit(_current_char))
+        if (char.IsDigit(_current_char))
         {
             return new TokenInfo(Token.Integer, ReadInt());
         }
 
         var token = _current_char switch
         {
-            '=' => new TokenInfo(Token.Equal),
+            '=' => PeekCharacter() switch
+            {
+                '=' => SkipAndReturn(new TokenInfo(Token.EQ)),
+                _   => new TokenInfo(Token.Assign),
+            }
+            ,
+            '!' => PeekCharacter() switch
+            {
+                '=' => SkipAndReturn(new TokenInfo(Token.NOT_EQ)),
+                _   => new TokenInfo(Token.Bang),
+            },
+            '-' => new TokenInfo(Token.Minus),
+            '/' => new TokenInfo(Token.Slash),
+            '*' => new TokenInfo(Token.Asterisk),
+            '<' => new TokenInfo(Token.LT),
+            '>' => new TokenInfo(Token.GT),
             '+' => new TokenInfo(Token.Plus),
             ',' => new TokenInfo(Token.Comma),
             ';' => new TokenInfo(Token.Semicolon),
@@ -128,7 +160,7 @@ public struct Lexer
             '{' => new TokenInfo(Token.LSquirly),
             '}' => new TokenInfo(Token.RSquirly),
             '\0' => new TokenInfo(Token.Eof),
-            _ => new TokenInfo(Token.Illegal, _current_char)
+            _ => new TokenInfo(Token.Illegal, _current_char),
         };
 
         ReadCharacter();
@@ -136,10 +168,16 @@ public struct Lexer
         return token;
     }
 
+    private TokenInfo SkipAndReturn(TokenInfo tokenInfo)
+    {
+        ReadCharacter();
+        return tokenInfo;
+    }
+
     public IEnumerable<TokenInfo> ParseTokens()
     {
         TokenInfo tok;
-        while((tok = NextToken()).Type != Token.Eof)
+        while ((tok = NextToken()).Type != Token.Eof)
         {
             yield return tok;
         }

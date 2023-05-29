@@ -1,22 +1,35 @@
-﻿namespace lexer;
+﻿namespace monkey;
 
 public enum Token
 {
-    Ident,
-    Integer,
-    Let,
-    Illegal,
-    Eof,
-    Equal,
+    Assign,
     Plus,
+    Minus,
+    Asterisk,
+    Slash,
+    Bang,
+    LT,
+    GT,
+    EQ,
+    NOT_EQ,
     Comma,
     Semicolon,
     LParen,
     RParen,
     LSquirly,
     RSquirly,
+    Ident,
     Function,
-    String
+    Let,
+    True,
+    False,
+    If,
+    Else,
+    Return,
+    Integer,
+    String,
+    Illegal,
+    Eof
 }
 
 public readonly struct TokenInfo

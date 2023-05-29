@@ -16,7 +16,7 @@ public class Tests
 
         var expectedResult = new List<TokenInfo>
         {
-            new TokenInfo(Token.Equal),
+            new TokenInfo(Token.Assign),
             new TokenInfo(Token.Plus),
             new TokenInfo(Token.LParen),
             new TokenInfo(Token.RParen),
@@ -40,6 +40,17 @@ public class Tests
                                     x + y;
                                 };
                                 let result = add(five, ten);
+                                !-/*5;
+                                5 < 10 > 5;
+                                
+                                if (5 < 10) {
+                                return true;
+                                } else {
+                                return false;
+                                }
+                                
+                                10 == 10;
+                                10 != 9;
                                 """;
 
         var tokens = new Lexer(testInput).ParseTokens();
@@ -48,17 +59,17 @@ public class Tests
         {
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "five"), // five
-            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Assign),      // =
             new TokenInfo(Token.Integer, 5),    // 5
             new TokenInfo(Token.Semicolon),  // ;
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "ten"), // ten
-            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Assign),      // =
             new TokenInfo(Token.Integer, 10),    // 10
             new TokenInfo(Token.Semicolon),  // ;
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "add"), // add
-            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Assign),      // =
             new TokenInfo(Token.Function),   // fn
             new TokenInfo(Token.LParen),     // (
             new TokenInfo(Token.Ident, "x"), // x
@@ -74,7 +85,7 @@ public class Tests
             new TokenInfo(Token.Semicolon),  // ;
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "result"), // result
-            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Assign),      // =
             new TokenInfo(Token.Ident, "add"), // add
             new TokenInfo(Token.LParen),     // (
             new TokenInfo(Token.Ident, "five"), // five
@@ -82,7 +93,45 @@ public class Tests
             new TokenInfo(Token.Ident, "ten"), // ten
             new TokenInfo(Token.RParen),     // )
             new TokenInfo(Token.Semicolon),  // ;
-            new TokenInfo(Token.Eof)
+            new TokenInfo(Token.Bang),  // !
+            new TokenInfo(Token.Minus),  // -
+            new TokenInfo(Token.Slash),  // /
+            new TokenInfo(Token.Asterisk),  // *
+            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.Semicolon), // ;
+            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.LT), // <
+            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.GT), // >
+            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.Semicolon), // ;
+            new TokenInfo(Token.If), // if
+            new TokenInfo(Token.LParen), // (
+            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.LT), // <
+            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.RParen), // )
+            new TokenInfo(Token.LSquirly), // {
+            new TokenInfo(Token.Return), // return
+            new TokenInfo(Token.True), // true
+            new TokenInfo(Token.Semicolon), // ;
+            new TokenInfo(Token.RSquirly), // }
+            new TokenInfo(Token.Else), // else
+            new TokenInfo(Token.LSquirly), // {
+            new TokenInfo(Token.Return), // return
+            new TokenInfo(Token.False), // false
+            new TokenInfo(Token.Semicolon), // ;
+            new TokenInfo(Token.RSquirly), // }
+            new TokenInfo(Token.Eof),
+            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.EQ), // ==
+            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.Semicolon), // ;
+            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.NOT_EQ), // !=
+            new TokenInfo(Token.Integer, 9), // 9
+            new TokenInfo(Token.Semicolon), // ;
+
         };
 
         

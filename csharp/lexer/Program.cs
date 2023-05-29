@@ -1,17 +1,26 @@
-﻿using lexer;
+﻿using monkey;
 
-const string testInput = """
-let five = 5;
-let ten = 10;
-let add = fn(x, y) {
-    x + y;
-};
-let result = add(five, ten);
-""";
+var user = Environment.UserName;
 
-var tokens = new Lexer(testInput).ParseTokens();
+Console.WriteLine($"Hello {user}! This is the Monkey programming language!");
+Console.WriteLine("Feel free to type in commands");
 
-foreach(var token in tokens)
+const string PROMPT = ">> ";
+
+while (true)
 { 
-    Console.WriteLine(token);
+    Console.Write(PROMPT);
+    var line = Console.ReadLine();
+
+    if(line is null)
+    {
+        break;
+    }
+
+    var lexer = new Lexer(line);
+
+    foreach(var token in lexer.ParseTokens())
+    {
+        Console.WriteLine(token);
+    }
 }
