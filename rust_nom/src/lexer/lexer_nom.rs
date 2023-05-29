@@ -9,8 +9,8 @@ use nom::{
 
 #[derive(Debug, PartialEq)]
 pub enum Token<'a> {
-    Ident(&'a str),
-    Int(&'a str),
+    Ident(&'a [u8]),
+    Int(&'a [u8]),
 
     Illegal,
     Eof,
@@ -68,9 +68,7 @@ impl<'a> Lexer<'a> {
             map(tag(b"("), |_| Token::LParen),
             map(tag(b")"), |_| Token::RParen),
             map(tag(b"{"), |_| Token::LSquirly),
-            map(tag(b"}"), |_| Token::RSquirly),
-            map(tag(b"fn"), |_| Token::Function),
-            map(tag(b"let"), |_| Token::Let),
+            map(tag(b"}"), |_| Token::RSquirly)
         ))(input)
     }
 
@@ -79,14 +77,14 @@ impl<'a> Lexer<'a> {
         let token = match ident {
             b"fn" => Token::Function,
             b"let" => Token::Let,
-            _ => Token::Ident(std::str::from_utf8(ident).unwrap()),
+            _ => Token::Ident(ident),
         };
         Ok((rest, token))
     }
 
     fn parse_integer(input: &'a [u8]) -> IResult<&'a [u8], Token> {
         let (rest, int) = digit1(input)?;
-        Ok((rest, Token::Int(std::str::from_utf8(int).unwrap())))
+        Ok((rest, Token::Int(int)))
     }
 }
 
@@ -130,39 +128,39 @@ mod test {
 
         let tokens = vec![
             Token::Let,
-            Token::Ident("five"),
+            Token::Ident("five".as_bytes()),
             Token::Equal,
-            Token::Int("5"),
+            Token::Int("5".as_bytes()),
             Token::Semicolon,
             Token::Let,
-            Token::Ident("ten"),
+            Token::Ident("ten".as_bytes()),
             Token::Equal,
-            Token::Int("10"),
+            Token::Int("10".as_bytes()),
             Token::Semicolon,
             Token::Let,
-            Token::Ident("add"),
+            Token::Ident("add".as_bytes()),
             Token::Equal,
             Token::Function,
             Token::LParen,
-            Token::Ident("x"),
+            Token::Ident("x".as_bytes()),
             Token::Comma,
-            Token::Ident("y"),
+            Token::Ident("y".as_bytes()),
             Token::RParen,
             Token::LSquirly,
-            Token::Ident("x"),
+            Token::Ident("x".as_bytes()),
             Token::Plus,
-            Token::Ident("y"),
+            Token::Ident("y".as_bytes()),
             Token::Semicolon,
             Token::RSquirly,
             Token::Semicolon,
             Token::Let,
-            Token::Ident("result"),
+            Token::Ident("result".as_bytes()),
             Token::Equal,
-            Token::Ident("add"),
+            Token::Ident("add".as_bytes()),
             Token::LParen,
-            Token::Ident("five"),
+            Token::Ident("five".as_bytes()),
             Token::Comma,
-            Token::Ident("ten"),
+            Token::Ident("ten".as_bytes()),
             Token::RParen,
             Token::Semicolon,
             Token::Eof,
