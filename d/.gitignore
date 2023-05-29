@@ -1,3 +1,13 @@
+# Ignore all
+*
+# Unignore all with extensions
+!*.*
+
+*.a
+*.o
+
+.dub
+
 ##
 # .gitignore for most used editors
 ##
