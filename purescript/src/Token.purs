@@ -29,4 +29,3 @@ instance showToken :: Show Token where
 
 instance eqToken :: Eq Token where
   eq = genericEq
-  
