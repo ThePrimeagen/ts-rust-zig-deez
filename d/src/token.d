@@ -1,7 +1,7 @@
 module token;
 import std.conv;
-
-alias TokenType = string;
+import std.typecons;
+import std.traits;
 
 struct Token {
     TokenType type;
@@ -17,7 +17,7 @@ struct Token {
     }
 }
 
-enum {
+enum TokenType {
     ILLEGAL = "ILLEGAL",
     EOF = "EOF",
     
@@ -28,6 +28,16 @@ enum {
     // Operators
     ASSIGN = "=",
     PLUS = "+",
+	MINUS    = "-",
+	BANG     = "!",
+	ASTERISK = "*",
+	SLASH = "/",
+
+	LT = "<",
+	GT = ">",
+
+	EQ     = "==",
+	NOT_EQ = "!=",
     
     COMMA = ",",
     SEMICOLON = ";",
@@ -39,19 +49,29 @@ enum {
 
     // Keywords
     FUNCTION = "FUNCTION",
-    LET = "LET"
+    LET = "LET",
+	TRUE = "TRUE",
+	FALSE = "FALSE",
+	IF = "IF",
+	ELSE = "ELSE",
+	RETURN = "RETURN",
 }
+private alias TT = TokenType;
 
 enum TokenType[string] keywords = [
-    "fn": FUNCTION,
-    "let": LET
+    "fn": TT.FUNCTION,
+    "let": TT.LET,
+	"true": TT.TRUE,
+	"false": TT.FALSE,
+	"if": TT.IF,
+	"else": TT.ELSE,
+	"return": TT.RETURN,
 ];
-
 
 
 TokenType lookupIdent(string ident) {
     if (ident in keywords) {
         return keywords[ident];
     }
-    return IDENT;
+    return TT.IDENT;
 }
