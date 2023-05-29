@@ -46,13 +46,16 @@ module Lexer =
         while code.char = ' ' || code.char = '\t' || code.char = '\n' || code.char = '\r' do
             readChar code
 
-    let readIdentifier code =
+    let readWhile code predicate =
         let start = code.position
 
-        while code.char |> isLetter do
+        while code.char |> predicate do
             readChar code
 
-        let literal = code.source.Substring(start, code.position - start)
+        code.source.Substring(start, code.position - start)
+
+    let readIdentifier code =
+        let literal = readWhile code isLetter
 
         match literal with
         | "fn" -> Function
@@ -60,13 +63,7 @@ module Lexer =
         | _ -> Ident(literal)
 
     let readNumber code =
-        let start = code.position
-
-        while code.char |> isNumber do
-            readChar code
-
-        let literal = code.source.Substring(start, code.position - start)
-
+        let literal = readWhile code isNumber
         Int(Int32.Parse(literal))
 
     let nextToken code =
