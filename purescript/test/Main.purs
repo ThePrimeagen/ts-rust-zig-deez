@@ -23,7 +23,7 @@ main = do
     let add = fn(x, y) {
         x + y;
     };
-    let result = add(five, ten);`;
+    let result = add(five, ten);
   """
   
   let expected = NonEmptyArray [ 
