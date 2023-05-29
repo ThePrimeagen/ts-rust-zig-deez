@@ -1,7 +1,6 @@
 ﻿using lexer;
 
 const string testInput = """
-let hello = "world";
 let five = 5;
 let ten = 10;
 let add = fn(x, y) {
@@ -10,10 +9,9 @@ let add = fn(x, y) {
 let result = add(five, ten);
 """;
 
-var lexer = new Lexer(testInput);
+var tokens = new Lexer(testInput).ParseTokens();
 
-TokenInfo tok;
-while ((tok = lexer.NextToken()).Type != Token.Eof)
-{
-    Console.WriteLine(tok.ToString());
+foreach(var token in tokens)
+{ 
+    Console.WriteLine(token);
 }

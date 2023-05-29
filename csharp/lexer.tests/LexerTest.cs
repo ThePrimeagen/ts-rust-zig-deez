@@ -12,7 +12,7 @@ public class Tests
     {
         const string testInput = "=+(){},;";
 
-        var result = new Lexer(testInput).ParseToken();
+        var result = new Lexer(testInput).ParseTokens();
 
         var expectedResult = new List<TokenInfo>
         {
@@ -42,7 +42,7 @@ public class Tests
                                 let result = add(five, ten);
                                 """;
 
-        var tokens = new Lexer(testInput).ParseToken();
+        var tokens = new Lexer(testInput).ParseTokens();
 
         var expectedResult = new List<TokenInfo>
         {

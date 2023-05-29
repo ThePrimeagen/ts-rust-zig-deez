@@ -136,7 +136,7 @@ public struct Lexer
         return token;
     }
 
-    public IEnumerable<TokenInfo> ParseToken()
+    public IEnumerable<TokenInfo> ParseTokens()
     {
         TokenInfo tok;
         while((tok = NextToken()).Type != Token.Eof)
