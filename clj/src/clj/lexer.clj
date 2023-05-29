@@ -1,6 +1,6 @@
 (ns clj.lexer
-  (:use [clj.util]
-        [clj.token :as token :only [chr-token? two-op?]]))
+  (:require [clj.util :refer [digit? letter? space? to-str]]
+        [clj.token :as token :refer [chr-token? two-op?]]))
 
 (defn lex
   ([input]
@@ -17,7 +17,6 @@
           (letter? ch)    (lex letter? pos input nil)
           :else           (list (token/create :illegal ch pos)))))
   ([pred pos input kind]
-    "for lexing ints, keywords, idents based on predicate"
     (let [[chrs rst] (split-with pred input)
           ident      (to-str chrs)
           npos       (+ pos (count chrs))

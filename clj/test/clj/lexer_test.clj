@@ -1,9 +1,8 @@
 (ns clj.lexer-test
-  (:use [clojure.test]
-        [clj.util]
-        [clj.token :as token]
-        [clj.lexer]
-        [clojure.string :only [split]]))
+  (:require [clojure.test :refer [deftest is testing]]
+            [clj.util :refer [to-str]]
+            [clj.token :as token]
+            [clj.lexer :refer [lex]]))
 
 (deftest lexer-test
   (testing "=+(){},;"

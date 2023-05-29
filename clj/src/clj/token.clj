@@ -1,7 +1,7 @@
 (ns clj.token
   (:refer-clojure :exclude [next])
-  (:use [clj.util :only [third]]
-        [clojure.pprint :only [pprint]]))
+  (:require [clj.util :refer [third]]
+            [clojure.pprint :refer [pprint]]))
 
 (defn chr->kind [chr]
   (case chr 
