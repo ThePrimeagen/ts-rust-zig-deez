@@ -83,11 +83,11 @@ let foobar = 838383;
 
     def test_parsing_prefix_expressions(self):
         prefix_tests = [
-            {"input": "!5;", "operator": "!", "value": 5},
-            {"input": "-15;", "operator": "-", "value": 15},
+            ("!5;", "!", 5),
+            ("-15;", "-", 15),
         ]
-        for _, test in enumerate(prefix_tests):
-            lexer = Lexer(test["input"])
+        for test in prefix_tests:
+            lexer = Lexer(test[0])
             parser = Parser(lexer)
             program = parser.parse_program()
             self.check_parser_errors(parser)
@@ -99,12 +99,44 @@ let foobar = 838383;
             self.assertIsInstance(stmt, ast.ExpressionStatement)
             expression: ast.PrefixExpression = stmt.expression
             self.assertIsInstance(expression, ast.PrefixExpression)
-            self.assertEqual(expression.operator, test["operator"])
+            self.assertEqual(expression.operator, test[1])
 
-            int_literal: ast.IntegerLiteral = expression.right
-            self.assertIsInstance(int_literal, ast.IntegerLiteral)
-            self.assertEqual(int_literal.value, test["value"])
-            self.assertEqual(int_literal.token_literal(), str(test["value"]))
+            self.integer_literal_test(expression.right, test[2])
+
+    def test_parsing_infix_expression(self):
+        infix_tests = [
+            ("5 + 5;", 5, "+", 5),
+            ("5 - 5;", 5, "-", 5),
+            ("5 * 5;", 5, "*", 5),
+            ("5 / 5;", 5, "/", 5),
+            ("5 > 5;", 5, ">", 5),
+            ("5 < 5;", 5, "<", 5),
+            ("5 == 5;", 5, "==", 5),
+            ("5 != 5;", 5, "!=", 5),
+        ]
+
+        for test in infix_tests:
+            lexer = Lexer(test[0])
+            parser = Parser(lexer)
+            program = parser.parse_program()
+            self.check_parser_errors(parser)
+            self.assertEqual(
+                len(program.statements), 1, f"Program has not enough statements. {len(program.statements)=}"
+            )
+
+            stmt: ast.ExpressionStatement = program.statements[0]
+            self.assertIsInstance(stmt, ast.ExpressionStatement)
+            expression: ast.InfixExpression = stmt.expression
+            self.assertIsInstance(expression, ast.InfixExpression)
+
+            self.integer_literal_test(expression.left, test[1])
+            self.assertEqual(test[2], expression.operator)
+            self.integer_literal_test(expression.right, test[3])
+
+    def integer_literal_test(self, exp: ast.IntegerLiteral, value: int):
+        self.assertIsInstance(exp, ast.IntegerLiteral)
+        self.assertEqual(exp.value, value)
+        self.assertEqual(exp.token_literal(), str(value))
 
     def check_parser_errors(self, parser: Parser):
         if not parser.errors:

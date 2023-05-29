@@ -71,6 +71,19 @@ class PrefixExpression(Expression):
 
 
 @dataclass
+class InfixExpression(Expression):
+    left: Expression = None
+    operator: str = ""
+    right: Expression = None
+
+    def expression_node(self) -> None:
+        pass
+
+    def token_literal(self) -> str:
+        return self.token.literal
+
+
+@dataclass
 class LetStatement(Statement):
     name: Identifier = None
     value: Expression = None

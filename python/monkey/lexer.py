@@ -32,23 +32,26 @@ class Lexer:
         self.skip_whitespace()
 
         # I dont wanna write if else for each character
-        tok = FIXED_TOKENS.get(self.ch,None)
+        tok = None
+        if self.ch in FIXED_TOKENS:
+            tok = FIXED_TOKENS[self.ch]
         match tok:
             case Token(TokenType.ASSING):
                 #PEEK
                 if self.peek_char() == "=":
                     self.read_char()
-                    tok = FIXED_TOKENS.get("==")
+                    tok = FIXED_TOKENS["=="]
             case Token(TokenType.BANG):
                 #PEEK
                 if self.peek_char() == "=":
                     self.read_char()
-                    tok = FIXED_TOKENS.get("!=")
+                    tok = FIXED_TOKENS["!="]
             case None:
                 if is_letter(self.ch):
                     ident = self.read_ident()
-                    tok = RESERVED_KEYWORDS.get(ident,Token(TokenType.IDENT,ident))
-                    return tok
+                    if ident in RESERVED_KEYWORDS:
+                        return RESERVED_KEYWORDS[ident]
+                    return Token(TokenType.IDENT,ident)
                 elif self.ch.isdigit():
                     return Token(TokenType.INT, self.read_int())
                 tok = Token(TokenType.ILLEGAL,TokenType.ILLEGAL)
