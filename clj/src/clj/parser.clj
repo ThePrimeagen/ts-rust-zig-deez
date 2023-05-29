@@ -1,12 +1,17 @@
 (ns clj.parser
   (:require [clj.token :as token]
             [clj.ast   :as ast]
-            [clj.lexer :as lexer]))
+            [clj.lexer :as lexer])
+  (:use [clojure.pprint :only [pprint]]))
 
 (defmacro return [parsed rest-tokens]
   `(list ~parsed ~rest-tokens))
 
-(declare parse-expr)
+(declare parse-expr parse-block-stmt parse-stmt)
+
+(defn expect-peek [[cur :as tokens] expected-kind]
+  (when (= expected-kind (token/kind cur))
+    (rest tokens)))
 
 ;; precedence
 (def ^:const LOWEST  0)
@@ -48,13 +53,39 @@
   (when-let [[right-expr rest-tokens] (parse-expr (precedence (token/kind infix)) (rest tokens))]
     (return (ast/infix left-expr (token/literal infix) right-expr) rest-tokens)))
 
+(defn parse-bool [[bool :as tokens]]
+  (return (ast/bool (= :true (token/kind bool))) (rest tokens)))
+
+(defn parse-group-expr [tokens]
+  (when-let [[expr rest-tokens] (parse-expr LOWEST (rest tokens))]
+  (when-let [rest-tokens        (expect-peek rest-tokens :r_paren)]
+    (return expr rest-tokens))))
+
+(defn parse-if-expr [tokens]
+  (when-let [rest-tokens         (expect-peek (rest tokens) :l_paren)]
+  (when-let [[condi rest-tokens] (parse-expr LOWEST rest-tokens)]
+  (when-let [rest-tokens         (expect-peek rest-tokens :r_paren)]
+  (when-let [rest-tokens         (expect-peek rest-tokens :l_squirly)]
+  (when-let [[conse rest-tokens] (parse-block-stmt rest-tokens)]
+  (when-let [rest-tokens         (expect-peek rest-tokens :r_squirly)]
+  (if-not   (= :else (token/kind (token/next rest-tokens)))
+    (return (ast/if condi conse nil) rest-tokens)
+  (when-let [rest-tokens         (expect-peek (rest rest-tokens) :l_squirly)]
+  (when-let [[alter rest-tokens] (parse-block-stmt rest-tokens)]
+  (when-let [rest-tokens         (expect-peek rest-tokens :r_squirly)]
+    (return (ast/if condi conse alter) rest-tokens))))))))))))
+
 (defn prefix-parse-fn [token-type]
   (case token-type
-    :ident parse-ident
-    :int   parse-int
-    :bang  parse-prefix
-    :minus parse-prefix
-           nil))
+     :ident   parse-ident
+     :int     parse-int
+     :l_paren parse-group-expr
+     :if      parse-if-expr
+    (:bang  
+     :minus)  parse-prefix
+    (:true  
+     :false)  parse-bool
+             nil))
 
 (defn infix-parse-fn [token-type]
   (case token-type
@@ -77,10 +108,13 @@
       (apply parse-expr prece left-expr))))
   ([prece left-expr [op :as rest-tokens]]
     (if-not (and (not= :semicolon (token/kind op))
-                 (< prece (precedence (token/kind op))))  (return left-expr rest-tokens)
-    (if-let   [infix     (infix-parse-fn (token/kind op))]
+                 (< prece (precedence (token/kind op))))
+      (return left-expr rest-tokens)
+    (let [infix (infix-parse-fn (token/kind op))]
+    (if-not infix
+      (return left-expr rest-tokens)
     (when-let [left-expr (infix left-expr rest-tokens)]
-      (apply parse-expr prece left-expr))                 (return left-expr rest-tokens)))))
+      (apply parse-expr prece left-expr)))))))
 
 (defn parse-let [[ident op & rest-tokens :as tokens]]
   (when (= :assign (token/kind op))
@@ -91,11 +125,20 @@
   (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
     (return (ast/expr expr) (chomp-semicolon rest-tokens))))
 
+(defn parse-block-stmt
+  ([tokens]
+    (parse-block-stmt tokens []))
+  ([[cur :as rest-tokens] stmts]
+    (if (or (= :r_squirly (token/kind cur))
+            (= :eof       (token/kind cur)))
+      (return (ast/block stmts) rest-tokens)
+    (when-let [[stmt rest-tokens] (parse-stmt rest-tokens)]
+      (parse-block-stmt rest-tokens (conj stmts stmt))))))
+
 (defn parse-stmt [[cur :as tokens]]
   (case (token/kind cur)
     :let    (parse-let (rest tokens))
     :return nil
-    :if     nil
             (parse-expr-stmt tokens)))
 
 (defn parse-program [[cur :as tokens]]
@@ -113,5 +156,14 @@
   (parse-expr LOWEST (lexer/lex "5 != 5;"))
   (parse-expr LOWEST (lexer/lex "5 !=;"))
   (parse-program (lexer/lex "let hello = 5;"))
-  (clojure.pprint/pprint(parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5")))
+  (parse-program (lexer/lex "true;"))
+  (parse-program (lexer/lex "let barfoo = false;"))
+  (parse-program (lexer/lex "3 < 5 == true"))
+  (parse-program (lexer/lex "!true;"))
+  (parse-program (lexer/lex "2 / (5 + 5)"))
+  (parse-program (lexer/lex "!(true == true)"))
+  (pprint (parse-program (lexer/lex "1 + (2 + 3) + 4")))
+  (pprint (parse-program (lexer/lex "if (x < y) { x }")))
+  (pprint (parse-program (lexer/lex "if (x < y) { x } else { y }")))
+  (pprint (parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5")))
   ())

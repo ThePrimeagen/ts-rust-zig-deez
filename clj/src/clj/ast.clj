@@ -18,6 +18,11 @@
 (def expr-expr second)
 
 
+(defmacro block [stmts]
+  `(list :block ~stmts))
+
+(def block-stmts second)
+
 ;; expressions
 (defmacro ident [literal]
   `(list :ident ~literal))
@@ -44,3 +49,17 @@
 (def infix-left  first)
 (def infix-op    second)
 (def infix-right third)
+
+
+(defmacro bool [val]
+  `(list :bool ~val))
+
+(def bool-value second)
+
+
+(defmacro if [condition consequence alternative]
+  `(list :if ~condition ~consequence ~alternative))
+
+(def if-condition   first)
+(def if-consequence second)
+(def if-alternative third)

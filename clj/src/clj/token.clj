@@ -1,4 +1,5 @@
 (ns clj.token
+  (:refer-clojure :exclude [next])
   (:use [clj.util :only [third]]
         [clojure.pprint :only [pprint]]))
 
@@ -49,3 +50,6 @@
 (defn pp [token]
   (-> (zipmap [:kind :literal :position] token)
       (pprint)))
+
+(defmacro next [tokens]
+  `(first ~tokens))
