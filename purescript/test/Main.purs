@@ -7,10 +7,12 @@ import Data.Either (Either(..))
 import Effect (Effect)
 import Effect.Class.Console (logShow)
 import Effect.Console (log)
+import Effect.Exception (throw)
 import Lexer (Token(..), parser)
 import Parsing (runParser)
 import Parsing.Combinators.Array (many1)
 import Parsing.String.Basic (whiteSpace)
+import Test.Assert (assert, assert', assertEqual, assertEqual', assertThrows')
 
 
 main :: Effect Unit
@@ -36,13 +38,9 @@ main = do
     output = runParser input $ many1 (whiteSpace *> parser)
 
   case output of
-    Right parsed -> 
-      if parsed == expected then do
-        log "Tokens parsed sucessfully:"
-        logShow parsed
-      else 
-        log "Tokens parsed does not match expected output."
+    Right actual -> do
+      assertEqual' "Parsed tokens did not match exptected output" {actual, expected }
 
     Left error -> do
-      log "Parser error:"
-      logShow error
+      log "Parsing Error"
+      throw $ show error

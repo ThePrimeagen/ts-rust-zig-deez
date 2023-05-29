@@ -13,10 +13,12 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "arrays"
+  , "assert"
   , "console"
   , "control"
   , "effect"
   , "either"
+  , "exceptions"
   , "lists"
   , "parsing"
   , "prelude"
