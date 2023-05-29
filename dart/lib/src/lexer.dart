@@ -29,13 +29,8 @@ class Tokenizer {
       "{" => Token.lSquirly(),
       "}" => Token.rSquirly(),
       $EOF => Token.eof(),
-      String c when c.isLetter() => _lookupIdent(
-          _readIdentifier(), // I go back one char in _readIdentifier so it's ok
-        ),
-      String c when c.isNumber() => Token(
-          TokenType.int,
-          _readNumber(), // I go back one char in _readNumber so it's ok
-        ),
+      String c when c.isLetter() => _readIdentifier(),
+      String c when c.isNumber() => _readNumber(),
       _ => Token(TokenType.illegal, ch)
     };
 
@@ -73,24 +68,24 @@ class Tokenizer {
     ch = input[_pos];
   }
 
-  String _readIdentifier() {
+  Token _readIdentifier() {
     final pos = _pos;
     while (ch.isLetter()) {
       _readChar();
     }
     final id = input.substring(pos, _pos);
     _goBack();
-    return id;
+    return _lookupIdent(id);
   }
 
-  String _readNumber() {
+  Token _readNumber() {
     final pos = _pos;
     while (ch.isNumber()) {
       _readChar();
     }
     final number = input.substring(pos, _pos);
     _goBack();
-    return number;
+    return Token.int(number);
   }
 
   Iterable<Token> iter() sync* {
