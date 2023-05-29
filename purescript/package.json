@@ -4,7 +4,7 @@
   "description": "Lexer in purescript using purescript-parsing(parsec ported from haskell)",
   "main": "index.js",
   "scripts": {
-    "test": "spago build && spago run"
+    "test": "spago build && spago test"
   },
   "repository": {
     "type": "git",
