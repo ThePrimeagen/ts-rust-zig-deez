@@ -45,7 +45,12 @@ impl<'a> Lexer<'a> {
             return Ok(Token::Eof);
         }
 
-        match alt((Self::parse_one_char_token, Self::parse_ident, Self::parse_integer))(self.input) {
+        match alt((
+            Self::parse_one_char_token,
+            Self::parse_ident,
+            Self::parse_integer,
+        ))(self.input)
+        {
             Ok((rest, token)) => {
                 self.input = rest;
                 Ok(token)
@@ -53,7 +58,7 @@ impl<'a> Lexer<'a> {
             Err(_) => Err("Unexpected error when parsing token"),
         }
     }
-    
+
     fn parse_one_char_token(input: &'a [u8]) -> IResult<&'a [u8], Token> {
         alt((
             map(tag(b"="), |_| Token::Equal),
@@ -88,10 +93,9 @@ impl<'a> Lexer<'a> {
 #[cfg(test)]
 mod test {
     use super::{Lexer, Token};
-    use anyhow::Result;
 
     #[test]
-    fn get_next_token() -> Result<()> {
+    fn get_next_token() {
         let input = "=+(){},;";
         let mut lexer = Lexer::new(input);
 
@@ -111,12 +115,10 @@ mod test {
             println!("expected: {:?}, received {:?}", token, next_token);
             assert_eq!(token, next_token);
         }
-
-        return Ok(());
     }
 
     #[test]
-    fn get_next_complete() -> Result<()> {
+    fn get_next_complete() {
         let input = r#"let five = 5;
             let ten = 10;
             let add = fn(x, y) {
@@ -171,7 +173,5 @@ mod test {
             println!("expected: {:?}, received {:?}", token, next_token);
             assert_eq!(token, next_token);
         }
-
-        return Ok(());
     }
 }
