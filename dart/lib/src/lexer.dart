@@ -3,10 +3,12 @@
 import 'utils.dart';
 import 'token.dart';
 
+const $EOF = "\u0000";
+
 class Tokenizer {
   int _pos = 0;
   int _readPos = 0;
-  String ch = "\0";
+  String ch = $EOF;
 
   final String input;
 
@@ -26,13 +28,13 @@ class Tokenizer {
       ")" => Token.rParen(),
       "{" => Token.lSquirly(),
       "}" => Token.rSquirly(),
-      "\0" => Token.eof(),
+      $EOF => Token.eof(),
       String c when c.isLetter() => _lookupIdent(
-          _readIdentifier(),
+          _readIdentifier(), // I go back one char in _readIdentifier so it's ok
         ),
       String c when c.isNumber() => Token(
           TokenType.int,
-          _readNumber(),
+          _readNumber(), // I go back one char in _readNumber so it's ok
         ),
       _ => Token(TokenType.illegal, ch)
     };
@@ -50,17 +52,16 @@ class Tokenizer {
   }
 
   void _skipWhitespace() {
-    while (ch == " " || ch == "\t" || ch == "\n" || ch == "\r") {
+    while (ch.isWhitespace()) {
       _readChar();
     }
   }
 
   void _readChar() {
-    if (_readPos >= input.length) {
-      ch = "\0";
-    } else {
-      ch = input[_readPos];
-    }
+    ch = switch (_readPos) {
+      int p when p >= input.length => $EOF,
+      _ => input[_readPos],
+    };
 
     _pos = _readPos;
     _readPos += 1;
@@ -77,9 +78,9 @@ class Tokenizer {
     while (ch.isLetter()) {
       _readChar();
     }
-    final res = input.substring(pos, _pos);
+    final id = input.substring(pos, _pos);
     _goBack();
-    return res;
+    return id;
   }
 
   String _readNumber() {
@@ -87,9 +88,9 @@ class Tokenizer {
     while (ch.isNumber()) {
       _readChar();
     }
-    final res = input.substring(pos, _pos);
+    final number = input.substring(pos, _pos);
     _goBack();
-    return res;
+    return number;
   }
 
   Iterable<Token> iter() sync* {

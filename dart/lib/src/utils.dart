@@ -14,4 +14,7 @@ extension StringExt on String {
     final ch = _c(this);
     return _c("0") <= ch && ch <= _c("9");
   }
+
+  bool isWhitespace() =>
+      this == " " || this == "\t" || this == "\n" || this == "\r";
 }
