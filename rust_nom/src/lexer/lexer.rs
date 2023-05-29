@@ -1,15 +1,16 @@
-use anyhow::Result;
 use nom::{
     branch::alt,
-    character::complete::{alpha1, char, digit1, multispace0},
+    bytes::complete::{tag, take_while1},
+    character::complete::{digit1, multispace0},
     combinator::map,
+    error::Error,
     IResult,
 };
 
 #[derive(Debug, PartialEq)]
-pub enum Token {
-    Ident(String),
-    Int(String),
+pub enum Token<'a> {
+    Ident(&'a str),
+    Int(&'a str),
 
     Illegal,
     Eof,
@@ -26,53 +27,61 @@ pub enum Token {
 }
 
 pub struct Lexer<'a> {
-    input: &'a str,
+    input: &'a [u8],
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Lexer<'a> {
-        Lexer { input }
+        Lexer {
+            input: input.as_bytes(),
+        }
     }
 
-    pub fn next_token(&mut self) -> Result<Token, String> {
-        let (input, _) = multispace0::<&str, nom::error::Error<&str>>(self.input).unwrap();
-        self.input = input;
+    pub fn next_token(&mut self) -> Result<Token, &'static str> {
+        let (rest, _) = multispace0::<_, Error<_>>(self.input).unwrap_or((self.input, &[]));
+        self.input = rest;
 
         if self.input.is_empty() {
             return Ok(Token::Eof);
         }
 
-        let (input, token) = alt((Self::one_char_token, Self::ident, Self::integer))(self.input)
-            .map_err(|_| "Invalid token".to_string())?;
-
-        self.input = input;
-
-        Ok(token)
+        match alt((Self::parse_one_char_token, Self::parse_ident, Self::parse_integer))(self.input) {
+            Ok((rest, token)) => {
+                self.input = rest;
+                Ok(token)
+            }
+            Err(_) => Err("Unexpected error when parsing token"),
+        }
     }
-
-    fn one_char_token(input: &str) -> IResult<&str, Token> {
+    
+    fn parse_one_char_token(input: &'a [u8]) -> IResult<&'a [u8], Token> {
         alt((
-            map(char('{'), |_| Token::LSquirly),
-            map(char('}'), |_| Token::RSquirly),
-            map(char('('), |_| Token::LParen),
-            map(char(')'), |_| Token::RParen),
-            map(char(','), |_| Token::Comma),
-            map(char(';'), |_| Token::Semicolon),
-            map(char('+'), |_| Token::Plus),
-            map(char('='), |_| Token::Equal),
+            map(tag(b"="), |_| Token::Equal),
+            map(tag(b"+"), |_| Token::Plus),
+            map(tag(b","), |_| Token::Comma),
+            map(tag(b";"), |_| Token::Semicolon),
+            map(tag(b"("), |_| Token::LParen),
+            map(tag(b")"), |_| Token::RParen),
+            map(tag(b"{"), |_| Token::LSquirly),
+            map(tag(b"}"), |_| Token::RSquirly),
+            map(tag(b"fn"), |_| Token::Function),
+            map(tag(b"let"), |_| Token::Let),
         ))(input)
     }
 
-    fn ident(input: &str) -> IResult<&str, Token> {
-        map(alpha1, |s: &str| match s {
-            "fn" => Token::Function,
-            "let" => Token::Let,
-            _ => Token::Ident(s.into()),
-        })(input)
+    fn parse_ident(input: &'a [u8]) -> IResult<&'a [u8], Token> {
+        let (rest, ident) = take_while1(|c: u8| c.is_ascii_alphabetic())(input)?;
+        let token = match ident {
+            b"fn" => Token::Function,
+            b"let" => Token::Let,
+            _ => Token::Ident(std::str::from_utf8(ident).unwrap()),
+        };
+        Ok((rest, token))
     }
 
-    fn integer(input: &str) -> IResult<&str, Token> {
-        map(digit1, |s: &str| Token::Int(s.into()))(input)
+    fn parse_integer(input: &'a [u8]) -> IResult<&'a [u8], Token> {
+        let (rest, int) = digit1(input)?;
+        Ok((rest, Token::Int(std::str::from_utf8(int).unwrap())))
     }
 }
 
@@ -119,39 +128,39 @@ mod test {
 
         let tokens = vec![
             Token::Let,
-            Token::Ident(String::from("five")),
+            Token::Ident("five"),
             Token::Equal,
-            Token::Int(String::from("5")),
+            Token::Int("5"),
             Token::Semicolon,
             Token::Let,
-            Token::Ident(String::from("ten")),
+            Token::Ident("ten"),
             Token::Equal,
-            Token::Int(String::from("10")),
+            Token::Int("10"),
             Token::Semicolon,
             Token::Let,
-            Token::Ident(String::from("add")),
+            Token::Ident("add"),
             Token::Equal,
             Token::Function,
             Token::LParen,
-            Token::Ident(String::from("x")),
+            Token::Ident("x"),
             Token::Comma,
-            Token::Ident(String::from("y")),
+            Token::Ident("y"),
             Token::RParen,
             Token::LSquirly,
-            Token::Ident(String::from("x")),
+            Token::Ident("x"),
             Token::Plus,
-            Token::Ident(String::from("y")),
+            Token::Ident("y"),
             Token::Semicolon,
             Token::RSquirly,
             Token::Semicolon,
             Token::Let,
-            Token::Ident(String::from("result")),
+            Token::Ident("result"),
             Token::Equal,
-            Token::Ident(String::from("add")),
+            Token::Ident("add"),
             Token::LParen,
-            Token::Ident(String::from("five")),
+            Token::Ident("five"),
             Token::Comma,
-            Token::Ident(String::from("ten")),
+            Token::Ident("ten"),
             Token::RParen,
             Token::Semicolon,
             Token::Eof,
