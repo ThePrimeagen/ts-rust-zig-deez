@@ -5,6 +5,15 @@ alias TokenType = string;
 struct Token {
     TokenType type;
     string literal;
+
+    this(TokenType type, string literal) {
+        this.type = type;
+        this.literal = literal;
+    }
+    this(TokenType type, char literal) {
+        this.type = type;
+        this.literal = literal.stringof;
+    }
 }
 
 enum {

@@ -26,7 +26,8 @@ lint:
 
 test:
 	@echo "===> Testing"
-	$(DC) -main -unittest -Isrc/ $(DFILES)
+	$(DC) -main -unittest -Isrc/ -of=unittest $(DFILES)
+	./unittest
 
 build:
 	@echo "===> Building"
