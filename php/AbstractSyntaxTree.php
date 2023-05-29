@@ -16,12 +16,8 @@ interface Expression extends Node {
 }
 
 readonly class Identifier implements Expression {
-    public Token $token;
-    public string $value;
-
-    public function __construct(Token $token, string $value) {
-        $this->token = $token;
-        $this->value = $value;
+    public function __construct(public Token $token,
+                                public string $value) {
     }
 
     public function tokenLiteral(): string {
@@ -36,12 +32,8 @@ readonly class Identifier implements Expression {
 }
 
 readonly class IntegerLiteral implements Expression {
-    public Token $token;
-    public int $value;
-
-    public function __construct(Token $token, int $value) {
-        $this->token = $token;
-        $this->value = $value;
+    public function __construct(public Token $token,
+                                public int $value) {
     }
 
     public function tokenLiteral(): string {
@@ -56,12 +48,8 @@ readonly class IntegerLiteral implements Expression {
 }
 
 readonly class BooleanLiteral implements Expression {
-    public Token $token;
-    public bool $value;
-
-    public function __construct(Token $token, bool $value) {
-        $this->token = $token;
-        $this->value = $value;
+    public function __construct(public Token $token,
+                                public bool $value) {
     }
 
     public function tokenLiteral(): string {
@@ -75,10 +63,54 @@ readonly class BooleanLiteral implements Expression {
     }
 }
 
+readonly class FunctionLiteral implements Expression {
+    /**
+     * @param Token $token
+     * @param Identifier[] $parameters
+     * @param BlockStatement $body
+     */
+    public function __construct(public Token $token,
+                                public array $parameters,
+                                public BlockStatement $body) {
+    }
+
+    public function tokenLiteral(): string {
+        return "fn";
+    }
+
+    public function __toString(): string {
+        return "fn(" . implode(", ", $this->parameters) . ") " . $this->body;
+    }
+
+    public function expressionNode(): void {
+    }
+}
+
+readonly class StringLiteral implements Expression {
+    public function __construct(public Token $token,
+                                public string $value) {
+    }
+
+    public function tokenLiteral(): string {
+        return $this->token->literal;
+    }
+
+    public function expressionNode(): void {}
+
+    public function __toString(): string {
+        return json_encode($this->value);
+    }
+}
+
 
 class Program implements Node {
     /** @var Statement[] */
-    private array $statements = [];
+    public array $statements;
+
+    public function __construct() {
+        $this->statements = [];
+    }
+
 
     public function tokenLiteral(): string {
         if (count($this->statements) > 0) {
@@ -99,14 +131,9 @@ class Program implements Node {
 
 readonly class LetStatement implements Statement {
 
-    public Token $token;
-    public Identifier $identifier;
-    public Expression $value;
-
-    public function __construct(Token $token, Identifier $identifier, Expression $value) {
-        $this->token = $token;
-        $this->identifier = $identifier;
-        $this->value = $value;
+    public function __construct(public Token $token,
+                                public Identifier $identifier,
+                                public Expression $value) {
     }
 
     public function statementNode(): void {
@@ -123,12 +150,8 @@ readonly class LetStatement implements Statement {
 }
 
 readonly class ReturnStatement implements Statement {
-    public Token $token;
-    public Expression $returnValue;
-
-    public function __construct(Token $token, Expression $returnValue) {
-        $this->token = $token;
-        $this->returnValue = $returnValue;
+    public function __construct(public Token $token,
+                                public Expression $returnValue) {
     }
 
     public function statementNode(): void {
@@ -145,12 +168,9 @@ readonly class ReturnStatement implements Statement {
 }
 
 readonly class ExpressionStatement implements Statement {
-    public Token $token;
-    public Expression $expression;
 
-    public function __construct(Token $token, Expression $expression) {
-        $this->token = $token;
-        $this->expression = $expression;
+    public function __construct(public Token $token,
+                                public Expression $expression) {
     }
 
     public function statementNode(): void {
@@ -162,17 +182,13 @@ readonly class ExpressionStatement implements Statement {
     }
 
     public function __toString(): string {
-        return $this->expression;
+        return $this->expression . ";";
     }
 }
 
 readonly class PrefixExpression implements Expression {
-    public Token $token;
-    public Expression $right;
-
-    public function __construct(Token $token, Expression $right) {
-        $this->token = $token;
-        $this->right = $right;
+    public function __construct(public Token $token,
+                                public Expression $right) {
     }
 
     public function expressionNode(): void {
@@ -195,14 +211,10 @@ readonly class PrefixExpression implements Expression {
 }
 
 readonly class InfixExpression implements Expression {
-    public Token $token;
-    public Expression $left;
-    public Expression $right;
 
-    public function __construct(Token $token, Expression $left, Expression $right) {
-        $this->token = $token;
-        $this->left = $left;
-        $this->right = $right;
+    public function __construct(public Token $token,
+                                public Expression $left,
+                                public Expression $right) {
     }
 
     public function expressionNode(): void {
@@ -227,5 +239,79 @@ readonly class InfixExpression implements Expression {
         };
 
         return "(" . $this->left . " " . $operator . " " . $this->right . ")";
+    }
+}
+
+readonly class IfExpression implements Expression {
+    public function __construct(public Token $token,
+                                public Expression $condition,
+                                public BlockStatement $consequence,
+                                public ?BlockStatement $alternative) {
+    }
+
+    public function expressionNode(): void {
+
+    }
+
+    public function tokenLiteral(): string {
+        return "if";
+    }
+
+    public function __toString(): string {
+        $out = "if $this->condition $this->consequence";
+
+        if ($this->alternative !== null) {
+            $out .= " else $this->alternative";
+        }
+
+        return $out;
+    }
+}
+
+readonly class BlockStatement implements Statement {
+
+    /**
+     * @param Token $token
+     * @param Statement[] $statements
+     */
+    public function __construct(public Token $token,
+                                public array $statements) {
+    }
+
+    public function statementNode(): void {
+
+    }
+
+    public function tokenLiteral(): string {
+        return $this->token->literal;
+    }
+
+    public function __toString(): string {
+        return "{" . implode("", $this->statements) . "}";
+    }
+}
+
+readonly class CallExpression implements Expression {
+
+    /**
+     * @param Token $token
+     * @param Expression $function
+     * @param Expression[] $arguments
+     */
+    public function __construct(public Token $token,
+                                public Expression $function,
+                                public array $arguments) {
+    }
+
+    public function expressionNode(): void {
+
+    }
+
+    public function tokenLiteral(): string {
+        return "(";
+    }
+
+    public function __toString(): string {
+        return $this->function . "(" . implode(", ", $this->arguments) . ")";
     }
 }

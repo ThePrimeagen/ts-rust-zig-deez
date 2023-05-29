@@ -28,15 +28,14 @@ enum TokenType {
     case Return;
     case Equals;
     case NotEquals;
+    case String;
+    case UnterminatedString;
 }
 
 readonly class Token {
-    public TokenType $type;
-    public ?string $literal;
 
-    public function __construct(TokenType $type, string $literal = null) {
-        $this->type = $type;
-        $this->literal = $literal;
+    public function __construct(public TokenType $type,
+                                public ?string $literal = null) {
     }
 }
 
@@ -89,6 +88,7 @@ class Tokenizer {
             $ch === "/" => new Token(TokenType::Slash),
             $ch === "<" => new Token(TokenType::LessThan),
             $ch === ">" => new Token(TokenType::GreaterThan),
+            $ch === '"' => $this->readStringToken(),
 //            $ch === "$" => new Token(TokenType::Ident, $this->readWord()), // kidding
             $ch === "\0" => new Token(TokenType::Eof),
             Tokenizer::isLetter($ch) => $this->readWordToken(),
@@ -100,7 +100,10 @@ class Tokenizer {
             $token->type === TokenType::Function ||
             $token->type === TokenType::Let ||
             $token->type === TokenType::Identifier ||
-            $token->type === TokenType::Integer
+            $token->type === TokenType::Integer ||
+            $token->type === TokenType::True ||
+            $token->type === TokenType::False ||
+            $token->type === TokenType::If
         ) {
             return $token;
         }
@@ -185,5 +188,47 @@ class Tokenizer {
         }
 
         return new Token(TokenType::Not);
+    }
+
+    private function readStringToken(): Token {
+        $startPosition = $this->position + 1;
+
+        $escaped = false;
+        $lastIsQuote = false;
+
+        do {
+            $this->readNextChar();
+            if ($this->ch === '\\') {
+                $escaped = true;
+                $this->readNextChar();
+                if ($this->ch === '"') {
+                    $this->readNextChar();
+                }
+            }
+            $lastIsQuote = $this->ch === '"';
+        } while (!$lastIsQuote && $this->ch !== "\0");
+
+        if ($escaped) {
+            $stringWithQuotes = substr($this->input, $startPosition - 1, $this->position - $startPosition + 2);
+
+            try {
+                $stringValue = json_decode(
+                    json: $stringWithQuotes,
+                    flags: JSON_THROW_ON_ERROR,
+                );
+            } catch (JsonException) {
+                return new Token(TokenType::UnterminatedString, $stringWithQuotes);
+            }
+
+            return new Token($lastIsQuote ? TokenType::String : TokenType::UnterminatedString, $stringValue);
+        }
+
+        $stringValue = substr($this->input, $startPosition, $this->position - $startPosition);
+
+        if ($lastIsQuote) {
+            return new Token(TokenType::String, $stringValue);
+        }
+
+        return new Token(TokenType::UnterminatedString, '"' . $stringValue);
     }
 }
