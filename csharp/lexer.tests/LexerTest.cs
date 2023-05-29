@@ -11,22 +11,23 @@ public class Tests
     public void Test1()
     {
         const string testInput = "=+(){},;";
-        var tokens = Lexer.ParseTokens(testInput);
 
-        var expectedResult = new List<Tokens>
+        var result = new Lexer(testInput).ParseToken();
+
+        var expectedResult = new List<TokenInfo>
         {
-            Tokens.Equal,
-            Tokens.Plus,
-            Tokens.LParen,
-            Tokens.RParen,
-            Tokens.LSquirly,
-            Tokens.RSquirly,
-            Tokens.Comma,
-            Tokens.Semicolon,
-            Tokens.Eof
+            new TokenInfo(Token.Equal),
+            new TokenInfo(Token.Plus),
+            new TokenInfo(Token.LParen),
+            new TokenInfo(Token.RParen),
+            new TokenInfo(Token.LSquirly),
+            new TokenInfo(Token.RSquirly),
+            new TokenInfo(Token.Comma),
+            new TokenInfo(Token.Semicolon),
+            new TokenInfo(Token.Eof)
         };
-        
-        Assert.That(tokens.Select(x => x.Item1), Is.EqualTo(expectedResult));
+
+        Assert.That(result, Is.EquivalentTo(expectedResult));
     }
     
     [Test]
@@ -41,53 +42,50 @@ public class Tests
                                 let result = add(five, ten);
                                 """;
 
-        var tokens = Lexer.ParseTokens(testInput);
+        var tokens = new Lexer(testInput).ParseToken();
 
-        var expectedResult = new List<Tokens>
+        var expectedResult = new List<TokenInfo>
         {
-            Tokens.Let,        // let
-            Tokens.Identifier, // five
-            Tokens.Equal,      // =
-            Tokens.Integer,    // 5
-            Tokens.Semicolon,  // ;
-
-            Tokens.Let,        // let
-            Tokens.Identifier, // ten
-            Tokens.Equal,      // =
-            Tokens.Integer,    // 10
-            Tokens.Semicolon,  // ;
-
-            Tokens.Let,        // let
-            Tokens.Identifier, // add
-            Tokens.Equal,      // =
-            Tokens.Function,   // fn
-            Tokens.LParen,     // (
-            Tokens.Identifier, // x
-            Tokens.Comma,      // ,
-            Tokens.Identifier, // y
-            Tokens.RParen,     // )
-            Tokens.LSquirly,   // {
-            Tokens.Identifier, // x
-            Tokens.Plus,       // +
-            Tokens.Identifier, // y
-            Tokens.Semicolon,  // ;
-            Tokens.RSquirly,   // }
-            Tokens.Semicolon,  // ;
-
-            Tokens.Let,        // let
-            Tokens.Identifier, // result
-            Tokens.Equal,      // =
-            Tokens.Identifier, // add
-            Tokens.LParen,     // (
-            Tokens.Identifier, // five
-            Tokens.Comma,      // ,
-            Tokens.Identifier, // ten
-            Tokens.RParen,     // )
-            Tokens.Semicolon,  // ;
-            Tokens.Eof
+            new TokenInfo(Token.Let),        // let
+            new TokenInfo(Token.Ident, "five"), // five
+            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Integer, 5),    // 5
+            new TokenInfo(Token.Semicolon),  // ;
+            new TokenInfo(Token.Let),        // let
+            new TokenInfo(Token.Ident, "ten"), // ten
+            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Integer, 10),    // 10
+            new TokenInfo(Token.Semicolon),  // ;
+            new TokenInfo(Token.Let),        // let
+            new TokenInfo(Token.Ident, "add"), // add
+            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Function),   // fn
+            new TokenInfo(Token.LParen),     // (
+            new TokenInfo(Token.Ident, "x"), // x
+            new TokenInfo(Token.Comma),      // ,
+            new TokenInfo(Token.Ident, "y"), // y
+            new TokenInfo(Token.RParen),     // )
+            new TokenInfo(Token.LSquirly),   // {
+            new TokenInfo(Token.Ident, "x"), // x
+            new TokenInfo(Token.Plus),       // +
+            new TokenInfo(Token.Ident, "y"), // y
+            new TokenInfo(Token.Semicolon),  // ;
+            new TokenInfo(Token.RSquirly),   // }
+            new TokenInfo(Token.Semicolon),  // ;
+            new TokenInfo(Token.Let),        // let
+            new TokenInfo(Token.Ident, "result"), // result
+            new TokenInfo(Token.Equal),      // =
+            new TokenInfo(Token.Ident, "add"), // add
+            new TokenInfo(Token.LParen),     // (
+            new TokenInfo(Token.Ident, "five"), // five
+            new TokenInfo(Token.Comma),      // ,
+            new TokenInfo(Token.Ident, "ten"), // ten
+            new TokenInfo(Token.RParen),     // )
+            new TokenInfo(Token.Semicolon),  // ;
+            new TokenInfo(Token.Eof)
         };
 
         
-        Assert.That(tokens.Select(x => x.Item1), Is.EqualTo(expectedResult));
+        Assert.That(tokens, Is.EquivalentTo(expectedResult));
     }
 }
