@@ -32,7 +32,8 @@ main = do
       Let, (Ident "add"), Equal, (Ident "fn"), LParen, (Ident "x"), Comma, (Ident "y"), RParen, LSquirly, 
         (Ident "x"), Plus, (Ident "y"), Semicolon, 
       RSquirly, Semicolon, 
-      Let, (Ident "result"), Equal, (Ident "add"), LParen, (Ident "five"), Comma, (Ident "ten"), RParen, Semicolon ]
+      Let, (Ident "result"), Equal, (Ident "add"), LParen, (Ident "five"), Comma, (Ident "ten"), RParen, Semicolon 
+  ]
   
   let
     output = runParser input $ many1 (whiteSpace *> parser)
