@@ -1,20 +1,33 @@
 # frozen_string_literal: true
 
 module Token
-  Illegal = Data.new
-  Eof = Data.new
+  Illegal = Data.define
+  Eof = Data.define
 
-  Ident = Data.new
-  Int = Data.new
-  Assign = Data.new
-  Plus = Data.new
-  Comma = Data.new
-  Semicolon = Data.new
-  LParen = Data.new
-  RParen = Data.new
-  LSquirly = Data.new
-  RSquirly = Data.new
+  Ident = Data.define(:ident)
+  Int = Data.define(:int)
+  Assign = Data.define
+  Plus = Data.define
+  Minus = Data.define
+  Bang = Data.define
+  Asterisk = Data.define
+  Slash = Data.define
 
-  Function = Data.new
-  Let = Data.new
+  Lt = Data.define
+  Gt = Data.define
+
+  Comma = Data.define
+  Semicolon = Data.define
+  LParen = Data.define
+  RParen = Data.define
+  LSquirly = Data.define
+  RSquirly = Data.define
+
+  Function = Data.define
+  Let = Data.define
+  True = Data.define
+  False = Data.define
+  If = Data.define
+  Else = Data.define
+  Return = Data.define
 end
