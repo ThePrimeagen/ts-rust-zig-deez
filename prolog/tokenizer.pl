@@ -6,7 +6,7 @@ tok([Token | Ts]) --> ch(punct, [C|Cs]), {lex([C|Cs], Token)}, !, tok(Ts).
 tok([Token | Ts]) --> ch(alpha, [C|Cs]), {lex([C|Cs], Token)}, !, tok(Ts).
 tok([int(Number) | Ts]) --> ch(digit, [C|Cs]), {number_codes(Number, [C|Cs])}, !, tok(Ts).
 tok([ident(Atom) | Ts]) --> ch(alpha, [C|Cs]), {atom_codes(Atom, [C|Cs])}, !, tok(Ts).
-tok(Ts) --> ch(space, [_]), !, tok(Ts).
+tok(Ts) --> ch(space, [_|_]), !, tok(Ts).
 tok([eof]) --> [].
 
 ch(Type, [C|Cs]) --> [C], {code_type(C, Type)}, ch(Type, Cs).
