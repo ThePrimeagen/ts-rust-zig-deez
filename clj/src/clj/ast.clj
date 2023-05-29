@@ -1,5 +1,5 @@
 (ns clj.ast
-  (:refer-clojure :exclude [let if int])
+  (:refer-clojure :exclude [let if int fn])
   (:use [clj.util :only [third]]))
 
   ;; statements
@@ -63,3 +63,10 @@
 (def if-condition   first)
 (def if-consequence second)
 (def if-alternative third)
+
+
+(defmacro fn [params block]
+  `(list :fn ~params ~block))
+
+(def fn-params first)
+(def fn-block  second)

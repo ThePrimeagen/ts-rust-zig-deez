@@ -75,12 +75,35 @@
   (when-let [rest-tokens         (expect-peek rest-tokens :r_squirly)]
     (return (ast/if condi conse alter) rest-tokens))))))))))))
 
+(defn parse-fn-params 
+  ([tokens]
+    (if (= :r_paren (token/kind (token/next tokens)))
+      (return [] tokens)
+    (when-let [[ident rest-tokens] (parse-ident tokens)]
+      (parse-fn-params rest-tokens [ident]))))
+  ([tokens idents]
+    (let [rest-tokens (expect-peek tokens :comma)]
+    (if-not rest-tokens
+      (return idents tokens)
+    (when-let [[ident rest-tokens] (parse-ident rest-tokens)]
+      (parse-fn-params rest-tokens (conj idents ident)))))))
+
+(defn parse-fn [tokens]
+  (when-let [rest-tokens          (expect-peek (rest tokens) :l_paren)]
+  (when-let [[params rest-tokens] (parse-fn-params rest-tokens)]
+  (when-let [rest-tokens          (expect-peek rest-tokens :r_paren)]
+  (when-let [rest-tokens          (expect-peek rest-tokens :l_squirly)]
+  (when-let [[block rest-tokens]  (parse-block-stmt rest-tokens)]
+  (when-let [rest-tokens          (expect-peek rest-tokens :r_squirly)]
+    (return (ast/fn params block) rest-tokens))))))))
+
 (defn prefix-parse-fn [token-type]
   (case token-type
      :ident   parse-ident
      :int     parse-int
      :l_paren parse-group-expr
      :if      parse-if-expr
+     :fn      parse-fn
     (:bang  
      :minus)  parse-prefix
     (:true  
@@ -107,14 +130,11 @@
     (when-let [left-expr (prefix tokens)] ;; left-expr = [left-expr rest-tokens]
       (apply parse-expr prece left-expr))))
   ([prece left-expr [op :as rest-tokens]]
-    (if-not (and (not= :semicolon (token/kind op))
-                 (< prece (precedence (token/kind op))))
-      (return left-expr rest-tokens)
+    (if (or (= :semicolon (token/kind op))
+            (>= prece (precedence (token/kind op))))     (return left-expr rest-tokens)
     (let [infix (infix-parse-fn (token/kind op))]
-    (if-not infix
-      (return left-expr rest-tokens)
-    (when-let [left-expr (infix left-expr rest-tokens)]
-      (apply parse-expr prece left-expr)))))))
+    (if-not infix                                        (return left-expr rest-tokens)
+    (when-let [left-expr (infix left-expr rest-tokens)]  (apply parse-expr prece left-expr)))))))
 
 (defn parse-let [[ident op & rest-tokens :as tokens]]
   (when (= :assign (token/kind op))
@@ -165,5 +185,10 @@
   (pprint (parse-program (lexer/lex "1 + (2 + 3) + 4")))
   (pprint (parse-program (lexer/lex "if (x < y) { x }")))
   (pprint (parse-program (lexer/lex "if (x < y) { x } else { y }")))
+  (pprint (parse-program (lexer/lex "if (x < y) { x; 1; } else { y; 0; }")))
+  (pprint (parse-program (lexer/lex "fn(x, y) { x + y; };")))
+  (pprint (parse-program (lexer/lex "fn(x, y) { x + y; y + 1 + x };")))
+  (pprint (parse-program (lexer/lex "fn() {};")))
+  (pprint (parse-program (lexer/lex "fn(x, y) {};")))
   (pprint (parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5")))
   ())
