@@ -79,7 +79,7 @@ class Tokenizer {
     private function readWord(): string {
         $position = $this->position;
 
-        while (ctype_alpha($this->ch)) {
+        while (ctype_alpha($this->ch) || $this->ch === "_") {
             $this->readNextChar();
         }
 
