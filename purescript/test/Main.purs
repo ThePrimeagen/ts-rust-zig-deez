@@ -5,15 +5,14 @@ import Prelude
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..))
 import Data.Either (Either(..))
 import Effect (Effect)
-import Effect.Class.Console (logShow)
 import Effect.Console (log)
 import Effect.Exception (throw)
-import Lexer (Token(..), parser)
+import Lexer (parser)
 import Parsing (runParser)
 import Parsing.Combinators.Array (many1)
 import Parsing.String.Basic (whiteSpace)
-import Test.Assert (assert, assert', assertEqual, assertEqual', assertThrows')
-
+import Test.Assert (assertEqual')
+import Token (Token(..))
 
 main :: Effect Unit
 main = do
