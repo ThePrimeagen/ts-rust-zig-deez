@@ -39,8 +39,8 @@ class Lexer:
             return tok
 
         if is_letter(self.ch):
-            indent = self.read_ident()
-            return keywords.get(indent, Token(TokenType.Ident, indent))
+            ident = self.read_ident()
+            return keywords.get(ident, Token(TokenType.Ident, ident))
         
         if self.ch.isdigit():
             return Token(TokenType.Int, self.read_int())
