@@ -1,8 +1,7 @@
 (ns clj.parser
   (:require [clj.token :as token]
             [clj.ast   :as ast]
-            [clj.lexer :as lexer])
-  (:use [clojure.pprint :only [pprint]]))
+            [clj.lexer :as lexer]))
 
 (defmacro return [parsed rest-tokens]
   `(list ~parsed ~rest-tokens))
@@ -34,6 +33,7 @@
      :minus)   SUM
     (:slash
      :astrisk) PRODUCT
+     :l_paren  CALL
                LOWEST))
 
 (defn chomp-semicolon [tokens]
@@ -56,12 +56,12 @@
 (defn parse-bool [[bool :as tokens]]
   (return (ast/bool (= :true (token/kind bool))) (rest tokens)))
 
-(defn parse-group-expr [tokens]
+(defn parse-group [tokens]
   (when-let [[expr rest-tokens] (parse-expr LOWEST (rest tokens))]
   (when-let [rest-tokens        (expect-peek rest-tokens :r_paren)]
     (return expr rest-tokens))))
 
-(defn parse-if-expr [tokens]
+(defn parse-if [tokens]
   (when-let [rest-tokens         (expect-peek (rest tokens) :l_paren)]
   (when-let [[condi rest-tokens] (parse-expr LOWEST rest-tokens)]
   (when-let [rest-tokens         (expect-peek rest-tokens :r_paren)]
@@ -97,12 +97,31 @@
   (when-let [rest-tokens          (expect-peek rest-tokens :r_squirly)]
     (return (ast/fn params block) rest-tokens))))))))
 
+(defn parse-call-args 
+  ([tokens]
+    (if (= :r_paren (token/kind (token/next tokens)))
+      (return [] tokens)
+    (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
+      (parse-call-args rest-tokens [expr]))))
+  ([tokens exprs]
+    (let [rest-tokens (expect-peek tokens :comma)]
+    (if-not rest-tokens
+      (return exprs tokens)
+    (when-let [[expr rest-tokens] (parse-expr LOWEST rest-tokens)]
+      (parse-call-args rest-tokens (conj exprs expr)))))))
+
+#_{:clj-kondo/ignore [:unused-binding]}
+(defn parse-call [fn-expr [lparan :as tokens]]
+  (when-let [[args rest-tokens] (parse-call-args (rest tokens))]
+  (when-let [rest-tokens        (expect-peek rest-tokens :r_paren)]
+    (return (ast/call fn-expr args) rest-tokens))))
+
 (defn prefix-parse-fn [token-type]
   (case token-type
      :ident   parse-ident
      :int     parse-int
-     :l_paren parse-group-expr
-     :if      parse-if-expr
+     :l_paren parse-group
+     :if      parse-if
      :fn      parse-fn
     (:bang  
      :minus)  parse-prefix
@@ -121,7 +140,8 @@
      :plus
      :minus
      :slash
-     :astrisk) parse-infix 
+     :astrisk) parse-infix
+     :l_paren  parse-call
                nil))
 
 (defn parse-expr 
@@ -136,7 +156,7 @@
     (if-not infix                                        (return left-expr rest-tokens)
     (when-let [left-expr (infix left-expr rest-tokens)]  (apply parse-expr prece left-expr)))))))
 
-(defn parse-let [[ident op & rest-tokens :as tokens]]
+(defn parse-let [[ident op & rest-tokens]]
   (when (= :assign (token/kind op))
   (when-let [[val rest-tokens] (parse-expr LOWEST rest-tokens)]
     (return (ast/let (token/literal ident) val) (chomp-semicolon rest-tokens)))))
@@ -182,13 +202,17 @@
   (parse-program (lexer/lex "!true;"))
   (parse-program (lexer/lex "2 / (5 + 5)"))
   (parse-program (lexer/lex "!(true == true)"))
-  (pprint (parse-program (lexer/lex "1 + (2 + 3) + 4")))
-  (pprint (parse-program (lexer/lex "if (x < y) { x }")))
-  (pprint (parse-program (lexer/lex "if (x < y) { x } else { y }")))
-  (pprint (parse-program (lexer/lex "if (x < y) { x; 1; } else { y; 0; }")))
-  (pprint (parse-program (lexer/lex "fn(x, y) { x + y; };")))
-  (pprint (parse-program (lexer/lex "fn(x, y) { x + y; y + 1 + x };")))
-  (pprint (parse-program (lexer/lex "fn() {};")))
-  (pprint (parse-program (lexer/lex "fn(x, y) {};")))
-  (pprint (parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5")))
+  (parse-program (lexer/lex "1 + (2 + 3) + 4"))
+  (parse-program (lexer/lex "if (x < y) { x }"))
+  (parse-program (lexer/lex "if (x < y) { x } else { y }"))
+  (parse-program (lexer/lex "if (x < y) { x; 1; } else { y; 0; }"))
+  (parse-program (lexer/lex "fn(x, y) { x + y; };"))
+  (parse-program (lexer/lex "fn(x, y) { x + y; y + 1 + x };"))
+  (parse-program (lexer/lex "fn() {};"))
+  (parse-program (lexer/lex "fn(x, y) {};"))
+  (parse-program (lexer/lex "fn(x, y) { x + y; }(2, 3)"))
+  (parse-program (lexer/lex "callsFunction(2, 3, fn(x, y) { x + y; });"))
+  (parse-program (lexer/lex "add(1, 2 * 3, 4 + 5);"))
+  (parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5"))
   ())
+

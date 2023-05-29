@@ -1,6 +1,6 @@
 (ns clj.ast
   (:refer-clojure :exclude [let if int fn])
-  (:use [clj.util :only [third]]))
+  (:require [clj.util :refer [third]]))
 
   ;; statements
 (def stmt-kind first)
@@ -70,3 +70,10 @@
 
 (def fn-params first)
 (def fn-block  second)
+
+
+(defmacro call [fn args]
+  `(list :call ~fn ~args))
+
+(def call-fn   first)
+(def call-args second)
