@@ -39,7 +39,7 @@ pub const Lexer = struct {
 
     read_position: usize = 0,
     position: usize = 0,
-    ch: u8 = 0,
+    ch: u8,
     input: []const u8,
 
     pub fn init(input: []const u8) Self {
