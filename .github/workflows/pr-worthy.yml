@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt install -y make curl git
           changed_langs=($(git diff --name-only HEAD~1 | cut -d '/' -f 1 | sort | uniq))
-          if [ ${#errors[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
+          if [ ${#changed_langs[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
           for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ "$i" != "README.md" ]; then echo "$i" >> list.txt; fi; done
           
       - name: Build docker images for every language affected
