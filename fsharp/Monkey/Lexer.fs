@@ -20,23 +20,30 @@ type Token =
 
 type Code =
     { Source: string
-      mutable Position: int
-      mutable ReadPosition: int
-      mutable Char: char }
+      Position: int
+      ReadPosition: int
+      Char: char }
+
 
 let isLetter char =
-    char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char = '_'
+    char >= 'a' && char <= 'z'
+    || char >= 'A' && char <= 'Z'
+    || char = '_'
 
 let isNumber char = char >= '0' && char <= '9'
 
 let readChar code =
-    match code.ReadPosition >= code.Source.Length with
-    | true -> code.Char <- Char.MinValue
-    | false -> code.Char <- code.Source[code.ReadPosition]
+    let newChar =
+        if code.ReadPosition >= code.Source.Length then
+            Char.MinValue
+        else
+            code.Source[code.ReadPosition]
 
-    code.Position <- code.ReadPosition
-    code.ReadPosition <- code.ReadPosition + 1
-
+    { code with
+        Position = code.ReadPosition
+        ReadPosition = code.ReadPosition + 1
+        Char = newChar }
+        
 let toCode source =
     let code =
         { Source = source
@@ -45,41 +52,49 @@ let toCode source =
           Char = Char.MinValue }
 
     code |> readChar
-    code
 
-let skipWhitespace code =
-    while code.Char = ' ' || code.Char = '\t' || code.Char = '\n' || code.Char = '\r' do
-        readChar code
+let rec skipWhitespace code =
+    if code.Char = ' '
+        || code.Char = '\t'
+        || code.Char = '\n'
+        || code.Char = '\r' then
+        readChar code |> skipWhitespace
+    else
+        code
 
 let readWhile code predicate =
     let start = code.Position
 
-    while code.Char |> predicate do
-        readChar code
+    let rec read code =
+        if code.Char |> predicate then
+            readChar code |> read
+        else
+            code
 
-    code.Source.Substring(start, code.Position - start)
+    let code = read code
+    code, code.Source.Substring(start, code.Position - start)
 
 let readIdentifier code =
-    let literal = readWhile code isLetter
+    let code, literal = readWhile code isLetter
 
-    match literal with
-    | "fn" -> Function
-    | "let" -> Let
-    | _ -> Ident(literal)
+    let ident =
+        match literal with
+        | "fn" -> Function
+        | "let" -> Let
+        | _ -> Ident(literal)
+    code, ident
 
 let readNumber code =
-    let literal = readWhile code isNumber
-    Int(Int32.Parse(literal))
+    let code, literal = readWhile code isNumber
+    code, Int(Int32.Parse(literal))
 
 let nextToken code =
-    code |> skipWhitespace
+    let code = code |> skipWhitespace
 
-    let advance result =
-        code |> readChar
-        result
+    let advance result = code |> readChar, result
 
     match code.Char with
-    | Char.MinValue -> Eof
+    | Char.MinValue -> (code, Eof)
     | '=' -> advance Equal
     | '+' -> advance Plus
     | ',' -> advance Comma
@@ -94,11 +109,16 @@ let nextToken code =
 
 
 let tokenizeCode code =
-    let rec loop tokens =
-        match code |> nextToken with
-        | Eof -> tokens @ [ Eof ]
-        | token -> loop (tokens @ [ token ])
+    let rec loop code =
+        seq {
+            match code |> nextToken with
+            | _, Eof -> yield Eof
+            | code, token -> 
+                yield token
+                yield! loop code
+        }
+    loop code
 
-    loop []
+
 
 let tokenize source = source |> toCode |> tokenizeCode
