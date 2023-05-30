@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}                                                   -- for ByteString string literals
-{-# LANGUAGE TemplateHaskell #-}                                                     -- for makeLenses
-
 module Lexer (
     tokenize
   , Token(..)
@@ -8,11 +5,11 @@ module Lexer (
   )
   where
 
-import qualified Data.ByteString.Char8                                           as C -- ByteString is faster than String
-import           Data.Char                 (isDigit, isLetter, isSpace)               -- don't know if it actually is in this case
+import qualified Data.ByteString.Char8                                           as C
+import           Data.Char                 (isDigit, isLetter, isSpace)
 import           TokenTypes                (Lexer(..), Token(..), TokenType(..))
-import           Control.Lens              (makeLenses)                               -- unecessary but I wanted to try it
-import           Control.Lens.Operators    ((+~), (.~), (^.), (&))                    -- unecessary but I wanted to try it
+import           Control.Lens              (makeLenses)
+import           Control.Lens.Operators    ((+~), (.~), (^.), (&))
 import           Control.Monad.Trans.State (State, modify, get, evalState)
 
 makeLenses ''Lexer
@@ -34,30 +31,29 @@ getToken = do
   lexer <- get
   let readToken = (modify readChar >>) . pure . Token
   case lexer^.ch of
-    c | isLetter c || c == '_' ->  getKeyword <$> readIdentifier
+    c | isLetter c || c == '_' ->  mapKeyword <$> readIdentifier
     c | isDigit c              ->  Token . INT <$> readDigit
+    '+'  -> readToken PLUS
     '='  -> readToken EQUAL
+    ','  -> readToken COMMA
     ';'  -> readToken SEMICOLON
     '('  -> readToken LPAREN
     ')'  -> readToken RPAREN
-    ','  -> readToken COMMA
-    '+'  -> readToken PLUS
     '{'  -> readToken LBRACE
     '}'  -> readToken RBRACE
     '\0' -> readToken EOF
     _    -> readToken ILLEGAL
 
-getKeyword :: C.ByteString -> Token
-getKeyword "fn"  = Token FUNCTION
-getKeyword "let" = Token LET
-getKeyword ident = Token (IDENT ident)
+mapKeyword :: C.ByteString -> Token
+mapKeyword "fn"  = Token FUNCTION
+mapKeyword "let" = Token LET
+mapKeyword ident = Token (IDENT ident)
 
 readChar :: Lexer -> Lexer
-readChar lexer =
-  let c = if   lexer^.readPosition >= C.length (lexer^.input)
-          then '\0'
-          else (lexer^.input) `C.index` (lexer^.readPosition)
-  in lexer & readPosition +~ 1 & ch .~ c
+readChar lexer = lexer & readPosition+~1 & ch.~ c
+  where
+    c | lexer^.readPosition < C.length (lexer^.input) = (lexer^.input) `C.index` (lexer^.readPosition)
+      | otherwise = '\0'
 
 readIdentifier :: State Lexer C.ByteString
 readIdentifier = do
