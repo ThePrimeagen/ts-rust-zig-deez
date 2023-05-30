@@ -86,38 +86,24 @@ scan_tokens :: proc(l: ^Lexer) {
 
 scan_token :: proc(l: ^Lexer) {
 	c := next(l)
-	if is_whitespace(c) {return}
+	if is_whitespace(c) {return} 	// nop
 	start := l.offset - 1
-	// fmt.print(rune(c))
+	//odinfmt: disable
 	switch c {
 	// Single Char:
-	case '+':
-		append(&l.tokens, Token{start, .Plus, "+"})
-	case '-':
-		append(&l.tokens, Token{start, .Minus, "+"})
-	case '*':
-		append(&l.tokens, Token{start, .Asterisk, "+"})
-	case '/':
-		append(&l.tokens, Token{start, .Slash, "+"})
-	case '<':
-		append(&l.tokens, Token{start, .LAngle, "+"})
-	case '>':
-		append(&l.tokens, Token{start, .RAngle, "+"})
-	case '(':
-		append(&l.tokens, Token{start, .Lparen, "("})
-	case ')':
-		append(&l.tokens, Token{start, .Rparen, ")"})
-	case '{':
-		append(&l.tokens, Token{start, .LSquirly, "{"})
-	case '}':
-		append(&l.tokens, Token{start, .RSquirly, "}"})
-	case ';':
-		append(&l.tokens, Token{start, .Semicolon, ";"})
-	case ',':
-		append(&l.tokens, Token{start, .Comma, ","})
-	case ' ', '\n', '\r', '\t': // nop
-	case:
-		// Multi-Character Parsing:
+	case '+': append(&l.tokens, Token{start, .Plus, "+"})
+	case '-': append(&l.tokens, Token{start, .Minus, "-"})
+	case '*': append(&l.tokens, Token{start, .Asterisk, "*"})
+	case '/': append(&l.tokens, Token{start, .Slash, "/"})
+	case '<': append(&l.tokens, Token{start, .LAngle, "<"})
+	case '>': append(&l.tokens, Token{start, .RAngle, ">"})
+	case '(': append(&l.tokens, Token{start, .Lparen, "("})
+	case ')': append(&l.tokens, Token{start, .Rparen, ")"})
+	case '{': append(&l.tokens, Token{start, .LSquirly, "{"})
+	case '}': append(&l.tokens, Token{start, .RSquirly, "}"})
+	case ';': append(&l.tokens, Token{start, .Semicolon, ";"})
+	case ',': append(&l.tokens, Token{start, .Comma, ","})
+	case: // Multi-Character Parsing:
 		if c == '=' {
 			if peek(l) == '=' {
 				append(&l.tokens, Token{start, .EQ, "=="})
@@ -139,7 +125,9 @@ scan_token :: proc(l: ^Lexer) {
 			append(&l.tokens, Token{start, .Illegal, ""})
 		}
 	}
+	//odinfmt: enable
 }
+
 keywords := map[Token_Kind]string {
 	.If       = "if",
 	.Else     = "else",
