@@ -1,0 +1,49 @@
+##
+# This workflow assumes that there are valid Makefiles
+#  in the root of the each language affected,
+#  which have docker-build and docker-ready targets
+##
+
+name: Test if the language in PR passes corresponding checks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # for new PRs, or those who are ready and/or request a review
+    types: [opened, ready_for_review, review_requested]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pr-worthy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checking out the repo
+        uses: actions/checkout@v3 
+
+      - name: Initial setup + A list of all affected languages
+        run: |
+          sudo apt-get update && sudo apt install -y make curl git
+          pushd ts-rust-zig-deez
+
+          changed_langs=($(git diff --name-only HEAD~1 | cut -d '/' -f 1))
+          if [ ${#errors[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
+          for i in "${changed_langs[@]}"; do echo "$i" >> list.txt; done
+
+          popd
+          
+      - name: Build docker images for every language affected
+        run: |
+          pushd ts-rust-zig-deez
+          while read -r i; do pushd "$i"; make docker-build; popd; done < list.txt
+          popd
+
+      - name: Run docker containers for built images
+        run: |
+          pushd ts-rust-zig-deez
+          while read -r i; do pushd "$i"; make docker-ready; popd; done < list.txt
+          popd
+          
