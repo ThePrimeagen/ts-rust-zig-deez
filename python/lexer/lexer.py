@@ -1,69 +1,91 @@
-from tokens import Token, TokenType, char_to_token_type
+from lexer.my_token import TokenType, keywords, token_dict, Token
+from dataclasses import dataclass
 
 
-keywords = {
-    'fn' : Token(TokenType.Function, 'fn'),
-    'let': Token(TokenType.Let, 'let')
-}
-
-def is_letter(ch):
-    return ch.isalpha() or ch == '_'
-
+@dataclass
 class Lexer:
-    def __init__(self, input):
+    input: str
+    position: int = 0
+    readPosition: int = 0
+    ch: str = ""
+    stop: int = 1
+
+    def __init__(self, input: str) -> None:
         self.input = input
-        self.input_length = len(self.input)
-        self.position = 0
-        self.read_position = 0
-        self.ch = ''
-        self.read_char()
+        self.readChar()
 
-    def read_char(self) -> None:
-        if self.read_position >=  self.input_length:
-            self.ch = '\0'
+    def peekChar(self):
+        if self.readPosition >= len(self.input):
+            return 0
         else:
-            self.ch = self.input[self.read_position]
-        
-        self.position = self.read_position
-        self.read_position += 1
-        
+            return self.input[self.readPosition]
 
-    def get_next_token(self) -> Token:
-        self.skip_whitespace()
-        
-        # I dont wanna write if else for each character
-        tok_type = char_to_token_type.get(self.ch, None)
-        if tok_type is not None:
-            tok = Token(tok_type, tok_type.value)
-            self.read_char()
-            return tok
+    def readChar(self):
+        if self.readPosition >= len(self.input):
+            self.stop = 0
+            self.ch = ""
+        else:
+            self.ch = self.input[self.readPosition]
+        self.position = self.readPosition
+        self.readPosition += 1
 
-        if is_letter(self.ch):
-            indent = self.read_ident()
-            return keywords.get(indent, Token(TokenType.Ident, indent))
-        
-        if self.ch.isdigit():
-            return Token(TokenType.Int, self.read_int())
-        
-        return Token(TokenType.Illegal, self.ch)
+    def skipWhitespace(self):
+        while self.ch.isspace():
+            self.readChar()
+
+    def nextToken(self) -> Token:
+        self.skipWhitespace()
+        if self.stop == 0:
+            tok = Token(TokenType.EOF, "")
+        elif token_dict.get(self.ch, False):
+            tok = Token(token_dict[self.ch], self.ch)
+        elif self.ch == '=':
+            if self.peekChar() == '=':
+                self.readChar()
+                tok = Token(TokenType.EQ, '==')
+            else:
+                tok = Token(TokenType.ASSIGN, self.ch)
+        elif self.ch == '!':
+            if self.peekChar() == '=':
+                self.readChar()
+                tok = Token(TokenType.NOT_EQ, '!=')
+            else:
+                tok = Token(TokenType.BANG, self.ch)
+
+        elif self.ch.isalpha():
+            literal = self.readIdentifier()
+            return Token(lookUpIdent(literal), literal)
+        elif self.ch.isnumeric():
+            tok_type = TokenType.INT
+            literal = self.readNumber()
+            return Token(tok_type, literal)
+        else:
+            tok = Token(TokenType.ILLEGAL, self.ch)
+        self.readChar()
+        return tok
+
+    def readIdentifier(self):
+        position = self.position
+
+        while isLetter(self.ch):
+            self.readChar()
+        return self.input[position:self.position]
+
+    def readNumber(self):
+        position = self.position
+        while isDigit(self.ch):
+            self.readChar()
+
+        return self.input[position:self.position]
 
 
-    def read_int(self) -> str:
-        pos = self.position
-        
-        while self.ch.isdigit():
-            self.read_char()
-        
-        return self.input[pos:self.position]
+def isLetter(ch: str):
+    return 'a' <= ch <= 'z' or 'A' <= ch <= 'Z' or ch == '_'
 
-    def read_ident(self) -> str:
-        pos = self.position
-        
-        while is_letter(self.ch):
-            self.read_char()
 
-        return self.input[pos:self.position]
+def isDigit(ch: str):
+    return '0' <= ch <= '9'
 
-    def skip_whitespace(self):
-        while(self.ch.isspace()):
-            self.read_char()
+
+def lookUpIdent(ident) -> TokenType:
+    return keywords[ident] if ident in keywords else TokenType.IDENT
