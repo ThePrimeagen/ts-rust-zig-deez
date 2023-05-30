@@ -8,6 +8,7 @@
  */
 
 import std.ascii;
+import std.format;
 import std.range : enumerate;
 import std.string : assumeUTF, representation;
 
@@ -217,7 +218,8 @@ unittest
 
         foreach (i, tag; lexer.tokenTag.enumerate(0))
         {
-            assert(tag == expected[i]);
+            assert(tag == expected[i],
+                    format("Wrong token type '%s' for tag[%d]; expected '%s'", tag, i, expected[i]));
         }
     }
 }
@@ -233,7 +235,6 @@ unittest
   };
   let result = add(five, ten);
   ";
-
     with (Token)
     {
         const auto expected = [
@@ -243,13 +244,12 @@ unittest
             Semicolon, Let, Ident, Equal, Ident, LParen, Ident, Comma, Ident,
             RParen, Semicolon, Eof
         ];
-
         auto lexer = Lexer(input);
         lexer.tokenize();
-
         foreach (i, tag; lexer.tokenTag.enumerate(0))
         {
-            assert(tag == expected[i]);
+            assert(tag == expected[i],
+                    format("Wrong token type '%s' for tag[%d]; expected '%s'", tag, i, expected[i]));
         }
     }
 }
