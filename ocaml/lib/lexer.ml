@@ -13,86 +13,85 @@ let init input =
   else { input; position = 0; ch = Some (String.get input 0) }
 ;;
 
-let rec next_token parser =
-  let parser = skip_whitespace parser in
+let rec next_token lexer =
+  let lexer = skip_whitespace lexer in
   let open Token in
-  match parser.ch with
-  | None -> parser, None
+  match lexer.ch with
+  | None -> lexer, None
   | Some ch ->
-    let peek = if_peeked parser in
-    let parser, token =
+    let lexer, token =
       match ch with
-      | ';' -> advance parser, Semicolon
-      | '(' -> advance parser, LeftParen
-      | ')' -> advance parser, RightParen
-      | ',' -> advance parser, Comma
-      | '+' -> advance parser, Plus
-      | '-' -> advance parser, Minus
-      | '/' -> advance parser, Slash
-      | '*' -> advance parser, Asterisk
-      | '<' -> advance parser, LessThan
-      | '>' -> advance parser, GreaterThan
-      | '{' -> advance parser, LeftBrace
-      | '}' -> advance parser, RightBrace
-      | '!' -> peek '=' ~default:Bang ~matched:NotEqual
-      | '=' -> peek '=' ~default:Assign ~matched:Equal
-      | ch when is_identifier ch -> read_identifier parser
-      | ch when is_number ch -> read_number parser
+      | ';' -> advance lexer, Semicolon
+      | '(' -> advance lexer, LeftParen
+      | ')' -> advance lexer, RightParen
+      | ',' -> advance lexer, Comma
+      | '+' -> advance lexer, Plus
+      | '-' -> advance lexer, Minus
+      | '/' -> advance lexer, Slash
+      | '*' -> advance lexer, Asterisk
+      | '<' -> advance lexer, LessThan
+      | '>' -> advance lexer, GreaterThan
+      | '{' -> advance lexer, LeftBrace
+      | '}' -> advance lexer, RightBrace
+      | '!' -> if_peeked lexer '=' ~default:Bang ~matched:NotEqual
+      | '=' -> if_peeked lexer '=' ~default:Assign ~matched:Equal
+      | ch when is_identifier ch -> read_identifier lexer
+      | ch when is_number ch -> read_number lexer
       | ch -> Fmt.failwith "unknown char: %c" ch
     in
-    parser, Some token
+    lexer, Some token
 
-and advance parser =
-  if parser.position >= String.length parser.input - 1
-  then { parser with ch = None }
+and advance lexer =
+  if lexer.position >= String.length lexer.input - 1
+  then { lexer with ch = None }
   else (
-    let position = parser.position + 1 in
-    { parser with position; ch = Some (String.get parser.input position) })
+    let position = lexer.position + 1 in
+    { lexer with position; ch = Some (String.get lexer.input position) })
 
-and peek_char parser =
-  if parser.position >= String.length parser.input - 1
+and peek_char lexer =
+  if lexer.position >= String.length lexer.input - 1
   then None
-  else Some (String.get parser.input (parser.position + 1))
+  else Some (String.get lexer.input (lexer.position + 1))
 
-and seek parser condition =
-  let rec loop parser = if condition parser.ch then loop @@ advance parser else parser in
-  let parser = loop parser in
-  parser, parser.position
+and seek lexer condition =
+  let rec loop lexer = if condition lexer.ch then loop @@ advance lexer else lexer in
+  let lexer = loop lexer in
+  lexer, lexer.position
 
-and read_while parser condition =
-  let pos_start = parser.position in
-  let parser, pos_end =
-    seek parser (fun ch ->
+and read_while lexer condition =
+  let pos_start = lexer.position in
+  let lexer, pos_end =
+    seek lexer (fun ch ->
       match ch with
       | Some character -> condition character
       | None -> false)
   in
-  parser, String.sub parser.input ~pos:pos_start ~len:(pos_end - pos_start)
+  lexer, String.sub lexer.input ~pos:pos_start ~len:(pos_end - pos_start)
 
-and read_identifier parser =
-  let parser, ident = read_while parser is_identifier in
-  parser, Token.lookup_ident ident
+and read_identifier lexer =
+  let lexer, ident = read_while lexer is_identifier in
+  lexer, Token.lookup_ident ident
 
-and read_number parser =
-  let parser, int = read_while parser is_number in
-  parser, Token.Integer int
+and read_number lexer =
+  let lexer, int = read_while lexer is_number in
+  lexer, Token.Integer int
 
-and skip_whitespace parser =
-  let parser, _ =
-    seek parser (fun ch ->
+and skip_whitespace lexer =
+  let lexer, _ =
+    seek lexer (fun ch ->
       match ch with
       | Some ch -> Char.is_whitespace ch
       | None -> false)
   in
-  parser
+  lexer
 
-and if_peeked parser ch ~default ~matched =
-  let result =
-    match peek_char parser with
-    | Some peeked when Char.(peeked = ch) -> matched
-    | _ -> default
+and if_peeked lexer ch ~default ~matched =
+  let lexer, result =
+    match peek_char lexer with
+    | Some peeked when Char.(peeked = ch) -> advance lexer, matched
+    | _ -> lexer, default
   in
-  advance parser, result
+  advance lexer, result
 
 and is_identifier ch = Char.(ch = '_' || is_alpha ch)
 and is_number ch = Char.is_digit ch
@@ -227,5 +226,21 @@ if (5 < 10) {
     Token.False
     Token.Semicolon
     Token.RightBrace |}]
+  ;;
+
+  let%expect_test "infix lex" =
+    let input = "(1 < 2) == true;" in
+    let tokens = input_to_tokens input in
+    print_tokens tokens;
+    [%expect
+      {|
+      Token.LeftParen
+      (Token.Integer "1")
+      Token.LessThan
+      (Token.Integer "2")
+      Token.RightParen
+      Token.Equal
+      Token.True
+      Token.Semicolon |}]
   ;;
 end
