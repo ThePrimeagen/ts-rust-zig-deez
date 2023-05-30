@@ -4,26 +4,28 @@ module TokenTypes
   , TokenType(..)
   ) where
 
+import qualified Data.ByteString.Char8 as C
+
 data Lexer =
   Lexer
-    { input        :: String
-    , position     :: Int
-    , readPosition :: Int
-    , ch           :: Char
+    { _input        :: C.ByteString
+    , _position     :: Int
+    , _readPosition :: Int
+    , _ch           :: Char
     }
   deriving (Show)
 
 newtype Token =
   Token
-    { tokenType :: TokenType
+    { _tokenType :: TokenType
     }
   deriving (Show, Eq)
 
 data TokenType
   = ILLEGAL
   | EOF
-  | IDENT String
-  | INT String
+  | IDENT C.ByteString
+  | INT C.ByteString
   | EQUAL
   | PLUS
   | COMMA

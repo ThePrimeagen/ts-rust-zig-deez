@@ -1,69 +1,79 @@
-module Lexer
-  ( tokenize
+{-# LANGUAGE OverloadedStrings #-}                                                   -- for ByteString string literals
+{-# LANGUAGE TemplateHaskell #-}                                                     -- for makeLenses
+
+module Lexer (
+    tokenize
   , Token(..)
   , TokenType(..)
-  ) where
-
-import Data.Char  (isDigit, isLetter, isSpace)
-import TokenTypes (Lexer(..), Token(..), TokenType(..))
-
-tokenize :: String -> [Token]
-tokenize = getTokens . (\x -> readChar $ Lexer x 0 0 '\0')
-
-getTokens :: Lexer -> [Token]
-getTokens lexer =
-  if   tokenType token == EOF
-  then [token]
-  else token : getTokens lexer'
+  )
   where
-    (lexer', token) = getToken lexer
 
-getToken :: Lexer -> (Lexer, Token)
-getToken lexer =
-  let lexer'    = skipWhitespace lexer
-      c         = ch lexer'
-      readTok t = (readChar lexer', Token t)
-  in case c of
-    c'| isLetter c' || c' == '_' -> getKeyword <$> readIdentifier lexer'
-    c'| isDigit c'               -> Token . INT <$> readDigit lexer'
-    '='  -> readTok EQUAL
-    ';'  -> readTok SEMICOLON
-    '('  -> readTok LPAREN
-    ')'  -> readTok RPAREN
-    ','  -> readTok COMMA
-    '+'  -> readTok PLUS
-    '{'  -> readTok LBRACE
-    '}'  -> readTok RBRACE
-    '\0' -> readTok EOF
-    _    -> readTok ILLEGAL
+import qualified Data.ByteString.Char8                                           as C -- ByteString is faster than String
+import           Data.Char                 (isDigit, isLetter, isSpace)               -- don't know if it actually is in this case
+import           TokenTypes                (Lexer(..), Token(..), TokenType(..))
+import           Control.Lens              (makeLenses)                               -- unecessary but I wanted to try it
+import           Control.Lens.Operators    ((+~), (.~), (^.), (&))                    -- unecessary but I wanted to try it
+import           Control.Monad.Trans.State (State, modify, get, evalState)
 
-getKeyword :: String -> Token
+makeLenses ''Lexer
+makeLenses ''Token
+
+tokenize :: C.ByteString -> [Token]
+tokenize = evalState getTokens . (\x -> readChar $ Lexer x 0 0 '\0')
+
+getTokens :: State Lexer [Token]
+getTokens = do
+  token <- getToken
+  if   (token^.tokenType) == EOF
+  then pure [token]
+  else (token:) <$> getTokens
+
+getToken :: State Lexer Token
+getToken = do
+  modify skipWhitespace
+  lexer <- get
+  let readToken = (modify readChar >>) . pure . Token
+  case lexer^.ch of
+    c | isLetter c || c == '_' ->  getKeyword <$> readIdentifier
+    c | isDigit c              ->  Token . INT <$> readDigit
+    '='  -> readToken EQUAL
+    ';'  -> readToken SEMICOLON
+    '('  -> readToken LPAREN
+    ')'  -> readToken RPAREN
+    ','  -> readToken COMMA
+    '+'  -> readToken PLUS
+    '{'  -> readToken LBRACE
+    '}'  -> readToken RBRACE
+    '\0' -> readToken EOF
+    _    -> readToken ILLEGAL
+
+getKeyword :: C.ByteString -> Token
 getKeyword "fn"  = Token FUNCTION
 getKeyword "let" = Token LET
 getKeyword ident = Token (IDENT ident)
 
 readChar :: Lexer -> Lexer
 readChar lexer =
-  let c = if   readPosition  lexer >= length (input lexer)
+  let c = if   lexer^.readPosition >= C.length (lexer^.input)
           then '\0'
-          else input lexer !! readPosition lexer
-  in lexer { readPosition = readPosition lexer + 1, ch = c }
+          else (lexer^.input) `C.index` (lexer^.readPosition)
+  in lexer & readPosition +~ 1 & ch .~ c
 
-readIdentifier :: Lexer -> (Lexer, String)
-readIdentifier lexer
-  | isLetter c || c == '_' = (c:) <$> readIdentifier (readChar lexer)
-  | otherwise              = (lexer, "")
-  where
-    c = ch lexer
+readIdentifier :: State Lexer C.ByteString
+readIdentifier = do
+  lexer <- get
+  if   isLetter (lexer^.ch) || lexer^.ch == '_'
+  then modify readChar >> C.cons (lexer^.ch) <$> readIdentifier
+  else pure C.empty
 
-readDigit :: Lexer -> (Lexer, String)
-readDigit lexer
-  | isDigit c = (c:) <$> readDigit (readChar lexer)
-  | otherwise = (lexer, "")
-  where
-    c = ch lexer
+readDigit :: State Lexer C.ByteString
+readDigit = do
+  lexer <- get
+  if   isDigit (lexer^.ch)
+  then modify readChar >> C.cons (lexer^.ch) <$> readDigit
+  else pure C.empty
 
 skipWhitespace :: Lexer -> Lexer
 skipWhitespace lexer
-  | isSpace $ ch lexer = skipWhitespace $ readChar lexer
-  | otherwise          = lexer
+  | isSpace $ lexer^.ch = skipWhitespace $ readChar lexer
+  | otherwise           = lexer
