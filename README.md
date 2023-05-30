@@ -8,9 +8,11 @@
 
 </div>
 
- ## Contributing
+## Contributing
 
-Remember: first come, first serve. If there exists an implementation in your language of choice, contribute to it!
+Implementations in TypeScript, Rust or Zig are reserved and maintained by ThePrimeagen himself.
+
+For other languages, remember: first come, first serve. If there exists an implementation in your language of choice, contribute to it! 
 
 If not, start by copying LANG_TEMPLATE folder:
 
@@ -23,9 +25,10 @@ It comes with:
 ```bash
 ├── .gitignore  # ignores all editor-specific or os-specific files, add additional stuff for your language
 ├── Dockerfile  # for Docker builds
-├── Makefile    # convenient commands runner (make <cmd>) under *NIX systems
-└── make.cmd    # convenient commands runner (.\make.cmd <cmd>) under Windows
+└── Makefile    # convenient commands runner (make <cmd>) under *NIX systems
 ```
+
+Now, the convenient commands runner (`.\make.cmd <cmd>`) under Windows is completely optional and resides in the root of .github/
 
 ## Running
 
@@ -37,10 +40,11 @@ General:
 
 Without Docker:
 
+- `clean`
 - `fmt`
 - `lint`
-- `test`
-- `ready` — should run the three above
+- `test` — should run all the available tests
+- `ready` — should run fmt, lint ant test
 
 Docker:
 
@@ -54,10 +58,11 @@ This assumes there is a `Makefile` in the root of the language directory.
 
 ```bash
 # without docker
+make clean
 make fmt
 make lint
 make test
-make ready  # runs all three above
+make ready  # runs fmt, lint and test
 
 # docker, assuming there's a Dockerfile
 make docker-build  # makes the build
@@ -70,10 +75,11 @@ This assumes there is a `make.cmd` in the root of the language directory.
 
 ```batchfile
 @rem without docker
+.\make.cmd clean
 .\make.cmd fmt
 .\make.cmd lint
 .\make.cmd test
-.\make.cmd ready  @rem runs all three above
+.\make.cmd ready  @rem runs fmt, lint and test
 
 @rem docker, assuming there's a Dockerfile
 .\make.cmd docker-build  @rem makes the build
