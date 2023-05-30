@@ -33,6 +33,11 @@ enum Token : ubyte
 /// Encapsulates file tokenization
 struct Lexer
 {
+private:
+    ulong position = 0; /// Current character cursor
+    ulong readPosition = 1; /// Read cursor (after current char)
+
+public:
     immutable(ubyte)[] input; /// Input string
     ulong[] tokenStart; /// Starting position of tokens
     Token[] tokenTag; /// Type tag for tokens
@@ -44,7 +49,6 @@ struct Lexer
     this(string text)
     {
         this.input = representation(text);
-        this.readChar();
     }
 
     /**
@@ -194,10 +198,6 @@ struct Lexer
             this.nextToken();
         }
     }
-
-private:
-    ulong position = 0; /// Current character cursor
-    ulong readPosition = 0; /// Read cursor (after current char)
 }
 
 /** Lexer tests */
