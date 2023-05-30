@@ -2,6 +2,8 @@
 # Static part, don't change these:
 ##
 
+.PHONY: help ready docker-build docker-ready fmt lint test
+
 help:
 	@cat Makefile | grep -E "^\w+$:"
 
@@ -17,15 +19,31 @@ docker-ready: docker-build
 # Update those:
 ##
 
+clean:
+	@echo "===> Cleaning"
+	# TODO: replace this line with your cleaning commands
+
 fmt:
 	@echo "===> Formatting"
-	# TODO: add yours
+	# TODO: replace this line with your formatting commands
 
 lint:
 	@echo "===> Linting"
-	# TODO: add yours
+	# TODO: replace this line with your linting commands
 
-test:
-	@echo "===> Testing"
-	# TODO: add yours
+test: test-lexer test-ast test-parser
+	@echo "===> Testing EVERYTHING"
+	# TODO: replace this line with your testing commands
+
+test-lexer:
+	@echo "===> Testing lexer"
+	# TODO: replace this line with your lexer testing commands
+
+test-ast:
+	@echo "===> Testing AST"
+	# TODO: replace this line with your AST testing commands
+
+test-parser:
+	@echo "===> Testing parser"
+	# TODO: replace this line with your parser testing commands
 
