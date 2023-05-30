@@ -7,8 +7,6 @@
 name: Test if the language in PR passes corresponding checks
 
 on:
-  push:
-    branches: [master]
   pull_request:
     # for new PRs, or those who are ready and/or request a review
     types: [opened, ready_for_review, review_requested]
