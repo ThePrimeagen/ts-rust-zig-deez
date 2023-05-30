@@ -14,8 +14,8 @@ let init input =
 ;;
 
 let rec next_token lexer =
-  let lexer = skip_whitespace lexer in
   let open Token in
+  let lexer = skip_whitespace lexer in
   match lexer.ch with
   | None -> lexer, None
   | Some ch ->

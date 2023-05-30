@@ -1,5 +1,4 @@
 open Base
-module Environment = MonkeyObject.Environment
 
 let monkey_true = MonkeyObject.monkey_true
 let monkey_false = MonkeyObject.monkey_false
@@ -20,7 +19,7 @@ let rec eval_input input =
   let lexer = Lexer.init input in
   let parser = Parser.init lexer in
   let* program = Parser.parse parser |> map_error in
-  eval program Environment.empty
+  eval program (Environment.init ())
 
 and eval node env =
   match node with
@@ -72,9 +71,9 @@ and eval_block block env =
 
 and eval_expr expr env =
   match expr with
-  | Ast.Integer int -> Ok (Integer int)
   | Ast.Boolean true -> Ok monkey_true
   | Ast.Boolean false -> Ok monkey_false
+  | Ast.Integer int -> Ok (Integer int)
   | Ast.Identifier identifier -> eval_identifier identifier env
   | Ast.Prefix { operator = Token.Bang; right } ->
     let* right = eval_expr right env in
@@ -92,7 +91,42 @@ and eval_expr expr env =
      | condition, _ when obj_is_truthy condition -> eval_block consequence.block env
      | _, Some alternative -> eval_block alternative.block env
      | _, _ -> Ok Null)
+  | Ast.FunctionLiteral { parameters; body } ->
+    Ok (MonkeyObject.Function { parameters; body; env = Environment.enclosed env })
+  | Ast.Call { fn; args } ->
+    let* fn = eval_expr fn env in
+    let* args =
+      List.fold_until
+        args
+        ~init:[]
+        ~f:(fun accum arg ->
+          match eval_expr arg env with
+          | Ok arg -> Continue (arg :: accum)
+          | _ -> Stop (Error "failed to eval somethin"))
+        ~finish:Result.return
+    in
+    apply_function fn args
   | expr -> Fmt.error "unhandled expr: %s" (Ast.show_expression expr)
+
+and apply_function fn args =
+  let* fn =
+    match fn with
+    | MonkeyObject.Function fn -> Ok fn
+    | _ -> Error "bad function"
+  in
+  let env = extend_env fn args in
+  let* evaluated = eval_block fn.body.block env in
+  Ok (unwrap_return evaluated)
+
+and extend_env fn args =
+  List.foldi fn.parameters ~init:(Environment.enclosed fn.env) ~f:(fun idx env arg ->
+    Environment.set env arg.identifier (List.nth_exn args idx);
+    env)
+
+and unwrap_return expr =
+  match expr with
+  | MonkeyObject.Return expr -> expr
+  | expr -> expr
 
 and eval_identifier identifier env =
   match Environment.get env identifier.identifier with
@@ -227,5 +261,22 @@ module Test = struct
     [%expect {|
       5
       15 |}]
+  ;;
+
+  let%expect_test "function literals" =
+    expect_int "let identity = fn(x) { x; }; identity(5);";
+    expect_int "let multiply = fn(x, y) { x * y }; multiply(50 / 2, 1 * 2);";
+    expect_bool "fn(x) { x == 10 }(10);";
+    expect_int
+      {|
+      let add = fn(a, b) { a + b };
+      let applyFunc = fn(a, b, func) { func(a, b) };
+      applyFunc(2, 2, add);
+    |};
+    [%expect {|
+      5
+      50
+      true
+      4 |}]
   ;;
 end
