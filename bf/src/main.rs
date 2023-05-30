@@ -119,5 +119,25 @@ fn main() -> std::io::Result<()> {
         ]
     );
 
+    expect_tokens!(
+        "a23+05\0",
+        [
+            Token::Ident("a23".into()),
+            Token::Plus,
+            Token::Number("05".into()),
+            Token::EOF
+        ]
+    );
+
+    expect_tokens!(
+        "aB5+05\0",
+        [
+            Token::Ident("aB5".into()),
+            Token::Plus,
+            Token::Number("05".into()),
+            Token::EOF
+        ]
+    );
+
     Ok(())
 }

@@ -203,14 +203,14 @@ State machine loop [
         >>>> +++++++++
 
         Loop through digits using counter and equality [
-			Clone the input byte at $1 to $2 and advance to $3
+            Clone the input byte at $1 to $2 and advance to $3
             <<< [>+>+<<-]>>[<<+>>-]
 
             Subtract the 0 minus 1 character code from $2
             < -----------------------------------------------
 
-			Move to digit counter at $4
-			>>
+            Move to digit counter at $4
+            >>
 
             Reset $5 used as clobber
             > [-] <
@@ -248,20 +248,20 @@ State machine loop [
 
     Check if ident [
         This is based off of the number algorithm but composed to match through
-		upper and lower letters along with digits
+        upper and lower letters along with digits
 
         Store letter counter in $4
         >>>> +++++++++++++++++++++++++
 
         Loop through lower letters using counter and equality [
-			Clone the input byte at $1 to $2 and advance to $3
+            Clone the input byte at $1 to $2 and advance to $3
             <<< [>+>+<<-]>>[<<+>>-]
 
             Subtract the 'a' character code from $2
             < ------------------------------------------------------------------------------------------------
 
-			Move to letter counter at $4
-			>>
+            Move to letter counter at $4
+            >>
 
             Reset $5 used as clobber
             > [-] <
@@ -297,18 +297,18 @@ State machine loop [
             > -
         ] <<<<
         
-		Store letter counter in $4
+        Store letter counter in $4
         >>>> +++++++++++++++++++++++++
 
         Loop through upper letters using counter and equality [
-			Clone the input byte at $1 to $2 and advance to $3
+            Clone the input byte at $1 to $2 and advance to $3
             <<< [>+>+<<-]>>[<<+>>-]
 
             Subtract the 'A' character code from $2
             < ----------------------------------------------------------------
 
-			Move to letter counter at $4
-			>>
+            Move to letter counter at $4
+            >>
 
             Reset $5 used as clobber
             > [-] <
@@ -335,6 +335,44 @@ State machine loop [
                     [-]
                 ] <<<
 
+                << ., >>
+
+                [-]
+            ]
+
+            Move to and decrement digit counter at $4
+            > -
+        ] <<<<
+
+        Store digit counter in $4
+        >>>> +++++++++
+
+        Loop through digits using counter and equality [
+            Clone the input byte at $1 to $2 and advance to $3
+            <<< [>+>+<<-]>>[<<+>>-]
+
+            Subtract the 0 minus 1 character code from $2
+            < -----------------------------------------------
+
+            Move to digit counter at $4
+            >>
+
+            Reset $5 used as clobber
+            > [-] <
+            
+            Reset $3 used as clobber
+            < [-] >
+
+            Copy counter at $4 to $3 and move to $3
+            [-<+>>+<]>[-<+>]<<
+
+            Set $3 to equality
+            [-<->]+<[>-<[-]]>
+
+            If they are equal [
+                [-]
+                <<< [-] >>>
+                > [-] ++++++++++ <
                 << ., >>
 
                 [-]
