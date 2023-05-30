@@ -119,5 +119,5 @@ if (5 < 10) {&
         end if
     end do
 
-    print *, "Tests passed"
+    print *, "all tests passed"
 end program main
