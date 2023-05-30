@@ -1,9 +1,14 @@
+package startup.the.parsing;
+
+import startup.the.token.Token;
+import startup.the.token.TokenType;
+
 import java.util.HashMap;
 
-class Lexer {
+public class Lexer {
     String input;
     int pos;
-    HashMap<String, Token> keywordMap = new HashMap<String, Token>() {
+    HashMap<String, Token> keywordMap = new HashMap<>() {
         {
             put("fn", createToken(TokenType.FUNC, "fn"));
             put("let", createToken(TokenType.LET, "let"));
