@@ -47,15 +47,6 @@ test = do
 
 testFile : '{IO, Exception} [Token]
 testFile = do
-    name = !readLine
-    path = FilePath name
-    file = open path Read
-    loop : Handle -> [Token] -> [Token]
-    loop file tokens =
-        if not (isEOF file) then
-            line = getLine file
-            tks = lexer line
-            loop file (tokens ++ tks)
-        else
-            tokens :+ Eof
-    loop file []
+    path = FilePath !readLine
+    tokens = lexer << getText <| open path Read
+    tokens :+ Eof
