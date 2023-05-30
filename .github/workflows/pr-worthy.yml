@@ -27,23 +27,15 @@ jobs:
       - name: Initial setup + A list of all affected languages
         run: |
           sudo apt-get update && sudo apt install -y make curl git
-          pushd ts-rust-zig-deez
-
           changed_langs=($(git diff --name-only HEAD~1 | cut -d '/' -f 1))
           if [ ${#errors[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
           for i in "${changed_langs[@]}"; do echo "$i" >> list.txt; done
-
-          popd
           
       - name: Build docker images for every language affected
         run: |
-          pushd ts-rust-zig-deez
           while read -r i; do pushd "$i"; make docker-build; popd; done < list.txt
-          popd
 
       - name: Run docker containers for built images
         run: |
-          pushd ts-rust-zig-deez
           while read -r i; do pushd "$i"; make docker-ready; popd; done < list.txt
-          popd
           
