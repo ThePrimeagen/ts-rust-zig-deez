@@ -14,6 +14,8 @@ depends: [
   "dune" {>= "3.8"}
   "ppx_deriving"
   "ppx_expect"
+  "ppx_sexp_conv"
+  "sexplib"
   "odoc" {with-doc}
 ]
 build: [
