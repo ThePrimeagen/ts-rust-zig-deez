@@ -29,14 +29,14 @@ fmt:
 
 lint:
 	@echo "===> Linting"
-	shellcheck --shell=bash --source-path=src/ src/**
+	# TODO: replace this line with your linting commands
 
 test: test-lexer test-ast test-parser
 	@echo "===> Tested EVERYTHING"
 
 test-lexer:
 	@echo "===> Testing lexer"
-	bash src/lexer_test.sh
+	# TODO: replace this line with your lexer testing commands
 
 test-ast:
 	@echo "===> Testing AST"
