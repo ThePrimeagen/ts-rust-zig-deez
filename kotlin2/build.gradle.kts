@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.0"
+    kotlin("jvm") version "1.9.0-Beta"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
 }
 
