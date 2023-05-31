@@ -14,4 +14,4 @@ RUN apt-get update && apt install -y make git curl && \
 COPY . .
 
 # Commands for docker run
-RUN go test -v
+CMD ["go", "test", "-v"]
