@@ -41,9 +41,13 @@ jobs:
 
       - name: Build docker images for every language affected
         run: |
-          while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-build; popd; fi; done < list.txt
+          if [ -f "list.txt" ]; then
+            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-build; popd; fi; done < list.txt
+          fi
 
       - name: Run docker containers for built images
         run: |
-          while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-ready; popd; fi; done < list.txt
+          if [ -f "list.txt" ]; then
+            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-ready; popd; fi; done < list.txt
+          fi
 
