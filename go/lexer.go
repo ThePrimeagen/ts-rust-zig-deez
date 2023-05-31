@@ -39,14 +39,14 @@ const Z = int('Z')
 
 const __ = int('_')
 
-func isLetter(character byte) bool {
+func isLetter(character rune) bool {
 	var char = int(character)
 	return a <= char && z >= char ||
 		A <= char && Z >= char ||
 		char == __
 }
 
-func isNumber(character byte) bool {
+func isNumber(character rune) bool {
 	var char = int(character)
 	return _0 <= char && _9 >= char
 }
@@ -59,7 +59,7 @@ var Keyword = map[string]Token{
 type Tokenizer struct {
 	position     int
 	readPosition int
-	ch           byte
+	ch           rune
 	input        string
 }
 
@@ -130,7 +130,7 @@ func (tokenizer *Tokenizer) readChar() {
 	if tokenizer.readPosition >= len(tokenizer.input) {
 		tokenizer.ch = '\x00'
 	} else {
-		tokenizer.ch = tokenizer.input[tokenizer.readPosition]
+		tokenizer.ch = rune(tokenizer.input[tokenizer.readPosition])
 	}
 
 	tokenizer.position = tokenizer.readPosition
