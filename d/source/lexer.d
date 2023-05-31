@@ -36,6 +36,11 @@ enum TokenTag : ubyte
     RSquirly,
     Function,
     Let,
+    True,
+    False,
+    If,
+    Else,
+    Return
 }
 
 /// Token SoA tagged with starting position and type
@@ -46,7 +51,9 @@ struct TokenList
 }
 
 private enum TokenTag[string] reservedKeywords = [
-    "fn": TokenTag.Function, "let": TokenTag.Let
+    "fn": TokenTag.Function, "let": TokenTag.Let, "true": TokenTag.True,
+    "false": TokenTag.False, "if": TokenTag.If, "else": TokenTag.Else,
+    "return": TokenTag.Return
 ];
 
 private TokenTag tagForIdent(string identifier)
@@ -409,6 +416,73 @@ let result = add(five, ten);
             Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
             RParen, Semicolon, Bang, Minus, Slash, Asterisk, Int, Semicolon,
             Int, Lt, Int, Gt, Int, Semicolon
+        ];
+
+        auto lexer = Lexer(input);
+        lexer.tokenize();
+
+        assert(lexer.tokens.start.length == expectedStart.length,
+                format("Token position list was %d elements; expected to be %d elements long",
+                    lexer.tokens.start.length, expectedStart.length));
+
+        assert(lexer.tokens.tag.length == expectedTag.length,
+                format("Token tag list was %d elements; expected to be %d elements long",
+                    lexer.tokens.tag.length, expectedTag.length));
+
+        foreach (i, start; lexer.tokens.start.enumerate(0))
+        {
+            assert(start == expectedStart[i],
+                    format("Wrong token position %d for tag[%d]; expected %d",
+                        start, i, expectedStart[i]));
+        }
+
+        foreach (i, tag; lexer.tokens.tag.enumerate(0))
+        {
+            assert(tag == expectedTag[i],
+                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
+                        tag, i, expectedTag[i]));
+        }
+    }
+}
+
+/// Lexer test with even more keywords
+unittest
+{
+    const auto input = "let five = 5;
+let ten = 10;
+let add = fn(x, y) {
+  x + y;
+};
+let result = add(five, ten);
+!-/*5;
+5 < 10 > 5;
+
+if (5 < 10) {
+  return true;
+} else {
+  return false;
+}
+";
+
+    with (TokenTag)
+    {
+        const auto expectedStart = [
+            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
+            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
+            84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107,
+            110, 113, 114, 116, 118, 120, 122, 126, 133, 137, 139, 141, 146, 150,
+            157, 162, 164
+        ];
+
+        const auto expectedTag = [
+            Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
+            Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
+            RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
+            Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
+            RParen, Semicolon, Bang, Minus, Slash, Asterisk, Int, Semicolon,
+            Int, Lt, Int, Gt, Int, Semicolon, If, LParen, Int, Lt, Int, RParen,
+            LSquirly, Return, True, Semicolon, RSquirly, Else, LSquirly,
+            Return, False, Semicolon, RSquirly
         ];
 
         auto lexer = Lexer(input);
