@@ -13,7 +13,7 @@ import std.range : enumerate;
 import std.string : assumeUTF, representation;
 
 /// Token type tags
-enum Token : ubyte
+enum TokenTag : ubyte
 {
     Illegal,
     Eof,
@@ -31,6 +31,27 @@ enum Token : ubyte
     Let,
 }
 
+/// Token SoA tagged with starting position and type
+struct TokenList
+{
+    ulong[] start; /// Starting position of tokens
+    TokenTag[] tag; /// Type tag for tokens
+}
+
+private enum TokenTag[string] reservedKeywords = [
+    "fn": TokenTag.Function, "let": TokenTag.Let
+];
+
+private TokenTag tagForIdent(string identifier)
+{
+    if (identifier in reservedKeywords)
+    {
+        return reservedKeywords[identifier];
+    }
+
+    return TokenTag.Ident;
+}
+
 /// Encapsulates file tokenization
 struct Lexer
 {
@@ -40,8 +61,7 @@ private:
 
 public:
     immutable(ubyte)[] input; /// Input string
-    ulong[] tokenStart; /// Starting position of tokens
-    Token[] tokenTag; /// Type tag for tokens
+    TokenList tokens; /// Tokens in input
 
     /**
      * Constructs the lexer.
@@ -66,52 +86,52 @@ public:
      */
     void nextToken()
     {
-        ubyte c = this.input[this.position];
-        switch (c)
+        const auto c = this.input[this.position];
+        switch (c) with (TokenTag)
         {
         case '=':
-            this.tokenTag ~= Token.Equal;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Equal;
             this.readChar();
             break;
         case '+':
-            this.tokenTag ~= Token.Plus;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Plus;
             this.readChar();
             break;
         case ',':
-            this.tokenTag ~= Token.Comma;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Comma;
             this.readChar();
             break;
         case ';':
-            this.tokenTag ~= Token.Semicolon;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Semicolon;
             this.readChar();
             break;
         case '(':
-            this.tokenTag ~= Token.LParen;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= LParen;
             this.readChar();
             break;
         case ')':
-            this.tokenTag ~= Token.RParen;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= RParen;
             this.readChar();
             break;
         case '{':
-            this.tokenTag ~= Token.LSquirly;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= LSquirly;
             this.readChar();
             break;
         case '}':
-            this.tokenTag ~= Token.RSquirly;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= RSquirly;
             this.readChar();
             break;
         case '0': .. case '9':
-            this.tokenTag ~= Token.Int;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Int;
 
             // Assume that we only have integers for now
             this.readNumber();
@@ -119,48 +139,51 @@ public:
         case '_':
             goto case; // Explicit fallthrough to identifier scan
         case 'A': .. case 'Z':
-            this.tokenTag ~= Token.Ident;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Ident;
 
             // No reserved keywords that start with uppercase letters or '_'
             this.readIdentifier();
             break;
         case 'a': .. case 'z':
-            auto tag = Token.Ident;
             const auto start = this.position;
-            this.tokenStart ~= start;
 
             // Scan for reserved keywords or identifier
             this.readIdentifier();
             const auto identSlice = this.input[start .. this.position];
 
-            switch (identSlice.assumeUTF)
-            {
-            case "fn":
-                tag = Token.Function;
-                break;
-            case "let":
-                tag = Token.Let;
-                break;
-            default:
-                break;
-            }
-
-            this.tokenTag ~= tag;
+            this.tokens.start ~= start;
+            this.tokens.tag ~= tagForIdent(identSlice.assumeUTF);
             break;
         case '\0':
-            this.tokenTag ~= Token.Eof;
-            this.tokenStart ~= this.position;
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Eof;
             this.readChar();
             break;
         default:
-            if (!isWhite(c))
+            if (isWhite(c))
             {
-                this.tokenTag ~= Token.Illegal;
-                this.tokenStart ~= this.position;
+                skipWhitespace();
             }
+            else
+            {
+                this.tokens.start ~= this.position;
+                this.tokens.tag ~= Illegal;
+                this.readChar();
+            }
+        }
+    }
+
+    /**
+     * Skip until there is no more whitespace.
+     */
+    void skipWhitespace()
+    {
+        do
+        {
             this.readChar();
         }
+        while (this.position < this.input.length && isWhite(this.input[this.position]));
     }
 
     /**
@@ -180,7 +203,7 @@ public:
      */
     void readIdentifier()
     {
-        ubyte ch;
+        char ch;
         do
         {
             this.readChar();
@@ -203,23 +226,62 @@ public:
 
 /** Lexer tests */
 
+/// Minimal lexer test
+unittest
+{
+    const auto input = "";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    assert(lexer.tokens.start.length == 0 && lexer.tokens.tag.length == 0,
+            "Token list must be empty for empty string");
+}
+
+/// Empty input lexer test
+unittest
+{
+    const auto input = "  ";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    assert(lexer.tokens.start.length == 0 && lexer.tokens.tag.length == 0,
+            "Token list must be empty for empty string");
+}
+
 /// Basic lexer test
 unittest
 {
     const auto input = "=+(){},;";
-    with (Token)
+
+    with (TokenTag)
     {
-        const auto expected = [
-            Equal, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon, Eof
+        const auto expectedStart = [0, 1, 2, 3, 4, 5, 6, 7];
+
+        const auto expectedTag = [
+            Equal, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon
         ];
 
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        foreach (i, tag; lexer.tokenTag.enumerate(0))
+        assert(lexer.tokens.start.length == expectedStart.length && lexer.tokens.tag.length == expectedTag.length,
+                format("Token list was %d elements; expected to be %d elements long",
+                    lexer.tokens.start.length, expectedTag.length));
+
+        foreach (i, start; lexer.tokens.start.enumerate(0))
         {
-            assert(tag == expected[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'", tag, i, expected[i]));
+            assert(start == expectedStart[i],
+                    format("Wrong token position %d for tag[%d]; expected %d",
+                        start, i, expectedStart[i]));
+        }
+
+        foreach (i, tag; lexer.tokens.tag.enumerate(0))
+        {
+            assert(tag == expectedTag[i],
+                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
+                        tag, i, expectedTag[i]));
         }
     }
 }
@@ -227,29 +289,49 @@ unittest
 /// Complete lexer test
 unittest
 {
-    const auto input = "
-  let five = 5;
-  let ten = 10;
-  let add = fn(x, y) {
-    x + y;
-  };
-  let result = add(five, ten);
-  ";
-    with (Token)
+    const auto input = "let five = 5;
+let ten = 10;
+let add = fn(x, y) {
+  x + y;
+};
+let result = add(five, ten);
+";
+
+    with (TokenTag)
     {
-        const auto expected = [
+        const auto expectedStart = [
+            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
+            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
+            88
+        ];
+
+        const auto expectedTag = [
             Let, Ident, Equal, Int, Semicolon, Let, Ident, Equal, Int,
             Semicolon, Let, Ident, Equal, Function, LParen, Ident, Comma, Ident,
             RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
             Semicolon, Let, Ident, Equal, Ident, LParen, Ident, Comma, Ident,
-            RParen, Semicolon, Eof
+            RParen, Semicolon
         ];
+
         auto lexer = Lexer(input);
         lexer.tokenize();
-        foreach (i, tag; lexer.tokenTag.enumerate(0))
+
+        assert(lexer.tokens.start.length == expectedStart.length && lexer.tokens.tag.length == expectedTag.length,
+                format("Token list was %d elements; expected to be %d elements long",
+                    lexer.tokens.start.length, expectedTag.length));
+
+        foreach (i, start; lexer.tokens.start.enumerate(0))
         {
-            assert(tag == expected[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'", tag, i, expected[i]));
+            assert(start == expectedStart[i],
+                    format("Wrong token position %d for tag[%d]; expected %d",
+                        start, i, expectedStart[i]));
+        }
+
+        foreach (i, tag; lexer.tokens.tag.enumerate(0))
+        {
+            assert(tag == expectedTag[i],
+                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
+                        tag, i, expectedTag[i]));
         }
     }
 }
