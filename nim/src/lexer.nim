@@ -1,7 +1,7 @@
 import strutils, sequtils
 
 type token* = enum
-  ident = ""
+  ident = "Ident"
   t_int = "Int"
   illegal = "Illegal"
   equal = "Equals"
