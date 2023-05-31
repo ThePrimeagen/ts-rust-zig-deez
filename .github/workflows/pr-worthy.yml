@@ -34,11 +34,9 @@ jobs:
       - name: Initial setup + A list of all affected languages
         run: |
           sudo apt-get update && sudo apt install -y make curl git
-        
           changed_files=()
             for i in ${{ steps.changed.outputs.all_changed_files }}; do changed_files+=("$i"); done
-          changed_langs=($(printf "%s\n" "${changed_files[@]} | cut -d '/' -f 1 | sort -u | uniq))
-        
+          changed_langs=($(printf "%s\n" "${changed_files[@]}" | cut -d '/' -f 1 | sort -u | uniq))     
           for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ -d "$i" ]; then echo "$i" >> list.txt; fi; done
 
       - name: Build docker images for every language affected
