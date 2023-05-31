@@ -1,5 +1,7 @@
 module Token where
 
+type Tokenizer = String -> [Token]
+
 data Token
     = Illegal
     | Eof
