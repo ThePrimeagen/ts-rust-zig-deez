@@ -2,13 +2,13 @@ module Lexer.Basic (tokenize) where
 
 import Data.Bifunctor (Bifunctor (first))
 import Data.Char (isDigit, isLetter, isSpace)
-import Token (Token (..), identToken, Tokenizer)
+import Token (Token (..), Tokenizer, identToken)
 
 tokenize :: Tokenizer
 tokenize = takeUntil (== Eof) . lexer
 
 lexer :: Tokenizer
-lexer =  uncurry (:) . fmap lexer . nextToken
+lexer = uncurry (:) . fmap lexer . nextToken
 
 nextToken :: String -> (Token, String)
 nextToken [] = (Eof, [])
@@ -48,4 +48,3 @@ takeUntil _ [] = []
 takeUntil p (x : xs)
     | p x = [x]
     | otherwise = x : takeUntil p xs
-
