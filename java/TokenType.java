@@ -1,0 +1,16 @@
+enum TokenType {
+    ILLEGAL,
+    EOF,
+    IDENT,
+    INT,
+    EQUAL,
+    PLUS,
+    COMMA,
+    SEMI,
+    LPAREN,
+    RPAREN,
+    LSQIRLY,
+    RSQIRLY,
+    FUNC,
+    LET,
+}
