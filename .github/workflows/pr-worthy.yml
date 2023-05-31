@@ -8,8 +8,8 @@ name: Test if the language in PR passes corresponding checks
 
 on:
   pull_request:
-    # for new PRs, or those who are ready and/or request a review
-    types: [opened, ready_for_review, review_requested]
+    # for new or edited PRs, those who are ready and/or request a review
+    types: [opened, edited, ready_for_review, review_requested]
 
 defaults:
   run:
@@ -18,22 +18,23 @@ defaults:
 jobs:
   pr-worthy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Checking out the repo
-        uses: actions/checkout@v3 
+        uses: actions/checkout@v3
 
       - name: Initial setup + A list of all affected languages
         run: |
           sudo apt-get update && sudo apt install -y make curl git
-          changed_langs=($(git diff --name-only HEAD~1 | cut -d '/' -f 1 | sort | uniq))
+          changed_langs=($(git diff --name-only origin/master origin/${GITHUB_HEAD_REF} | cut -d '/' -f 1 | sort | uniq))
           if [ ${#changed_langs[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
           for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ -d "$i" ]; then echo "$i" >> list.txt; fi; done
-          
+
       - name: Build docker images for every language affected
         run: |
-          while read -r i; do pushd "$i"; make docker-build; popd; done < list.txt
+          while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-build; popd; fi; done < list.txt
 
       - name: Run docker containers for built images
         run: |
-          while read -r i; do pushd "$i"; make docker-ready; popd; done < list.txt
-          
+          while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-ready; popd; fi; done < list.txt
+

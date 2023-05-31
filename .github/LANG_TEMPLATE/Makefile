@@ -2,7 +2,7 @@
 # Static part, don't change these:
 ##
 
-.PHONY: help ready docker-build docker-ready fmt lint test
+.PHONY: help ready docker-build docker-ready clean fmt lint test
 
 help:
 	@cat Makefile | grep -E "^\w+$:"

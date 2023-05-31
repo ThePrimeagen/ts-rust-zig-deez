@@ -1,22 +1,31 @@
-# Global owners.
-@ThePrimeagen
+# Global code owner
+*                 @ThePrimeagen
 
-# Degenerate language maintainers.
-/c/             @zivlakmilos
-/cpp/           @nicdgonzalez
-/crystal/       @devnote-dev
-/csharp/        @MarioGK
-/dart/          @shreyassanthu77
-/elixir/        @ryanwinchester
-/erlang/        @mikimaine
-/fortran/       @greuben92
-/fsharp/        @meenzen
-/java/          @xNaCly
-/ocaml/         @tjdevries
-/odin/          @jon-lipstate
-/php/           @wartab
-/python/        @BatikanHyt
-/roc/           @bhansconnect
-/rust/          @ThePrimeagen
-/typescript/    @ThePrimeagen
-/zig/           @ThePrimeagen
+# DevOps
+/.github/         @novusnota
+
+# Language maintainers
+/bash/            @vgel
+/c/               @zivlakmilos
+/cpp/             @nicdgonzalez
+/crystal/         @devnote-dev
+/csharp/          @MarioGK
+/dart/            @shreyassanthu77
+# TODO: Consider uniting those two:
+/elixir-shyryan/  @ryanwinchester
+/elixir/          @ryanwinchester
+/erlang/          @mikimaine
+/fortran/         @greuben92
+/fsharp/          @meenzen
+/java/            @xNaCly
+/ocaml/           @tjdevries
+/odin/            @jon-lipstate
+/php/             @wartab
+/python/          @BatikanHyt
+/roc/             @bhansconnect
+/rust/            @ThePrimeagen
+/typescript/      @ThePrimeagen
+/zig/             @ThePrimeagen
+
+# TODO: Add people selected from May 30th stream
+
