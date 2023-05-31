@@ -13,6 +13,9 @@ module Token
   Asterisk = Data.define
   Slash = Data.define
 
+  NotEq = Data.define
+  Equal = Data.define
+
   Lt = Data.define
   Gt = Data.define
 

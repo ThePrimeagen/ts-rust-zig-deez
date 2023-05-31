@@ -36,13 +36,23 @@ class Lexer
 
     tok = case @ch
           when '='
-            Token::Assign
+            if peek_char == '='
+              read_char
+              Token::Equal
+            else
+              Token::Assign
+            end
           when '+'
             Token::Plus
           when '-'
             Token::Minus
           when '!'
-            Token::Bang
+            if peek_char == '='
+              read_char
+              Token::NotEq
+            else
+              Token::Bang
+            end
           when '*'
             Token::Asterisk
           when '/'
@@ -106,6 +116,14 @@ class Lexer
           end
     @position = @read_position
     @read_position += 1
+  end
+
+  def peek_char
+    if @read_position > @input.length
+      nil
+    else
+      @input[@read_position]
+    end
   end
 
   def read_ident
