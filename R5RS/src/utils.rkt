@@ -1,12 +1,20 @@
+(#%require (only racket/base time error make-hash hash-set! hash-update! hash-ref))
+; TAGGED LIST
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      #f))
+
+
+; STRING FUNCTIONS
 (define (append-i s i)
   (string-append s (number->string i)))
 
 (define display-shadow display)
 
 (define (display-l . args)
-  (for-each (lambda (arg) (display-shadow arg)) args)
+  (for-each (lambda (arg) (display-shadow arg) (display-shadow " ")) args)
   (newline))
-
 
 (define (format . args)
   (define out "")
@@ -19,6 +27,7 @@
   out)
 
 
+; CHECKERS
 (define (letter? char)
   (define ch (integer->char char))
   (or (and (char>=? ch #\a) (char<=? ch #\z))
@@ -28,4 +37,18 @@
 (define (digit? char)
   (define ch (integer->char char))
   (and (char>=? ch #\0) (char<=? ch #\9)))
+
+
+; LIST FUNCTIONS
+(define (get-nth-element lst n)
+  (if (or (null? lst) (< n 0))
+      (error "Invalid index or empty list")
+      (if (= n 0)
+          (car lst)
+          (get-nth-element (cdr lst) (- n 1)))))
+
+(define (add-to-list lst element)
+  (if (null? lst)
+      (list element)
+      (append lst (list element))))
 

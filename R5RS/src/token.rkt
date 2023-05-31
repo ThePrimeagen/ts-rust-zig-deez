@@ -1,6 +1,7 @@
 (load "lexer.rkt")
 (load "utils.rkt")
 
+; TYPES
 (define ILLEGAL "ILLEGAL")
 (define EOF "EOF")
 
@@ -36,6 +37,33 @@
 (define RETURN "RETURN")
 
 
+; TOKEN
+; (TYPE literal)
+(define (to-token type literal)
+    (list 'token type literal)
+)
+
+(define (token-from-type type)
+  (to-token type type))
+
+(define (token? t)
+  (tagged-list? t 'token))
+
+; GETTERS
+(define (token-type token)
+    (if (token? token)
+    (cadr token)))
+
+(define (token-literal token)
+    (if (token? token)
+        (caddr token)))
+
+
+
+; EQ?
+(define (token-is-type? token type)
+  (string=? type (token-type token)))
+
 (define (char-eq? ch token)
   (cond
     ((number? token) (eq? ch token))
@@ -44,6 +72,7 @@
   )
 
 
+; KEYWORD?
 (define (lookup-ident id)
   (cond
     ((string=? "fn" id) (to-token FUNCTION id))
@@ -55,37 +84,16 @@
     ((string=? "return" id) (to-token RETURN id))
     (else (to-token IDENT id))))
 
-(define (to-token type literal)
-    (list "TOKEN" type literal)
-)
 
 
-(define (token? token)
-  (if (pair? token)
-      (eq? (car token) "TOKEN")
-      #f))
-
-(define (token-type token)
-    (if (token? token)
-    (cadr token)
-    '()
-    )
-)
-
-(define (token-literal token)
-    (if (pair? token)
-    (if (eq? (car token) "TOKEN")
-    (caddr token)
-    '())
-    '()
-    )
-)
-
+; LEXER BACK BONE
+; (lexer)
 (define (next-token l)
   (lexer-skip-whitespace l)
 
   (define ch (lexer-char l))
   (define out (to-token ILLEGAL ""))
+  
   (cond
     ((char-eq? ch ASSIGN)
      (if (char-eq? (lexer-peak-char l) "=")
