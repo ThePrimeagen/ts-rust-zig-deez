@@ -1,4 +1,8 @@
 (#%require (only racket/base time error make-hash hash-set! hash-update! hash-ref))
+
+(define (loader name)
+  (load (string-append (string-append "../src/" name) ".rkt")))
+
 ; TAGGED LIST
 (define (tagged-list? exp tag)
   (if (pair? exp)
@@ -14,6 +18,7 @@
 
 (define (display-l . args)
   (for-each (lambda (arg) (display-shadow arg) (display-shadow " ")) args)
+  (newline)
   (newline))
 
 (define (format . args)

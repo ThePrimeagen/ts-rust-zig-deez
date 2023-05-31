@@ -1,7 +1,7 @@
-(load "parser.rkt")
-(load "lexer.rkt")
-(load "ast.rkt")
-(load "utils.rkt")
+(load "../src/utils.rkt")
+(loader "lexer")
+(loader "ast")
+(loader "parser")
 
 
 
@@ -113,9 +113,37 @@ return 993322;
       (error (format "Token literal not: " value " got: " (token-literal-from-state il))))
   )
 
+(define (test-identifier id value)
+   (if (not (id-stmt? id))
+      (error (format "exp is not an identifier. But is: " id)))
+
+  (if (not (= value (id-value id)))
+      (error (format "Identifier value not: " value " got: " (int-valueidl))))
+
+  (if (not (string=? (token-literal-from-state id) (number->string value)))
+      (error (format "Token literal not: " value " got: " (token-literal-from-state il))))
+  )
+
+(define (test-bool b value)
+  (if (not (bool-literal? id))
+      (error (format "exp is not an bool. But is: " id)))
+
+  (if (not (eq? value (int-value il)))
+      (error (format "Integer value not: " value " got: " (int-value il))))
+
+  (if (not (string=? (token-literal-from-state il) (number->string value)))
+      (error (format "Token literal not: " value " got: " (token-literal-from-state il))))
+
+  )
+
+(define (text-literal-expression exp expected)
+  (cond (number? expected) (test-interger-literal exp expected)
+        (string? expected) (test-identifier exp expected)
+        (bool? expected) (test-bool exp expected)))
+
 (define (test-prefix-expressions)
 
-  (define tests (list (list "!5" "!" 5) (list "-15" "-" 15)))
+  (define tests (list (list "!5" "!" 5) (list "-15" "-" 15) (list "!true" "!" #t)))
 
   (for-each (lambda (t)
               (define p (parse-programme (new-parser (new-lexer (car t)))))
@@ -130,14 +158,80 @@ return 993322;
 
               (define exp (expression-value stmt))
               (if (not (prefix-exp? exp))
-                  (error (format "exp is not an int leteral Is: " exp)))
+                  (error (format "exp is not an prefix exp. Is: " exp)))
 
               (if (not (char-eq? (prefix-exp-operator exp) (cadr t)))
                   (error (format "Operator is not " (cadr t) "is not. But was " (prefix-exp-operator exp))))
 
-              (test-interger-literal (prefix-exp-right exp) (caddr t))
+              (text-literal-expression (prefix-exp-right exp) (caddr t))
               
               ) tests)
+  )
+
+(define (test-infix-expressions)
+
+  (define tests (list
+                 (list "5 + 5;" 5 "+" 5)
+                 (list "5 - 5;" 5 "-" 5)
+                 (list "5 * 5;" 5 "*" 5)
+                 (list "5 / 5;" 5 "/" 5)
+                 (list "5 > 5;" 5 ">" 5)
+                 (list "5 < 5;" 5 "<" 5)
+                 (list "5 == 5;" 5 "==" 5)
+                 (list "5 != 5;" 5 "!=" 5)
+                 (list "alice * bob" "alice" "*" "bob")
+                 (list "5 + 10" 5 "+" 10)
+                 (list "true == true" #t "==" #t)
+                 (list "false != true" #f "!=" #t)))
+
+  (for-each (lambda (t)
+              (define p (parse-programme (new-parser (new-lexer (car t)))))
+              (check-parse-errors p)
+
+              (if (not (= (length (parser-stmts p)) 1))
+                   (error (format "Program did not have 1 statements. Had: " (length (parser-stmts p)))))
+
+              (define stmt (car (parser-stmts p)))
+              (if (not (expression-stmt? stmt))
+                  (error (format "Statement is not an  expression statement Is: " stmt)))
+
+              (define exp (expression-value stmt))
+              (if (not (infix-exp? exp))
+                  (error (format "exp is not an infix exp. Is: " exp)))
+
+              (text-literal-expression (infix-exp-left exp) (cadr t))
+
+              (if (not (or (char-eq? (infix-exp-operator exp) (caddr t)) (string=? (infix-exp-operator exp) (caddr t))))
+                  (error (format "Operator is not '" (caddr t) "' . But was '" (infix-exp-operator exp) "'")))
+
+              (text-literal-expression (infix-exp-right exp) (cadddr t))
+              
+              ) tests)
+  )
+
+(define (test-bool-expressions)
+
+  (define test (list (cons "true;" #t) (cons "false;" #f)))
+
+  (for-each (lambda (t)
+              (define p (parse-programme (new-parser (new-lexer (car t)))))
+              (check-parse-errors p)
+
+              (if (not (= (length (parser-stmts p)) 1))
+                   (error (format "Program did not have 1 statements. Had: " (length (parser-stmts p)))))
+
+              (define stmt (car (parser-stmts p)))
+              (if (not (expression-stmt? stmt))
+                  (error (format "Statement is not an  expression statement Is: " stmt)))
+
+              (define exp (expression-value stmt))
+              (if (not (bool-literal? exp))
+                  (error (format "exp is not an bool-literal. Is: " exp)))
+
+              (if (not (eq? (cdr t) (bool-value exp)))
+                  (error (format "Operator is not '" (cadr t) "' . But was '" (bool-value exp) "'")))
+              
+              ) test)
   )
 
 (test-parser-let)
@@ -145,3 +239,5 @@ return 993322;
 (test-identifier-expression)
 (test-integer-literal-expression)
 (test-prefix-expressions)
+(test-infix-expressions)
+(test-bool-expressions)

@@ -1,5 +1,5 @@
-(load "lexer.rkt")
-(load "utils.rkt")
+(load "../src/utils.rkt")
+(loader "lexer")
 
 ; TYPES
 (define ILLEGAL "ILLEGAL")

@@ -1,6 +1,5 @@
-(load "token.rkt")
-(load "utils.rkt")
-
+(load "../src/utils.rkt")
+(loader "token")
 
 ; LET STATEMENT
 ; (token 'identifier-state EXP)
@@ -62,7 +61,7 @@
   (cadr s))
 
 ;; PREFIX EXPRESSION
-; (token operator exp)
+; (token operator right)
 (define (new-prefix-expression token operator right)
   (list 'prefix-expression token operator right))
 
@@ -79,6 +78,26 @@
   (cadr s))
 
 
+; INFIX EXPRESSIONS
+; (token left operator right)
+(define (new-infix-expressions token left operator right)
+  (list 'infix-expression token left operator right))
+
+(define (infix-exp? s)
+  (tagged-list? s 'infix-expression))
+
+(define (infix-exp-right exp)
+  (cadr (cdddr exp)))
+
+(define (infix-exp-operator exp)
+  (car (cdddr exp)))
+
+(define (infix-exp-left exp)
+  (caddr exp))
+
+(define (infix-exp-token s)
+  (cadr s))
+
 
 ; INTEGER LITERAL
 ; (token value)
@@ -92,6 +111,20 @@
   (caddr literal))
 
 (define (int-token s)
+  (cadr s))
+
+; BOOLEAN
+; (token value)
+(define (new-bool token value)
+  (list 'bool token value))
+
+(define (bool-literal? s)
+  (tagged-list? s 'bool))
+
+(define (bool-value literal)
+  (caddr literal))
+
+(define (bool-token s)
   (cadr s))
 
 

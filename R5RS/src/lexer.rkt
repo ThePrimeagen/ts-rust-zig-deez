@@ -1,4 +1,4 @@
-(load "utils.rkt")
+(load "../src/utils.rkt")
 
 ; LEXER
 ; (INPUT pos read-pos char)

@@ -1,6 +1,6 @@
-(load "token.rkt")
-(load "lexer.rkt")
-(load "utils.rkt")
+(load "../src/utils.rkt")
+(loader "token")
+(loader "lexer")
 
 ; CONSTS
 (define LOWEST 1)
@@ -11,12 +11,22 @@
 (define PREFIX 6)
 (define CALL 7)
 
+(define precedences (make-hash))
+(hash-set! precedences EQ EQUALS)
+(hash-set! precedences NOT_EQ EQUALS)
+(hash-set! precedences LT LESSGREATER)
+(hash-set! precedences GT LESSGREATER)
+(hash-set! precedences PLUS SUM)
+(hash-set! precedences MINUS SUM)
+(hash-set! precedences SLASH PRODUCT)
+(hash-set! precedences ASTERISK PRODUCT)
+
 
 
 ; PARSER LIST
 ; (LEXER CUR PEEK STMTS ERRORS prefixHash infixHash)
 (define (new-parser l)
-  (define parser (list 'parser l ILLEGAL ILLEGAL '() '() (make-hash) 'indix))
+  (define parser (list 'parser l ILLEGAL ILLEGAL '() '() (make-hash) (make-hash)))
   (parser-next-token parser)
   (parser-next-token parser)
 
@@ -24,7 +34,18 @@
   (add-prefix! parser INT (lambda (p) (parse-integer-literal p)))
   (add-prefix! parser BANG (lambda (p) (parse-prefix-exp p)))
   (add-prefix! parser MINUS (lambda (p) (parse-prefix-exp p)))
+  (add-prefix! parser TRUE (lambda (p) (parse-bool-exp p)))
+  (add-prefix! parser FALSE (lambda (p) (parse-bool-exp p)))
+  (add-prefix! parser LPAREN (lambda (p) (parse-group-exp p)))
 
+  (add-infix! parser PLUS (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser MINUS (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser SLASH (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser ASTERISK (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser EQ (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser NOT_EQ (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser LT (lambda (p left) (parse-infix-exp p left)))
+  (add-infix! parser GT (lambda (p left) (parse-infix-exp p left)))
   
   parser)
 
@@ -57,7 +78,7 @@
 (define (get-prefix p key)
   (hash-ref (parser-prefix p) key (lambda () '())))
 
-(define (get-infex p key)
+(define (get-infix p key)
   (hash-ref (parser-infix p) key (lambda () '())))
 
 
@@ -97,6 +118,7 @@
 
 
 ; METHODS
+
 (define (parser-cur-is p t)
   (token-is-type? (parser-cur p) t))
 
@@ -110,8 +132,7 @@
 
 (define (parser-next-token p)
   (parser-set-cur! p (parser-peek p))
-  (parser-set-peek! p (next-token (parser-lexer p)))
-  )
+  (parser-set-peek! p (next-token (parser-lexer p))))
 
 (define (parser-token-literal p)
   (if (> (length p) 0)
@@ -120,9 +141,15 @@
 
 (define (parse-expression p precedence)
   (define prefix (get-prefix p (token-type (parser-cur p))))
+
+  (define (inner left)
+    (if (and (not (parser-peek-is p SEMICOLON)) (< precedence (parser-peek-precedences p)))
+        (let* ((infix (get-infix p (token-type (parser-peek p))))) (begin (parser-next-token p) (inner (infix p left))))
+        left))
+ 
   (if (eq? prefix '())
       (begin (parser-prefix-parse-error p (token-type (parser-cur p))) '())
-      (prefix p)))
+      (inner (prefix p))))
 
 (define (parse-identifier p)
   (new-identifier-from-token (parser-cur p)))
@@ -132,9 +159,25 @@
   (value (string->number (token-literal token))))
   (if (not value)
       (begin (parser-add-int-conv-error p (token-literal token)) '())
-      (new-integeral-literal token value))
-  ))
-  
+      (new-integeral-literal token value))))
+
+(define (parse-bool-exp p)
+  (new-bool (parser-cur p) (parser-cur-is p TRUE)))
+
+(define (parse-group-exp p)
+  (parser-next-token p)
+
+  (define exp (parse-expression p LOWEST))
+
+  (if (not (parser-expect-peek p RPAREN))
+      '()
+      exp)
+
+(define (parser-peek-precedences p)
+  (hash-ref precedences (token-type (parser-peek p)) (lambda () LOWEST)))
+
+(define (parser-cur-precedences p)
+  (hash-ref precedences (token-type (parser-cur p)) (lambda () LOWEST)))
 
 
 ; PARSER METHODS
@@ -144,9 +187,7 @@
     ((token-is-type? token LET) (parse-let-stmt p))
     ((token-is-type? token RETURN) (parse-return-stmt p))
 
-    (else (parse-expression-stmt p))
-    )
-  )
+    (else (parse-expression-stmt p))))
 
 (define (parse-let-stmt p)
   (define stmt '())
@@ -164,45 +205,40 @@
         (begin (parser-next-token p) (inner))))
 
   (inner)
-  stmt
-  )
+  stmt)
 
 (define (parse-return-stmt p)
   (define stmt (new-return-state '())) ;;EXP???
-
   (parser-next-token p)
+  
   (define (inner)
     (if (not (parser-cur-is p SEMICOLON))
         (begin (parser-next-token p) (inner))))
-
   (inner)
-  stmt
-  )
+  stmt)
 
 (define (parse-expression-stmt p)
   (define exp (new-expression-state (parser-cur p) (parse-expression p LOWEST)))
 
   (if (parser-peek-is p SEMICOLON)
-      (parser-next-token p) )
-
-  exp
-  )
+      (parser-next-token p))
+  
+  exp)
 
 (define (parse-prefix-exp p)
-  (let* (
-        (token (parser-cur p))
-        (operator (token-literal token))
-        )
-    (begin (parser-next-token p) (new-prefix-expression token operator (parse-expression p PREFIX)))
-  ))
-  
+  (let* ((token (parser-cur p))
+        (operator (token-literal token)))
+    (begin (parser-next-token p) (new-prefix-expression token operator (parse-expression p PREFIX)))))
 
+(define (parse-infix-exp p left)
+  (let* ((token (parser-cur p))
+         (operator (token-literal token))
+         (precedence (parser-cur-precedences p)))
+    (begin (parser-next-token p) (new-infix-expressions token left operator (parse-expression p precedence)))))
+
+
+; CALL PARSER
 (define (parse-programme p)
-  (define (inner)
     (if (not (parser-cur-is p EOF))
-        (begin (add-stmt p (parse-stmt p)) (parser-next-token p) (inner))
-    ))
-
-  (inner)
-  p
-  )
+        (begin (add-stmt p (parse-stmt p)) (parser-next-token p) (parse-programme p))
+        p))

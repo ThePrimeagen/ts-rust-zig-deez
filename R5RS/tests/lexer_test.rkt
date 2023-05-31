@@ -1,7 +1,9 @@
 (#%require (only racket/base time error))
+(load "../src/utils.rkt")
+(loader "token")
+(loader "lexer")
 
-(load "token.rkt")
-(load "lexer.rkt")
+
 
 (define (test-new-token)
   (define tests 

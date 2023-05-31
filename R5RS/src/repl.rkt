@@ -1,6 +1,7 @@
 (#%require (only racket/base read-line))
-(load "lexer.rkt")
-(load "token.rkt")
+(load "../src/utils.rkt")
+(loader "lexer")
+(loader "token")
 
 (define input-prompt ";;; Monkey-Eval input:")
 (define output-prompt ";;; Monkey-Eval value:")
