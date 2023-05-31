@@ -13,6 +13,19 @@ module TokenType
     RSquirly = "}"
     Function = :FUNCTION
     Let = :LET
+    True = :TRUE
+    False = :FALSE
+    If = :IF
+    Else = :ELSE
+    Return = :RETURN
+    Minus = "-"
+    Bang = "!"
+    Asterisk = "*"
+    Slash = "/"
+    LT = "<"
+    GT = ">"
+    EQ = "=="
+    NotEQ = "!="
 end
 
 def create_token(type, literal)
@@ -38,7 +51,12 @@ end
 
 Keywords = {
     "fn" => create_token(TokenType::Function, "fn"),
-    "let" => create_token(TokenType::Let, "let")
+    "let" => create_token(TokenType::Let, "let"),
+    "true" => create_token(TokenType::True, "true"),
+    "false" => create_token(TokenType::False, "false"),
+    "if" => create_token(TokenType::If, "if"),
+    "else" => create_token(TokenType::Else, "else"),
+    "return" => create_token(TokenType::Return, "return")
 }
 
 class Tokenizer
@@ -71,7 +89,32 @@ class Tokenizer
         when "+"
             tok = create_token(TokenType::Plus, @ch)
         when "="
-            tok = create_token(TokenType::Equal, @ch)
+            if peek_char == "="
+                ch = @ch
+                read_char
+                tok = create_token(TokenType::EQ, "#{ch}#{ch}")
+            else
+                tok = create_token(TokenType::Equal, @ch)
+            end
+        when "-"
+            tok = create_token(TokenType::Minus, @ch)
+        when "/"
+            tok = create_token(TokenType::Slash, @ch)
+        when "!"
+            if peek_char == "="
+                ch = @ch
+                peeked_char = peek_char
+                read_char
+                tok = create_token(TokenType::NotEQ, "#{ch}#{peeked_char}")
+            else
+                tok = create_token(TokenType::Bang, @ch)
+            end
+        when "*"
+            tok = create_token(TokenType::Asterisk, @ch)
+        when "<"
+            tok = create_token(TokenType::LT, @ch)
+        when ">"
+            tok = create_token(TokenType::GT, @ch)
         when "\u0000" || "\0"
             tok = create_token(TokenType::Eof, "")
         end
@@ -90,7 +133,6 @@ class Tokenizer
             tok = create_token(TokenType::Illegal, @ch)
         end
         
-
         read_char
         tok
     end
@@ -111,6 +153,14 @@ class Tokenizer
         end
         @position = @read_position
         @read_position += 1
+    end
+
+    def peek_char
+        if @read_position >= @input.length
+            return "\0"
+        else
+            return @input[@read_position]
+        end
     end
 
     def read_ident

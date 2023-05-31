@@ -1,28 +1,8 @@
 require 'rspec'
-require_relative 'lexer'
+require_relative '../src/lexer'
 
 describe Tokenizer do
-  it 'tests getNextToken()' do
-    input = '=+(){},;'
-    tokens = [
-      TokenType::Equal,
-      TokenType::Plus,
-      TokenType::LParen,
-      TokenType::RParen,
-      TokenType::LSquirly,
-      TokenType::RSquirly,
-      TokenType::Comma,
-      TokenType::Semicolon
-    ]
-
-    lexer = Tokenizer.new(input)
-
-    tokens.each do |token|
-      expect(lexer.next_token[:type]).to eq(token)
-    end
-  end
-
-  it 'test getNextToken() complete' do
+  it 'Test Tokenizer' do
     input = %q(
         let five = 5;
         let ten = 10;
@@ -32,6 +12,17 @@ describe Tokenizer do
         };
 
         let result = add(five, ten);
+        !-/*5;
+        5 < 10 > 5;
+
+        if (5 < 10) {
+            return true;
+        } else {
+            return false;
+        }
+
+        10 == 10;
+        10 != 9;
     )
     lexer = Tokenizer.new(input)
 
@@ -72,7 +63,42 @@ describe Tokenizer do
         { type: TokenType::Ident, literal: 'ten' },
         { type: TokenType::RParen, literal: ')' },
         { type: TokenType::Semicolon, literal: ';' },
-        { type: TokenType::Eof, literal: '' }
+        { type: TokenType::Bang, literal: '!' },
+        { type: TokenType::Minus, literal: '-' },
+        { type: TokenType::Slash, literal: '/' },
+        { type: TokenType::Asterisk, literal: '*' },
+        { type: TokenType::Int, literal: '5' },
+        { type: TokenType::Semicolon, literal: ';' },
+        { type: TokenType::Int, literal: '5' },
+        { type: TokenType::LT, literal: '<' },
+        { type: TokenType::Int, literal: '10' },
+        { type: TokenType::GT, literal: '>' },
+        { type: TokenType::Int, literal: '5' },
+        { type: TokenType::Semicolon, literal: ';' },
+        { type: TokenType::If, literal: 'if' },
+        { type: TokenType::LParen, literal: '(' },
+        { type: TokenType::Int, literal: '5' },
+        { type: TokenType::LT, literal: '<' },
+        { type: TokenType::Int, literal: '10' },
+        { type: TokenType::RParen, literal: ')' },
+        { type: TokenType::LSquirly, literal: '{' },
+        { type: TokenType::Return, literal: 'return' },
+        { type: TokenType::True, literal: 'true' },
+        { type: TokenType::Semicolon, literal: ';' },
+        { type: TokenType::RSquirly, literal: '}' },
+        { type: TokenType::Else, literal: 'else' },
+        { type: TokenType::LSquirly, literal: '{' },
+        { type: TokenType::Return, literal: 'return' },
+        { type: TokenType::False, literal: 'false' },
+        { type: TokenType::Semicolon, literal: ';' },
+        { type: TokenType::RSquirly, literal: '}' },
+        { type: TokenType::Int, literal: '10' },
+        { type: TokenType::EQ, literal: '==' },
+        { type: TokenType::Int, literal: '10' },
+        { type: TokenType::Semicolon, literal: ';' },
+        { type: TokenType::Int, literal: '10' },
+        { type: TokenType::NotEQ, literal: '!=' },
+        { type: TokenType::Int, literal: '9' },
     ]
 
     tokens.each do |token|

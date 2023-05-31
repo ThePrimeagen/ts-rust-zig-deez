@@ -2,11 +2,11 @@ FROM ruby:3.2
 
 WORKDIR /deez-app
 
-COPY lexer.rb .
-COPY test.rb .
-COPY Gemfile .
-COPY Gemfile.lock .
+COPY ./src ./src
+COPY ./test ./test
+COPY ./Gemfile .
+COPY ./Gemfile.lock .
 
 RUN bundle install
 
-CMD ["rspec", "test.rb"]
+CMD ["rspec", "test/tokenizer.rb"]
