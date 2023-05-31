@@ -74,7 +74,7 @@ const Keywords = {
 export class Tokenizer {
     private position: number = 0;
     private readPosition: number = 0;
-    private ch: string;
+    private ch!: string;
     constructor(private input: string) {
         this.readChar();
     }
@@ -143,7 +143,7 @@ export class Tokenizer {
 
         if (isLetter(this.ch)) {
             const ident = this.readIdent();
-            const keyword = Keywords[ident];
+            const keyword = Keywords[ident as keyof typeof Keywords];
             if (keyword) {
                 return keyword;
             } else {
