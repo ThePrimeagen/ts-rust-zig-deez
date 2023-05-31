@@ -38,16 +38,17 @@ jobs:
             for i in ${{ steps.changed.outputs.all_changed_files }}; do changed_files+=("$i"); done
           changed_langs=($(printf "%s\n" "${changed_files[@]}" | cut -d '/' -f 1 | sort -u | uniq))     
           for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ -d "$i" ]; then echo "$i" >> list.txt; fi; done
+          if [ -f "list.txt" ]; then mv list.txt $HOME/list.txt; fi
 
       - name: Build docker images for every language affected
         run: |
-          if [ -f "list.txt" ]; then
-            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-build; popd; fi; done < list.txt
+          if [ -f "$HOME/list.txt" ]; then
+            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-build; popd; fi; done < "$HOME/list.txt"
           fi
 
       - name: Run docker containers for built images
         run: |
-          if [ -f "list.txt" ]; then
-            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-ready; popd; fi; done < list.txt
+          if [ -f "$HOME/list.txt" ]; then
+            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-ready; popd; fi; done < "$HOME/list.txt"
           fi
 
