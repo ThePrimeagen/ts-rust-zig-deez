@@ -1,6 +1,4 @@
 /bin
 /target
-zig-cache
-zig-out
 node_modules
 *.class
