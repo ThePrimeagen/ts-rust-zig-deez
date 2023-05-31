@@ -1,5 +1,6 @@
-import sequtils, strutils, parseutils
+import sequtils, strutils
 
+# lantos waz here
 type
     TokenKind* = enum
         # identifiers + literals
@@ -12,8 +13,8 @@ type
         tkPlus,
         tkComma,
         tkSemicolon,
-        tkLparen,
-        tkRparen,
+        tkLParen,
+        tkRParen,
         tkLSquirly,
         tkRSquirly,
         tkFunction,
@@ -33,6 +34,15 @@ type
         ch*: char
         input*: seq[char]
 
+
+proc `==`*(lhs, rhs: Token): bool = 
+    result = false
+    if lhs.kind == rhs.kind:
+        result = true
+    if lhs.kind in { tkIdent, tkInt } and rhs.kind in {tkIdent, tkInt}:
+        if lhs.value == rhs.value:
+            result = true
+
 #forward declaration 
 proc read_char*(self: var Lexer)
 
@@ -51,28 +61,28 @@ proc read_char*(self: var Lexer) =
     else:
         self.ch = self.input[self.read_position]
     self.position = self.read_position
-    self.read_position += 1
+    self.read_position.inc()
 
-proc skip_whitespace*(self: var Lexer) =
+proc skip_whitespace(self: var Lexer) =
     while self.ch in WhiteSpace:
         self.read_char()
 
 proc read_ident*(self: var Lexer): string =
-    let pos = self.position
+    let start_pos = self.position
     while self.ch.isAlphaAscii or self.ch == '_':
         self.read_char()
-    return self.input[pos ..< self.position].join()
+    return self.input[start_pos ..< self.position].join()
 
 proc read_int*(self: var Lexer): string =
-    let pos = self.position
+    let start_pos = self.position
     while self.ch.isDigit:
         self.read_char()
-    return self.input[pos ..< self.position].join()
+    return self.input[start_pos ..< self.position].join()
 
 proc next_token*(self: var Lexer): Token =
     self.skip_whitespace()
 
-    let tok = case self.ch:
+    let token = case self.ch:
     of '{': Token(kind: tkLSquirly)
     of '}': Token(kind: tkRSquirly)
     of '(': Token(kind: tkLparen)
@@ -89,13 +99,20 @@ proc next_token*(self: var Lexer): Token =
         of "let":
             Token(kind: tkLet)
         else:
-            Token(kind: tkIdent)
+            Token(kind: tkIdent, value: ident)
     of '0'..'9':
         Token(kind: tkInt, value: self.read_int())
     of '\0':
         Token(kind: tkEof)
     else:
-        raise newException(ValueError, "Unexpected character")
-
+        raise newException(ValueError, "Unexpected character \"" & self.ch & "\" " & $self.ch.ord )
+    
     self.read_char()
-    return tok
+    return token
+
+iterator tokens*(lexer: var Lexer): Token =
+    while true:
+        var token = lexer.next_token()
+        yield token
+        if token.kind in { tkEof, tkIllegal }:
+            break
