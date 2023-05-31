@@ -1,11 +1,12 @@
+#![cfg(test)]
+
 use anyhow::Result;
 
-#[derive(Debug, PartialEq)]
-pub enum Token {
-    Ident(String),
-    Int(String),
+#[derive(Debug, PartialEq, Eq)]
+pub enum Token<'a> {
+    Ident(&'a str),
+    Int(&'a str),
 
-    Illegal,
     Eof,
     Equal,
     Plus,
@@ -19,27 +20,27 @@ pub enum Token {
     Let,
 }
 
-pub struct Lexer {
+pub struct Lexer<'a> {
     position: usize,
     read_position: usize,
     ch: u8,
-    input: Vec<u8>,
+    input: &'a str,
 }
 
-impl Lexer {
-    fn new(input: String) -> Lexer {
+impl<'a> Lexer<'a> {
+    fn new(input: &'a str) -> Lexer {
         let mut lex = Lexer {
             position: 0,
             read_position: 0,
             ch: 0,
-            input: input.into_bytes(),
+            input,
         };
-        lex.read_char();
 
+        lex.read_char();
         return lex;
     }
 
-    pub fn next_token(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Result<Token<'a>> {
         self.skip_whitespace();
 
         let tok = match self.ch {
@@ -53,7 +54,7 @@ impl Lexer {
             b'=' => Token::Equal,
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_ident();
-                return Ok(match ident.as_str() {
+                return Ok(match ident {
                     "fn" => Token::Function,
                     "let" => Token::Let,
                     _ => Token::Ident(ident),
@@ -72,7 +73,7 @@ impl Lexer {
         if self.read_position >= self.input.len() {
             self.ch = 0;
         } else {
-            self.ch = self.input[self.read_position];
+            self.ch = self.input.as_bytes()[self.read_position];
         }
 
         self.position = self.read_position;
@@ -85,26 +86,25 @@ impl Lexer {
         }
     }
 
-    fn read_ident(&mut self) -> String {
+    fn read_ident(&mut self) -> &'a str {
         let pos = self.position;
         while self.ch.is_ascii_alphabetic() || self.ch == b'_' {
             self.read_char();
         }
 
-        return String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
+        return &self.input[pos..self.position];
     }
 
-    fn read_int(&mut self) -> String {
+    fn read_int(&mut self) -> &'a str {
         let pos = self.position;
         while self.ch.is_ascii_digit() {
             self.read_char();
         }
 
-        return String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
+        return &self.input[pos..self.position];
     }
 }
 
-#[cfg(test)]
 mod test {
     use anyhow::Result;
 
@@ -149,39 +149,39 @@ mod test {
 
         let tokens = vec![
             Token::Let,
-            Token::Ident(String::from("five")),
+            Token::Ident("five"),
             Token::Equal,
-            Token::Int(String::from("5")),
+            Token::Int("5"),
             Token::Semicolon,
             Token::Let,
-            Token::Ident(String::from("ten")),
+            Token::Ident("ten"),
             Token::Equal,
-            Token::Int(String::from("10")),
+            Token::Int("10"),
             Token::Semicolon,
             Token::Let,
-            Token::Ident(String::from("add")),
+            Token::Ident("add"),
             Token::Equal,
             Token::Function,
             Token::Lparen,
-            Token::Ident(String::from("x")),
+            Token::Ident("x"),
             Token::Comma,
-            Token::Ident(String::from("y")),
+            Token::Ident("y"),
             Token::Rparen,
             Token::LSquirly,
-            Token::Ident(String::from("x")),
+            Token::Ident("x"),
             Token::Plus,
-            Token::Ident(String::from("y")),
+            Token::Ident("y"),
             Token::Semicolon,
             Token::RSquirly,
             Token::Semicolon,
             Token::Let,
-            Token::Ident(String::from("result")),
+            Token::Ident("result"),
             Token::Equal,
-            Token::Ident(String::from("add")),
+            Token::Ident("add"),
             Token::Lparen,
-            Token::Ident(String::from("five")),
+            Token::Ident("five"),
             Token::Comma,
-            Token::Ident(String::from("ten")),
+            Token::Ident("ten"),
             Token::Rparen,
             Token::Semicolon,
             Token::Eof,
