@@ -9,4 +9,4 @@ COPY ./Gemfile.lock .
 
 RUN bundle install
 
-CMD ["rspec", "test/tokenizer.rb"]
+CMD ["rspec", "test/lexer.rb"]
