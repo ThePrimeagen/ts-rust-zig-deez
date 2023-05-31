@@ -32,7 +32,7 @@ read:
     mov rdi, r12
     lea rsi, [r13 + r14]
     mov rdx, r15
-    dec rdx ; For null-terminator.
+    sub rdx, 8 ; We append EIGHT null terminators.
     sub rdx, r14
     mov rbx, rdx
     syscall
@@ -43,7 +43,7 @@ read:
 
     ;; If we read less than requested, then we’re done.
     add r14, rax
-    mov byte [r13 + r14], 0 ; Zero-terminate the buffer.
+    mov qword [r13 + r14], 0 ; Zero-terminate the buffer.
     cmp rax, rbx
     je .read_loop
 
