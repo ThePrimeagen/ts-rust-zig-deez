@@ -25,7 +25,7 @@ data TokenType
   = ILLEGAL
   | EOF
   | IDENT ByteString
-  | INT ByteString
+  | INT   ByteString
   | EQUAL
   | PLUS
   | COMMA
