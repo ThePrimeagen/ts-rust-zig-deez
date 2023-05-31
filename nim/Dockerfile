@@ -2,12 +2,13 @@ FROM nimlang/nim as builder
 
 WORKDIR /app
 
-COPY lexer.nim .
+
+COPY . /app
 
 RUN nimble build -d:release lexer.nim
 
 FROM alpine:3
 
-COPY --from=builder /app/lexer /lexer
+COPY --from=builder /app/bin/lexer /lexer
 
 ENTRYPOINT [ "/lexer" ]
