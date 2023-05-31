@@ -22,7 +22,7 @@ spec = do
             , Token SEMICOLON
             , Token EOF
             ]
-      tokens `Test.Hspec.shouldBe` expectedTokens
+      tokens `shouldBe` expectedTokens
   Test.Hspec.describe "getTokens" $ do
     Test.Hspec.it "handles simple program" $ do
       let testInput =                                -- is there a better way to handle multiline strings?
@@ -72,4 +72,4 @@ spec = do
             , Token SEMICOLON
             , Token EOF
             ]
-      tokens `Test.Hspec.shouldBe` expectedTokens
+      tokens `shouldBe` expectedTokens
