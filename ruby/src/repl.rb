@@ -5,6 +5,11 @@ class Repl
   PROMPT = '>> '
 
   def start
+    trap('INT') do
+      puts "\nGoodbye!"
+      exit
+    end
+
     loop do
       line = Readline.readline(PROMPT, true)
       break if line.nil? || line.empty?
