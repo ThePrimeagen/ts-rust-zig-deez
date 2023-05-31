@@ -10,6 +10,7 @@ on:
   pull_request:
     # for new PRs, or those who are ready and/or request a review
     types: [opened, ready_for_review, review_requested]
+    branches: [master]
 
 defaults:
   run:
@@ -18,16 +19,26 @@ defaults:
 jobs:
   pr-worthy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     steps:
       - name: Checking out the repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # to retrieve all commits
+
+      - name: Get all changed files
+        id: changed
+        uses: tj-actions/changed-files@v36  # not affiliated with tjdevries
+        with:
+          since_last_remote_commit: true
 
       - name: Initial setup + A list of all affected languages
         run: |
           sudo apt-get update && sudo apt install -y make curl git
-          changed_langs=($(git diff --name-only origin/master origin/${GITHUB_HEAD_REF} | cut -d '/' -f 1 | sort | uniq))
-          if [ ${#changed_langs[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
+        
+          changed_files=()
+            for i in ${{ steps.changed.outputs.all_changed_files }}; do changed_files+=("$i"); done
+          changed_langs=($(printf "%s\n" "${changed_files[@]} | cut -d '/' -f 1 | sort -u | uniq))
+        
           for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ -d "$i" ]; then echo "$i" >> list.txt; fi; done
 
       - name: Build docker images for every language affected
