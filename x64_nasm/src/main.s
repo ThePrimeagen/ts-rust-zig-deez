@@ -13,7 +13,7 @@ error_integer_overflow db "ERROR: Integer overflow", 10, 0
 
 string_format_read_file_error db "%s: '%s'", 10, 0
 string_format_location db "%s at (%u:%u): ", 0
-string_format_unexpected_character db "ERROR: Unexpected character \x%x ('%c')", 10, 0
+string_format_unexpected_character db "ERROR: Unexpected character U+%hhx ('%c')", 10, 0
 string_format_string db "%s", 0
 string_format_integer_token_value db " %llu", 10, 0
 string_format_ident_token_value db " %.*s", 10, 0
@@ -46,12 +46,12 @@ TK_STAR      equ 17
 TK_LT        equ 18
 TK_GT        equ 19
 
-%define SYS_read 0
-%define SYS_write 1
-%define SYS_open 2
-%define SYS_close 3
+SYS_read  equ 0
+SYS_write equ 1
+SYS_open  equ 2
+SYS_close equ 3
 
-%define KW_START 20
+KW_START     equ 20
 TK_FUNCTION  equ KW_START
 TK_LET       equ KW_START + 1
 TK_RETURN    equ KW_START + 2
@@ -60,8 +60,9 @@ TK_FALSE     equ KW_START + 4
 TK_IF        equ KW_START + 5
 TK_ELSE      equ KW_START + 6
 
-%define TOKEN_STRING_LENGTH 16     ; Max len of token name is 16 bytes
-%define TOKEN_STRING_LENGTH_LOG2 4 ; log2(TOKEN_STRING_LENGTH)
+MAX_KEYWORD_LENGTH       equ 6 ; Max len of keyword is 6 bytes
+TOKEN_STRING_LENGTH      equ 8 ; Max len of token name is 16 bytes
+TOKEN_STRING_LENGTH_LOG2 equ 3 ; log2(TOKEN_STRING_LENGTH)
 
 ;; LUT for converting token types to strings.
 ;; Note: Implicitly zero-terminated by the alignment code.
@@ -72,10 +73,10 @@ TK_ELSE      equ KW_START + 6
 
 align TOKEN_STRING_LENGTH,db 0
 table_token_names:
-    defstr "<invalid token>"
-    defstr "<end of file>"
-    defstr "<identifier>"
-    defstr "<int literal>"
+    defstr "<error>"
+    defstr "<eof>"
+    defstr "<ident>"
+    defstr "<int>"
     defstr "="
     defstr "+"
     defstr ","
@@ -102,7 +103,68 @@ table_keywords:
     defstr "else"
 table_keywords_end:
 
+;; Masks for to mask out high bytes when comparing strings.
+string_equal_masks:
+dq 0
+dq 0xff
+dq 0xffff
+dq 0xffffff
+dq 0xffffffff
+dq 0xffffffffff
+dq 0xffffffffffff
+dq 0xffffffffffffff
+dq 0xffffffffffffffff
+
+
 %unmacro defstr 1
+
+%define I lexer_jump_target_ident
+%define N lexer_jump_target_number
+%define P lexer_jump_target_punctuation
+%define T lexer_jump_target_punctuation_two_chars
+%define X lexer_jump_target_invalid
+
+;; Lexer jump table.
+lexer_char_table:
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 00-19
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, T, X,   X, X, X, X, X ; 20-39
+dq P, P, P, P, P,   P, X, P, N, N,   N, N, N, N, N,   N, N, N, X, P ; 40-59
+dq P, T, P, X, X,   I, I, I, I, I,   I, I, I, I, I,   I, I, I, I, I ; 60-79
+dq I, I, I, I, I,   I, I, I, I, I,   I, X, X, X, I,   X, X, I, I, I ; 80-99
+
+dq I, I, I, I, I,   I, I, I, I, I,   I, I, I, I, I,   I, I, I, I, I ; 100-119
+dq I, I, I, P, X,   P, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 120-139
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 140-159
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 160-179
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 180-199
+
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 200-219
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 220-239
+dq X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X,   X, X, X, X, X ; 240-259
+
+%undef I
+%undef N
+%undef P
+%undef T
+%undef X
+
+lexer_char_to_token_table:
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 00-19
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, TK_NOT, 0, 0,   0, 0, 0, 0, 0 ; 20-39
+db TK_LPAREN, TK_RPAREN, TK_STAR, TK_PLUS, TK_COMMA,   TK_MINUS, 0, TK_SLASH, 0, 0 ; 40-49
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, TK_SEMICOLON                        ; 50-59
+db TK_LT, TK_ASSIGN, TK_GT, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 60-79
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 80-99
+
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 100-119
+db 0, 0, 0, TK_LBRACE, 0,   TK_RBRACE, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 120-139
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 140-159
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 160-179
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 180-199
+
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 200-219
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 220-239
+db 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0 ; 240-259
 
 ;;
 ;; Static variables.
@@ -115,14 +177,8 @@ file_size resq 1
 prompt resq 1
 prompt_size resq 1
 
-;; Lexer state.
-lastc resb 1
+;; State.
 has_error resb 1
-lexer_curr resq 1
-lexer_end resq 1
-token_type resq 1
-token_int_value resq 1
-token_location resd 2 ; First dword is start, second dword is end.
 
 ;;
 ;; External functions.
@@ -136,6 +192,82 @@ extern exit
 extern abort
 extern realloc
 extern free
+
+;;
+;; Register usage:
+;;
+;; While reading input:
+;;   r12: file descriptor
+;;   r13: buffer data
+;;   r14: buffer size
+;;   r15: buffer capacity
+;;
+;; While lexing/parsing:
+;;   rbx: token type
+;;   rbp: start of input
+;;   r12: current token position (upper 4 bytes = offset, lower 4 bytes = size)
+;;   r13: current lexer position
+;;   r14: end of input
+;;   r15: last character read
+;;
+;; We try to keep as much state as possible in registers, but
+;; sometimes we need to do a mini-‘context switch’, so the
+;; macros below are used to facilitate that.
+
+;; Save non-volatile registers
+%macro saveregs 0
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    push gs
+    sub rsp, 12 ; Align stack to 16-byte boundary.
+%endmacro
+
+;; Restore non-volatile registers
+%macro rstorregs 0
+    add rsp, 12 ; Undo alignment.
+    pop gs
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+%endmacro
+
+
+;;
+;; Get the next character.
+;; Note: the input is zero-terminated.
+;;
+;; clobbers: rax
+%macro next_char 0
+    lea rax, [r13+1]
+    movzx r15, byte [r13]
+    cmp r13, r14
+    cmovb r13, rax
+%endmacro
+
+;;
+;; Load the span of the current token into rsi/rdi.
+;;
+;; returns
+;;    rdi: start of token (absolute)
+;;    esi: length of token
+%macro load_token_span 0
+    ;; Get pointer to start of token.
+    mov rdi, r12
+    shr rdi, 32
+    add rdi, rbp
+
+    ;; Get size of token.
+    mov rsi, r12
+    mov esi, esi
+%endmacro
+
 
 ;;
 ;; Entry point.
@@ -160,7 +292,7 @@ main:
     mov edi, eax
     jmp exit
 
-.error_usage: 
+.error_usage:
     lea rdi, [error_usage]
 
 .print_exit:
@@ -230,7 +362,9 @@ repl:
     jz .exit_repl
 
 .eval_print:
+    saveregs
     call eval
+    rstorregs
     test eax, eax
     jnz .error
     jmp .read
@@ -274,12 +408,12 @@ interpret:
 
     ;; Prime the lexer.
     call lexer_init
-    call next_char
+    next_char
 
 .read_next_token:
     call next_token
     call print_token
-    cmp qword [token_type], TK_EOF
+    cmp ebx, TK_EOF
     jne .read_next_token
 
     movsx eax, byte [has_error]
@@ -356,6 +490,7 @@ read:
     mov rdi, r12
     lea rsi, [r13 + r14]
     mov rdx, r15
+    dec rdx ; For null-terminator.
     sub rdx, r14
     mov rbx, rdx
     syscall
@@ -366,6 +501,7 @@ read:
 
     ;; If we read less than requested, then we’re done.
     add r14, rax
+    mov byte [r13 + r14], 0 ; Zero-terminate the buffer.
     cmp rax, rbx
     je .read_loop
 
@@ -471,252 +607,250 @@ read_file:
 ;; Initialise the lexer.
 ;;
 lexer_init:
-    mov byte [lastc], ' '
-    mov rdi, [file_contents]
-    mov [lexer_curr], rdi
-    add rdi, [file_size]
-    mov [lexer_end], rdi
-    ret
-
-;;
-;; Get the next character.
-;;
-;; clobbers: rdi, rax
-;; returns: the next character
-next_char:
-    ;; Keep returning EOF if we’re at eof.
-    mov rdi, [lexer_curr]
-    cmp rdi, [lexer_end]
-    je .eof
-
-    ;; Read the next char
-    inc qword [lexer_curr]
-    movzx eax, byte [rdi]
-    mov byte [lastc], al
-    jmp .return
-
-.eof:
-    mov byte [lastc], 0
-    xor eax, eax
-
-.return:
+    mov rbp, [file_contents]
+    xor r12, r12
+    mov r13, rbp
+    mov r14, [file_size]
+    add r14, r13
+    mov r15, ' '
     ret
 
 ;;
 ;; Lex the next token.
 ;;
 next_token:
-    call lexer_skip_whitespace
-
-    ;; Keep returning EOF if we’re at eof.
-    movzx eax, byte [lastc]
-    test eax, eax
-    jne .init_token
-
-    ;; Return eof.
-    mov qword [token_type], TK_EOF
-    ret
-
-.init_token:
-    ;; Set starting position etc.
-    mov rdi, [lexer_curr]
-    sub rdi, [file_contents]
-    dec rdi
-    mov dword [token_location], edi
-    mov dword [token_location + 4], 0
-    mov qword [token_type], TK_INVALID
-
-;; Single-character tokens: +,;(){}-/*<>
-%macro test_single_char 2
-    cmp eax, %1
-    jne %%next
-    mov qword [token_type], %2
-    mov dword [token_location + 4], 1
-    call next_char
-    ret
-%%next:
-%endmacro
-
-;; Single or double-character tokens: =, ==, !, !=
-%macro test_double_char 4
-    cmp eax, %1
-    jne %%next
-    call next_char
-    cmp eax, %2
-    je %%double
-    mov qword [token_type], %3
-    mov dword [token_location + 4], 1
-    ret
-%%double:
-    call next_char
-    mov qword [token_type], %4
-    mov dword [token_location + 4], 2
-    ret
-%%next:
-%endmacro
-
-    test_single_char  0,  TK_EOF
-    test_single_char '+', TK_PLUS
-    test_single_char ',', TK_COMMA
-    test_single_char ';', TK_SEMICOLON
-    test_single_char '(', TK_LPAREN
-    test_single_char ')', TK_RPAREN
-    test_single_char '{', TK_LBRACE
-    test_single_char '}', TK_RBRACE
-    test_single_char '-', TK_MINUS
-    test_single_char '*', TK_STAR
-    test_single_char '/', TK_SLASH
-    test_single_char '<', TK_LT
-    test_single_char '>', TK_GT
-
-    test_double_char '=', '=', TK_ASSIGN, TK_EQ_EQ
-    test_double_char '!', '=', TK_NOT, TK_NE
-
-%unmacro test_single_char 2
-%unmacro test_double_char 4
-
-    ;; Integer.
-    lea rsi, [rax - '0']
-    cmp rsi, 9
-    jbe .integer
-
-    ;; Identifier.
-    cmp eax, '_'
-    je .identifier
-    lea rsi, [rax - 'a']
-    cmp rsi, 'z' - 'a'
-    jbe .identifier
-    lea rsi, [rax - 'A']
-    cmp rsi, 'Z' - 'A'
-    jbe .identifier
-
-    ;; Default case. Print an error and skip the character.
-    call next_char
-    mov dword [token_location + 4], 1
-    mov byte [has_error], 1
-
-    push rax
-    call print_location
-    pop rax
-
-    lea rdi, [string_format_unexpected_character]
-    mov rsi, rax
-    mov rdx, rax
-    xor eax, eax
-    jmp printf
-
-.integer:
-    xor r8, r8
-    xor r9, r9 ; Length.
-    mov qword [token_type], TK_INTEGER
-
-.parse_number:
-    ;; Multiply by 10 and check for overflow.
-    mov rdx, r8
-    imul r8, 10
-    cmp r8, rdx
-    jb .overflow
-
-    ;; Add the digit and check for overflow.
-    inc r9
-    mov rdx, r8
-    add r8, rsi ; Digit value is in rsi.
-    cmp r8, rdx
-    jb .overflow
-
-    ;; Yeet the character.
-    call next_char
-
-    ;; Keep going so long as it’s a digit.
-    lea rsi, [rax - '0']
-    cmp rsi, 9
-    jbe .parse_number
-
-    ;; Save the number.
-    mov qword [token_int_value], r8
-    mov dword [token_location + 4], r9d
-    ret
-
-.overflow:
-    mov qword [token_type], TK_INVALID
-    sub rsp, 8
-    call print_location
-    add rsp, 8
-    mov rdi, error_integer_overflow
-    mov byte [has_error], 1
-    jmp puts
-
-.identifier:
-    push r12
-    xor r12, r12 ; Length.
-
-.parse_identifier:
-    inc r12
-    call next_char
-
-    cmp eax, '_'
-    je .parse_identifier
-    lea rsi, [rax - 'a']
-    cmp rsi, 'z' - 'a'
-    jbe .parse_identifier
-    lea rsi, [rax - 'A']
-    cmp rsi, 'Z' - 'A'
-    jbe .parse_identifier
-    lea rsi, [rax - '0']
-    cmp rsi, 9
-    jbe .parse_identifier
-
-    ;; Save the length.
-    mov dword [token_location + 4], r12d
-
-    ;; Compare the identifier with known keywords.
-    push r13
-    push r14 ; This also aligns the stack.
-    lea r13, [table_keywords]
-    mov r14d, dword [token_location]
-    add r14, [file_contents]
-
-.check_keyword:
-    mov rdi, r13 ; Keyword table entry.
-    mov rsi, r14 ; Keyword
-    mov rdx, r12 ; Length
-    call strncmp
-    jz .keyword
-    add r13, TOKEN_STRING_LENGTH
-    cmp r13, table_keywords_end
-    jb .check_keyword
-
-    mov qword [token_type], TK_IDENT
-
-.restore_registers:
-    pop r14
-    pop r13
-    pop r12
-    ret
-
-.keyword:
-    ;; Keyword type is index in table.
-    sub r13, table_token_names
-    shr r13, TOKEN_STRING_LENGTH_LOG2
-    mov qword [token_type], r13
-    jmp .restore_registers
-
-;;
-;; Skip whitespace.
-;;
-;; This checks for \t, \n, \v, \f, \r, and ' '.
-lexer_skip_whitespace:
-    movzx eax, byte [lastc]
+    ;; Skip whitespace.
+    ;; This checks for \t, \n, \v, \f, \r, and ' '.
+    mov rax, r15
     sub eax, 9
     cmp eax, 5
     jb .again
     cmp eax, 23
-    je .again
-    ret
+    jne .done_skipping_ws
 
 .again:
-    call next_char
-    jmp lexer_skip_whitespace
+    next_char
+    jmp next_token
+
+.done_skipping_ws:
+    ;; Keep returning EOF if we’re at eof.
+    test r15, r15
+    jne .init_token
+
+    ;; Return eof.
+    mov r12, r13
+    sub r12, rbp
+    dec r12
+    shl r12, 32
+    mov ebx, TK_EOF
+    ret
+
+.init_token:
+    ;; Set starting position etc.
+    mov r12, r13
+    sub r12, rbp
+    dec r12
+    shl r12, 32
+    mov ebx, TK_INVALID
+
+    ;; Dispatch the character.
+    jmp qword [lexer_char_table + r15 * 8]
+
+;;
+;; Lex an identifier.
+;;
+lexer_jump_target_ident:
+    endbr64
+    mov ebx, TK_IDENT
+
+.again:
+    ;; Add the character.
+    inc r12
+    next_char
+
+    ;; Check if char is still part of ident.
+    mov rsi, r15
+    and esi, ~('a' - 'A') ; Convert lowercase to uppercase for comparison
+    sub esi, 'A'
+    cmp esi, 'Z' - 'A'
+    jbe .again
+    mov rsi, r15
+    sub esi, '0'
+    cmp esi, 9
+    jbe .again
+    cmp r15, '_'
+    je .again
+
+    cmp r12d, MAX_KEYWORD_LENGTH
+    jbe lex_maybe_keyword
+    ret
+
+;;
+;; Compare identifier with keywords.
+;;
+;; Currently, all keywords are shorter than 8 characters, and we’ve
+;; ensured that there are at least 8 bytes of padding after the input,
+;; so we can just do a string comparison by loading the token span and
+;; keyword into a register, masking off the high bits, and comparing
+;; them directly as integers.
+;;
+lex_maybe_keyword:
+    lea rdx, qword [table_keywords]
+
+    ;; Extract the identifier.
+    load_token_span
+
+    ;; Mask off unused bytes based on size in esi.
+    mov rax, qword [rdi]
+    and rax, [string_equal_masks + rsi * 8]
+
+.again:
+    ;; Compare with a keyword.
+    mov rcx, [rdx]
+    cmp rax, [rdx]
+    je .match
+
+    ;; Load the next one.
+    add rdx, TOKEN_STRING_LENGTH
+    cmp rdx, table_keywords_end
+    jne .again
+
+    ;; Not a keyword.
+    ret
+
+.match:
+    ;; Set the token type. The keywords are arranged in the same
+    ;; order as their token types.
+    sub rdx, table_keywords
+    shr rdx, 3
+    add rdx, KW_START
+    mov ebx, edx
+    ret
+
+;;
+;; Lex a number.
+;;
+lexer_jump_target_number:
+    endbr64
+    mov ebx, TK_INTEGER
+
+.again:
+    ;; Add digit.
+    inc r12
+    next_char
+
+    ;; Check if next char is digit.
+    mov rsi, r15
+    sub esi, '0'
+    cmp esi, 9
+    jbe .again
+    ret
+
+;;
+;; Lex single-character tokens.
+;;
+lexer_jump_target_punctuation:
+    endbr64
+    inc r12
+    movzx rbx, byte [lexer_char_to_token_table + r15]
+    next_char
+    ret
+
+;;
+;; Lex double-character tokens.
+;;
+lexer_jump_target_punctuation_two_chars:
+    endbr64
+    inc r12
+    cmp r15, '!'
+    je .not
+
+    ;; =, ==
+    next_char
+    cmp r15, '='
+    je .eq_eq
+
+    ;; =
+    mov ebx, TK_ASSIGN
+    ret
+
+    ;; !, !=
+.not:
+    next_char
+    cmp r15, '='
+    je .neq
+
+    ;; !
+    mov rbx, TK_NOT
+    ret
+
+    ;; ==
+.eq_eq:
+    next_char
+    inc r12
+    mov ebx, TK_EQ_EQ
+    ret
+
+.neq:
+    next_char
+    inc r12
+    mov ebx, TK_NE
+    ret
+
+;;
+;; Handle unexpected characters.
+;;
+lexer_jump_target_invalid:
+    endbr64
+
+    push r15
+    next_char
+    inc r12
+    mov byte [has_error], 1
+
+    call print_location
+
+    lea rdi, [string_format_unexpected_character]
+    pop rsi
+    mov rdx, rsi
+    xor eax, eax
+    jmp printf
+
+;;
+;; Convert an integer token to a number.
+;;
+;; returns: the integer. The carry flag is set on error
+stoi:
+    load_token_span
+    add rsi, rdi ; Convert size to end of token.
+
+    ;; Conversion loop.
+    xor rax, rax
+.again:
+    cmp rdi, rsi
+    je .done
+    imul rax, 10
+    jc .overflow
+    movzx rdx, byte [rdi]
+    sub rdx, '0'
+    add rax, rdx
+    jc .overflow
+    inc rdi
+    jmp .again
+
+.done:
+    clc
+    ret
+
+.overflow:
+    sub rsp, 8
+    call print_location
+    mov rdi, error_integer_overflow
+    mov byte [has_error], 1
+    call puts
+    add rsp, 8
+    stc
+    ret
 
 ;;
 ;; Print the current location.
@@ -724,8 +858,9 @@ lexer_skip_whitespace:
 print_location:
     lea rdi, [string_format_location]
     mov rsi, qword [filename]
-    mov edx, dword [token_location]
-    mov ecx, dword [token_location + 4]
+    mov rdx, r12
+    shr rdx, 32
+    mov rcx, r12
     xor eax, eax
     jmp printf
 
@@ -739,36 +874,38 @@ print_token:
     call print_location
 
     ;; Print token type.
-    mov rsi, qword [token_type]
-    shl rsi, TOKEN_STRING_LENGTH_LOG2
+    mov esi, ebx
+    shl esi, TOKEN_STRING_LENGTH_LOG2
     lea rsi, [table_token_names + rsi]
     lea rdi, [string_format_string]
     xor eax, eax
     call printf
 
     ;; Print integer value and identifier name, if applicable.
-    mov rax, qword [token_type]
+    mov rax, rbx
     cmp rax, TK_INTEGER
     je .print_integer
     cmp rax, TK_IDENT
     je .print_ident
 
+.newline:
     mov edi, `\n`
     call putchar
     jmp .return
 
 .print_integer:
+    call stoi
+    jc .return ; Overflow
     lea rdi, [string_format_integer_token_value]
-    mov rsi, qword [token_int_value]
+    mov rsi, rax
     xor eax, eax
     call printf
     jmp .return
 
 .print_ident:
+    load_token_span
+    mov rdx, rdi
     lea rdi, [string_format_ident_token_value]
-    mov esi, dword [token_location + 4] ; Length first because this is a `%*s` specifier.
-    mov edx, dword [token_location]
-    add rdx, [file_contents]
     xor eax, eax
     call printf
 

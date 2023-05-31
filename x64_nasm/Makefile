@@ -25,8 +25,9 @@ lint:
 
 test: lexer
 	@echo "===> Testing"
-	./lexer test/example.monkey
-	./lexer test/example2.monkey
+	# Yes, this is scuffed, but also, try writing tests in assembly...
+	./lexer test/example.monkey  | diff - expected/example.expected
+	./lexer test/example2.monkey | diff - expected/example2.expected
 
 lexer: src/main.s
 	nasm -felf64 src/main.s -o main.o
