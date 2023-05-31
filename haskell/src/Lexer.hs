@@ -17,20 +17,20 @@ makeLenses ''Lexer
 makeLenses ''Token
 
 tokenize :: ByteString -> [Token]
-tokenize = Control.Monad.Trans.State.evalState getTokens . (\x -> readChar $ Lexer x 0 0 '\0')
+tokenize = evalState getTokens . (\x -> readChar $ Lexer x 0 0 '\0')
 
-getTokens :: Control.Monad.Trans.State.State Lexer [Token]
+getTokens :: State Lexer [Token]
 getTokens = do
   token <- getToken
   if   (token^.tokenType) == EOF
   then pure [token]
   else (token:) <$> getTokens
 
-getToken :: Control.Monad.Trans.State.State Lexer Token
+getToken :: State Lexer Token
 getToken = do
-  Control.Monad.Trans.State.modify skipWhitespace
-  lexer <- Control.Monad.Trans.State.get
-  let readToken = (Control.Monad.Trans.State.modify readChar >>) . pure . Token
+  modify skipWhitespace
+  lexer <- get
+  let readToken = (modify readChar >>) . pure . Token
   case lexer^.ch of
     c | isLetter c || c == '_' ->  mapKeyword <$> readIdentifier
     c | isDigit c              ->  Token . INT <$> readDigit
@@ -53,18 +53,18 @@ mapKeyword ident = Token (IDENT ident)
 readChar :: Lexer -> Lexer
 readChar lexer = lexer & readPosition+~1 & ch.~ '\0' `fromMaybe` ((lexer^.input) !? (lexer^.readPosition))
 
-readIdentifier :: Control.Monad.Trans.State.State Lexer ByteString
+readIdentifier :: State Lexer ByteString
 readIdentifier = do
-  lexer <- Control.Monad.Trans.State.get
+  lexer <- get
   if   isLetter (lexer^.ch) || lexer^.ch == '_'
-  then Control.Monad.Trans.State.modify readChar >> cons (lexer^.ch) <$> readIdentifier
+  then modify readChar >> cons (lexer^.ch) <$> readIdentifier
   else pure empty
 
-readDigit :: Control.Monad.Trans.State.State Lexer ByteString
+readDigit :: State Lexer ByteString
 readDigit = do
-  lexer <- Control.Monad.Trans.State.get
+  lexer <- get
   if   isDigit (lexer^.ch)
-  then Control.Monad.Trans.State.modify readChar >> cons (lexer^.ch) <$> readDigit
+  then modify readChar >> cons (lexer^.ch) <$> readDigit
   else pure empty
 
 skipWhitespace :: Lexer -> Lexer
