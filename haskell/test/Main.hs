@@ -1,6 +1,7 @@
 module Main where
 
 import Lexer.Basic qualified
+import Lexer.Monad qualified
 import LexerTest (lexerTests)
 import System.Exit (exitFailure, exitSuccess)
 import Test.HUnit
@@ -8,7 +9,8 @@ import Test.HUnit
 tests :: Test
 tests =
     TestList
-        [ TestLabel "Lexer.Basic" (lexerTests Lexer.Basic.tokenize)
+        [ TestLabel "Lexer" (lexerTests Lexer.Basic.tokenize)
+        , TestLabel "Lexer.Monad" (lexerTests Lexer.Monad.tokenize)
         ]
 
 main :: IO ()
