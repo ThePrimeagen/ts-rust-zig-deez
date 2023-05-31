@@ -29,6 +29,8 @@ test: lexer
 	./lexer test/example.monkey  | diff - expected/example.expected
 	./lexer test/example2.monkey | diff - expected/example2.expected
 
-lexer: src/main.s
-	nasm -felf64 src/main.s -o main.o
+NASM_FLAGS = -felf64 -isrc
+
+lexer: src/main.asm
+	nasm src/main.asm -o main.o $(NASM_FLAGS)
 	cc main.o -o lexer
