@@ -1,6 +1,6 @@
-import strutils
+import strutils, sequtils
 
-type token = enum
+type token* = enum
   ident = ""
   t_int = "Int"
   illegal = "Illegal"
@@ -30,36 +30,28 @@ proc getIdent*(s: string): token =
 
 proc getSymbol*(s: string): token =
   case s:
-    of "=":
-      result = equal
-    of "+":
-      result = plus
-    of ",":
-      result = comma
-    of ";":
-      result = semicolon
-    of "(":
-      result = leftparen
-    of ")":
-      result = rightparen
-    of "{":
-      result = leftsquirrel
-    of "}":
-      result = rightsquirrel
-    else:
-      result = illegal
+    of "=": result = equal
+    of "+": result = plus
+    of ",": result = comma
+    of ";": result = semicolon
+    of "(": result = leftparen
+    of ")": result = rightparen
+    of "{": result = leftsquirrel
+    of "}": result = rightsquirrel
+    else: result = illegal
 
-proc getType*(s: string): string =
+proc getType*(s: string): (token, string) =
   var tokentype = getIdent(s)
-  result = $tokentype
+  result = (tokentype, $tokentype)
   if tokentype == ident:
-    return "Ident " & s
+    return (ident, "Ident " & s)
   elif tokentype == t_int:
-    return "Int " & s
+    return (t_int, "Int " & s)
   else:
-    return $getIdent(s)
+    let tkn = getIdent(s)
+    return (tkn, $tkn)
 
-iterator lex*(s: string): string =
+iterator lex*(s: string): (token, string) =
   var lexeme = ""
   for l in s:
     case l:
@@ -75,7 +67,8 @@ iterator lex*(s: string): string =
       else:
         if lexeme.len > 0:
           yield getType(lexeme)
-        yield $getSymbol($l)
+        let sym = getSymbol($l)
+        yield (sym, $sym)
         lexeme = ""
 
 let test = """
@@ -88,4 +81,4 @@ let result = add(five, ten);
 """
 
 for i in test.lex:
-  echo i
+  echo i[1]
