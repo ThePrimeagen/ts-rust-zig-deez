@@ -249,7 +249,6 @@ lex_maybe_keyword:
 
 .again:
     ;; Compare with a keyword.
-    mov rcx, [rdx]
     cmp rax, [rdx]
     je .match
 
