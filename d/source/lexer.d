@@ -20,7 +20,14 @@ enum TokenTag : ubyte
     Ident,
     Int,
     Equal,
+    Assign,
     Plus,
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
+    Lt,
+    Gt,
     Comma,
     Semicolon,
     LParen,
@@ -91,7 +98,7 @@ public:
         {
         case '=':
             this.tokens.start ~= this.position;
-            this.tokens.tag ~= Equal;
+            this.tokens.tag ~= Assign;
             this.readChar();
             break;
         case '+':
@@ -99,14 +106,44 @@ public:
             this.tokens.tag ~= Plus;
             this.readChar();
             break;
-        case ',':
+        case '-':
             this.tokens.start ~= this.position;
-            this.tokens.tag ~= Comma;
+            this.tokens.tag ~= Minus;
+            this.readChar();
+            break;
+        case '!':
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Bang;
+            this.readChar();
+            break;
+        case '/':
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Slash;
+            this.readChar();
+            break;
+        case '*':
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Asterisk;
+            this.readChar();
+            break;
+        case '<':
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Lt;
+            this.readChar();
+            break;
+        case '>':
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Gt;
             this.readChar();
             break;
         case ';':
             this.tokens.start ~= this.position;
             this.tokens.tag ~= Semicolon;
+            this.readChar();
+            break;
+        case ',':
+            this.tokens.start ~= this.position;
+            this.tokens.tag ~= Comma;
             this.readChar();
             break;
         case '(':
@@ -260,15 +297,19 @@ unittest
         const auto expectedStart = [0, 1, 2, 3, 4, 5, 6, 7];
 
         const auto expectedTag = [
-            Equal, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon
+            Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon
         ];
 
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length && lexer.tokens.tag.length == expectedTag.length,
-                format("Token list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedTag.length));
+        assert(lexer.tokens.start.length == expectedStart.length,
+                format("Token position list was %d elements; expected to be %d elements long",
+                    lexer.tokens.start.length, expectedStart.length));
+
+        assert(lexer.tokens.tag.length == expectedTag.length,
+                format("Token tag list was %d elements; expected to be %d elements long",
+                    lexer.tokens.tag.length, expectedTag.length));
 
         foreach (i, start; lexer.tokens.start.enumerate(0))
         {
@@ -306,19 +347,80 @@ let result = add(five, ten);
         ];
 
         const auto expectedTag = [
-            Let, Ident, Equal, Int, Semicolon, Let, Ident, Equal, Int,
-            Semicolon, Let, Ident, Equal, Function, LParen, Ident, Comma, Ident,
+            Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
+            Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
             RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
-            Semicolon, Let, Ident, Equal, Ident, LParen, Ident, Comma, Ident,
+            Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
             RParen, Semicolon
         ];
 
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length && lexer.tokens.tag.length == expectedTag.length,
-                format("Token list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedTag.length));
+        assert(lexer.tokens.start.length == expectedStart.length,
+                format("Token position list was %d elements; expected to be %d elements long",
+                    lexer.tokens.start.length, expectedStart.length));
+
+        assert(lexer.tokens.tag.length == expectedTag.length,
+                format("Token tag list was %d elements; expected to be %d elements long",
+                    lexer.tokens.tag.length, expectedTag.length));
+
+        foreach (i, start; lexer.tokens.start.enumerate(0))
+        {
+            assert(start == expectedStart[i],
+                    format("Wrong token position %d for tag[%d]; expected %d",
+                        start, i, expectedStart[i]));
+        }
+
+        foreach (i, tag; lexer.tokens.tag.enumerate(0))
+        {
+            assert(tag == expectedTag[i],
+                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
+                        tag, i, expectedTag[i]));
+        }
+    }
+}
+
+/// More complete lexer test
+unittest
+{
+    const auto input = "let five = 5;
+let ten = 10;
+let add = fn(x, y) {
+  x + y;
+};
+let result = add(five, ten);
+!-/*5;
+5 < 10 > 5;
+";
+
+    with (TokenTag)
+    {
+        const auto expectedStart = [
+            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
+            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
+            84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107
+        ];
+
+        const auto expectedTag = [
+            Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
+            Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
+            RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
+            Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
+            RParen, Semicolon, Bang, Minus, Slash, Asterisk, Int, Semicolon,
+            Int, Lt, Int, Gt, Int, Semicolon
+        ];
+
+        auto lexer = Lexer(input);
+        lexer.tokenize();
+
+        assert(lexer.tokens.start.length == expectedStart.length,
+                format("Token position list was %d elements; expected to be %d elements long",
+                    lexer.tokens.start.length, expectedStart.length));
+
+        assert(lexer.tokens.tag.length == expectedTag.length,
+                format("Token tag list was %d elements; expected to be %d elements long",
+                    lexer.tokens.tag.length, expectedTag.length));
 
         foreach (i, start; lexer.tokens.start.enumerate(0))
         {
