@@ -8,8 +8,8 @@ name: Test if the language in PR passes corresponding checks
 
 on:
   pull_request:
-    # for new or edited PRs, those who are ready and/or request a review
-    types: [opened, edited, ready_for_review, review_requested]
+    # for new PRs, or those who are ready and/or request a review
+    types: [opened, ready_for_review, review_requested]
 
 defaults:
   run:
