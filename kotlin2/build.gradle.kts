@@ -8,9 +8,14 @@ group = "dev.hermannm"
 version = "0.1.0"
 
 sourceSets {
-    main.get().kotlin.setSrcDirs(listOf("src"))
-    main.get().resources.setSrcDirs(listOf("resources"))
-    test.get().kotlin.setSrcDirs(listOf("tests"))
+    main {
+        kotlin.setSrcDirs(listOf("src"))
+        resources.setSrcDirs(listOf("resources"))
+    }
+    test {
+        kotlin.setSrcDirs(listOf("test"))
+        resources.setSrcDirs(listOf("test/resources"))
+    }
 }
 
 application {
