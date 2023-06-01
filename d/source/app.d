@@ -1,6 +1,6 @@
-import std.stdio;
+import repl : repl;
 
 void main()
 {
-    writeln("Hello world!");
+    repl();
 }

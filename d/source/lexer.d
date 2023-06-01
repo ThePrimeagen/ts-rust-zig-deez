@@ -51,20 +51,39 @@ struct TokenList
     TokenTag[] tag; /// Type tag for tokens
 }
 
-private enum TokenTag[string] reservedKeywords = [
-    "fn": TokenTag.Function, "let": TokenTag.Let, "true": TokenTag.True,
-    "false": TokenTag.False, "if": TokenTag.If, "else": TokenTag.Else,
-    "return": TokenTag.Return
-];
+/// Map reserved keywords to token types
+immutable TokenTag[string] reservedKeywords;
 
-private TokenTag tagForIdent(string identifier)
+/// Map token types to string representations
+immutable string[TokenTag] tagReprs;
+
+shared static this()
 {
-    if (identifier in reservedKeywords)
-    {
-        return reservedKeywords[identifier];
-    }
+    import std.exception : assumeUnique;
 
-    return TokenTag.Ident;
+    TokenTag[string] tempKeywords = [
+        "fn": TokenTag.Function, "let": TokenTag.Let, "true": TokenTag.True,
+        "false": TokenTag.False, "if": TokenTag.If, "else": TokenTag.Else,
+        "return": TokenTag.Return
+    ];
+
+    string[TokenTag] tempRepr = [
+        TokenTag.Eof: "\\0", TokenTag.Eq: "==", TokenTag.NotEq: "!=",
+        TokenTag.Assign: "=", TokenTag.Plus: "+", TokenTag.Minus: "-",
+        TokenTag.Bang: "!", TokenTag.Asterisk: "*", TokenTag.Slash: "/",
+        TokenTag.Lt: "<", TokenTag.Gt: ">", TokenTag.Comma: ":",
+        TokenTag.Semicolon: ";", TokenTag.LParen: "(", TokenTag.RParen: ")",
+        TokenTag.LSquirly: "{", TokenTag.RSquirly: "}"
+    ];
+
+    foreach (e; tempKeywords.byKeyValue)
+    {
+        tempRepr[e.value] = e.key;
+    }
+    tempRepr.rehash;
+
+    reservedKeywords = assumeUnique(tempKeywords);
+    tagReprs = assumeUnique(tempRepr);
 }
 
 /// Encapsulates file tokenization
@@ -73,6 +92,23 @@ struct Lexer
 private:
     ulong position = 0; /// Current character cursor
     ulong readPosition = 1; /// Read cursor (after current char)
+    ulong[ulong] endPosition; /// Cache for end position of identity and number tokens
+
+    /**
+     * Tags an identifier for the new token and caches the end of identifiers.
+     * Params: identifier = the identifier to map to a tag
+     * Returns: The token tag
+     */
+    TokenTag tagForIdent(ulong start, string identifier)
+    {
+        if (identifier in reservedKeywords)
+        {
+            return reservedKeywords[identifier];
+        }
+
+        this.endPosition[start] = this.position;
+        return TokenTag.Ident;
+    }
 
 public:
     immutable(ubyte)[] input; /// Input string
@@ -102,7 +138,7 @@ public:
      */
     char peek()
     {
-        return this.readPosition >= this.input.length ? '\0' : this.input[this.readPosition];
+        return this.readPosition < this.input.length ? this.input[this.readPosition] : '\0';
     }
 
     /**
@@ -206,20 +242,26 @@ public:
             this.readChar();
             break;
         case '0': .. case '9':
-            this.tokens.start ~= this.position;
+            const auto start = this.position;
+
+            this.tokens.start ~= start;
             this.tokens.tag ~= Int;
 
             // Assume that we only have integers for now
             this.readNumber();
+            this.endPosition[start] = this.position;
             break;
         case '_':
             goto case; // Explicit fallthrough to identifier scan
         case 'A': .. case 'Z':
-            this.tokens.start ~= this.position;
+            const auto start = this.position;
+
+            this.tokens.start ~= start;
             this.tokens.tag ~= Ident;
 
             // No reserved keywords that start with uppercase letters or '_'
             this.readIdentifier();
+            this.endPosition[start] = this.position;
             break;
         case 'a': .. case 'z':
             const auto start = this.position;
@@ -229,7 +271,7 @@ public:
             const auto identSlice = this.input[start .. this.position];
 
             this.tokens.start ~= start;
-            this.tokens.tag ~= tagForIdent(identSlice.assumeUTF);
+            this.tokens.tag ~= this.tagForIdent(start, identSlice.assumeUTF);
             break;
         case '\0':
             this.tokens.start ~= this.position;
@@ -271,7 +313,7 @@ public:
         {
             this.readChar();
         }
-        while (isDigit(this.input[this.position]));
+        while (this.position < this.input.length && isDigit(this.input[this.position]));
     }
 
     /**
@@ -283,9 +325,38 @@ public:
         do
         {
             this.readChar();
-            ch = this.input[this.position];
+            if (this.position < this.input.length)
+            {
+                ch = this.input[this.position];
+            }
+            else
+            {
+                break;
+            }
         }
         while (isAlpha(ch) || ch == '_');
+    }
+
+    /**
+     * Shows a string representation of the token at the given index.
+     * Params: index = the index of the representing token.
+     * Returns: String representation of the token tag.
+     */
+    string tagRepr(ulong index)
+    {
+        const auto tag = this.tokens.tag[index];
+        if (tag in tagReprs)
+        {
+            return tagReprs[tag];
+        }
+        else if (tag == TokenTag.Ident || tag == TokenTag.Int)
+        {
+            const auto start = this.tokens.start[index];
+            const auto identSlice = this.input[start .. this.endPosition[start]];
+            return identSlice.assumeUTF;
+        }
+
+        return "";
     }
 
     /**
@@ -297,6 +368,7 @@ public:
         {
             this.nextToken();
         }
+        endPosition.rehash;
     }
 }
 

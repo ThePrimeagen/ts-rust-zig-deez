@@ -3,8 +3,11 @@
 		"ToraKuma42"
 	],
 	"copyright": "Copyright © 2023, ToraKuma42",
-	"description": "DLang lexer for Degens Interpreter Competition",
+	"description": "DLang interpreter for Degens Interpreter Competition",
 	"license": "MIT",
-	"name": "lexer"
+	"name": "monkeyscript",
+	"dependencies": {
+		"linenoise": "~>1.1.0+1.0.0"
+	}
 }
 
