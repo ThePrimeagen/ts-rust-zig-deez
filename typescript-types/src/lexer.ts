@@ -13,7 +13,7 @@ export enum TokenType {
   Equal = "==",
   Plus = "+",
   Comma = ",",
-  Semicolon = ",",
+  Semicolon = ";",
   LParen = "(",
   RParen = ")",
   LSquirly = "{",
@@ -34,8 +34,27 @@ export type Token<Type extends TokenType, Literal extends string> = {
 };
 
 export namespace Tokenizer {
+  type PriorityTokens = {
+    "!=": TokenType.NotEqual;
+    "==": TokenType.Equal;
+  };
+  type PriorityToken = keyof PriorityTokens;
+
   type TokenMap = {
+    return: TokenType.Return;
+    false: TokenType.False;
+    else: TokenType.Else;
+    true: TokenType.True;
+    let: TokenType.Let;
+    fn: TokenType.Function;
+    if: TokenType.If;
+    "!": TokenType.Bang;
+    "-": TokenType.Dash;
+    "/": TokenType.ForwardSlash;
+    "*": TokenType.Asterisk;
     "=": TokenType.Assign;
+    "<": TokenType.LessThan;
+    ">": TokenType.GreaterThan;
     "+": TokenType.Plus;
     "(": TokenType.LParen;
     ")": TokenType.RParen;
@@ -44,18 +63,66 @@ export namespace Tokenizer {
     ",": TokenType.Comma;
     ";": TokenType.Semicolon;
   };
+  type SomeToken = keyof TokenMap;
+
+  type Whitespace = " " | "\n";
+  type SkipWhitespace<T extends string> = T extends `${Whitespace}${infer Rest}`
+    ? SkipWhitespace<Rest>
+    : T;
+
+  type IsLetter<T extends string> = T extends Capitalize<T> ? false : true;
+  type ReadIdent<
+    Input extends string,
+    Ident extends string = ""
+  > = IsLetter<Input> extends true
+    ? Input extends `${infer Head}${infer Tail}`
+      ? ReadIdent<Tail, `${Ident}${Head}`>
+      : never
+    : Ident extends ""
+    ? []
+    : [Ident, Input];
+
+  type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+  type ReadInt<
+    Input extends string,
+    Int extends string = ""
+  > = Input extends `${infer Head extends Digit}${infer Tail}`
+    ? ReadInt<Tail, `${Int}${Head}`>
+    : Int extends ""
+    ? false
+    : [Int, Input];
+
   type GetNextToken<Input extends string> =
-    Input extends `${infer Head}${infer Tail}`
-      ? Head extends keyof TokenMap
+    // Prio tokens
+    Input extends `${PriorityToken}${infer Tail}`
+      ? Input extends `${infer Head extends PriorityToken}${Tail}`
+        ? [Token<PriorityTokens[Head], Head>, Tail]
+        : never
+      : // Other literals
+      Input extends `${SomeToken}${infer Tail}`
+      ? Input extends `${infer Head extends SomeToken}${Tail}`
         ? [Token<TokenMap[Head], Head>, Tail]
-        : [TokenType.Illegal, Tail]
-      : Input;
+        : never
+      : // Ident
+      ReadIdent<Input> extends [infer Ident extends string, infer Tail]
+      ? [Token<TokenType.Ident, Ident>, Tail]
+      : // Int
+      ReadInt<Input> extends [infer Int extends string, infer Tail]
+      ? [Token<TokenType.Int, Int>, Tail]
+      : // End
+        Input;
 
   export type New<
     Input extends string,
-    Result extends any[] = [],
-    NextToken = GetNextToken<Input>
-  > = NextToken extends [Token<TokenType, string>, infer Tail extends string]
-    ? New<Tail, [...Result, NextToken[0]]>
-    : Result;
+    Tok = GetNextToken<SkipWhitespace<Input>>
+  > = Tok extends [
+    infer Next extends Token<TokenType, string>,
+    infer Rest extends string
+  ]
+    ? [Next, New<Rest>]
+    : [TokenType.Eof, "eof"];
 }
+
+export type Link<T extends any[]> = T extends [infer Item, ...infer Rest]
+  ? [Item, Link<Rest>]
+  : T;
