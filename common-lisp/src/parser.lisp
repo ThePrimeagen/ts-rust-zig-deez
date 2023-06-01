@@ -1,8 +1,5 @@
 (defpackage #:deez/parser
   (:use #:cl)
-  (:import-from #:deez/runtime
-                #:|==|
-                #:|!=|)
   (:import-from #:deez/user)
   (:export
    #:parse
@@ -33,14 +30,29 @@
   (when (eq (symbol-package symbol) *runtime-package*)
     (error "Syntax error, ~A is a reserved keyword" symbol)))
 
+(let ((table '((deez/runtime:== . 1)
+               (deez/runtime:!= . 1)
+               (deez/runtime:< . 2)
+               (deez/runtime:> . 2)
+               (deez/runtime:+ . 3)
+               (deez/runtime:- . 3)
+               (deez/runtime:* . 4)
+               (deez/runtime:/ . 5)
+               (deez/runtime:! . 6)
+               (:strong . 7))))
+  (defun precedence (token)
+    (or (cdr (assoc token table))
+        (error "Attempted to get precedence for unknown operator ~A" token))))
+
 (defun parse-let (toplevel-p)
+  (lex)
   (let* ((sym (lex))
          (next (lex))
          (initial-value (cond
                           ((eq next #\;) nil)
                           ((eq next #\=)
                            (prog1
-                               (%%parse)
+                               (parse-expression)
                              (ensure-next #\;)))
                           (t (error "Syntax error, expected ; or = but got ~A" next)))))
     (ensure-not-reserved sym)
@@ -74,7 +86,7 @@
 (defun parse-if ()
   (ensure-next #\()
   (let ((test (prog1
-                  (%%parse)
+                  (parse-expression)
                 (ensure-next #\))))
         (then (parse-block))
         (else (when (eq (lex-peek) 'deez/runtime:|else|)
@@ -88,17 +100,18 @@
   (ensure-next #\{)
   (cons
    'progn
-   (loop for token = (lex)
+   (loop for token = (lex-peek)
          unless token
            do (error "Syntax error, expected } got EOF")
          until (eql token #\})
          unless (eql token #\;)
-           collect (%%parse token))))
+           collect (parse-statement)
+         finally (lex))))
 
 (defun parse-array ()
   (loop
     with array = (make-array 0 :adjustable t :fill-pointer t)
-    for elem = (%%parse)
+    for elem = (parse-expression)
     for next = (lex)
     do (vector-push-extend elem array)
     while (and next
@@ -114,52 +127,72 @@
 (defun parse-array/hash-access (symbol)
   (lex)
   (prog1
-      `(deez/runtime::array/hash-access ,symbol ,(%%parse))
+      `(deez/runtime::array/hash-access ,symbol ,(parse-expression))
     (ensure-next #\])))
 
-(defun parse-symbol (symbol)
-  (let ((next (lex-peek)))
-    (cond
-      ((eql next #\() (parse-funcall symbol))
-      ((eql next #\[) (parse-array/hash-access symbol))
-      ((or (eql next #\;)
-           (eql next #\})
-           (eql next #\)))
-       symbol)
-      (t (error "Syntax error, expected ; but got ~A" next)))))
+(defun parse-group ()
+  (prog1
+      (parse-expression)
+    (ensure-next #\))))
 
-(defun %%parse (&optional token toplevel-p)
-  (unless token
-    (setf token (lex)))
-  (typecase token
-    (symbol
-     (cond
-       ((eq token 'deez/runtime:|let|)
-        (parse-let toplevel-p))
-       ((eq token 'deez/runtime:|fn|)
-        (parse-fn))
-       ((eq token 'deez/runtime:|if|)
-        (parse-if))
-       ((eq token 'deez/runtime:|return|)
-        (prog1
-            (list token (%%parse))
-          (ensure-next #\;)))
-       (t (parse-symbol token))))
-    (character
-     (cond
-       ((eql token #\[)
-        (parse-array))))
-    (atom token)
-    (t (error "Expected known token type, got ~A" (type-of token)))))
+(defun parse-statement (&optional toplevel-p)
+  (let ((token (lex-peek)))
+    (cond
+      ((null token)
+       (error "Unexpected end of input"))
+      ((eq token 'deez/runtime:|let|)
+       (parse-let toplevel-p))
+      ((eq token 'deez/runtime:|return|)
+       (lex)
+       (prog1
+           (list token (parse-expression 0))
+         (ensure-next #\;)))
+      (t (prog1
+             (parse-expression 0)
+           (when (eql (lex-peek) #\;)
+             (lex)))))))
+
+(defun parse-expression (precedence)
+  (labels ((parse-single ()
+             (let ((token (lex)))
+               (typecase token
+                 (null (error "Unexpected end of input"))
+                 (symbol
+                  (cond
+                    ((eq token 'deez/runtime:|fn|)
+                     (parse-fn))
+                    ((eq token 'deez/runtime:|if|)
+                     (parse-if))
+                    ((or (eq token 'deez/runtime:!)
+                         (eq token 'deez/runtime:-))
+                     (list token (parse-expression (precedence token))))
+                    (t token)))
+                 (character
+                  (cond
+                    ((eql token #\()
+                     (parse-group))
+                    ((eql token #\[)
+                     (parse-array))))
+                 (atom token)
+                 (t (error "Expected known token type, got ~A" (type-of token)))))))
+    (loop with expr = (parse-single)
+          for op = (lex-peek)
+          for next-precedence = (and op (precedence op))
+          while (and op
+                     (not (eql op #\;))
+                     (< precedence next-precedence))
+          do (lex)
+          do (setf expr (list op expr (parse-expression next-precedence)))
+          finally (return expr))))
 
 (defun %parse (&optional toplevel-p)
   (loop
     with forms = (list 'progn)
     with head = forms
-    for token = (lex)
+    for token = (lex-peek)
     while token
     do (multiple-value-bind (next replace-p)
-           (%%parse token toplevel-p)
+           (parse-statement toplevel-p)
          (push next forms)
          (if replace-p
              (setf forms next)
