@@ -2,9 +2,11 @@ import java.util.HashMap;
 import java.util.Optional;
 
 class Lexer {
-    String input;
-    int pos;
-    HashMap<String, Token> keywordMap = new HashMap<>() {
+
+    private final String input;
+    private int pos = 0;
+
+    final HashMap<String, Token> keywordMap = new HashMap<>() {
         {
             put("fn", createToken(TokenType.FUNC, "fn"));
             put("let", createToken(TokenType.LET, "let"));
@@ -18,7 +20,7 @@ class Lexer {
     public Token nextToken() {
         this.skipWhitespace();
 
-        TokenType tt = switch (this.getCc()) {
+        final var tokenType = switch (this.getCc()) {
             case '{' -> TokenType.LSQIRLY;
             case '}' -> TokenType.RSQIRLY;
             case '(' -> TokenType.LPAREN;
@@ -31,13 +33,13 @@ class Lexer {
             default -> TokenType.ILLEGAL;
         };
 
-        Token t = switch (tt) {
-            case EOF -> this.createToken(tt, "eof");
-            default -> this.createToken(tt, String.valueOf(this.getCc()));
+        final var token = switch (tokenType) {
+            case EOF -> this.createToken(tokenType, "eof");
+            default -> this.createToken(tokenType, String.valueOf(this.getCc()));
         };
 
         if (Character.isLetter(this.getCc())) {
-            String ident = this.indent();
+            var ident = this.indent();
 
             return Optional
                     .ofNullable(this.keywordMap.get(ident))
@@ -47,7 +49,7 @@ class Lexer {
         }
 
         this.advance();
-        return t;
+        return token;
     }
 
     private void advance() {
