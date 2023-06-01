@@ -23,6 +23,8 @@
    #:|puts|))
 (cl:in-package #:deez/runtime)
 
+;; CL is a Lisp-2, Monkeylang isn't, the solution to this is to define functions
+;; in terms of global variables and let the evaluator FUNCALL them.
 (cl:defmacro defun (symbol lambda-list cl:&body body)
   `(cl:defparameter ,symbol (cl:lambda ,lambda-list
                               ,@body)))
