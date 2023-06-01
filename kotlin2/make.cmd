@@ -1,55 +1,72 @@
-@rem
-@rem Static part, don't change these:
-@rem
-
-@setlocal
-@set "PROMPT=$$ "
-@call :"%~1"
-@endlocal
+@echo off
+setlocal
+set "PROMPT=$$ "
+call :"%~1"
+endlocal
 
 :exit
-	@exit
+	exit
 
 :errexit
-	@echo ERROR %ERRORLEVEL%
-	@exit /b %ERRORLEVEL%
+	echo ERROR %ERRORLEVEL%
+	exit /b %ERRORLEVEL%
 
 :""
-	@goto "help"
+	goto "help"
 
 :"help"
-	@findstr /r /c:"^:\"" make.cmd
-	@goto exit
+	findstr /r /c:"^:\"" make.cmd
+	goto exit
 
 :"ready"
-	@set ready=yes
-	@goto "fmt"
+	set ready=yes
+	goto "fmt"
 
 :"docker-build"
-	@for %%d in ("%CD%") do @set curdir=%%~nxd
-	@rem docker build --no-cache . -t deez_%curdir% || goto err
-	@goto exit
+	for %%d in ("%CD%") do set curdir=%%~nxd
+	docker build --no-cache . -t deez_%curdir% || goto err
+	goto exit
 
 :"docker-ready"
-	@for %%d in ("%CD%") do @set curdir=%%~nxd
-	@rem docker run -v %cd%:/deez -t deez_%curdir% || goto err
-	@goto exit
+	for %%d in ("%CD%") do set curdir=%%~nxd
+	docker run -v %cd%:/app -t deez_%curdir% || goto err
+	goto exit
 
-@rem
-@rem Update those:
-@rem
+:"clean"
+	echo ^=^=^=^> Cleaning
+	call .\gradlew.bat clean
+	goto exit
 
 :"fmt"
-	@echo "===> Formatting"
-	@call .\gradlew.bat ktlintFormat
-	@goto exit
+	echo ^=^=^=^> Formatting
+	call .\gradlew.bat ktlintFormat
+	if %ready%=="yes" goto "lint" else goto exit
 
 :"lint"
-	@echo "===> Linting"
-	@call .\gradlew.bat ktlintCheck
-	@goto exit
+	echo ^=^=^=^> Linting
+	call .\gradlew.bat ktlintCheck
+	if %ready%=="yes" goto "test" else goto exit
 
 :"test"
-	@echo "===> Testing"
-	@call .\gradlew.bat cleanTest test
-	@goto exit
+	echo ^=^=^=^> Testing EVERYTHING
+	set test_all=yes
+	goto "test-lexer"
+
+:"test-lexer"
+	echo ^=^=^=^> Testing lexer
+	call .\gradlew.bat test --tests dev.hermannm.monkeylang.LexerTest
+	if %test_all%=="yes" goto "test-ast" else goto exit
+
+:"test-ast"
+	echo ^=^=^=^> Testing AST
+	echo [Not yet implemented]
+	if %test_all%=="yes" goto "test-parser" else goto exit
+
+:"test-parser"
+	echo ^=^=^=^> Testing parser
+	echo [Not yet implemented]
+	goto exit
+
+:"repl"
+	echo ^=^=^=^> Running REPL
+	call .\gradlew.bat run --quiet --console=plain
