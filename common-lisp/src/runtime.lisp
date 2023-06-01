@@ -38,10 +38,22 @@
 (cl:defparameter / #'cl:/)
 (cl:defparameter < #'cl:<)
 (cl:defparameter > #'cl:>)
-(cl:defparameter == #'cl:equal)
+
+(defun ! (thing)
+  (cl:if (cl:and thing
+                 (cl:not (cl:eq thing |false|)))
+         '|false|
+         '|true|))
+
+(defun == (left right)
+  (cl:if (cl:equal left right)
+         '|true|
+         '|false|))
 
 (defun != (left right)
-  (cl:not (cl:equal left right)))
+  (cl:if (cl:equal left right)
+         '|false|
+         '|true|))
 
 (defun + (left right)
   (cl:cond
