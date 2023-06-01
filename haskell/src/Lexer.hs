@@ -34,8 +34,8 @@ getToken = do
   case lexer^.ch of
     c | isLetter c || c == '_' ->  mapKeyword <$> readIdentifier
     c | isDigit c              ->  Token . INT <$> readDigit
-    '+'  -> readToken PLUS
     '='  -> readToken EQUAL
+    '+'  -> readToken PLUS
     ','  -> readToken COMMA
     ';'  -> readToken SEMICOLON
     '('  -> readToken LPAREN
@@ -46,12 +46,15 @@ getToken = do
     _    -> readToken ILLEGAL
 
 mapKeyword :: ByteString -> Token
-mapKeyword "fn"  = Token FUNCTION
-mapKeyword "let" = Token LET
-mapKeyword ident = Token (IDENT ident)
+mapKeyword "fn"     = Token FUNCTION
+mapKeyword "let"    = Token LET
+mapKeyword ident    = Token (IDENT ident)
 
 readChar :: Lexer -> Lexer
-readChar lexer = lexer & readPosition+~1 & ch.~ '\0' `fromMaybe` ((lexer^.input) !? (lexer^.readPosition))
+readChar lexer =
+  lexer & ch.~ '\0' `fromMaybe` ((lexer^.input) !? (lexer^.readPosition))
+    & position.~(lexer^.readPosition)
+    & readPosition+~1
 
 readIdentifier :: State Lexer ByteString
 readIdentifier = do
