@@ -8,7 +8,7 @@ COPY src/dummy-for-docker.rs src/main.rs
 RUN cargo install --path .
 RUN cargo run
 
-# Buid actual project
+# Build actual project
 COPY . .
 RUN cargo install --path .
 
