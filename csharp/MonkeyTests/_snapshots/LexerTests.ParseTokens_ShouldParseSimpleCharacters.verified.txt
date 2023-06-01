@@ -1,0 +1,11 @@
+﻿[
+  Assign { },
+  Plus { },
+  LParen { },
+  RParen { },
+  LSquirly { },
+  RSquirly { },
+  Comma { },
+  Semicolon { },
+  EoF { }
+]
