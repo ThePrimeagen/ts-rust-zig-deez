@@ -112,6 +112,7 @@ export namespace Tokenizer {
       : // End
         Input;
 
+  // TODO: this instantiates deeply with spread operator on long inputs, needs less recursion
   export type New<
     Input extends string,
     Tok = GetNextToken<SkipWhitespace<Input>>
