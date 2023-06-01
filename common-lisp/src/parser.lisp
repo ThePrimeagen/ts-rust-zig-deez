@@ -42,7 +42,7 @@
                (:strong . 7))))
   (defun precedence (token)
     (or (cdr (assoc token table))
-        (error "Attempted to get precedence for unknown operator ~A" token))))
+        (error "Syntax error, unknown operator ~A" token))))
 
 (defun parse-let (toplevel-p)
   (lex)
