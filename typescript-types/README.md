@@ -1,4 +1,4 @@
 Roses are red,
 Violets are blue,
-Rust typesystem is useless,
+Rust type system is useless,
 and so are you.
