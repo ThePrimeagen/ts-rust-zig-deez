@@ -7,6 +7,7 @@
 # Language maintainers
 /bash/            @vgel
 /c/               @zivlakmilos
+/c-boreddad/      @boreddad
 /cpp/             @nicdgonzalez
 /crystal/         @devnote-dev
 /csharp/          @MarioGK
@@ -17,6 +18,7 @@
 /erlang/          @mikimaine
 /fortran/         @greuben92
 /fsharp/          @meenzen
+/haskell/         @alexjercan
 /java/            @xNaCly @Crain-32
 /ocaml/           @tjdevries
 /odin/            @jon-lipstate
@@ -27,5 +29,4 @@
 /typescript/      @ThePrimeagen
 /zig/             @ThePrimeagen
 
-# TODO: Add people selected from May 30th stream
-
+# TODO: Add people selected from stream on May 30th
