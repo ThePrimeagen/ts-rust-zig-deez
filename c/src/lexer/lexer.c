@@ -9,7 +9,7 @@ struct SLexer {
   size_t inputLength;
   size_t position;
   size_t readPosition;
-  char character;
+  char ch;
 };
 
 static void _lexerReadChar(Lexer *lexer);
@@ -46,7 +46,7 @@ Token *lexerNext(Lexer *lexer) {
 
   _lexerSkipWhitespace(lexer);
 
-  switch (lexer->character) {
+  switch (lexer->ch) {
   case '{':
     tok = tokenCreate(TokenTypeLSquirly, NULL);
     break;
@@ -76,7 +76,7 @@ Token *lexerNext(Lexer *lexer) {
     break;
   }
 
-  if (_isLetter(lexer->character)) {
+  if (_isLetter(lexer->ch)) {
     size_t len = 0;
     char *literal = NULL;
     const char *ident = _lexerReadIdent(lexer, &len);
@@ -88,7 +88,7 @@ Token *lexerNext(Lexer *lexer) {
 
     tok = tokenCreate(type, literal);
     return tok;
-  } else if (_isNumber(lexer->character)) {
+  } else if (_isNumber(lexer->ch)) {
     size_t len = 0;
     char *literal = NULL;
     const char *ident = _lexerReadInt(lexer, &len);
@@ -144,9 +144,9 @@ void tokenCleanup(Token **token) {
 
 static void _lexerReadChar(Lexer *lexer) {
   if (lexer->readPosition >= lexer->inputLength) {
-    lexer->character = '\0';
+    lexer->ch = '\0';
   } else {
-    lexer->character = lexer->input[lexer->readPosition];
+    lexer->ch = lexer->input[lexer->readPosition];
   }
 
   lexer->position = lexer->readPosition;
@@ -154,8 +154,8 @@ static void _lexerReadChar(Lexer *lexer) {
 }
 
 static void _lexerSkipWhitespace(Lexer *lexer) {
-  while (lexer->character == ' ' || lexer->character == '\t' ||
-         lexer->character == '\n' || lexer->character == '\r') {
+  while (lexer->ch == ' ' || lexer->ch == '\t' || lexer->ch == '\n' ||
+         lexer->ch == '\r') {
     _lexerReadChar(lexer);
   }
 }
@@ -164,7 +164,7 @@ static const char *_lexerReadIdent(Lexer *lexer, size_t *len) {
   char *result = NULL;
   size_t position = lexer->position;
 
-  while (_isLetter(lexer->character)) {
+  while (_isLetter(lexer->ch)) {
     _lexerReadChar(lexer);
   }
 
@@ -179,7 +179,7 @@ static const char *_lexerReadInt(Lexer *lexer, size_t *len) {
   char *result = NULL;
   size_t position = lexer->position;
 
-  while (_isNumber(lexer->character)) {
+  while (_isNumber(lexer->ch)) {
     _lexerReadChar(lexer);
   }
 
