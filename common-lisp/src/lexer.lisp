@@ -49,8 +49,6 @@
       ((null c) nil)
       ((digit-char-p c)
        (parse-integer (read-integer)))
-      ((digit-char-p (peek-2))
-       (parse-integer (read-integer)))
       ((char-2= c #\= #\=)
        (read-char)
        (read-char)
