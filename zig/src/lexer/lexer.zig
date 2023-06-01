@@ -7,7 +7,7 @@ const Token = union(enum) {
     let,
     illegal,
     eof,
-    equal,
+    assign,
     plus,
     comma,
     semicolon,
@@ -17,10 +17,31 @@ const Token = union(enum) {
     rsquirly,
     function,
 
+    bang,
+    dash,
+    forward_slash,
+    asterisk,
+    less_than,
+    greater_than,
+
+    equal,
+    not_equal,
+
+    if_token,
+    else_token,
+    return_token,
+    false_token,
+    true_token,
+
     fn keyword(ident: []const u8) ?Token {
         const map = std.ComptimeStringMap(Token, .{
             .{ "let", .let },
             .{ "fn", .function },
+            .{ "if", .if_token },
+            .{ "true", .true_token },
+            .{ "false", .false_token },
+            .{ "return", .return_token },
+            .{ "else", .else_token },
         });
         return map.get(ident);
     }
@@ -39,7 +60,7 @@ pub const Lexer = struct {
 
     read_position: usize = 0,
     position: usize = 0,
-    ch: u8,
+    ch: u8 = 0,
     input: []const u8,
 
     pub fn init(input: []const u8) Self {
@@ -62,7 +83,27 @@ pub const Lexer = struct {
             ',' => .comma,
             ';' => .semicolon,
             '+' => .plus,
-            '=' => .equal,
+            '-' => .dash,
+            '/' => .forward_slash,
+            '*' => .asterisk,
+            '<' => .less_than,
+            '>' => .greater_than,
+            '!' => blk: {
+                if (self.peek_char() == '=') {
+                    self.read_char();
+                    break :blk .not_equal;
+                } else {
+                    break :blk .bang;
+                }
+            },
+            '=' => blk: {
+                if (self.peek_char() == '=') {
+                    self.read_char();
+                    break :blk .equal;
+                } else {
+                    break :blk .assign;
+                }
+            },
             0 => .eof,
             'a'...'z', 'A'...'Z', '_' => {
                 const ident = self.read_identifier();
@@ -80,6 +121,14 @@ pub const Lexer = struct {
 
         self.read_char();
         return tok;
+    }
+
+    fn peek_char(self: *Self) u8 {
+        if (self.read_position >= self.input.len) {
+            return 0;
+        } else {
+            return self.input[self.read_position];
+        }
     }
 
     fn read_char(self: *Self) void {
@@ -126,7 +175,7 @@ test "Lexer" {
     var lex = Lexer.init(input);
 
     var tokens = [_]Token{
-        .equal,
+        .assign,
         .plus,
         .lparen,
         .rparen,
@@ -158,23 +207,32 @@ test "Lexer - Full" {
         \\    x + y;
         \\};
         \\let result = add(five, ten);
+        \\!-/*5;
+        \\5 < 10 > 5;
+        \\if (5 < 10) {
+        \\    return true;
+        \\} else {
+        \\    return false;
+        \\}
+        \\10 == 10;
+        \\10 != 9;
     ;
     var lex = Lexer.init(input);
 
     var tokens = [_]Token{
         .let,
         .{ .ident = "five" },
-        .equal,
+        .assign,
         .{ .int = "5" },
         .semicolon,
         .let,
         .{ .ident = "ten" },
-        .equal,
+        .assign,
         .{ .int = "10" },
         .semicolon,
         .let,
         .{ .ident = "add" },
-        .equal,
+        .assign,
         .function,
         .lparen,
         .{ .ident = "x" },
@@ -190,7 +248,7 @@ test "Lexer - Full" {
         .semicolon,
         .let,
         .{ .ident = "result" },
-        .equal,
+        .assign,
         .{ .ident = "add" },
         .lparen,
         .{ .ident = "five" },
@@ -198,6 +256,46 @@ test "Lexer - Full" {
         .{ .ident = "ten" },
         .rparen,
         .semicolon,
+
+        .bang,
+        .dash,
+        .forward_slash,
+        .asterisk,
+        .{ .int = "5" },
+        .semicolon,
+        .{ .int = "5" },
+        .less_than,
+        .{ .int = "10" },
+        .greater_than,
+        .{ .int = "5" },
+        .semicolon,
+        .if_token,
+        .lparen,
+        .{ .int = "5" },
+        .less_than,
+        .{ .int = "10" },
+        .rparen,
+        .lsquirly,
+        .return_token,
+        .true_token,
+        .semicolon,
+        .rsquirly,
+        .else_token,
+        .lsquirly,
+        .return_token,
+        .false_token,
+        .semicolon,
+        .rsquirly,
+
+        .{ .int = "10" },
+        .equal,
+        .{ .int = "10" },
+        .semicolon,
+        .{ .int = "10" },
+        .not_equal,
+        .{ .int = "9" },
+        .semicolon,
+
         .eof,
     };
 
