@@ -1,16 +1,3 @@
-/*
- * Project: dart
- * Created Date: Wednesday May 31st 2023 9:07:50 pm
- * Author: Fa C Shus (paul@facshus.com)
- * -----
- * Last Modified: Wednesday, 31st May 2023 9:07:50 pm
- * Modified By: Fa C Shus (paul@facshus.com)
- * -----
- * Copyright (c) 2021 - 2023 FaCShus Systems
- * License: MIT
- */
-
-
 ## Activate package `coverage` (if needed):
 dart pub global activate coverage 1.6.3
 dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage
