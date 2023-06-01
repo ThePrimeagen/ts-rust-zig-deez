@@ -7,8 +7,10 @@
  * Version: 0.0.1
  */
 
-import std.ascii;
-import std.format;
+import std.array : appender, Appender;
+import std.ascii : isAlpha, isDigit, isWhite;
+import std.conv : to;
+import std.format : format;
 import std.range : enumerate;
 import std.string : assumeUTF, representation;
 
@@ -47,8 +49,23 @@ enum TokenTag : ubyte
 /// Token SoA tagged with starting position and type
 struct TokenList
 {
-    ulong[] start; /// Starting position of tokens
-    TokenTag[] tag; /// Type tag for tokens
+    Appender!(ulong[]) start; /// Starting position of tokens
+    Appender!(TokenTag[]) tag; /// Type tag for tokens
+
+    /**
+     * Constructs the token multilist.
+     * Params: len = The initial length of the token multilist
+     */
+    this(ulong len)
+    {
+        this.start = appender!(ulong[])(); /// Starting position of tokens
+        this.tag = appender!(TokenTag[])(); /// Type tag for tokens
+
+        const auto initialSize = (len >> 1) + (len >> 2);
+
+        this.start.reserve(initialSize);
+        this.tag.reserve(initialSize);
+    }
 }
 
 /// Map reserved keywords to token types
@@ -121,6 +138,7 @@ public:
     this(string text)
     {
         this.input = representation(text);
+        this.tokens = TokenList(this.input.length);
     }
 
     /**
@@ -150,102 +168,102 @@ public:
         switch (c) with (TokenTag)
         {
         case '=':
-            this.tokens.start ~= this.position;
+            this.tokens.start.put(this.position);
 
             const auto nextChar = this.peek();
             if (nextChar == '=')
             {
-                this.tokens.tag ~= Eq;
+                this.tokens.tag.put(Eq);
                 this.readChar();
             }
             else
             {
-                this.tokens.tag ~= Assign;
+                this.tokens.tag.put(Assign);
             }
 
             this.readChar();
             break;
         case '+':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Plus;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Plus);
             this.readChar();
             break;
         case '-':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Minus;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Minus);
             this.readChar();
             break;
         case '!':
-            this.tokens.start ~= this.position;
+            this.tokens.start.put(this.position);
 
             const auto nextChar = this.peek();
             if (nextChar == '=')
             {
-                this.tokens.tag ~= NotEq;
+                this.tokens.tag.put(NotEq);
                 this.readChar();
             }
             else
             {
-                this.tokens.tag ~= Bang;
+                this.tokens.tag.put(Bang);
             }
 
             this.readChar();
             break;
         case '/':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Slash;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Slash);
             this.readChar();
             break;
         case '*':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Asterisk;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Asterisk);
             this.readChar();
             break;
         case '<':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Lt;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Lt);
             this.readChar();
             break;
         case '>':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Gt;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Gt);
             this.readChar();
             break;
         case ';':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Semicolon;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Semicolon);
             this.readChar();
             break;
         case ',':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Comma;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Comma);
             this.readChar();
             break;
         case '(':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= LParen;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(LParen);
             this.readChar();
             break;
         case ')':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= RParen;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(RParen);
             this.readChar();
             break;
         case '{':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= LSquirly;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(LSquirly);
             this.readChar();
             break;
         case '}':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= RSquirly;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(RSquirly);
             this.readChar();
             break;
         case '0': .. case '9':
             const auto start = this.position;
 
-            this.tokens.start ~= start;
-            this.tokens.tag ~= Int;
+            this.tokens.start.put(start);
+            this.tokens.tag.put(Int);
 
             // Assume that we only have integers for now
             this.readNumber();
@@ -256,8 +274,8 @@ public:
         case 'A': .. case 'Z':
             const auto start = this.position;
 
-            this.tokens.start ~= start;
-            this.tokens.tag ~= Ident;
+            this.tokens.start.put(start);
+            this.tokens.tag.put(Ident);
 
             // No reserved keywords that start with uppercase letters or '_'
             this.readIdentifier();
@@ -270,12 +288,12 @@ public:
             this.readIdentifier();
             const auto identSlice = this.input[start .. this.position];
 
-            this.tokens.start ~= start;
-            this.tokens.tag ~= this.tagForIdent(start, identSlice.assumeUTF);
+            this.tokens.start.put(start);
+            this.tokens.tag.put(this.tagForIdent(start, identSlice.assumeUTF));
             break;
         case '\0':
-            this.tokens.start ~= this.position;
-            this.tokens.tag ~= Eof;
+            this.tokens.start.put(this.position);
+            this.tokens.tag.put(Eof);
             this.readChar();
             break;
         default:
@@ -285,8 +303,8 @@ public:
             }
             else
             {
-                this.tokens.start ~= this.position;
-                this.tokens.tag ~= Illegal;
+                this.tokens.start.put(this.position);
+                this.tokens.tag.put(Illegal);
                 this.readChar();
             }
         }
@@ -344,16 +362,21 @@ public:
      */
     string tagRepr(ulong index)
     {
-        const auto tag = this.tokens.tag[index];
+        const auto tag = this.tokens.tag[][index];
         if (tag in tagReprs)
         {
             return tagReprs[tag];
         }
         else if (tag == TokenTag.Ident || tag == TokenTag.Int)
         {
-            const auto start = this.tokens.start[index];
+            const auto start = this.tokens.start[][index];
             const auto identSlice = this.input[start .. this.endPosition[start]];
             return identSlice.assumeUTF;
+        }
+        else if (tag == TokenTag.Illegal)
+        {
+            const auto start = this.tokens.start[][index];
+            return "%s".format(to!char(this.input[start]));
         }
 
         return "";
@@ -374,6 +397,36 @@ public:
 
 /** Lexer tests */
 
+/// Helper function to validate the lexer's ability to tokenize input strings.
+private void validateTokenize(Lexer lexer, const(ulong[]) expectedStart,
+        const(TokenTag[]) expectedTag)
+{
+    auto startPos = lexer.tokens.start[];
+    auto tokenTag = lexer.tokens.tag[];
+
+    assert(startPos.length == expectedStart.length,
+            format("Token position list was %d elements; expected to be %d elements long",
+                startPos.length, expectedStart.length));
+
+    assert(tokenTag.length == expectedTag.length,
+            format("Token tag list was %d elements; expected to be %d elements long",
+                tokenTag.length, expectedTag.length));
+
+    foreach (i, start; startPos.enumerate(0))
+    {
+        assert(start == expectedStart[i],
+                format("Wrong token position %d for tag[%d]; expected %d",
+                    start, i, expectedStart[i]));
+    }
+
+    foreach (i, tag; tokenTag.enumerate(0))
+    {
+        assert(tag == expectedTag[i],
+                format("Wrong token type '%s' for tag[%d]; expected '%s'", tag, i, expectedTag[i]));
+    }
+
+}
+
 /// Minimal lexer test
 unittest
 {
@@ -382,7 +435,7 @@ unittest
     auto lexer = Lexer(input);
     lexer.tokenize();
 
-    assert(lexer.tokens.start.length == 0 && lexer.tokens.tag.length == 0,
+    assert(lexer.tokens.start[].length == 0 && lexer.tokens.tag[].length == 0,
             "Token list must be empty for empty string");
 }
 
@@ -394,7 +447,7 @@ unittest
     auto lexer = Lexer(input);
     lexer.tokenize();
 
-    assert(lexer.tokens.start.length == 0 && lexer.tokens.tag.length == 0,
+    assert(lexer.tokens.start[].length == 0 && lexer.tokens.tag[].length == 0,
             "Token list must be empty for empty string");
 }
 
@@ -405,7 +458,7 @@ unittest
 
     with (TokenTag)
     {
-        const auto expectedStart = [0, 1, 2, 3, 4, 5, 6, 7];
+        const ulong[] expectedStart = [0, 1, 2, 3, 4, 5, 6, 7];
 
         const auto expectedTag = [
             Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon
@@ -414,27 +467,7 @@ unittest
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length,
-                format("Token position list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedStart.length));
-
-        assert(lexer.tokens.tag.length == expectedTag.length,
-                format("Token tag list was %d elements; expected to be %d elements long",
-                    lexer.tokens.tag.length, expectedTag.length));
-
-        foreach (i, start; lexer.tokens.start.enumerate(0))
-        {
-            assert(start == expectedStart[i],
-                    format("Wrong token position %d for tag[%d]; expected %d",
-                        start, i, expectedStart[i]));
-        }
-
-        foreach (i, tag; lexer.tokens.tag.enumerate(0))
-        {
-            assert(tag == expectedTag[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
-                        tag, i, expectedTag[i]));
-        }
+        validateTokenize(lexer, expectedStart, expectedTag);
     }
 }
 
@@ -451,7 +484,7 @@ let result = add(five, ten);
 
     with (TokenTag)
     {
-        const auto expectedStart = [
+        const ulong[] expectedStart = [
             0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
             44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
             88
@@ -468,27 +501,7 @@ let result = add(five, ten);
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length,
-                format("Token position list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedStart.length));
-
-        assert(lexer.tokens.tag.length == expectedTag.length,
-                format("Token tag list was %d elements; expected to be %d elements long",
-                    lexer.tokens.tag.length, expectedTag.length));
-
-        foreach (i, start; lexer.tokens.start.enumerate(0))
-        {
-            assert(start == expectedStart[i],
-                    format("Wrong token position %d for tag[%d]; expected %d",
-                        start, i, expectedStart[i]));
-        }
-
-        foreach (i, tag; lexer.tokens.tag.enumerate(0))
-        {
-            assert(tag == expectedTag[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
-                        tag, i, expectedTag[i]));
-        }
+        validateTokenize(lexer, expectedStart, expectedTag);
     }
 }
 
@@ -507,7 +520,7 @@ let result = add(five, ten);
 
     with (TokenTag)
     {
-        const auto expectedStart = [
+        const ulong[] expectedStart = [
             0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
             44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
             84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107
@@ -525,27 +538,7 @@ let result = add(five, ten);
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length,
-                format("Token position list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedStart.length));
-
-        assert(lexer.tokens.tag.length == expectedTag.length,
-                format("Token tag list was %d elements; expected to be %d elements long",
-                    lexer.tokens.tag.length, expectedTag.length));
-
-        foreach (i, start; lexer.tokens.start.enumerate(0))
-        {
-            assert(start == expectedStart[i],
-                    format("Wrong token position %d for tag[%d]; expected %d",
-                        start, i, expectedStart[i]));
-        }
-
-        foreach (i, tag; lexer.tokens.tag.enumerate(0))
-        {
-            assert(tag == expectedTag[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
-                        tag, i, expectedTag[i]));
-        }
+        validateTokenize(lexer, expectedStart, expectedTag);
     }
 }
 
@@ -570,7 +563,7 @@ if (5 < 10) {
 
     with (TokenTag)
     {
-        const auto expectedStart = [
+        const ulong[] expectedStart = [
             0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
             44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
             84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107,
@@ -592,27 +585,7 @@ if (5 < 10) {
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length,
-                format("Token position list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedStart.length));
-
-        assert(lexer.tokens.tag.length == expectedTag.length,
-                format("Token tag list was %d elements; expected to be %d elements long",
-                    lexer.tokens.tag.length, expectedTag.length));
-
-        foreach (i, start; lexer.tokens.start.enumerate(0))
-        {
-            assert(start == expectedStart[i],
-                    format("Wrong token position %d for tag[%d]; expected %d",
-                        start, i, expectedStart[i]));
-        }
-
-        foreach (i, tag; lexer.tokens.tag.enumerate(0))
-        {
-            assert(tag == expectedTag[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
-                        tag, i, expectedTag[i]));
-        }
+        validateTokenize(lexer, expectedStart, expectedTag);
     }
 }
 
@@ -640,7 +613,7 @@ if (5 < 10) {
 
     with (TokenTag)
     {
-        const auto expectedStart = [
+        const ulong[] expectedStart = [
             0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
             44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
             84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107,
@@ -663,26 +636,6 @@ if (5 < 10) {
         auto lexer = Lexer(input);
         lexer.tokenize();
 
-        assert(lexer.tokens.start.length == expectedStart.length,
-                format("Token position list was %d elements; expected to be %d elements long",
-                    lexer.tokens.start.length, expectedStart.length));
-
-        assert(lexer.tokens.tag.length == expectedTag.length,
-                format("Token tag list was %d elements; expected to be %d elements long",
-                    lexer.tokens.tag.length, expectedTag.length));
-
-        foreach (i, start; lexer.tokens.start.enumerate(0))
-        {
-            assert(start == expectedStart[i],
-                    format("Wrong token position %d for tag[%d]; expected %d",
-                        start, i, expectedStart[i]));
-        }
-
-        foreach (i, tag; lexer.tokens.tag.enumerate(0))
-        {
-            assert(tag == expectedTag[i],
-                    format("Wrong token type '%s' for tag[%d]; expected '%s'",
-                        tag, i, expectedTag[i]));
-        }
+        validateTokenize(lexer, expectedStart, expectedTag);
     }
 }

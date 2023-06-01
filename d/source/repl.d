@@ -8,7 +8,7 @@
  */
 
 import lexer;
-import deimos.linenoise;
+import deimos.linenoise : linenoise;
 import std.conv : to;
 import std.range : enumerate;
 import std.stdio : writefln;
@@ -28,7 +28,7 @@ void repl()
             auto lexer = Lexer(to!string(line));
             lexer.tokenize();
 
-            foreach (i, tag; lexer.tokens.tag.enumerate(0))
+            foreach (i, tag; lexer.tokens.tag.opSlice().enumerate(0))
             {
                 writefln("{Type:%s Literal:%s}", tag, lexer.tagRepr(i));
             }
