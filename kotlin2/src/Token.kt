@@ -5,6 +5,7 @@ sealed class Token {
     data class Identifier(val name: String) : Token()
     data class Integer(val value: Int) : Token()
     data class StringLiteral(val value: String) : Token()
+    data class Illegal(val source: String) : Token()
 
     // Keywords
     data object Function : Token()
@@ -39,5 +40,4 @@ sealed class Token {
     data object NotEquals : Token()
 
     data object EndOfFile : Token()
-    data object Illegal : Token()
 }

@@ -5,11 +5,10 @@ import kotlin.text.isWhitespace
 class Lexer(private val input: String) {
     private var currentIndex: Int = 0
 
-    /** @throws IllegalStateException If the input is invalid. */
     fun nextToken(): Token {
         skipWhitespace()
 
-        val token = when (getCurrentCharacter()) {
+        val token = when (val character = getCurrentCharacter()) {
             '+' -> Token.Plus
             '-' -> Token.Minus
             '/' -> Token.Slash
@@ -25,108 +24,83 @@ class Lexer(private val input: String) {
             '}' -> Token.RightBrace
             '[' -> Token.LeftBracket
             ']' -> Token.RightBracket
-            '=' -> {
-                if (getNextCharacter() == '=') {
-                    currentIndex++
-                    Token.Equals
-                } else {
-                    Token.Assign
-                }
-            }
-            '!' -> {
-                if (getNextCharacter() == '=') {
-                    currentIndex++
-                    Token.NotEquals
-                } else {
-                    Token.Bang
-                }
-            }
-            in 'a'..'z', in 'A'..'Z', '_' -> {
-                return when (val identifier = readIdentifier()) {
-                    "fn" -> Token.Function
-                    "let" -> Token.Let
-                    "if" -> Token.If
-                    "else" -> Token.Else
-                    "return" -> Token.Return
-                    "true" -> Token.True
-                    "false" -> Token.False
-                    else -> Token.Identifier(identifier)
-                }
-            }
-            in '0'..'9' -> {
-                val integer = readInteger()
-                return Token.Integer(integer)
-            }
-            '"' -> {
-                val string = readString()
-                return Token.StringLiteral(string)
-            }
+            '=' -> if (consumeNextIfMatching('=')) Token.Equals else Token.Assign
+            '!' -> if (consumeNextIfMatching('=')) Token.NotEquals else Token.Bang
+            in 'a'..'z', in 'A'..'Z', '_' -> return readKeywordOrIdentifier()
+            in '0'..'9' -> return readInteger()
+            '"' -> return readString()
             null -> Token.EndOfFile
-            else -> Token.Illegal
+            else -> Token.Illegal(character.toString())
         }
 
         currentIndex++
         return token
     }
 
-    private fun getCurrentCharacter(): Char? {
-        return input.getOrNull(currentIndex)
+    private fun getCurrentCharacter(): Char? = input.getOrNull(currentIndex)
+
+    private fun consumeNextIfMatching(characterToMatch: Char): Boolean {
+        val matching = input.getOrNull(currentIndex + 1) == characterToMatch
+        if (matching) {
+            currentIndex++
+        }
+        return matching
     }
 
-    private fun getNextCharacter(): Char? {
-        return input.getOrNull(currentIndex + 1)
-    }
-
-    private fun readIdentifier(): String {
+    private fun readKeywordOrIdentifier(): Token {
         val startIndex = currentIndex
 
         while (true) {
-            val currentCharacter = getCurrentCharacter() ?: break
-
-            if (currentCharacter.isLetter() || currentCharacter == '_') {
-                currentIndex++
-            } else {
-                break
+            when (getCurrentCharacter()) {
+                in 'a'..'z', in 'A'..'Z', '_' -> { currentIndex++ }
+                else -> break
             }
         }
 
-        return input.substring(startIndex, currentIndex)
+        return when (val word = input.substring(startIndex, currentIndex)) {
+            "fn" -> Token.Function
+            "let" -> Token.Let
+            "if" -> Token.If
+            "else" -> Token.Else
+            "return" -> Token.Return
+            "true" -> Token.True
+            "false" -> Token.False
+            else -> Token.Identifier(word)
+        }
     }
 
-    /** @throws IllegalStateException If parsing integer from current position in input failed. */
-    private fun readInteger(): Int {
+    private fun readInteger(): Token {
         val startIndex = currentIndex
-        while (getCurrentCharacter()?.isDigit() == true) {
+        while (getCurrentCharacter() in '0'..'9') {
             currentIndex++
         }
 
         val string = input.substring(startIndex, currentIndex)
 
-        return try { string.toInt() } catch (err: Exception) {
-            throw IllegalStateException("Failed to read integer '$string' from input", err)
+        return try {
+            Token.Integer(string.toInt())
+        } catch (_: NumberFormatException) {
+            Token.Illegal(string)
         }
     }
 
-    /** @throws IllegalStateException If input ended before closing quote for the string. */
-    private fun readString(): String {
-        val startPosition = currentIndex + 1
+    private fun readString(): Token {
+        val startIndex = currentIndex + 1
 
         while (true) {
             currentIndex++
             when (getCurrentCharacter()) {
                 '"' -> break
-                Char.MIN_VALUE -> throw IllegalStateException(
-                    "Input ended before closing quote of string",
-                )
+                null -> return Token.Illegal(input.substring(startIndex - 1, currentIndex))
             }
         }
 
-        val string = input.substring(startPosition, currentIndex)
+        val string = input.substring(startIndex, currentIndex)
 
         // Skip closing quote
         currentIndex++
 
-        return string
+        return Token.StringLiteral(string)
     }
 
     private fun skipWhitespace() {

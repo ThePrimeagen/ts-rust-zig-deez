@@ -146,11 +146,13 @@ class LexerTest {
         input = """
             "foobar"
             "foo bar"
+            "foo bar baz
         """.trimIndent(),
 
         expectedTokens = listOf(
             Token.StringLiteral("foobar"),
             Token.StringLiteral("foo bar"),
+            Token.Illegal("\"foo bar baz"),
             Token.EndOfFile,
         ),
     )
