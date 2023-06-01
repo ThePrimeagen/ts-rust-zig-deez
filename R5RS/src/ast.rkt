@@ -49,6 +49,9 @@
 (define (return-stmt? s)
   (tagged-list? s 'return-state))
 
+(define (return-value s)
+  (caddr s))
+
 
 ; EXPRESSION STATEMENT
 ; (token exp)

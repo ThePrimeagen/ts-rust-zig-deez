@@ -2,9 +2,10 @@
 
 
 ; TYPES
-(define INTEGER_OBJ "INTEGER")
-(define BOOLEAN_OBJ "BOOLEAN")
-(define NULL_OBJ    "NULL")
+(define INTEGER_OBJ      "INTEGER")
+(define BOOLEAN_OBJ      "BOOLEAN")
+(define NULL_OBJ         "NULL")
+(define RETURN_VALUE_OBJ "RETURN_VALUE")
 
 
 ; OBJ METHODS
@@ -15,6 +16,7 @@
     ((obj-int? obj) (number->string value))
     ((obj-bool? obj) (if value "true" "false"))
     ((obj-null? obj) "null")
+    ((obj-return-value? obj) "return value")
 
     (else "Could not convert to string")
     )
@@ -25,8 +27,6 @@
 
 (define (obj-type obj)
   (if (pair? obj) (cadr obj) "EMPTY"))
-
-
 
 
 ; INTEGER
@@ -49,6 +49,14 @@
 
 (define (obj-bool? obj)
   (tagged-list? obj 'object-bool))
+
+
+; RETURN VALUE
+(define (new-return-value value)
+  (list 'object-return-value RETURN_VALUE_OBJ value))
+
+(define (obj-return-value? obj)
+  (tagged-list? obj 'object-return-value))
 
 
 ; NULL
