@@ -28,22 +28,22 @@ bool Lexer::swallow(char ch) noexcept
 void Lexer::next() noexcept
 {
 	token_ = nextToken();
-	std::cout << token_.type << ", " << token_.literal << "\n"; 
+	//std::cout << token_.type << ", " << token_.literal << "\n"; 
 }
 
-bool Lexer::get(TokenType type)
+bool Lexer::get(TokenType tokenType)
 {
-	if (peek().type != type)
+	if (type() != tokenType)
 		return false;
 	next();
 	return true;
 }
 
-Token Lexer::fetch(TokenType type)
+Token Lexer::fetch(TokenType tokenType)
 {
 	Token token = peek();
-	if (token.type != type)
-		throw std::runtime_error("unexpected token '" + std::to_string(token.type) + "' is not '" + std::to_string(type) + "'");
+	if (token.type != tokenType)
+		throw std::runtime_error("unexpected token '" + std::to_string(token.type) + "' is not '" + std::to_string(tokenType) + "'");
 	next();
 	return token;
 }
