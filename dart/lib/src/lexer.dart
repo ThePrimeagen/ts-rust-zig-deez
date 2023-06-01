@@ -1,41 +1,6 @@
-// ignore_for_file: unnecessary_string_escapes
+// ignore_for_file: unnecessary_string_escapes, non_constant_identifier_names
 
-enum TokenType {
-  illegal,
-  eof,
-  ident,
-  int,
-  equal,
-  plus,
-  comma,
-  semicolon,
-  lParen,
-  rParen,
-  lSquirly,
-  rSquirly,
-  function,
-  let;
-
-  const TokenType();
-}
-
-class Token {
-  final TokenType type;
-  final String literal;
-
-  const Token(this.type, this.literal);
-
-  @override
-  String toString() => "Token.${type.name}('$literal')";
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Token && type == other.type && literal == other.literal;
-
-  @override
-  int get hashCode => type.hashCode ^ literal.hashCode;
-}
+import 'package:dart_deez/dart_deez.dart';
 
 final _0 = "0".codeUnitAt(0);
 final _9 = "9".codeUnitAt(0);
@@ -61,6 +26,11 @@ bool isNumber(String c) {
 const keywords = {
   "fn": Token(TokenType.function, "fn"),
   "let": Token(TokenType.let, "let"),
+  "if": Token(TokenType.if_, "if"),
+  "else": Token(TokenType.else_, "else"),
+  "return": Token(TokenType.return_, "return"),
+  "true": Token(TokenType.true_, "true"),
+  "false": Token(TokenType.false_, "false"),
 };
 
 class Tokenizer {
@@ -79,24 +49,49 @@ class Tokenizer {
 
     Token tok;
     switch (ch) {
-      case "=":
-        tok = Token(TokenType.equal, ch);
       case "+":
-        tok = Token(TokenType.plus, ch);
+        tok = Token.plus();
       case ",":
-        tok = Token(TokenType.comma, ch);
+        tok = Token.comma();
       case ";":
-        tok = Token(TokenType.semicolon, ch);
+        tok = Token.semicolon();
       case "(":
-        tok = Token(TokenType.lParen, ch);
+        tok = Token.lParen();
       case ")":
-        tok = Token(TokenType.rParen, ch);
+        tok = Token.rParen();
       case "{":
-        tok = Token(TokenType.lSquirly, ch);
+        tok = Token.lSquirly();
       case "}":
-        tok = Token(TokenType.rSquirly, ch);
+        tok = Token.rSquirly();
+      case '-':
+        tok = Token.dash();
+      case '*':
+        tok = Token.asterisk();
+      case '/':
+        tok = Token.slash();
+      case '<':
+        tok = Token.lt();
+      case '>':
+        tok = Token.gt();
+
+      case "=":
+        if (peekChar() == '=') {
+          readChar();
+          tok = Token.eq();
+        } else {
+          tok = Token.equal();
+        }
+        tok = Token.equal();
+      case '!':
+        if (peekChar() == '=') {
+          readChar();
+          tok = Token.neq();
+        } else {
+          tok = Token.bang();
+        }
+
       case "\0":
-        tok = Token(TokenType.eof, "");
+        tok = Token.eof();
       case _:
         if (isLetter(ch)) {
           final literal = readIdentifier();
@@ -148,5 +143,13 @@ class Tokenizer {
       readChar();
     }
     return input.substring(pos, position);
+  }
+
+  String peekChar() {
+    if (readPosition >= input.length) {
+      return "\0";
+    } else {
+      return input[readPosition];
+    }
   }
 }
