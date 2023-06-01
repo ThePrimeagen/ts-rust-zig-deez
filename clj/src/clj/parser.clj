@@ -86,7 +86,7 @@
     (if-not rest-tokens
       (return idents tokens)
     (when-let [[ident rest-tokens] (parse-ident rest-tokens)]
-      (parse-fn-params rest-tokens (conj idents ident)))))))
+      (recur rest-tokens (conj idents ident)))))))
 
 (defn parse-fn [tokens]
   (when-let [rest-tokens          (expect-peek (rest tokens) :l_paren)]
@@ -108,7 +108,7 @@
     (if-not rest-tokens
       (return exprs tokens)
     (when-let [[expr rest-tokens] (parse-expr LOWEST rest-tokens)]
-      (parse-call-args rest-tokens (conj exprs expr)))))))
+      (recur rest-tokens (conj exprs expr)))))))
 
 #_{:clj-kondo/ignore [:unused-binding]}
 (defn parse-call [fn-expr [lparan :as tokens]]
@@ -179,7 +179,7 @@
             (= :eof       (token/kind cur)))
       (return (ast/block stmts) rest-tokens)
     (when-let [[stmt rest-tokens] (parse-stmt rest-tokens)]
-      (parse-block-stmt rest-tokens (conj stmts stmt))))))
+      (recur rest-tokens (conj stmts stmt))))))
 
 (defn parse-stmt [[cur :as tokens]]
   (case (token/kind cur)
