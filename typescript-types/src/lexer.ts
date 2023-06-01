@@ -34,5 +34,28 @@ export type Token<Type extends TokenType, Literal extends string> = {
 };
 
 export namespace Tokenizer {
-  export type Parse<Input> = Input;
+  type TokenMap = {
+    "=": TokenType.Assign;
+    "+": TokenType.Plus;
+    "(": TokenType.LParen;
+    ")": TokenType.RParen;
+    "{": TokenType.LSquirly;
+    "}": TokenType.RSquirly;
+    ",": TokenType.Comma;
+    ";": TokenType.Semicolon;
+  };
+  type GetNextToken<Input extends string> =
+    Input extends `${infer Head}${infer Tail}`
+      ? Head extends keyof TokenMap
+        ? [Token<TokenMap[Head], Head>, Tail]
+        : [TokenType.Illegal, Tail]
+      : Input;
+
+  export type New<
+    Input extends string,
+    Result extends any[] = [],
+    NextToken = GetNextToken<Input>
+  > = NextToken extends [Token<TokenType, string>, infer Tail extends string]
+    ? New<Tail, [...Result, NextToken[0]]>
+    : Result;
 }

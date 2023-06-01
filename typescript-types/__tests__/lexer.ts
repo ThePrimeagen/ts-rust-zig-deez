@@ -1,21 +1,21 @@
 import { Expect, Equal } from "@type-challenges/utils";
-import { Tokenizer, TokenType } from "../src/lexer";
+import { Token, Tokenizer, TokenType } from "../src/lexer";
 
-// type TestGetNextToken = Expect<
-//   Equal<
-//     Tokenizer.Parse<"=+(){},;">,
-//     [
-//       TokenType.Assign,
-//       TokenType.Plus,
-//       TokenType.LParen,
-//       TokenType.RParen,
-//       TokenType.LSquirly,
-//       TokenType.RSquirly,
-//       TokenType.Comma,
-//       TokenType.Semicolon
-//     ]
-//   >
-// >;
+type TestGetNextToken = Expect<
+  Equal<
+    Tokenizer.New<"=+(){},;">,
+    [
+      Token<TokenType.Assign, "=">,
+      Token<TokenType.Plus, "+">,
+      Token<TokenType.LParen, "(">,
+      Token<TokenType.RParen, ")">,
+      Token<TokenType.LSquirly, "{">,
+      Token<TokenType.RSquirly, "}">,
+      Token<TokenType.Comma, ",">,
+      Token<TokenType.Semicolon, ";">
+    ]
+  >
+>;
 
 // type TestGetNextTokenComplete = Expect<
 //   Equal<
