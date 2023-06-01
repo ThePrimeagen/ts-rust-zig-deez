@@ -16,19 +16,16 @@
 
 (defparameter *user-package* (find-package '#:deez/user))
 
-(defmacro read-while ((char-symbol &optional index-symbol) &body test)
+(defmacro read-while ((char-symbol) &body test)
   (let ((output (gensym "OUTPUT")))
     `(with-output-to-string (,output)
-       (loop ,@(when index-symbol
-                 `(for ,index-symbol from 0))
-             for ,char-symbol = (peek-char nil nil nil)
+       (loop for ,char-symbol = (peek-char nil nil nil)
              while (and ,char-symbol (progn ,@test))
              do (write-char (read-char) ,output)))))
 
 (defun read-integer ()
-  (read-while (char i)
-    (or (digit-char-p char)
-        (and (char= char #\-) (= i 0)))))
+  (read-while (char)
+    (digit-char-p char)))
 
 (defun read-symbol ()
   (read-while (char)
