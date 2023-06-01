@@ -42,8 +42,7 @@
                (#\( . 7)
                (#\[ . 7))))
   (defun precedence (token)
-    (or (cdr (assoc token table))
-        (error "Syntax error, unknown operator ~A" token))))
+    (cdr (assoc token table))))
 
 (defun parse-let (toplevel-p)
   (lex)
@@ -172,15 +171,15 @@
                     ((eql token #\()
                      (parse-group))
                     ((eql token #\[)
-                     (parse-array))))
+                     (parse-array))
+                    (t (error "Syntax error, unexpected ~A" token))))
                  (atom token)
                  (t (error "Expected known token type, got ~A" (type-of token)))))))
     (loop with expr = (parse-single)
-          with next-precedence = nil
           for op = (lex-peek)
-          while (and op (not (eql op #\;)))
-          do (setf next-precedence (precedence op))
-          while (< precedence next-precedence)
+          for next-precedence = (and op (precedence op))
+          while (and next-precedence
+                     (< precedence next-precedence))
           do (lex)
           do (setf expr
                    (cond
