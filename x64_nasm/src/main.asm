@@ -11,7 +11,7 @@ error_open_read_failed db "ERROR: Could not open file for reading", 0
 error_read_failed db "ERROR: Could not read from file", 0
 error_integer_overflow db "ERROR: Integer overflow", 10, 0
 
-string_format_read_file_error db "%s: '%s'", 10, 0
+string_format_read_file_error db "%s '%s' (errno: %i)", 10, 0
 string_format_location db "%s at (%u:%u): ", 0
 string_format_unexpected_character db "ERROR: Unexpected character U+%hhx ('%c')", 10, 0
 string_format_string db "%s", 0

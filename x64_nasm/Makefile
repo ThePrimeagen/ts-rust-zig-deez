@@ -30,7 +30,8 @@ test: lexer
 	./lexer test/example2.monkey | diff - expected/example2.expected
 
 NASM_FLAGS = -felf64 -isrc
+ASM_FILES = $(wildcard src/*.asm)
 
-lexer: src/main.asm
+lexer: $(ASM_FILES)
 	nasm src/main.asm -o main.o $(NASM_FLAGS)
 	cc main.o -o lexer

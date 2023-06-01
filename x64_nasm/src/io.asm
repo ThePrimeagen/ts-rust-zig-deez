@@ -3,6 +3,8 @@
 ;; =============================================================================
 section .text
 
+IO_INPUT_PADDING_BYTES equ 8
+
 ;; Read as much data as possible from a file descriptor.
 ;;
 ;; r12: fd
@@ -12,11 +14,13 @@ section .text
 ;;
 ;; returns: 1 on error, 0 on success.
 read:
-    push rbx
+    sub rsp, 8 ; Align stack.
 
     ;; Check if we have space in the buffer.
 .read_loop:
-    cmp r14, r15
+    mov rax, r14
+    add rax, IO_INPUT_PADDING_BYTES ; Padding at the end.
+    cmp rax, r15
     jb .perform_read
 
     ;; If not, increase the capacity
@@ -32,21 +36,27 @@ read:
     mov rdi, r12
     lea rsi, [r13 + r14]
     mov rdx, r15
-    sub rdx, 8 ; We append EIGHT null terminators.
+    sub rdx, IO_INPUT_PADDING_BYTES ; We append EIGHT null terminators.
     sub rdx, r14
-    mov rbx, rdx
     syscall
 
     ;; Check for errors.
+    ;; If we read 0 chars, then we’re done.
     test rax, rax
+    jz .return_ok
     jl .read_error
 
-    ;; If we read less than requested, then we’re done.
-    add r14, rax
-    mov qword [r13 + r14], 0 ; Zero-terminate the buffer.
-    cmp rax, rbx
-    je .read_loop
+    ;; Make sure we haven’t changed the padding size
+    %if IO_INPUT_PADDING_BYTES != 8
+        %error "IO_INPUT_PADDING_BYTES was changed. Update the 'mov qword' below."
+    %endif
 
+    ;; Increment size of buffer and go again.
+    add r14, rax
+    jmp .read_loop
+
+.return_ok:
+    mov qword [r13 + r14], 0 ; Zero-terminate the buffer.
     xor eax, eax
     jmp .return
 
@@ -59,7 +69,7 @@ read:
     mov eax, 1
 
 .return:
-    pop rbx
+    add rsp, 8
     ret
 
 ;;
@@ -98,6 +108,7 @@ read_file:
     ;; Save fd.
     mov r12, rax
     call read
+    test rax, rax
     jnz .error_read
 
     ;; Save file size and buffer.
@@ -118,6 +129,8 @@ read_file:
     lea rsi, [error_open_read_failed]
 
 .error_print:
+    mov ecx, eax
+    neg ecx
     xor eax, eax
     mov rdx, [rsp + 16]
     lea rdi, [string_format_read_file_error]
