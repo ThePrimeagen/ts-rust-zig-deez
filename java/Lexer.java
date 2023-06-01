@@ -38,6 +38,11 @@ class Lexer {
             default -> this.createToken(tokenType, String.valueOf(this.getCc()));
         };
 
+        if (token.type() != TokenType.ILLEGAL) {
+            this.advance();
+            return token;
+        }
+
         if (Character.isLetter(this.getCc())) {
             var ident = this.indent();
 
