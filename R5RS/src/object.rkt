@@ -6,6 +6,7 @@
 (define BOOLEAN_OBJ      "BOOLEAN")
 (define NULL_OBJ         "NULL")
 (define RETURN_VALUE_OBJ "RETURN_VALUE")
+(define ERROR_OBJ        "ERROR")
 
 
 ; OBJ METHODS
@@ -17,6 +18,7 @@
     ((obj-bool? obj) (if value "true" "false"))
     ((obj-null? obj) "null")
     ((obj-return-value? obj) "return value")
+    ((obj-error? obj) (format "ERROR: " (obj-value obj)))
 
     (else "Could not convert to string")
     )
@@ -57,6 +59,18 @@
 
 (define (obj-return-value? obj)
   (tagged-list? obj 'object-return-value))
+
+
+;; ERROR
+(define (new-error err)
+  (list 'object-error ERROR_OBJ err))
+
+(define (obj-error? obj)
+  (tagged-list? obj 'object-error))
+
+(define (format-error format . objs)
+  (for-each (lambda (obj) (set! format (string-append format (if (number? obj) (string (integer->char obj)) obj)))) objs)
+  (new-error format))
 
 
 ; NULL

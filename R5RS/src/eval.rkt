@@ -4,18 +4,25 @@
 (loader "token")
 
 
+(define (is-error? obj)
+  (if (obj-null? obj) #f (obj-error? obj)))
+
 (define (eval-program stmts)
-  (define result '())
-  (define return-val '())
-  (for-each (lambda (stmt) (set! result (monkey-eval stmt)) (if (obj-return-value? result) (set! return-val result))) stmts) ;; TODO REWRITE WITH RECURSION TO STOP DOING ALL OF THEM
-  (if (null? return-val) result (obj-value return-val)))
+  (let* ((stmt (car stmts)) (result (monkey-eval stmt)))
+    (cond
+      ((obj-return-value? result) (obj-value result))
+      ((obj-error? result) result)
+      ((> (length (cdr stmts)) 0) (eval-program (cdr stmts)))
+      (else result))))
 
 (define (eval-block-statement block)
-  (define result '())
-  (define return-val '())
-  ;; (null? return-val) differce from the book as we continue to loop over. See TODO for fix
-  (for-each (lambda (stmt) (set! result (monkey-eval stmt)) (if (and (obj-return-value? result) (not (null? result)) (null? return-val)) (set! return-val result))) (block-stmts block)) ;; TODO REWRITE WITH RECURSION TO STOP DOING ALL OF THEM
-  (if (null? return-val) result return-val))
+  (define (inner stmts)
+    (let* ((stmt (car stmts)) (result (monkey-eval stmt)))
+      (cond
+        ((and (not (obj-null? result)) (or (obj-return-value? result) (obj-error? result))) result)
+        ((> (length (cdr stmts)) 0) (inner (cdr stmts)))
+        (else result))))
+  (inner (block-stmts block)))
 
 (define (eval-bang-operator-expression right)
   (cond
@@ -32,18 +39,19 @@
     (else #t)))
 
 (define (eval-minus-prefix-operator-expression right)
-  (if (obj-int? right) (new-int (- (obj-value right))) THE_NULL))
+  (if (obj-int? right) (new-int (- (obj-value right))) (format-error "unknown operator: " "-" (obj-type right))))
 
 (define (eval-prefix-expression operator right)
   (cond
     ((char-eq? operator "!") (eval-bang-operator-expression right))
     ((char-eq? operator "-") (eval-minus-prefix-operator-expression right))
     
-    (else THE_NULL)))
+    (else (format-error "unknown operator: " operator (obj-type right)))))
 
 (define (eval-if-expression node)
   (define condition (monkey-eval (if-cond node)))
   (cond
+    ((is-error? condition) condition)
     ((is-truthy condition) (monkey-eval (if-cons node)))
     ((not (obj-null? (if-alt node))) (monkey-eval (if-alt node)))
     (else THE_NULL)))
@@ -58,18 +66,19 @@
     ((char-eq? operator "*") (new-int (* left-value right-value)))
     ((char-eq? operator "<") (new-bool-obj-from-native (< left-value right-value)))
     ((char-eq? operator ">") (new-bool-obj-from-native (> left-value right-value)))
-    ((string=? operator "==") (new-bool-obj-from-native (= left-value right-value)))
-    ((string=? operator "!=") (new-bool-obj-from-native (not (= left-value right-value))))
+    ((char-eq? operator "==") (new-bool-obj-from-native (= left-value right-value)))
+    ((char-eq? operator "!=") (new-bool-obj-from-native (not (= left-value right-value))))
 
-    (else THE_NULL)))
+    (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
 
 (define (eval-infix-expression operator left right)
   (cond
     ((and (obj-int? left) (obj-int? right)) (eval-integer-infix-expression operator left right))
-    ((string=? operator "==") (new-bool-obj-from-native (eq? left right)))
-    ((string=? operator "!=") (new-bool-obj-from-native (not (eq? left right))))
-    
-    (else THE_NULL)))
+    ((char-eq? operator "==") (new-bool-obj-from-native (eq? left right)))
+    ((char-eq? operator "!=") (new-bool-obj-from-native (not (eq? left right))))
+
+    ((not (eq? (obj-type left) (obj-type right))) (format-error "type mismatch: " (obj-type left) " " operator " " (obj-type right)))
+    (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
 
 (define (monkey-eval node)
   (cond
@@ -77,10 +86,10 @@
     ((expression-stmt? node) (monkey-eval (expression-value node)))
     ((int-literal? node) (new-int (int-value node)))
     ((bool-literal? node) (new-bool-obj-from-native (bool-value node)))
-    ((prefix-exp? node) (let* ((right (monkey-eval (prefix-exp-right node)))) (eval-prefix-expression (prefix-exp-operator node) right)))
-    ((infix-exp? node) (let* ((left (monkey-eval (infix-exp-left node))) (right (monkey-eval (infix-exp-right node)))) (eval-infix-expression (infix-exp-operator node) left right)))
+    ((prefix-exp? node) (let* ((right (monkey-eval (prefix-exp-right node)))) (if (is-error? right) right (eval-prefix-expression (prefix-exp-operator node) right))))
+    ((infix-exp? node) (let* ((left (monkey-eval (infix-exp-left node)))) (if (is-error? left) left (let* ((right (monkey-eval (infix-exp-right node)))) (eval-infix-expression (infix-exp-operator node) left right)))))
     ((block-stmt? node) (eval-block-statement node))
     ((if-exp? node) (eval-if-expression node))
-    ((return-stmt? node) (let* ((val (monkey-eval (return-value node)))) (new-return-value val)))
+    ((return-stmt? node) (let* ((val (monkey-eval (return-value node)))) (if (is-error? val) val (new-return-value val))))
 
     (else THE_NULL)))

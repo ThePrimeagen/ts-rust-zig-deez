@@ -65,11 +65,12 @@
   (string=? type (token-type token)))
 
 (define (char-eq? ch token)
+  (if (number? ch)
   (cond
     ((number? token) (eq? ch token))
     ((= 0 (string-length token)) (eq? ch 0))
     (else (eq? ch (char->integer (string-ref token 0)))))
-  )
+  (string=? ch token)))
 
 
 ; KEYWORD?
