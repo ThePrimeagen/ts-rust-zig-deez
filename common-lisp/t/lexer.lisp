@@ -19,9 +19,9 @@
                                         ("let coolBooleanLiteral = true;"
                                          (deez/runtime:|let| deez/user::|coolBooleanLiteral| #\= deez/runtime:|true| #\;))
                                         ("let awesomeValue = (10 / 2) * 5 + 30;"
-                                         (deez/runtime:|let| deez/user::|awesomeValue| #\= #\( 10 #\/ 2 #\) #\* 5 #\+ 30 #\;))
+                                         (deez/runtime:|let| deez/user::|awesomeValue| #\= #\( 10 deez/runtime:/ 2 #\) deez/runtime:* 5 deez/runtime:+ 30 #\;))
                                         ("let arrayWithValues = [1 + 1, 2 * 2, 3];"
-                                         (deez/runtime:|let| deez/user::|arrayWithValues| #\= #\[ 1 #\+ 1 #\, 2 #\* 2 #\, 3 #\] #\;))
+                                         (deez/runtime:|let| deez/user::|arrayWithValues| #\= #\[ 1 deez/runtime:+ 1 #\, 2 deez/runtime:* 2 #\, 3 #\] #\;))
                                         ("let people = [{\"name\": \"Anna\", \"age\": 24}, {\"name\": \"Bob\", \"age\": 99}];"
                                          (deez/runtime:|let| deez/user::|people| #\= #\[
                                           #\{ "name" #\: "Anna" #\, "age" #\: 24 #\} #\,
@@ -43,15 +43,14 @@ let fibonacci = fn(x) {
     }
   }
 };")
-                  '((comment "Define a `fibonacci` function")
-                    deez/runtime:|let| deez/user::|fibonacci| #\= deez/runtime:|fn| #\( deez/user::|x| #\) #\{
+                  '(deez/runtime:|let| deez/user::|fibonacci| #\= deez/runtime:|fn| #\( deez/user::|x| #\) #\{
                     deez/runtime:|if| #\( deez/user::|x| deez/runtime:|==| 0 #\) #\{
-                    0 (comment "Monkey supports implicit returning of values")
+                    0
                     #\} deez/runtime:|else| #\{
                     deez/runtime:|if| #\( deez/user::|x| deez/runtime:|==| 1 #\) #\{
-                    deez/runtime:|return| 1 #\; (comment "... and explicit return statements")
+                    deez/runtime:|return| 1 #\;
                     #\} deez/runtime:|else| #\{
-                    deez/user::|fibonacci| #\( deez/user::|x| #\- 1 #\) #\+ deez/user::|fibonacci| #\( deez/user::|x| #\- 2 #\) #\; (comment "Recursion! Yay!")
+                    deez/user::|fibonacci| #\( deez/user::|x| deez/runtime:- 1 #\) deez/runtime:+ deez/user::|fibonacci| #\( deez/user::|x| deez/runtime:- 2 #\) #\;
                     #\}
                     #\}
                     #\} #\;))))
@@ -75,9 +74,7 @@ let map = fn(arr, f) {
 // Now let's take the `people` array and the `getName` function from above and
 // use them with `map`.
 map(people, getName); // => [\"Anna\", \"Bob\"]")
-                  '((comment "Define the higher-order function `map`, that calls the given function `f`")
-                    (comment "on each element in `arr` and returns an array of the produced values.")
-                    deez/runtime:|let| deez/user::|map| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|f| #\) #\{
+                  '(deez/runtime:|let| deez/user::|map| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|f| #\) #\{
                     deez/runtime:|let| deez/user::|iter| #\= deez/runtime:|fn| #\( deez/user::|arr| #\, deez/user::|accumulated| #\) #\{
                     deez/runtime:|if| #\( deez/runtime:|len| #\( deez/user::|arr| #\) deez/runtime:== 0 #\) #\{
                     deez/user::|accumulated|
@@ -89,7 +86,4 @@ map(people, getName); // => [\"Anna\", \"Bob\"]")
                     deez/user::|iter| #\( deez/user::|arr| #\, #\[ #\] #\) #\;
                     #\} #\;
 
-                    (comment "Now let's take the `people` array and the `getName` function from above and")
-                    (comment "use them with `map`.")
-                    deez/user::|map| #\( deez/user::|people| #\, deez/user::|getName| #\) #\;
-                    (comment "=> [\"Anna\", \"Bob\"]")))))
+                    deez/user::|map| #\( deez/user::|people| #\, deez/user::|getName| #\) #\;))))
