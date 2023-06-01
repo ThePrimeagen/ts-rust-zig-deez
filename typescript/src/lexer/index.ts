@@ -3,8 +3,15 @@ export const TokenType = {
     Illegal: "ILLEGAL",
     Eof: "EOF",
     Ident: "IDENT",
+    If: "if",
+    Return: "return",
+    True: "true",
+    False: "false",
+    Else: "else",
     Int: "INT",
-    Equal: "=",
+    Assign: "=",
+    NotEqual: "!=",
+    Equal: "==",
     Plus: "+",
     Comma: ",",
     Semicolon: ";",
@@ -14,6 +21,12 @@ export const TokenType = {
     RSquirly: "}",
     Function: "FUNCTION",
     Let: "LET",
+    Bang: "!",
+    Dash: "-",
+    ForwardSlash: "/",
+    Asterisk: "*",
+    LessThan: "<",
+    GreaterThan: ">",
 } as const;
 
 type TokenItem = typeof TokenType[keyof typeof TokenType];
@@ -51,12 +64,17 @@ function isNumber(character: string): boolean {
 const Keywords = {
     "fn": createToken(TokenType.Function, "fn"),
     "let": createToken(TokenType.Let, "let"),
+    "return": createToken(TokenType.Return, "return"),
+    "true": createToken(TokenType.True, "true"),
+    "false": createToken(TokenType.False, "false"),
+    "if": createToken(TokenType.If, "if"),
+    "else": createToken(TokenType.Else, "else"),
 } as const;
 
 export class Tokenizer {
     private position: number = 0;
     private readPosition: number = 0;
-    private ch: string;
+    private ch!: string;
     constructor(private input: string) {
         this.readChar();
     }
@@ -81,6 +99,29 @@ export class Tokenizer {
             case ",":
                 tok = createToken(TokenType.Comma, this.ch);
                 break;
+            case "!":
+                if (this.peek() === "=") {
+                    this.readChar();
+                    tok = createToken(TokenType.NotEqual, "!=");
+                } else {
+                    tok = createToken(TokenType.Bang, this.ch);
+                }
+                break;
+            case ">":
+                tok = createToken(TokenType.GreaterThan, this.ch);
+                break;
+            case "<":
+                tok = createToken(TokenType.LessThan, this.ch);
+                break;
+            case "*":
+                tok = createToken(TokenType.Asterisk, this.ch);
+                break;
+            case "/":
+                tok = createToken(TokenType.ForwardSlash, this.ch);
+                break;
+            case "-":
+                tok = createToken(TokenType.Dash, this.ch);
+                break;
             case ";":
                 tok = createToken(TokenType.Semicolon, this.ch);
                 break;
@@ -88,7 +129,12 @@ export class Tokenizer {
                 tok = createToken(TokenType.Plus, this.ch);
                 break;
             case "=":
-                tok = createToken(TokenType.Equal, this.ch);
+                if (this.peek() === "=") {
+                    this.readChar();
+                    tok = createToken(TokenType.Equal, "==");
+                } else {
+                    tok = createToken(TokenType.Assign, this.ch);
+                }
                 break;
             case "\0":
                 tok = createToken(TokenType.Eof, "eof");
@@ -97,7 +143,7 @@ export class Tokenizer {
 
         if (isLetter(this.ch)) {
             const ident = this.readIdent();
-            const keyword = Keywords[ident];
+            const keyword = Keywords[ident as keyof typeof Keywords];
             if (keyword) {
                 return keyword;
             } else {
@@ -111,6 +157,14 @@ export class Tokenizer {
 
         this.readChar();
         return tok as Token;
+    }
+
+    private peek(): string {
+        if (this.readPosition >= this.input.length) {
+            return "\0";
+        } else {
+            return this.input[this.readPosition];
+        }
     }
 
     private skipWhitespace(): void {
