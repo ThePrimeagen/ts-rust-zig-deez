@@ -32,6 +32,27 @@
 (cl:defparameter |true| '|true|)
 (cl:defparameter |false| '|false|)
 
+(cl:defparameter ! #'cl:not)
+(cl:defparameter - #'cl:-)
+(cl:defparameter * #'cl:*)
+(cl:defparameter / #'cl:/)
+(cl:defparameter < #'cl:<)
+(cl:defparameter > #'cl:>)
+(cl:defparameter == #'cl:equal)
+
+(defun != (left right)
+  (cl:not (cl:equal left right)))
+
+(defun + (left right)
+  (cl:cond
+    ((cl:or (cl:typep left 'cl:string)
+            (cl:typep right 'cl:string))
+     (cl:format cl:nil "~A~A" left right))
+    ((cl:and (cl:typep left 'cl:number)
+             (cl:typep right 'cl:number))
+     (cl:+ left right))
+    (cl:t (cl:error "Type error ~A + ~A" (cl:type-of left) (cl:type-of right)))))
+
 (cl:defparameter |len| #'cl:length)
 
 (defun |push| (array elem)
