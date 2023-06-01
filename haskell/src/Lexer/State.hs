@@ -3,81 +3,70 @@
 
 module Lexer.State where
 
-import Control.Monad (void)
 import Control.Monad.State (State, evalState, gets, modify)
 import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
-import Data.Char (isSpace)
+import Data.Char (isSpace, isDigit, isLetter)
 import Data.Function (fix)
-import Data.Functor (($>))
 import Token (Token (..), Tokenizer, identToken)
 
+type Input = ByteString
+
+{- | The Lexer data structure, where `input` is the program that we need to tokenize,
+`ch` is the character that we are currenly over, and `position` is the read position.
+-}
 data Lexer = Lexer
-    { input :: ByteString
+    { input :: Input
     , ch :: Char
     , position :: Int
     }
 
-type LexerState = State Lexer
+type LexerT = State Lexer
 
 tokenize :: Tokenizer
-tokenize = evalState lexer . newLexer . BS.pack
+tokenize = evalState (advance >> lexer) . newLexer . BS.pack
   where
-    lexer = do
-        t <- nextToken
-        if t == Eof
-            then pure [t]
-            else do
-                ts <- lexer
-                pure (t : ts)
+    lexer = nextToken >>= \case
+        Eof -> pure [Eof]
+        t -> (t :) <$> lexer
 
-newLexer :: ByteString -> Lexer
-newLexer input = Lexer{..}
-  where
-    ch = if BS.null input then '\0' else BS.head input
-    position = 1
+newLexer :: Input -> Lexer
+newLexer input = Lexer input '\0' 0
 
-nextToken :: LexerState Token
+nextToken :: LexerT Token
 nextToken = do
     skipWhitespace
-    c <- gets ch
-    case c of
-        '{' -> advance $> LSquirly
-        '}' -> advance $> RSquirly
-        '(' -> advance $> LParen
-        ')' -> advance $> RParen
-        ',' -> advance $> Comma
-        ';' -> advance $> Semicolon
-        '+' -> advance $> Plus
-        '-' -> advance $> Minus
-        '!' -> do
-            c' <- peek
-            if c' == '='
-                then advance *> advance $> NotEqual
-                else advance $> Bang
-        '>' -> advance $> GreaterThan
-        '<' -> advance $> LessThan
-        '*' -> advance $> Asterisk
-        '/' -> advance $> Slash
-        '=' -> do
-            c' <- peek
-            if c' == '='
-                then advance *> advance $> Equal
-                else advance $> Assign
-        '\0' -> advance $> Eof
-        c' | c' `elem` ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_" -> do
-            identToken . BS.unpack <$> readIdent
-        c' | c' `elem` ['0' .. '9'] -> do
-            Int . BS.unpack <$> readInt
-        _ -> advance $> Illegal
+    gets ch >>= \case
+        '{' -> LSquirly <$ advance
+        '}' -> RSquirly <$ advance
+        '(' -> LParen <$ advance
+        ')' -> RParen <$ advance
+        ',' -> Comma <$ advance
+        ';' -> Semicolon <$ advance
+        '+' -> Plus <$ advance
+        '-' -> Minus <$ advance
+        '!' -> peek >>= \case
+                '=' -> NotEqual <$ advance <* advance
+                _ -> Bang <$ advance
+        '>' -> GreaterThan <$ advance
+        '<' -> LessThan <$ advance
+        '*' -> Asterisk <$ advance
+        '/' -> Slash <$ advance
+        '=' -> peek >>= \case
+                '=' -> Equal <$ advance <* advance
+                _ -> Assign <$ advance
+        '\0' -> Eof <$ advance
+        c | isIdentChar c -> identToken <$> readIdent
+        c | isDigit c -> Int <$> readInt
+        _ -> Illegal <$ advance
 
-peek :: LexerState Char
+peek :: LexerT Char
 peek = do
     input <- gets input
     position <- gets position
     pure $ if position >= BS.length input then '\0' else BS.index input position
 
-advance :: LexerState ()
+advance :: LexerT ()
 advance = modify $ \lexer@Lexer{..} ->
     lexer
         { input = input
@@ -85,19 +74,26 @@ advance = modify $ \lexer@Lexer{..} ->
         , position = position + 1
         }
 
-readWhile :: (Char -> Bool) -> LexerState ByteString
+skipWhitespace :: LexerT ()
+skipWhitespace = skipWhile isSpace
+
+readIdent :: LexerT String
+readIdent = readWhile isIdentChar
+
+readInt :: LexerT String
+readInt = readWhile isDigit
+
+isIdentChar :: Char -> Bool
+isIdentChar c = isLetter c || c == '_'
+
+readWhile :: (Char -> Bool) -> LexerT String
 readWhile p = fix $ \loop ->
     gets ch >>= \case
-        x | p x -> do
-            advance
-            BS.cons x <$> loop
-        _ -> pure BS.empty
+        x | p x -> advance >> (x :) <$> loop
+        _ -> pure ""
 
-skipWhitespace :: LexerState ()
-skipWhitespace = void (readWhile isSpace)
-
-readIdent :: LexerState ByteString
-readIdent = readWhile (`elem` ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_")
-
-readInt :: LexerState ByteString
-readInt = readWhile (`elem` ['0' .. '9'])
+skipWhile :: (Char -> Bool) -> LexerT ()
+skipWhile p = fix $ \loop ->
+    gets ch >>= \case
+        x | p x -> advance >> loop
+        _ -> pure ()
