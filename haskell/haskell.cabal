@@ -59,7 +59,7 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  Lexer.Basic, Token, Lexer.Monad, Lexer.State
+    exposed-modules:  Lexer.Basic, Token, Lexer.Monad, Lexer.State, Lexer.Parsec
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -68,7 +68,7 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.1.0, bytestring ^>= 0.11.0.0, mtl ^>= 2.3.1
+    build-depends:    base ^>=4.17.1.0, bytestring ^>= 0.11.0.0, mtl ^>= 2.3.1, megaparsec ^>= 9.3.1, text ^>= 2.0.2
 
     -- Directories containing source files.
     hs-source-dirs:   src

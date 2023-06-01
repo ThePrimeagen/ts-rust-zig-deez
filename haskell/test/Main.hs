@@ -2,6 +2,7 @@ module Main where
 
 import Lexer.Basic qualified
 import Lexer.Monad qualified
+import Lexer.Parsec qualified
 import Lexer.State qualified
 import LexerTest (lexerTests)
 import System.Exit (exitFailure, exitSuccess)
@@ -13,6 +14,7 @@ tests =
         [ TestLabel "Lexer.Basic" (lexerTests Lexer.Basic.tokenize)
         , TestLabel "Lexer.Monad" (lexerTests Lexer.Monad.tokenize)
         , TestLabel "Lexer.State" (lexerTests Lexer.State.tokenize)
+        , TestLabel "Lexer.Parsec" (lexerTests Lexer.Parsec.tokenize)
         ]
 
 main :: IO ()
