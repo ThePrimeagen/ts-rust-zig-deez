@@ -152,7 +152,7 @@
            (when (eql (lex-peek) #\;)
              (lex)))))))
 
-(defun parse-expression (precedence)
+(defun parse-expression (&optional (precedence 0))
   (labels ((parse-single ()
              (let ((token (lex)))
                (typecase token
