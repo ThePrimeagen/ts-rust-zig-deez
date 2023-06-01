@@ -20,8 +20,8 @@ class Lexer(private val input: String) : Iterator<Token> {
             ':' -> Token.Colon
             '(' -> Token.LeftParen
             ')' -> Token.RightParen
-            '{' -> Token.LeftBrace
-            '}' -> Token.RightBrace
+            '{' -> Token.LeftSquirly
+            '}' -> Token.RightSquirly
             '[' -> Token.LeftBracket
             ']' -> Token.RightBracket
             '=' -> if (consumeNextIfMatching('=')) Token.Equals else Token.Assign

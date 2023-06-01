@@ -30,8 +30,8 @@ sealed class Token {
     data object Colon : Token()
     data object LeftParen : Token()
     data object RightParen : Token()
-    data object LeftBrace : Token()
-    data object RightBrace : Token()
+    data object LeftSquirly : Token()
+    data object RightSquirly : Token()
     data object LeftBracket : Token()
     data object RightBracket : Token()
 
