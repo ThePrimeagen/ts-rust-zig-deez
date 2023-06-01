@@ -3,6 +3,7 @@
 (loader "lexer")
 (loader "token")
 (loader "parser")
+(loader "eval")
 
 (define input-prompt ";;; Monkey-Eval input:")
 (define output-prompt ";;; Monkey-Eval value:")
@@ -13,36 +14,15 @@
 (define (display-parse-errors p)
   (if (not (= 0 (length (parser-errors p)))) (for-each (lambda (error) (display-l error)) (parser-errors p))))
 
-
-(define (monkey-eval input)
-  (define l (new-lexer input))
-
-  (define (inner l)
-    (define t (next-token l))
-    (if (not (eq? (token-type t) EOF))
-        (begin (display t) (newline) (inner l))
-        (begin (display t) (newline))))
-  (display output-prompt)
-  (newline)
-  (inner l)
-  )
-
-(define (repl-loop)
+(define (start)
   (prompt-for-input input-prompt)
   (define input (read-line))
-  (monkey-eval input)
-  (repl-loop))
+  (let*
+      ((lexer (new-lexer input))
+       (parser (new-parser lexer))
+       (p (parse-programme parser)))
+    (begin (parser-errors p) (display-parse-errors p) (let* ((evaluated (monkey-eval p))) (display-l (inspect evaluated)))))
+  (start))
 
-
-(define (rppl-loop)
-  (prompt-for-input input-prompt)
-  (define input (read-line))
-  (define p (parse-programme (new-parser (new-lexer input))))
-  (display-parse-errors p)
-  (display output-prompt)
-  (newline)
-  (rppl-loop))
-  
-;(repl-loop)
-;(rppl-loop)
+(start)
   

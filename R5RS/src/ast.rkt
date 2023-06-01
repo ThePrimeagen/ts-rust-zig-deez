@@ -215,3 +215,6 @@
 (define (token-literal-from-state state)
   (token-literal (cadr state)))
 
+(define (node-type node)
+  (car node))
+
