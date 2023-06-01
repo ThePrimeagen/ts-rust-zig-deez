@@ -1,3 +1,13 @@
+# config
+AS        = nasm    # use nasm or yasm
+ASFLAGS   = -felf64
+LD        = gcc
+
+# the -no-pie flag is required because of some linkage bs, otherwise we need stupid syntax in the code
+# https://www.mourtada.se/calling-printf-from-the-c-standard-library-in-assembly/
+LDFLAGS   = -no-pie
+BUILD_DIR = bin
+
 ##
 # Static part, don't change these:
 ##
@@ -19,25 +29,27 @@ docker-ready: docker-build
 # Update those:
 ##
 
+OBJ=$(patsubst src/%.asm, $(BUILD_DIR)/%.o, $(wildcard src/*.asm))
+
 clean:
 	@echo "===> Cleaning"
 	# TODO: replace this line with your cleaning commands
 
 fmt:
-	@echo "===> Formatting"
+	@echo "you don't format assembly code"
 	# TODO: replace this line with your formatting commands
 
 lint:
-	@echo "===> Linting"
+	@echo "rly?"
 	# TODO: replace this line with your linting commands
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
 	# TODO: replace this line with your testing commands
 
-test-lexer:
+test-lexer: $(BUILD_DIR)/relexer
 	@echo "===> Testing lexer"
-	# TODO: replace this line with your lexer testing commands
+	@./$(BUILD_DIR)/relexer
 
 test-ast:
 	@echo "===> Testing AST"
@@ -47,3 +59,10 @@ test-parser:
 	@echo "===> Testing parser"
 	# TODO: replace this line with your parser testing commands
 
+$(BUILD_DIR)/relexer: $(OBJ)
+	@$(LD) $(LDFLAGS) $(OBJ) -o $(BUILD_DIR)/relexer
+
+# compile asm to object
+$(BUILD_DIR)/%.o: src/%.asm
+	@mkdir -p $(BUILD_DIR)
+	@$(AS) $(ASFLAGS) $< -o $@
