@@ -27,7 +27,7 @@
               (cond
               ((number? arg) (set! out (string-append out (number->string arg))))
               ((string? arg) (set! out (string-append out arg)))
-              (else (set! out (string-append out "void")))
+              (else (begin (display-l "Unknown found in format, displaying for completion" arg)(set! out (string-append out "unknown"))))
               )) args)
   out)
 
@@ -56,4 +56,3 @@
   (if (null? lst)
       (list element)
       (append lst (list element))))
-

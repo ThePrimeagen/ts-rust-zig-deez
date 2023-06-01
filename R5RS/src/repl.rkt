@@ -2,12 +2,16 @@
 (load "../src/utils.rkt")
 (loader "lexer")
 (loader "token")
+(loader "parser")
 
 (define input-prompt ";;; Monkey-Eval input:")
 (define output-prompt ";;; Monkey-Eval value:")
 
 (define (prompt-for-input string)
   (newline) (newline) (display string) (newline))
+
+(define (display-parse-errors p)
+  (if (not (= 0 (length (parser-errors p)))) (for-each (lambda (error) (display-l error)) (parser-errors p))))
 
 
 (define (monkey-eval input)
@@ -30,5 +34,15 @@
   (repl-loop))
 
 
-(repl-loop)
+(define (rppl-loop)
+  (prompt-for-input input-prompt)
+  (define input (read-line))
+  (define p (parse-programme (new-parser (new-lexer input))))
+  (display-parse-errors p)
+  (display output-prompt)
+  (newline)
+  (rppl-loop))
+  
+;(repl-loop)
+;(rppl-loop)
   

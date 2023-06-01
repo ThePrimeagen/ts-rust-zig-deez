@@ -1,6 +1,7 @@
 (load "../src/utils.rkt")
 (loader "token")
 
+
 ; LET STATEMENT
 ; (token 'identifier-state EXP)
 (define (new-let-state id value)
@@ -10,7 +11,10 @@
   (tagged-list? s 'let-state))
 
 (define (set-let-value! l value)
-  (set-car! (cdddr l) value))
+  (if (not (null? l)) (set-car! (cdddr l) value)))
+
+(define (let-value l)
+  (cadddr l))
 
 (define (let-id stmt)
   (caddr stmt))
@@ -59,6 +63,7 @@
 
 (define (expression-token s)
   (cadr s))
+
 
 ;; PREFIX EXPRESSION
 ; (token operator right)
@@ -113,6 +118,7 @@
 (define (int-token s)
   (cadr s))
 
+
 ; BOOLEAN
 ; (token value)
 (define (new-bool token value)
@@ -127,6 +133,83 @@
 (define (bool-token s)
   (cadr s))
 
+
+; IF EXPRESSION
+; (token condition consequence alternative)
+(define (new-if-exp token condition consequence alternative)
+  (list 'if-exp token condition consequence alternative))
+
+(define (if-exp? s)
+  (tagged-list? s 'if-exp))
+
+(define (if-token s)
+  (cadr s))
+
+(define (if-cond s)
+  (caddr s))
+
+(define (if-cons s)
+  (cadddr s))
+
+(define (if-alt s)
+  (cadr (cdddr s)))
+
+
+; BLOCK STATEMENT
+; (token (staments))
+(define (new-block-stmt token stmts)
+  (list 'block-stmt token stmts))
+
+(define (block-stmt? s)
+  (tagged-list? s 'block-stmt))
+
+(define (block-token s)
+  (cadr s))
+
+(define (block-stmts s)
+  (caddr s))
+
+(define (add-stmt-to-block block stmt)
+  (set-car! (cddr block) (add-to-list (block-stmts block) stmt)))
+
+
+; FUNCTION LITRERAL
+; (token (id) block)
+(define (new-fn token params body)
+  (list 'fn-literal token params body))
+
+(define (fn? s)
+  (tagged-list? s 'fn-literal))
+
+(define (fn-token s)
+  (cadr s))
+
+(define (fn-params s)
+  (caddr s))
+
+(define (fn-body s)
+  (cadddr s))
+
+(define (add-param-to-fn! fn param)
+  (set-car! (cddr s) (add-to-list (fn-params fn) param)))
+
+
+; CALL EXPRESSION
+; (token function (arguments))
+(define (new-call-expression token function arguments)
+  (list 'call-expression token function arguments))
+
+(define (call-exp? s)
+  (tagged-list? s 'call-expression))
+
+(define (call-args c)
+  (car (cdddr c)))
+
+(define (call-fn c)
+  (caddr c))
+
+(define (call-token c)
+  (cadr c))
 
 ; SHARED METHODS
 (define (token-literal-from-state state)
