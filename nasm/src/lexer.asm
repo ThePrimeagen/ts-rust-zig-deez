@@ -1,9 +1,9 @@
 ; -----------------------
-; Lexer:                  non packed struct
-;  - source: char*        offset = 0
-;  - length: uint64_t     offset = 8
-;  - pos: uint64_t        offset = 16
-;  - ch: char             offset = 24
+; Lexer:                  			non packed struct
+;  - source: char*        			offset = 0
+;  - length: uint64_t     			offset = 8
+;  - pos: uint64_t        			offset = 16
+;  - ch: char             			offset = 24
 ; ----------------------
 
 ; TokenType
@@ -18,13 +18,13 @@ global lexer_init
 global lexer_next
 
 ; args:
-;  - lexer: Lexer*       offset = 0
-;  - source: char*       offset = 8
-;  - length: uint64_t    offset = 16
+;  - lexer: Lexer*       			offset = 0
+;  - source: char*       			offset = 8
+;  - length: uint64_t    			offset = 16
 lexer_init:
-	mov [rdi], rsi             ; lexer->source = source
-	mov [rdi + 8], rdx         ; lexer->length = length
-	mov qword [rdi + 16], 0    ; lexer->pos    = 0
+	mov [rdi], rsi             		; lexer->source = source
+	mov [rdi + 8], rdx         		; lexer->length = length
+	mov qword [rdi + 16], 0			; lexer->pos    = 0
 
 	ret
 	
@@ -36,9 +36,9 @@ lexer_next:
 
 	; compare lexer->ch
 	movzx edx, byte [rdi + 24]
-	cmp dl, 123                    ; byte code for '{'
+	cmp dl, 123                    	; byte code for '{'
 	je lexer_case_l_squirly
-	cmp dl, 125                    ; byte code for '}'
+	cmp dl, 125                    	; byte code for '}'
 	je lexer_case_r_squirly
 
 lexer_case_l_squirly:
@@ -61,8 +61,8 @@ lexer_advance:
 	jge lexer_advance_write
 
 	; load char
-	mov rdx, [rdi]						          ; load the address of source
-	movzx edx, byte [rdx + rax]         ; set edx to the char of lexer->source[lexer->read]
+	mov rdx, [rdi]			   		; load the address of source
+	movzx edx, byte [rdx + rax]		; set edx to the char of lexer->source[lexer->read]
 
 	; increment pos
 	add rax, 1
