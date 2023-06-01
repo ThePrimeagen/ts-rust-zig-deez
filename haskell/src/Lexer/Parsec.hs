@@ -2,13 +2,14 @@
 
 module Lexer.Parsec where
 
+import Data.Char (isDigit, isLetter)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, choice, empty, eof, errorBundlePretty, many, parse, satisfy, some, try, (<|>))
+import Text.Megaparsec (Parsec, anySingle, choice, empty, eof, errorBundlePretty, many, parse, takeWhile1P, try, (<|>))
 import Text.Megaparsec.Char (space1)
 import Text.Megaparsec.Char.Lexer qualified as L
-import Token
+import Token (Token (..), Tokenizer, identToken)
 
 tokenize :: Tokenizer
 tokenize input = case parse tokensP "" $ T.pack input of
@@ -69,10 +70,13 @@ assignOrEqualP :: Lexer Token
 assignOrEqualP = try (Equal <$ symbol "==") <|> (Assign <$ symbol "=")
 
 identP :: Lexer Token
-identP = identToken <$> lexeme (some (satisfy (`elem` ['a' .. 'z'] ++ ['A' .. 'Z'] ++ "_")))
+identP = identToken . T.unpack <$> lexeme (takeWhile1P Nothing isIdentChar)
+
+isIdentChar :: Char -> Bool
+isIdentChar c = isLetter c || c == '_'
 
 intP :: Lexer Token
-intP = Int <$> lexeme (some (satisfy (`elem` ['0' .. '9'])))
+intP = Int . T.unpack <$> lexeme (takeWhile1P Nothing isDigit)
 
 illegalP :: Lexer Token
 illegalP = Illegal <$ lexeme anySingle

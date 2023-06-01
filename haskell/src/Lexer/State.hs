@@ -6,7 +6,7 @@ module Lexer.State where
 import Control.Monad.State (State, evalState, gets, modify)
 import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
-import Data.Char (isSpace, isDigit, isLetter)
+import Data.Char (isDigit, isLetter, isSpace)
 import Data.Function (fix)
 import Token (Token (..), Tokenizer, identToken)
 
@@ -26,9 +26,10 @@ type LexerT = State Lexer
 tokenize :: Tokenizer
 tokenize = evalState (advance >> lexer) . newLexer . BS.pack
   where
-    lexer = nextToken >>= \case
-        Eof -> pure [Eof]
-        t -> (t :) <$> lexer
+    lexer =
+        nextToken >>= \case
+            Eof -> pure [Eof]
+            t -> (t :) <$> lexer
 
 newLexer :: Input -> Lexer
 newLexer input = Lexer input '\0' 0
@@ -45,14 +46,16 @@ nextToken = do
         ';' -> Semicolon <$ advance
         '+' -> Plus <$ advance
         '-' -> Minus <$ advance
-        '!' -> peek >>= \case
+        '!' ->
+            peek >>= \case
                 '=' -> NotEqual <$ advance <* advance
                 _ -> Bang <$ advance
         '>' -> GreaterThan <$ advance
         '<' -> LessThan <$ advance
         '*' -> Asterisk <$ advance
         '/' -> Slash <$ advance
-        '=' -> peek >>= \case
+        '=' ->
+            peek >>= \case
                 '=' -> Equal <$ advance <* advance
                 _ -> Assign <$ advance
         '\0' -> Eof <$ advance

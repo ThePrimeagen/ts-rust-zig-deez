@@ -7,8 +7,6 @@ WORKDIR /deez
 # Basic system-level dependencies
 RUN apt-get update && \
     apt install -y software-properties-common git curl build-essential && \
-    add-apt-repository --yes ppa:neovim-ppa/unstable && \
-    apt-get install -y neovim && \
     apt-get install -y wget libgmp-dev
 
 # Extra dependencies
