@@ -22,7 +22,7 @@
 
 (defun lex-peek ()
   (or *lookahead*
-      (setf *lookahead* (lex))))
+      (setf *lookahead* (deez/lexer:lex))))
 
 (defun ensure-next (what)
   (let ((next (lex)))
