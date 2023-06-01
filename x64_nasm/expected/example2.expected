@@ -63,4 +63,4 @@ test/example2.monkey at (149:6): return
 test/example2.monkey at (156:5): false
 test/example2.monkey at (161:1): ;
 test/example2.monkey at (163:1): }
-test/example2.monkey at (164:0): <eof>
+test/example2.monkey at (165:0): <eof>

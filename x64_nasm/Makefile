@@ -32,6 +32,8 @@ test: lexer
 NASM_FLAGS = -felf64 -isrc
 ASM_FILES = $(wildcard src/*.asm)
 
+# The runtime of this is so minuscule that we can recompile it every time.
+.PHONY: lexer
 lexer: $(ASM_FILES)
 	nasm src/main.asm -o main.o $(NASM_FLAGS)
 	cc main.o -o lexer

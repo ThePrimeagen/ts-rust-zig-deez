@@ -41,3 +41,5 @@ extern exit
 extern abort
 extern realloc
 extern free
+
+CACHE_LINE_SIZE equ 64

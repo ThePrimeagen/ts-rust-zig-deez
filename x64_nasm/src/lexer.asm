@@ -5,7 +5,6 @@ section .rodata
 
 MAX_KEYWORD_LENGTH       equ 6 ; Max len of keyword is 6 bytes
 TOKEN_STRING_LENGTH      equ 8 ; Max len of token name is 16 bytes
-TOKEN_STRING_LENGTH_LOG2 equ 3 ; log2(TOKEN_STRING_LENGTH)
 
 ;; LUT for converting token types to strings and parsing keywords.
 ;; Note: Implicitly zero-terminated by the alignment code.
@@ -162,6 +161,15 @@ lexer_init:
 ;; Lex the next token.
 ;;
 next_token:
+    ;; Init token.
+    mov ebx, TK_INVALID
+    mov r12, r13
+    sub r12, rbp
+    sub r12, 1
+    jmp .skip_ws
+
+align CACHE_LINE_SIZE
+.skip_ws:
     ;; Skip whitespace.
     ;; This checks for \t, \n, \v, \f, \r, and ' '.
     mov rax, r15
@@ -173,42 +181,38 @@ next_token:
 
 .again:
     next_char
-    jmp next_token
+    add r12, 1
+    jmp .skip_ws
 
 .done_skipping_ws:
+    ;; Shift start of token in place.
+    shl r12, 32
+
     ;; Keep returning EOF if we’re at eof.
     test r15, r15
-    jne .init_token
-
-    ;; Return eof.
-    mov r12, r13
-    sub r12, rbp
-    dec r12
-    shl r12, 32
-    mov ebx, TK_EOF
-    ret
-
-.init_token:
-    ;; Set starting position etc.
-    mov r12, r13
-    sub r12, rbp
-    dec r12
-    shl r12, 32
-    mov ebx, TK_INVALID
+    je .eof
 
     ;; Dispatch the character.
     jmp qword [lexer_char_table + r15 * 8]
+    ud2
+
+.eof:
+    ;; Return eof.
+    mov ebx, TK_EOF
+    ret
+
 
 ;;
 ;; Lex an identifier.
 ;;
+align CACHE_LINE_SIZE
 lexer_jump_target_ident:
     endbr64
     mov ebx, TK_IDENT
 
 .again:
     ;; Add the character.
-    inc r12
+    add r12, 1
     next_char
 
     ;; Check if char is still part of ident.
@@ -278,7 +282,7 @@ lexer_jump_target_number:
 
 .again:
     ;; Add digit.
-    inc r12
+    add r12, 1
     next_char
 
     ;; Check if next char is digit.
@@ -291,9 +295,10 @@ lexer_jump_target_number:
 ;;
 ;; Lex single-character tokens.
 ;;
+align CACHE_LINE_SIZE
 lexer_jump_target_punctuation:
     endbr64
-    inc r12
+    add r12, 1
     movzx rbx, byte [lexer_char_to_token_table + r15]
     next_char
     ret
@@ -303,7 +308,7 @@ lexer_jump_target_punctuation:
 ;;
 lexer_jump_target_punctuation_two_chars:
     endbr64
-    inc r12
+    add r12, 1
     cmp r15, '!'
     je .not
 
@@ -329,13 +334,13 @@ lexer_jump_target_punctuation_two_chars:
     ;; ==
 .eq_eq:
     next_char
-    inc r12
+    add r12, 1
     mov ebx, TK_EQ_EQ
     ret
 
 .neq:
     next_char
-    inc r12
+    add r12, 1
     mov ebx, TK_NE
     ret
 
@@ -347,7 +352,7 @@ lexer_jump_target_invalid:
 
     push r15
     next_char
-    inc r12
+    add r12, 1
     mov byte [has_error], 1
 
     call print_location
@@ -369,9 +374,10 @@ print_token:
     call print_location
 
     ;; Print token type.
-    mov esi, ebx
-    shl esi, TOKEN_STRING_LENGTH_LOG2
-    lea rsi, [table_token_names + rsi]
+    %if TOKEN_STRING_LENGTH != 8
+        %error LEA below doesn’t work anymore
+    %endif
+    lea esi, [ebx * 8 + table_token_names]
     lea rdi, [string_format_string]
     xor eax, eax
     call printf
@@ -439,7 +445,7 @@ stoi:
     sub rdx, '0'
     add rax, rdx
     jc .overflow
-    inc rdi
+    add rdi, 1
     jmp .again
 
 .done:

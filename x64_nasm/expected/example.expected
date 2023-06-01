@@ -34,4 +34,4 @@ test/example.monkey at (81:1): ,
 test/example.monkey at (83:3): <ident> ten
 test/example.monkey at (86:1): )
 test/example.monkey at (87:1): ;
-test/example.monkey at (88:0): <eof>
+test/example.monkey at (89:0): <eof>
