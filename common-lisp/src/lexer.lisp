@@ -1,8 +1,5 @@
 (defpackage #:deez/lexer
   (:use #:cl)
-  (:import-from #:deez/runtime
-                #:|==|
-                #:|!=|)
   (:import-from #:deez/user)
   (:export
    #:lex
@@ -15,9 +12,7 @@
   '(#\( #\)
     #\[ #\]
     #\{ #\}
-    #\; #\, #\:
-    #\= #\! #\< #\>
-    #\+ #\- #\* #\/))
+    #\; #\, #\: #\=))
 
 (defparameter *user-package* (find-package '#:deez/user))
 
@@ -57,17 +52,16 @@
       ((null c) nil)
       ((digit-char-p c)
        (parse-integer (read-integer)))
-      ((and (char= c #\-)
-            (digit-char-p (peek-2)))
+      ((digit-char-p (peek-2))
        (parse-integer (read-integer)))
       ((char-2= c #\= #\=)
        (read-char)
        (read-char)
-       '|==|)
+       'deez/runtime:==)
       ((char-2= c #\! #\=)
        (read-char)
        (read-char)
-       '|!=|)
+       'deez/runtime:!=)
       ((and (char= c #\/)
             (char= (peek-2) #\/))
        (read-char)
@@ -76,6 +70,13 @@
        (list 'comment (read-line)))
       ((member c *single-char-tokens*)
        (read-char))
+      ((char= c #\!) (prog1 'deez/runtime:! (read-char)))
+      ((char= c #\+) (prog1 'deez/runtime:+ (read-char)))
+      ((char= c #\-) (prog1 'deez/runtime:- (read-char)))
+      ((char= c #\*) (prog1 'deez/runtime:* (read-char)))
+      ((char= c #\/) (prog1 'deez/runtime:/ (read-char)))
+      ((char= c #\<) (prog1 'deez/runtime:< (read-char)))
+      ((char= c #\>) (prog1 'deez/runtime:> (read-char)))
       ((char= c #\")
        (read))
       ((or (alpha-char-p c)
