@@ -39,7 +39,8 @@
                (deez/runtime:* . 4)
                (deez/runtime:/ . 5)
                (deez/runtime:! . 6)
-               (:strong . 7))))
+               (#\( . 7)
+               (#\[ . 7))))
   (defun precedence (token)
     (or (cdr (assoc token table))
         (error "Syntax error, unknown operator ~A" token))))
@@ -121,7 +122,6 @@
     finally (return array)))
 
 (defun parse-funcall (symbol)
-  (lex)
   `(funcall ,symbol ,@(parse-arglist)))
 
 (defun parse-array/hash-access (symbol)
@@ -176,13 +176,19 @@
                  (atom token)
                  (t (error "Expected known token type, got ~A" (type-of token)))))))
     (loop with expr = (parse-single)
+          with next-precedence = nil
           for op = (lex-peek)
-          for next-precedence = (and op (precedence op))
-          while (and op
-                     (not (eql op #\;))
-                     (< precedence next-precedence))
+          while (and op (not (eql op #\;)))
+          do (setf next-precedence (precedence op))
+          while (< precedence next-precedence)
           do (lex)
-          do (setf expr (list op expr (parse-expression next-precedence)))
+          do (setf expr
+                   (cond
+                     ((eql op #\()
+                      (parse-funcall expr))
+                     ((eql op #\[)
+                      (parse-array/hash-access expr))
+                     (t (list op expr (parse-expression next-precedence)))))
           finally (return expr))))
 
 (defun %parse (&optional toplevel-p)
