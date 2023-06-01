@@ -20,7 +20,7 @@ class Lexer {
     public Token nextToken() {
         this.skipWhitespace();
 
-        final var tokenType = switch (this.getCc()) {
+        var tokenType = switch (this.getCc()) {
             case '{' -> TokenType.LSQIRLY;
             case '}' -> TokenType.RSQIRLY;
             case '(' -> TokenType.LPAREN;
@@ -33,7 +33,7 @@ class Lexer {
             default -> TokenType.ILLEGAL;
         };
 
-        final var token = switch (tokenType) {
+        var token = switch (tokenType) {
             case EOF -> this.createToken(tokenType, "eof");
             default -> this.createToken(tokenType, String.valueOf(this.getCc()));
         };
@@ -87,10 +87,8 @@ class Lexer {
     }
 
     private void skipWhitespace() {
-        char cc = this.getCc();
-        while (Character.isWhitespace(cc)) {
+        while (Character.isWhitespace(this.getCc())) {
             this.advance();
-            cc = this.getCc();
         }
     }
 }
