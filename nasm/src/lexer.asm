@@ -7,9 +7,21 @@
 ; ----------------------
 
 ; TokenType
-%define TOKEN_EOF      0
-%define TOKEN_LSQUIRLY 1
-%define TOKEN_RSQUIRLY 2
+%define TOKEN_EOF          0
+
+%define TOKEN_LSQUIRLY     1			; {
+%define TOKEN_RSQUIRLY     2			; }
+%define TOKEN_LPAREN       3			; (
+%define TOKEN_RPAREN       4			; )
+
+%define TOKEN_PLUS         5			; +
+%define TOKEN_DASH         6			; -
+%define TOKEN_COMMA        7			; ,
+%define TOKEN_SEMICOLON    8			; ;
+%define TOKEN_BANG         9			; !
+%define TOKEN_ASTERIKS     10			; *
+%define TOKEN_ASSIGN       11			; =
+%define TOKEN_FORWARDSLASH 12			; /
 
 section .text
 
@@ -44,6 +56,7 @@ lexer_next:
 lexer_case_l_squirly:
 	mov eax, TOKEN_LSQUIRLY
 	jmp end
+
 lexer_case_r_squirly:
 	mov eax, TOKEN_RSQUIRLY
 	jmp end
