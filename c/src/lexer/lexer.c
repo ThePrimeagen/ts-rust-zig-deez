@@ -12,10 +12,10 @@ struct SLexer {
   char character;
 };
 
-static void _lexerReadChar(Lexer lexer);
-static void _lexerSkipWhitespace(Lexer lexer);
-static const char *_lexerReadIdent(Lexer lexer, size_t *pLen);
-static const char *_lexerReadInt(Lexer lexer, size_t *pLen);
+static void _lexerReadChar(Lexer *lexer);
+static void _lexerSkipWhitespace(Lexer *lexer);
+static const char *_lexerReadIdent(Lexer *lexer, size_t *len);
+static const char *_lexerReadInt(Lexer *lexer, size_t *len);
 
 static uint8_t _isLetter(char ch);
 static uint8_t _isNumber(char ch);
@@ -26,9 +26,9 @@ static TokenType _getTokenTypeFromLiteral(const char *literal, size_t len);
                               PUBLIC FUNCTIONS                                *
 *******************************************************************************/
 
-Lexer lexerCreate(const char *input) {
-  size_t len = sizeof(struct SLexer);
-  Lexer lexer = malloc(len);
+Lexer *lexerCreate(const char *input) {
+  size_t len = sizeof(Lexer);
+  Lexer *lexer = malloc(len);
   memset(lexer, 0, len);
 
   lexer->input = input;
@@ -41,8 +41,8 @@ Lexer lexerCreate(const char *input) {
   return lexer;
 }
 
-Token lexerNext(Lexer lexer) {
-  Token tok = NULL;
+Token *lexerNext(Lexer *lexer) {
+  Token *tok = NULL;
 
   _lexerSkipWhitespace(lexer);
 
@@ -107,14 +107,17 @@ Token lexerNext(Lexer lexer) {
   return tok;
 }
 
-void lexerCleanup(Lexer *pLexer) {
-  free(*pLexer);
-  *pLexer = NULL;
+void lexerCleanup(Lexer **lexer) {
+  if (*lexer) {
+    free(*lexer);
+  }
+
+  *lexer = NULL;
 }
 
-Token tokenCreate(TokenType type, char *literal) {
-  size_t len = sizeof(struct SToken);
-  Token token = malloc(len);
+Token *tokenCreate(TokenType type, char *literal) {
+  size_t len = sizeof(Token);
+  Token *token = malloc(len);
   memset(token, 0, len);
 
   token->literal = literal;
@@ -123,20 +126,23 @@ Token tokenCreate(TokenType type, char *literal) {
   return token;
 }
 
-void tokenCleanup(Token *pToken) {
-  if (*pToken && (*pToken)->literal) {
-    free((*pToken)->literal);
+void tokenCleanup(Token **token) {
+  if (*token && (*token)->literal) {
+    free((*token)->literal);
   }
 
-  free(*pToken);
-  *pToken = NULL;
+  if (*token) {
+    free(*token);
+  }
+
+  *token = NULL;
 }
 
 /******************************************************************************
                               PRIVATE FUNCTIONS                               *
 *******************************************************************************/
 
-static void _lexerReadChar(Lexer lexer) {
+static void _lexerReadChar(Lexer *lexer) {
   if (lexer->readPosition >= lexer->inputLength) {
     lexer->character = '\0';
   } else {
@@ -147,14 +153,14 @@ static void _lexerReadChar(Lexer lexer) {
   lexer->readPosition++;
 }
 
-static void _lexerSkipWhitespace(Lexer lexer) {
+static void _lexerSkipWhitespace(Lexer *lexer) {
   while (lexer->character == ' ' || lexer->character == '\t' ||
          lexer->character == '\n' || lexer->character == '\r') {
     _lexerReadChar(lexer);
   }
 }
 
-static const char *_lexerReadIdent(Lexer lexer, size_t *pLen) {
+static const char *_lexerReadIdent(Lexer *lexer, size_t *len) {
   char *result = NULL;
   size_t position = lexer->position;
 
@@ -162,14 +168,14 @@ static const char *_lexerReadIdent(Lexer lexer, size_t *pLen) {
     _lexerReadChar(lexer);
   }
 
-  if (pLen) {
-    *pLen = lexer->position - position;
+  if (len) {
+    *len = lexer->position - position;
   }
 
   return lexer->input + position;
 }
 
-static const char *_lexerReadInt(Lexer lexer, size_t *pLen) {
+static const char *_lexerReadInt(Lexer *lexer, size_t *len) {
   char *result = NULL;
   size_t position = lexer->position;
 
@@ -177,8 +183,8 @@ static const char *_lexerReadInt(Lexer lexer, size_t *pLen) {
     _lexerReadChar(lexer);
   }
 
-  if (pLen) {
-    *pLen = lexer->position - position;
+  if (len) {
+    *len = lexer->position - position;
   }
 
   return lexer->input + position;

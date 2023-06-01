@@ -3,7 +3,7 @@
 
 TEST(TestLexer, TestLexer_One) {
   const char *input = "=+(){},;";
-  Lexer lexer = NULL;
+  Lexer *lexer = NULL;
   TokenType tests[9];
   int testLength = 9;
   int i;
@@ -21,7 +21,7 @@ TEST(TestLexer, TestLexer_One) {
   lexer = lexerCreate(input);
 
   for (i = 0; i < testLength; i++) {
-    Token token = lexerNext(lexer);
+    Token *token = lexerNext(lexer);
     ASSERT_EQ(token->type, tests[i]);
     tokenCleanup(&token);
   }
@@ -34,8 +34,8 @@ TEST(TestLexer, TestLexer_Complete) {
                       "let ten = 10;"
                       "let add = fn(x, y) { x + y; };"
                       "let result = add(five, ten);";
-  Lexer lexer = NULL;
-  Token tests[37];
+  Lexer *lexer = NULL;
+  Token *tests[37];
   int testLength = 37;
   int i;
 
@@ -80,7 +80,7 @@ TEST(TestLexer, TestLexer_Complete) {
   lexer = lexerCreate(input);
 
   for (i = 0; i < testLength; i++) {
-    Token token = lexerNext(lexer);
+    Token *token = lexerNext(lexer);
     EXPECT_STREQ(token->literal, tests[i]->literal);
     ASSERT_EQ(token->type, tests[i]->type);
     tokenCleanup(&token);

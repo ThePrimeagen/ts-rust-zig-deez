@@ -25,16 +25,16 @@ typedef enum {
 typedef struct SToken {
   TokenType type;
   char *literal;
-} *Token;
+} Token;
 
-typedef struct SLexer *Lexer;
-Lexer lexerCreate(const char *input);
+typedef struct SLexer Lexer;
+Lexer *lexerCreate(const char *input);
 
-Token lexerNext(Lexer lexer);
-void lexerCleanup(Lexer *pLexer);
+Token *lexerNext(Lexer *lexer);
+void lexerCleanup(Lexer **lexer);
 
-Token tokenCreate(TokenType type, char *literal);
-void tokenCleanup(Token *pToken);
+Token *tokenCreate(TokenType type, char *literal);
+void tokenCleanup(Token **token);
 
 #ifdef __cplusplus
 }
