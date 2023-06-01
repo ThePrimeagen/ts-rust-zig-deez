@@ -6,10 +6,8 @@ fun main() {
         val line = readln()
         val lexer = Lexer(line)
 
-        var token = lexer.nextToken()
-        while (token != Token.EndOfFile) {
+        for (token in lexer) {
             println(token)
-            token = lexer.nextToken()
         }
     }
 }

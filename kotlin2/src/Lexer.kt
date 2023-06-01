@@ -2,10 +2,10 @@
 
 import kotlin.text.isWhitespace
 
-class Lexer(private val input: String) {
+class Lexer(private val input: String) : Iterator<Token> {
     private var currentIndex: Int = 0
 
-    fun nextToken(): Token {
+    override fun next(): Token {
         skipWhitespace()
 
         val token = when (val character = getCurrentCharacter()) {
@@ -35,6 +35,10 @@ class Lexer(private val input: String) {
 
         currentIndex++
         return token
+    }
+
+    override fun hasNext(): Boolean {
+        return currentIndex < input.length
     }
 
     private fun getCurrentCharacter(): Char? = input.getOrNull(currentIndex)
