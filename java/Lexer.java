@@ -1,5 +1,4 @@
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.Optional;
 
 class Lexer {
