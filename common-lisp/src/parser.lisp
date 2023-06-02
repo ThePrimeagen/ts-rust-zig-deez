@@ -61,6 +61,9 @@
         (values `(let ((,sym ,initial-value))) t))))
 
 (defun parse-arglist ()
+  (when (eql (lex-peek) #\))
+    (lex)
+    (return-from parse-arglist nil))
   (loop for arg = (lex)
         for next = (lex)
         collect arg
