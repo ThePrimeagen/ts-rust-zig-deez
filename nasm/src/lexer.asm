@@ -66,6 +66,7 @@ lexer_case_l_squirly:
 lexer_case_r_squirly:
 	mov eax, TOKEN_RSQUIRLY
 	jmp end
+
 end:
 	ret
 
@@ -74,22 +75,21 @@ end:
 ;  - lexer: Lexer*
 ; =========================================================================== ;
 lexer_advance:
-	mov rax, [rdi + 16]
-	xor edx, edx
+	mov rax, [rdi + 16]				; load the reference of position into rax
+	xor edx, edx					; set edx to 0
 
 	cmp rax, [rdi + 8]
-	; jump if pos >= length
-	jge lexer_advance_write
+	jge lexer_advance_write			; jump if pos >= length
 
-	; load char
-	mov rdx, [rdi]			   		; load the address of source
+	mov rdx, [rdi]			   		; load the address of source into rdx
 	movzx edx, byte [rdx + rax]		; set edx to the char of lexer->source[lexer->read]
 
-	; increment pos
-	add rax, 1
-	mov [rdi + 16], rax
+	add rax, 1						; increment pos
+	mov [rdi + 16], rax 
+
 lexer_advance_write:
-	mov [rdi + 24], dl
+	mov [rdi + 24], dl				; load the value of dl into ch. dl is part of edx thus beeing 0,
+									; if not overwritten. This happens if pos >= length
 	ret
 
 ; =========================================================================== ;
