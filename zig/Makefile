@@ -32,8 +32,7 @@ lint:
 	# TODO: replace this line with your linting commands
 
 test: test-lexer test-ast test-parser
-	@echo "===> Testing EVERYTHING"
-	# TODO: replace this line with your testing commands
+	@echo "===> Tested EVERYTHING"
 
 test-lexer:
 	@echo "===> Testing lexer"

@@ -8,8 +8,9 @@ name: Test if the language in PR passes corresponding checks
 
 on:
   pull_request:
-    # for new PRs, or those who are ready and/or request a review
-    types: [opened, ready_for_review, review_requested]
+    # For ready PRs and/or ones requesting a review
+    types: [ready_for_review, review_requested]
+    branches: [master]
 
 defaults:
   run:
@@ -20,20 +21,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checking out the repo
-        uses: actions/checkout@v3 
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # to retrieve all commits
+
+      - name: Get all changed files
+        id: changed
+        uses: tj-actions/changed-files@v36  # not affiliated with tjdevries
+        with:
+          since_last_remote_commit: true
 
       - name: Initial setup + A list of all affected languages
         run: |
           sudo apt-get update && sudo apt install -y make curl git
-          changed_langs=($(git diff --name-only HEAD~1 | cut -d '/' -f 1 | sort | uniq))
-          if [ ${#changed_langs[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
+          changed_files=()
+            for i in ${{ steps.changed.outputs.all_changed_files }}; do changed_files+=("$i"); done
+          changed_langs=($(printf "%s\n" "${changed_files[@]}" | cut -d '/' -f 1 | sort -u | uniq))     
           for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ -d "$i" ]; then echo "$i" >> list.txt; fi; done
-          
+          if [ -f "list.txt" ]; then mv list.txt $HOME/list.txt; fi
+
       - name: Build docker images for every language affected
         run: |
-          while read -r i; do pushd "$i"; make docker-build; popd; done < list.txt
+          if [ -f "$HOME/list.txt" ]; then
+            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-build; popd; fi; done < "$HOME/list.txt"
+          fi
 
       - name: Run docker containers for built images
         run: |
-          while read -r i; do pushd "$i"; make docker-ready; popd; done < list.txt
-          
+          if [ -f "$HOME/list.txt" ]; then
+            while read -r i; do if [ -d "$i" ]; then pushd "$i"; make docker-ready; popd; fi; done < "$HOME/list.txt"
+          fi
+

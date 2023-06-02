@@ -13,9 +13,17 @@
     "@types/jest": "^29.5.1",
     "@types/node": "^20.2.1",
     "jest": "^29.5.0",
+    "prettier": "^2.8.8",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
     "vitest": "^0.31.1"
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": false,
+    "tabWidth": 4,
+    "trailingComma": "all"
   }
 }

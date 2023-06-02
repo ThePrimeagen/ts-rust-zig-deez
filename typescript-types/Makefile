@@ -2,13 +2,13 @@
 # Static part, don't change these:
 ##
 
-.PHONY: help ready docker-build docker-ready clean fmt lint test
+.PHONY: help ready docker-build docker-ready fmt lint test
 
 help:
 	@cat Makefile | grep -E "^\w+$:"
 
 ready: fmt lint test
-
+	
 docker-build:
 	docker build --no-cache . -t deez_$(notdir $(shell pwd))
 
@@ -24,6 +24,7 @@ clean:
 	# TODO: replace this line with your cleaning commands
 
 fmt:
+	@npm install
 	@echo "===> Formatting"
 	# TODO: replace this line with your formatting commands
 
@@ -37,6 +38,7 @@ test: test-lexer test-ast test-parser
 
 test-lexer:
 	@echo "===> Testing lexer"
+	npx tsc __tests__/lexer.ts --noEmit
 	# TODO: replace this line with your lexer testing commands
 
 test-ast:
@@ -46,4 +48,3 @@ test-ast:
 test-parser:
 	@echo "===> Testing parser"
 	# TODO: replace this line with your parser testing commands
-
