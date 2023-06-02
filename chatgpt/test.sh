@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# This script tests that the output from the prompt to ChatGPT
+# is as expected based on the code in test-code.txt
+
+cargo run test-code.txt | grep -F '[Token { tokentype: "Let", value: "let" }, Token { tokentype: "Ident", value: "five" }, Token { tokentype: "Equal", value: "=" }, Token { tokentype: "Int", value: "5" }, Token { tokentype: "Semicolon", value: ";" }, Token { tokentype: "Let", value: "let" }, Token { tokentype: "Ident", value: "ten" }, Token { tokentype: "Equal", value: "=" }, Token { tokentype: "Int", value: "10" }, Token { tokentype: "Semicolon", value: ";" }, Token { tokentype: "Let", value: "let" }, Token { tokentype: "Ident", value: "add" }, Token { tokentype: "Equal", value: "=" }, Token { tokentype: "Function", value: "fn" }, Token { tokentype: "LParen", value: "(" }, Token { tokentype: "Ident", value: "x" }, Token { tokentype: "Comma", value: "," }, Token { tokentype: "Ident", value: "y" }, Token { tokentype: "RParen", value: ")" }, Token { tokentype: "LBrace", value: "{" }, Token { tokentype: "Ident", value: "x" }, Token { tokentype: "Plus", value: "+" }, Token { tokentype: "Ident", value: "y" }, Token { tokentype: "Semicolon", value: ";" }, Token { tokentype: "RBrace", value: "}" }, Token { tokentype: "Semicolon", value: ";" }, Token { tokentype: "Let", value: "let" }, Token { tokentype: "Ident", value: "result" }, Token { tokentype: "Equal", value: "=" }, Token { tokentype: "Ident", value: "add" }, Token { tokentype: "LParen", value: "(" }, Token { tokentype: "Ident", value: "five" }, Token { tokentype: "Comma", value: "," }, Token { tokentype: "Ident", value: "ten" }, Token { tokentype: "RParen", value: ")" }, Token { tokentype: "Semicolon", value: ";" }, Token { tokentype: "Eof", value: "Eof" }]' && echo "Test passed!" && exit 0
+
+echo "Test failed!";
+exit 1
