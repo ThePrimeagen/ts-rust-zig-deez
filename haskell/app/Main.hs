@@ -1,9 +1,10 @@
 module Main where
 
-import Lexer.Basic qualified (tokenize)
-import Lexer.Monad qualified (tokenize)
-import Lexer.Parsec qualified (tokenize)
-import Lexer.State qualified (tokenize)
+import Lexer.Basic qualified
+import Lexer.Monad qualified
+import Lexer.Parsec qualified
+import Lexer.State qualified
+import Lexer.Lens qualified
 
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)
@@ -17,7 +18,8 @@ chooseLexer "basic" = Lexer.Basic.tokenize
 chooseLexer "monad" = Lexer.Monad.tokenize
 chooseLexer "state" = Lexer.State.tokenize
 chooseLexer "parsec" = Lexer.Parsec.tokenize
-chooseLexer _ = error "Unknown lexer: use basic, monad, state or parsec"
+chooseLexer "lens" = Lexer.Lens.tokenize
+chooseLexer _ = error "Unknown lexer: use basic, monad, state, parsec or lens"
 
 parse :: [[Char]] -> IO String
 parse ["-h"] = usage >> exitSuccess
