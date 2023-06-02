@@ -1,0 +1,80 @@
+nextToken : Char -> Token
+nextToken ch =
+    c = fromCharList [ch]    
+    match ch with 
+        ?+ -> Plus
+        ?- -> Minus
+        ?* -> Asterisk
+        ?/ -> Slash
+        ?! -> Bang
+        ?< -> Lt
+        ?> -> Gt
+        ?; -> Semicolon
+        ?, -> Comma
+        ?( -> Lparen 
+        ?) -> Rparen 
+        ?{ -> Lbrace
+        ?} -> Rbrace 
+        ?\NUL -> Eof
+        _ -> Illegal c
+
+
+lexer : Text -> [Token]
+lexer str =
+    loop: (Text, [Token]) -> [Token]
+    loop tup =
+        (str, tokens) = tup 
+        match str with 
+        "" -> tokens
+        lex -> processText str tokens |> loop
+    loop (str, [])
+
+processText : Text -> [Token] -> (Text, [Token])
+processText str tokens = 
+    (ch, txt) = Text.uncons str |> Optional.getOrElse (?\NUL, "")
+    match ch with
+        x
+            | isWhitespace x -> (txt, tokens)
+            | x == ?= -> identEquals txt tokens
+            | x == ?! -> identNotEqual txt tokens
+            | isLetter(x) -> 
+                (var, rem) = identChar txt
+                val = fromCharList([ch]) ++ var
+                (rem, tokens :+ keyWords(val) )
+            | isDigit(x) -> 
+                (var, rem) = identNum txt
+                num = fromCharList([ch]) ++ var
+                (rem, tokens :+ Int num)
+        _ ->(txt, tokens :+ nextToken(ch))
+
+identEquals : Text -> [Token] -> (Text, [Token])
+identEquals str tokens =
+    (ch, txt) = Text.uncons str |> Optional.getOrElse (?\NUL, "")
+    match ch with 
+        ?= -> (txt, tokens :+ Eq)
+        _ -> (str, tokens :+ Assign)
+
+identNotEqual : Text -> [Token] -> (Text, [Token])
+identNotEqual str tokens =
+    (ch, txt) = Text.uncons str |> Optional.getOrElse (?\NUL, "")
+    match ch with 
+        ?= -> (txt, tokens :+ NotEq)
+        _ -> (str, tokens :+ Bang)
+
+identChar : Text -> (Text, Text)
+identChar str =
+    var = Text.takeWhile isLetter str
+    size = Text.size var
+    (_, remain) = Text.splitAt size str
+    (var, remain)
+
+identNum : Text -> (Text, Text)
+identNum str =
+    num = Text.takeWhile isDigit str
+    size = Text.size num
+    (_, remain) = Text.splitAt size str
+    (num, remain)
+
+isLetter : Char -> Boolean
+isLetter ch =
+    ((?a <= ch) && (ch <= ?z)) || ((?A <= ch) && (ch <= ?Z)) || (ch == ?_)
