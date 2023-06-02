@@ -90,7 +90,6 @@ scan_token :: proc(l: ^Lexer) {
 	start := l.offset - 1
 	//odinfmt: disable
 	switch c {
-	// Single Char:
 	case '+': append(&l.tokens, Token{start, .Plus, "+"})
 	case '-': append(&l.tokens, Token{start, .Minus, "-"})
 	case '*': append(&l.tokens, Token{start, .Asterisk, "*"})
@@ -103,46 +102,51 @@ scan_token :: proc(l: ^Lexer) {
 	case '}': append(&l.tokens, Token{start, .RSquirly, "}"})
 	case ';': append(&l.tokens, Token{start, .Semicolon, ";"})
 	case ',': append(&l.tokens, Token{start, .Comma, ","})
-	case: // Multi-Character Parsing:
-		if c == '=' {
-			if peek(l) == '=' {
-				append(&l.tokens, Token{start, .EQ, "=="})
-				next(l)
-			} else {
-				append(&l.tokens, Token{start, .Assign, "="})
-			}
-		} else if c == '!' {
-			if peek(l) == '=' {
-				append(&l.tokens, Token{start, .Not_EQ, "!="})
-				next(l)
-			} else {
-				append(&l.tokens, Token{start, .Bang, "!"})
-			}
-		} else if try_parse_keyword(l) { /*consumed in try_parse*/
-		} else if is_digit(c) {number(l)} else if is_alpha(c) {
-			ident(l)
-		} else {
-			append(&l.tokens, Token{start, .Illegal, ""})
-		}
+    case '=':
+        if peek(l) == '=' {
+            append(&l.tokens, Token{start, .EQ, "=="})
+            next(l)
+        } else {
+            append(&l.tokens, Token{start, .Assign, "="})
+        }
+    case '!':
+        if peek(l) == '=' {
+            append(&l.tokens, Token{start, .Not_EQ, "!="})
+            next(l)
+        } else {
+            append(&l.tokens, Token{start, .Bang, "!"})
+        }
+    case 'a'..='z', 'A'..='Z', '_':
+        for is_alpha_numeric(peek(l)) do next(l)
+
+        switch ident := string(l.data[start : l.offset]); ident {
+        case "if":
+            append(&l.tokens, Token{start, .If, "if"})
+        case "else":
+            append(&l.tokens, Token{start, .Else, "else"})
+        case "fn":
+            append(&l.tokens, Token{start, .Function, "fn"})
+        case "let":
+            append(&l.tokens, Token{start, .Let, "let"})
+        case "true":
+            append(&l.tokens, Token{start, .True, "true"})
+        case "false":
+            append(&l.tokens, Token{start, .False, "false"})
+        case "return":
+            append(&l.tokens, Token{start, .Return, "return"})
+        case:
+            append(&l.tokens, Token{start, .Ident, ident})
+        }
+    case '0'..='9':
+        for is_digit(peek(l)) do next(l)
+
+        append(&l.tokens, Token{start, .Number, string(l.data[start : l.offset])})
+	case:
+        append(&l.tokens, Token{start, .Illegal, ""})
 	}
 	//odinfmt: enable
 }
 
-keywords := map[Token_Kind]string {
-	.If       = "if",
-	.Else     = "else",
-	.Function = "fn",
-	.Let      = "let",
-	.True     = "true",
-	.False    = "false",
-	.Return   = "return",
-}
-try_parse_keyword :: proc(l: ^Lexer) -> (parsed_ok: bool) {
-	for kind, kw in keywords {
-		if keyword(l, kw, kind) do return true
-	}
-	return false
-}
 is_at_end :: proc(l: ^Lexer) -> bool {
 	return l.offset >= len(l.data)
 }
@@ -177,28 +181,4 @@ is_alpha_numeric :: proc(c: u8) -> bool {
 }
 is_whitespace :: proc(c: u8) -> bool {
 	return c == ' ' || c == '\n' || c == '\r' || c == '\t'
-}
-number :: proc(l: ^Lexer) {
-	start := l.offset - 1
-	for is_digit(peek(l)) do next(l)
-	append(&l.tokens, Token{start, .Number, string(l.data[start:l.offset])})
-}
-
-keyword :: proc(l: ^Lexer, kw: string, kind: Token_Kind) -> bool {
-	start := l.offset - 1
-	if l.offset + len(kw) > len(l.data) {return false}
-	str := string(l.data[start:start + len(kw)])
-	if str == kw {
-		l.offset += len(kw) - 1
-		append(&l.tokens, Token{start, kind, str})
-		return true
-	}
-	return false
-}
-
-ident :: proc(l: ^Lexer) {
-	start := l.offset - 1
-	for is_alpha_numeric(peek(l)) do next(l)
-	str := string(l.data[start:l.offset])
-	append(&l.tokens, Token{start, .Ident, str})
 }
