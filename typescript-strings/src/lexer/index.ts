@@ -1,6 +1,7 @@
 // Most tokens can be identified from their literals with a single string
 // comparison, so just use the literals as the token type.
-// Less code and fewer allocations, and no crazy typescript.
+// Less code and fewer allocations, and no crazy typescript, yet just as
+// typesafe as the original code.
 
 export type Token = string;
 
