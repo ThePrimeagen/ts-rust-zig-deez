@@ -19,16 +19,16 @@ type Token =
     | Let
 
 type Code =
-    { source: string
-      mutable position: int
-      mutable readPosition: int
-      mutable char: char }
+    { Source: string
+      mutable Position: int
+      mutable ReadPosition: int
+      mutable Char: char }
 
 let toCode source =
-    { source = source
-      position = 0
-      readPosition = 0
-      char = Char.MinValue }
+    { Source = source
+      Position = 0
+      ReadPosition = 0
+      Char = Char.MinValue }
 
 let isLetter char =
     char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char = '_'
@@ -36,24 +36,24 @@ let isLetter char =
 let isNumber char = char >= '0' && char <= '9'
 
 let readChar code =
-    match code.readPosition >= code.source.Length with
-    | true -> code.char <- Char.MinValue
-    | false -> code.char <- code.source[code.readPosition]
+    match code.ReadPosition >= code.Source.Length with
+    | true -> code.Char <- Char.MinValue
+    | false -> code.Char <- code.Source[code.ReadPosition]
 
-    code.position <- code.readPosition
-    code.readPosition <- code.readPosition + 1
+    code.Position <- code.ReadPosition
+    code.ReadPosition <- code.ReadPosition + 1
 
 let skipWhitespace code =
-    while code.char = ' ' || code.char = '\t' || code.char = '\n' || code.char = '\r' do
+    while code.Char = ' ' || code.Char = '\t' || code.Char = '\n' || code.Char = '\r' do
         readChar code
 
 let readWhile code predicate =
-    let start = code.position
+    let start = code.Position
 
-    while code.char |> predicate do
+    while code.Char |> predicate do
         readChar code
 
-    code.source.Substring(start, code.position - start)
+    code.Source.Substring(start, code.Position - start)
 
 let readIdentifier code =
     let literal = readWhile code isLetter
@@ -74,7 +74,7 @@ let nextToken code =
         code |> readChar
         result
 
-    match code.char with
+    match code.Char with
     | Char.MinValue -> Eof
     | '=' -> advance Equal
     | '+' -> advance Plus
