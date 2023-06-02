@@ -1,27 +1,29 @@
-; -----------------------
+; =========================================================================== ;
 ; Lexer:                  			non packed struct
 ;  - source: char*        			offset = 0
 ;  - length: uint64_t     			offset = 8
 ;  - pos: uint64_t        			offset = 16
 ;  - ch: char             			offset = 24
-; ----------------------
+; =========================================================================== ;
 
+; =========================================================================== ;
 ; TokenType
+; =========================================================================== ;
 %define TOKEN_EOF          0
 
-%define TOKEN_LSQUIRLY     1			; {
-%define TOKEN_RSQUIRLY     2			; }
-%define TOKEN_LPAREN       3			; (
-%define TOKEN_RPAREN       4			; )
+%define TOKEN_LSQUIRLY     1		; {
+%define TOKEN_RSQUIRLY     2		; }
+%define TOKEN_LPAREN       3		; (
+%define TOKEN_RPAREN       4		; )
 
-%define TOKEN_PLUS         5			; +
-%define TOKEN_DASH         6			; -
-%define TOKEN_COMMA        7			; ,
-%define TOKEN_SEMICOLON    8			; ;
-%define TOKEN_BANG         9			; !
-%define TOKEN_ASTERIKS     10			; *
-%define TOKEN_ASSIGN       11			; =
-%define TOKEN_FORWARDSLASH 12			; /
+%define TOKEN_PLUS         5		; +
+%define TOKEN_DASH         6		; -
+%define TOKEN_COMMA        7		; ,
+%define TOKEN_SEMICOLON    8		; ;
+%define TOKEN_BANG         9		; !
+%define TOKEN_ASTERIKS     10		; *
+%define TOKEN_ASSIGN       11		; =
+%define TOKEN_FORWARDSLASH 12		; /
 
 section .text
 
@@ -29,10 +31,12 @@ section .text
 global lexer_init
 global lexer_next
 
+; =========================================================================== ;
 ; args:
 ;  - lexer: Lexer*       			offset = 0
 ;  - source: char*       			offset = 8
 ;  - length: uint64_t    			offset = 16
+; =========================================================================== ;
 lexer_init:
 	mov [rdi], rsi             		; lexer->source = source
 	mov [rdi + 8], rdx         		; lexer->length = length
@@ -40,8 +44,10 @@ lexer_init:
 
 	ret
 	
+; =========================================================================== ;
 ; args:
 ;  - lexer: Lexer*
+; =========================================================================== ;
 lexer_next:
 	call lexer_advance
 	call lexer_skipwhitespace
@@ -63,8 +69,10 @@ lexer_case_r_squirly:
 end:
 	ret
 
+; =========================================================================== ;
 ; args:
 ;  - lexer: Lexer*
+; =========================================================================== ;
 lexer_advance:
 	mov rax, [rdi + 16]
 	xor edx, edx
@@ -84,5 +92,7 @@ lexer_advance_write:
 	mov [rdi + 24], dl
 	ret
 
+; =========================================================================== ;
+; =========================================================================== ;
 lexer_skipwhitespace:
 	ret
