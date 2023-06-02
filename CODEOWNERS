@@ -19,6 +19,7 @@
 /haskell/       @alexjercan
 /java/          @xNaCly
 /javascript/    @trvswgnr
+/nasm/          @onehunga @iamevie
 /nim/           @Echriser
 /pascal/        @attilakapostyak
 /ocaml/         @tjdevries
@@ -34,6 +35,5 @@
 /rust/          @ThePrimeagen
 /typescript/    @ThePrimeagen
 /x64_nasm/      @Sirraide
-/nasm/          @onehunga @iamevie
 /zig/           @ThePrimeagen
 /swift/         @marcusziade
