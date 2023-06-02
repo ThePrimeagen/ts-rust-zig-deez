@@ -22,6 +22,10 @@ export function tokenIsIdentifier(token: Token): boolean {
     return isLetter(token[0]) && !isKeyword(token);
 }
 
+export function tokenIsIllegal(token: Token): boolean {
+    return token === "@ILLEGAL";
+}
+
 const keywords = ["fn", "let", "return", "true", "false", "if", "else"] as const;
 export type Keyword = typeof keywords[number];
 
@@ -104,7 +108,7 @@ export class Tokenizer {
         } else if (isNumber(this.ch)) {
             return this.readInt();
         } else if (!tok) {
-            return "\0";
+            return "@ILLEGAL";
         }
 
         this.readChar();
