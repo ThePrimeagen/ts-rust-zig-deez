@@ -264,7 +264,12 @@ and expr_parse_identifier parser =
 
 and expr_parse_number parser =
   match parser.current with
-  | Some (Integer num) -> Ok (Ast.Integer (Int.of_string num))
+  | Some (Integer num) ->
+    let num =
+      try Int.of_string num with
+      | Failure x -> Fmt.failwith "COULD NOT PARSE: '%s' DUE TO %s" num x
+    in
+    Ok (Ast.Integer num)
   | _ -> Error "missing number"
 
 and expr_parse_prefix parser operator =
@@ -526,6 +531,17 @@ let 838383; |} in
       LET: let { identifier = "x" } = Call {fn = (Identifier { identifier = "single" });
       args = [(Identifier { identifier = "a" })]}
     ] |}]
+  ;;
+
+  let%expect_test "some infixes" =
+    expect_program "(1 < 2) == true;";
+    [%expect {|
+      Program: [
+        EXPR: Infix {
+        left =
+        Infix {left = (Integer 1); operator = Token.LessThan; right = (Integer 2)};
+        operator = Token.Equal; right = (Boolean true)};
+      ] |}]
   ;;
 
   let%expect_test "precedence comparisons" =

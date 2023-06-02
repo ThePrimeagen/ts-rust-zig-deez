@@ -1,17 +1,12 @@
 interface Lexer
-    exposes [lex, debugPrint, debugPrintToken, Token, Kind, getInt, getIdent, LexedData]
+    exposes [lex, debugPrint, debugPrintToken, Token]
     imports []
 
-LexedData : {
-    bytes : List U8,
-    tokens : List Token,
-}
-
-Kind : [
+Token : [
     Illegal,
     Eof,
-    Ident,
-    Int,
+    Ident Str,
+    Int I64,
     Assign,
     Plus,
     Minus,
@@ -37,16 +32,9 @@ Kind : [
     NotEq,
 ]
 
-Token : {
-    kind : Kind,
-    index : U32,
-}
-
-lex : List U8 -> LexedData
+lex : List U8 -> List Token
 lex = \bytes ->
     helper = \state ->
-        # TODO: Investigate the perf of this compared to a state machine based parser.
-        # This is a branching prefix tree.
         when state.remaining is
             ['r', 'e', 't', 'u', 'r', 'n', ..] ->
                 consumeToken state Return 6 |> helper
@@ -119,29 +107,50 @@ lex = \bytes ->
 
             ['\r', ..] | ['\n', ..] | ['\t', ..] | [' ', ..] ->
                 nextRemaining = List.drop state.remaining 1
-                nextIndex = state.index + 1
-                { tokens: state.tokens, remaining: nextRemaining, index: nextIndex } |> helper
+                { tokens: state.tokens, remaining: nextRemaining } |> helper
 
             [ch, ..] if isLetter ch ->
-                consumeToken state Ident (identLength state.remaining 1) |> helper
+                len = identLength state.remaining 1
+                ident = getIdent state.remaining len
+                consumeToken state ident len |> helper
 
             [ch, ..] if isDigit ch ->
-                consumeToken state Int (intLength state.remaining 1) |> helper
+                len = intLength state.remaining 1
+                int = getInt state.remaining len
+                consumeToken state int len |> helper
 
             [_, ..] ->
                 consumeToken state Illegal 1 |> helper
 
             [] ->
-                List.append state.tokens { kind: Eof, index: state.index }
+                List.append state.tokens Eof
 
-    tokens = helper { tokens: List.withCapacity 1024, remaining: bytes, index: 0 }
-    { bytes, tokens }
+    helper { tokens: List.withCapacity 1024, remaining: bytes }
 
-consumeToken = \{ tokens, remaining, index }, kind, size ->
-    nextTokens = List.append tokens { kind, index }
+consumeToken = \{ tokens, remaining }, tok, size ->
+    nextTokens = List.append tokens tok
     nextRemaining = List.drop remaining (Num.toNat size)
-    nextIndex = index + size
-    { tokens: nextTokens, remaining: nextRemaining, index: nextIndex }
+    { tokens: nextTokens, remaining: nextRemaining }
+
+isLetter = \ch ->
+    (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_'
+
+isDigit = \ch ->
+    ch >= '0' && ch <= '9'
+
+getIdent = \bytes, len ->
+    List.takeFirst bytes len
+    |> Str.fromUtf8
+    |> okOrUnreachable
+    |> Str.releaseExcessCapacity
+    |> Ident
+
+getInt = \bytes, len ->
+    List.takeFirst bytes len
+    |> Str.fromUtf8
+    |> Result.try Str.toI64
+    |> okOrUnreachable
+    |> Int
 
 identLength = \remaining, size ->
     when List.get remaining (Num.toNat size) is
@@ -159,89 +168,59 @@ intLength = \remaining, size ->
         _ ->
             size
 
-isLetter = \ch ->
-    (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_'
+okOrUnreachable = \res ->
+    when res is
+        Ok v -> v
+        Err _ -> crash "unreachable"
 
-isDigit = \ch ->
-    ch >= '0' && ch <= '9'
+debugPrint : List Token -> Str
+debugPrint = \tokens ->
+    List.walk tokens "" \buf, token ->
+        tokenStr = debugPrintToken token
+        Str.concat buf "\(tokenStr)\n"
 
-getIdent = \bytes, index ->
-    len = identLength (List.drop bytes (Num.toNat index)) 1
-    List.sublist bytes { start: Num.toNat index, len }
+debugPrintToken : Token -> Str
+debugPrintToken = \token ->
+    when token is
+        Illegal -> "Illegal"
+        Eof -> "Eof"
+        Ident ident -> "Ident \(ident)"
+        Int int ->
+            intStr = Num.toStr int
+            "Int \(intStr)"
 
-getInt = \bytes, index ->
-    len = intLength (List.drop bytes (Num.toNat index)) 1
-    List.sublist bytes { start: Num.toNat index, len }
-
-debugPrint : List U8, LexedData -> List U8
-debugPrint = \buf, { bytes, tokens } ->
-    List.walk tokens buf \b, token ->
-        debugPrintToken b bytes token
-        |> List.append '\n'
-
-debugPrintToken : List U8, List U8, Token -> List U8
-debugPrintToken = \buf, bytes, token ->
-    buf
-    |> List.concat (Str.toUtf8 "{ kind: ")
-    |> debugPrintKind token.kind
-    |> \b ->
-        when token.kind is
-            Ident ->
-                b
-                |> List.concat (Str.toUtf8 ", value: ")
-                |> List.concat (getIdent bytes token.index)
-
-            Int ->
-                b
-                |> List.concat (Str.toUtf8 ", value: ")
-                |> List.concat (getInt bytes token.index)
-
-            _ ->
-                b
-    |> List.concat (Str.toUtf8 " }")
-
-debugPrintKind : List U8, Kind -> List U8
-debugPrintKind = \buf, kind ->
-    out =
-        when kind is
-            Illegal -> "Illegal"
-            Eof -> "Eof"
-            Ident -> "Ident"
-            Int -> "Int"
-            Assign -> "Assign"
-            Plus -> "Plus"
-            Minus -> "Minus"
-            Bang -> "Bang"
-            Asterisk -> "Asterisk"
-            Slash -> "Slash"
-            Lt -> "Lt"
-            Gt -> "Gt"
-            Comma -> "Comma"
-            Semicolon -> "Semicolon"
-            LParen -> "LParen"
-            RParen -> "RParen"
-            LBrace -> "LBrace"
-            RBrace -> "RBrace"
-            Function -> "Function"
-            Let -> "Let"
-            True -> "True"
-            False -> "False"
-            If -> "If"
-            Else -> "Else"
-            Return -> "Return"
-            Eq -> "Eq"
-            NotEq -> "NotEq"
-
-    List.concat buf (Str.toUtf8 out)
+        Assign -> "Assign"
+        Plus -> "Plus"
+        Minus -> "Minus"
+        Bang -> "Bang"
+        Asterisk -> "Asterisk"
+        Slash -> "Slash"
+        Lt -> "Lt"
+        Gt -> "Gt"
+        Comma -> "Comma"
+        Semicolon -> "Semicolon"
+        LParen -> "LParen"
+        RParen -> "RParen"
+        LBrace -> "LBrace"
+        RBrace -> "RBrace"
+        Function -> "Function"
+        Let -> "Let"
+        True -> "True"
+        False -> "False"
+        If -> "If"
+        Else -> "Else"
+        Return -> "Return"
+        Eq -> "Eq"
+        NotEq -> "NotEq"
 
 expect
-    lexed = lex (Str.toUtf8 "") |> .tokens |> List.map .kind
+    lexed = lex (Str.toUtf8 "")
     expected = [Eof]
 
     lexed == expected
 
 expect
-    lexed = lex (Str.toUtf8 "=+(){},;") |> .tokens |> List.map .kind
+    lexed = lex (Str.toUtf8 "=+(){},;")
     expected = [
         Assign,
         Plus,
@@ -285,62 +264,61 @@ expect
             10 != 9;
             """
 
-    lexed = lex bytes |> .tokens
-    kinds = List.map lexed .kind
-    expectedKinds = [
+    tokens = lex bytes
+    expected = [
         Let,
-        Ident,
+        Ident "five",
         Assign,
-        Int,
+        Int 5,
         Semicolon,
         Let,
-        Ident,
+        Ident "ten",
         Assign,
-        Int,
+        Int 10,
         Semicolon,
         Let,
-        Ident,
+        Ident "add",
         Assign,
         Function,
         LParen,
-        Ident,
+        Ident "x",
         Comma,
-        Ident,
+        Ident "y",
         RParen,
         LBrace,
-        Ident,
+        Ident "x",
         Plus,
-        Ident,
+        Ident "y",
         Semicolon,
         RBrace,
         Semicolon,
         Let,
-        Ident,
+        Ident "result",
         Assign,
-        Ident,
+        Ident "add",
         LParen,
-        Ident,
+        Ident "five",
         Comma,
-        Ident,
+        Ident "ten",
         RParen,
         Semicolon,
         Bang,
         Minus,
         Slash,
         Asterisk,
-        Int,
+        Int 5,
         Semicolon,
-        Int,
+        Int 5,
         Lt,
-        Int,
+        Int 10,
         Gt,
-        Int,
+        Int 5,
         Semicolon,
         If,
         LParen,
-        Int,
+        Int 5,
         Lt,
-        Int,
+        Int 10,
         RParen,
         LBrace,
         Return,
@@ -353,54 +331,15 @@ expect
         False,
         Semicolon,
         RBrace,
-        Int,
+        Int 10,
         Eq,
-        Int,
+        Int 10,
         Semicolon,
-        Int,
+        Int 10,
         NotEq,
-        Int,
+        Int 9,
         Semicolon,
         Eof,
     ]
 
-    idents =
-        lexed
-        |> List.keepIf \{ kind } -> kind == Ident
-        |> List.map \{ index } -> getIdent bytes index
-
-    expectedIdents = [
-        Str.toUtf8 "five",
-        Str.toUtf8 "ten",
-        Str.toUtf8 "add",
-        Str.toUtf8 "x",
-        Str.toUtf8 "y",
-        Str.toUtf8 "x",
-        Str.toUtf8 "y",
-        Str.toUtf8 "result",
-        Str.toUtf8 "add",
-        Str.toUtf8 "five",
-        Str.toUtf8 "ten",
-    ]
-
-    ints =
-        lexed
-        |> List.keepIf \{ kind } -> kind == Int
-        |> List.map \{ index } -> getInt bytes index
-
-    expectedInts = [
-        Str.toUtf8 "5",
-        Str.toUtf8 "10",
-        Str.toUtf8 "5",
-        Str.toUtf8 "5",
-        Str.toUtf8 "10",
-        Str.toUtf8 "5",
-        Str.toUtf8 "5",
-        Str.toUtf8 "10",
-        Str.toUtf8 "10",
-        Str.toUtf8 "10",
-        Str.toUtf8 "10",
-        Str.toUtf8 "9",
-    ]
-
-    kinds == expectedKinds && idents == expectedIdents && ints == expectedInts
+    tokens == expected
