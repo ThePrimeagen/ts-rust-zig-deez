@@ -122,6 +122,20 @@
       do (error "Syntax error, expected , but got ~A" next)
     finally (return array)))
 
+(defun parse-hash ()
+  (let ((hash (list 'deez/runtime::make-hash)))
+    (when (eql (lex-peek) #\})
+      (lex)
+      (return-from parse-hash hash))
+    (prog1
+        (loop do (push (parse-expression) hash)
+              do (ensure-next #\:)
+              do (push (parse-expression) hash)
+              while (eql (lex-peek) #\,)
+              do (lex)
+              finally (return (nreverse hash)))
+      (ensure-next #\}))))
+
 (defun parse-funcall (symbol)
   (let ((args (if (eql (lex-peek) #\))
                   nil
@@ -182,6 +196,8 @@
                      (parse-group))
                     ((eql token #\[)
                      (parse-array))
+                    ((eql token #\{)
+                     (parse-hash))
                     (t (error "Syntax error, unexpected ~A" token))))
                  (atom token)
                  (t (error "Expected known token type, got ~A" (type-of token)))))))

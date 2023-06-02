@@ -91,7 +91,14 @@
 (defun |puts| (string)
   (cl:format cl:t "~A~%" string))
 
-(defun array/hash-access (array/hash index)
+(cl:defun make-hash (cl:&rest params)
+  (cl:loop
+     with ht = (cl:make-hash-table :test 'cl:equal)
+     for (key value) on params by #'cl:cddr
+     do (cl:setf (cl:gethash key ht) value)
+     finally (cl:return ht)))
+
+(cl:defun array/hash-access (array/hash index)
   (cl:typecase array/hash
     (cl:hash-table (cl:gethash index array/hash))
     (cl:list (cl:elt array/hash index))))

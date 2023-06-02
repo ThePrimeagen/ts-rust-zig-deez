@@ -175,3 +175,14 @@ return 993322;")
   (is-true (equal (parse-from-string "myArray[1 + 1]")
                   '(rt::array/hash-access u::|myArray| (rt:+ 1 1)))))
 
+(def-test hash-literal-string-keys ()
+  (is-true (equal (parse-from-string "{\"one\": 1, \"two\": 2, \"three\": 3}")
+                  '(rt::make-hash "one" 1 "two" 2 "three" 3))))
+
+(def-test hash-literal-empty ()
+  (is-true (equal (parse-from-string "{}")
+                  '(rt::make-hash))))
+
+(def-test hash-literal-with-expressions ()
+  (is-true (equal (parse-from-string "{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15 / 5}")
+                  '(rt::make-hash "one" (rt:+ 0 1) "two" (rt:- 10 8) "three" (rt:/ 15 5)))))
