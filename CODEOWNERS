@@ -19,6 +19,7 @@
 /fsharp/        @meenzen
 /go/            @GiorgosAthanasopoulos
 /haskell/       @alexjercan
+/haxe/          @koteelok
 /java/          @xNaCly
 /javascript/    @trvswgnr
 /nasm/          @onehunga @iamevie
@@ -32,10 +33,15 @@
 /bash/          @aretrosen
 /odin/          @jon-lipstate
 /php/           @wartab
+/prolog/        @Kaixi26
+/purescript/    @yornaath
 /python/        @BatikanHyt
+/reason/        @lessp
+/rescript/      @dylf
 /roc/           @bhansconnect
 /rust/          @ThePrimeagen
 /typescript/    @ThePrimeagen
+/unison/        @cobaltburn
 /x64_nasm/      @Sirraide
 /zig/           @ThePrimeagen
 /swift/         @marcusziade
