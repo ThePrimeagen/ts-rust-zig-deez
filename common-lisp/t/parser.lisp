@@ -147,7 +147,11 @@ return 993322;")
                                   (funcall u::|add| u::|a| u::|b| 1 (rt:* 2 3) (rt:+ 4 5) (funcall u::|add| 6 (rt:* 7 8))))
                                  ("add(a + b + c * d / f + g)"
                                   (funcall u::|add| (rt:+ (rt:+ (rt:+ u::|a| u::|b|) (rt:/ (rt:* u::|c| u::|d|) u::|f|)) u::|g|))))
-        do (is-true (equal (parse-from-string code) expected))))
+        do (is-true (equal (parse-from-string code) expected)))
+  (is-true (equalp (parse-from-string "a * [1, 2, 3, 4][b * c] * d")
+                   '(rt:* (rt:* u::|a| (rt::array/hash-access #(1 2 3 4) (rt:* u::|b| u::|c|))) u::|d|)))
+  (is-true (equalp (parse-from-string "add(a * b[2], b[1], 2 * [1, 2][1])")
+                   '(funcall u::|add| (rt:* u::|a| (rt::array/hash-access u::|b| 2)) (rt::array/hash-access u::|b| 1) (rt:* 2 (rt::array/hash-access #(1 2) 1))))))
 
 (def-test let-statements ()
   (loop for (code expected-sym expected-value) in '(("let x = 5;" u::|x| 5)
@@ -158,3 +162,16 @@ return 993322;")
              (is-true (eq (car ast) 'defparameter))
              (is-true (eq (cadr ast) expected-sym))
              (is-true (eq (caddr ast) expected-value)))))
+
+(def-test string-literal ()
+  (is-true (equal (parse-from-string "\"hello world\";")
+                  "hello world")))
+
+(def-test array-literal ()
+  (is-true (equalp (parse-from-string "[1, 2 * 2, 3 + 3]")
+                   (vector 1 '(rt:* 2 2) '(rt:+ 3 3)))))
+
+(def-test index-expression ()
+  (is-true (equal (parse-from-string "myArray[1 + 1]")
+                  '(rt::array/hash-access u::|myArray| (rt:+ 1 1)))))
+
