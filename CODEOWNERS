@@ -15,14 +15,17 @@
 /erlang/        @mikimaine
 /fortran/       @greuben92
 /fsharp/        @meenzen
+/go/            @GiorgosAthanasopoulos
 /haskell/       @alexjercan
 /java/          @xNaCly
+/javascript/    @trvswgnr
 /nim/           @Echriser
 /pascal/        @attilakapostyak
 /ocaml/         @tjdevries
 /jai/           @marvhus
 /kotlin2/       @hermannm
 /lua/           @aretrosen
+/luajit/        @Okanoa
 /bash/          @aretrosen
 /odin/          @jon-lipstate
 /php/           @wartab
