@@ -109,6 +109,14 @@ lexer_advance_write:
 	ret
 
 ; ============================================================================ ;
+; args:
+;  - lexer: Lexer*
+;
+; Whitespace:
+;  - ' '    byte code: 32
+;  - '\t'   byte code: 9
+;  - '\r'   byte code: 13
+;  - '\n'   byte code: 10
 ; ============================================================================ ;
 lexer_skipwhitespace:
 	ret
