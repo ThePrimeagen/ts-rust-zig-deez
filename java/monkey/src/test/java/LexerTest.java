@@ -1,9 +1,5 @@
-package startup.the.parsing;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import startup.the.token.Token;
-import startup.the.token.TokenType;
 
 public class LexerTest {
 

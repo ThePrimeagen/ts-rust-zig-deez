@@ -1,8 +1,3 @@
-package startup.the.parsing;
-
-import startup.the.token.Token;
-import startup.the.token.TokenType;
-
 import java.util.HashMap;
 
 public class Lexer {

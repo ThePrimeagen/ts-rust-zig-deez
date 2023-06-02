@@ -1,7 +1,3 @@
-package startup.the;
-
-import startup.the.parsing.Lexer;
-
 public class Main {
 
     private final static String placeholder = """
@@ -14,5 +10,6 @@ public class Main {
 
     public static void main(String[] args) {
         new Lexer(placeholder);
+        System.out.println("Test");
     }
 }

@@ -1,5 +1,3 @@
-package startup.the.token;
-
 public enum TokenType {
     ILLEGAL,
     EOF,
