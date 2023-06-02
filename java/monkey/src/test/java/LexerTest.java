@@ -1,11 +1,10 @@
-class Tests {
-    public static void main(String[] args) {
-        Tests.singleCharacterTokenTests();
-        Tests.multiCharacterTokenTests();
-        System.out.println("All tests ran successfully");
-    }
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-    public static void singleCharacterTokenTests() {
+public class LexerTest {
+
+    @Test
+    void singleCharacterTokenTests() {
         String input = "=+(){},;";
         Lexer l = new Lexer(input);
         TokenType[] expected = {
@@ -20,15 +19,18 @@ class Tests {
                 TokenType.EOF,
         };
 
-        for (TokenType t : expected) {
-            TokenType g = l.nextToken().type();
-            if (!t.equals(g)) {
-                throw new AssertionError(String.format("Wanted %s, got %s\n", t.name(), g.name()));
+        Assertions.assertDoesNotThrow(() -> {
+            for (TokenType t : expected) {
+                TokenType g = l.nextToken().type();
+                if (!t.equals(g)) {
+                    throw new AssertionError(String.format("Wanted %s, got %s\n", t.name(), g.name()));
+                }
             }
-        }
+        });
     }
 
-    public static void multiCharacterTokenTests() {
+    @Test
+    void multiCharacterTokenTests() {
         String input = """
                 let five = 5;
                 let ten = 10;
@@ -76,12 +78,13 @@ class Tests {
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.EOF, "eof"),
         };
-
-        for (Token t : expected) {
-            Token g = l.nextToken();
-            if (!t.equals(g)) {
-                throw new AssertionError(String.format("Wanted %s, got %s\n", t, g));
+        Assertions.assertDoesNotThrow(() -> {
+            for (Token t : expected) {
+                Token g = l.nextToken();
+                if (!t.equals(g)) {
+                    throw new AssertionError(String.format("Wanted %s, got %s\n", t, g));
+                }
             }
-        }
+        });
     }
 }
