@@ -11,4 +11,5 @@
   :serial t
   :depends-on ("fiveam")
   :components ((:file "all")
-               (:file "lexer")))
+               (:file "lexer")
+               (:file "parser")))
