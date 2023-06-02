@@ -40,30 +40,29 @@
 (cl:defparameter |true| '|true|)
 (cl:defparameter |false| '|false|)
 
-(cl:defparameter ! #'cl:not)
-(cl:defparameter - #'cl:-)
-(cl:defparameter * #'cl:*)
-(cl:defparameter / #'cl:/)
-(cl:defparameter < #'cl:<)
-(cl:defparameter > #'cl:>)
+(cl:setf (cl:symbol-function '-) #'cl:-)
+(cl:setf (cl:symbol-function '*) #'cl:*)
+(cl:setf (cl:symbol-function '/) #'cl:/)
+(cl:setf (cl:symbol-function '<) #'cl:<)
+(cl:setf (cl:symbol-function '>) #'cl:>)
 
-(defun ! (thing)
+(cl:defun ! (thing)
   (cl:if (cl:and thing
                  (cl:not (cl:eq thing |false|)))
          '|false|
          '|true|))
 
-(defun == (left right)
+(cl:defun == (left right)
   (cl:if (cl:equal left right)
          '|true|
          '|false|))
 
-(defun != (left right)
+(cl:defun != (left right)
   (cl:if (cl:equal left right)
          '|false|
          '|true|))
 
-(defun + (left right)
+(cl:defun + (left right)
   (cl:cond
     ((cl:or (cl:typep left 'cl:string)
             (cl:typep right 'cl:string))
