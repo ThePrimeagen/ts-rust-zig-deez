@@ -3,6 +3,7 @@
   <h1>Degens Interpreter Competition (DIC)</h1>
   <h5>Based on the awesome book "Writing An Interpreter In Go" by Thorsten Ball</h5>
   <h6><a href="https://interpreterbook.com/">Use the code THEPRIMEAGEN for 30% off</a></h6>
+  <h6>ThePrimeagen receives no financial incentive for this work.  Its for you</a></h6>
 
 ![Work In Progress](https://img.shields.io/badge/Work%20In%20Progress-orange?style=for-the-badge)
 
@@ -10,9 +11,13 @@
 
 ## Contributing
 
+### Code Owners
+We most certainly need more code owners.  If you wish to give the green check to code of a certain language, please add yourself as owner.  If approved, i'll merge.  I cannot possibly review all of these.  :)
+
+### Participation 
 Implementations in TypeScript, Rust or Zig are reserved and maintained by ThePrimeagen himself.
 
-For other languages, remember: first come, first serve. If there exists an implementation in your language of choice, contribute to it! 
+For other languages, remember: first come, first serve. If there exists an implementation in your language of choice, contribute to it!
 
 If not, start by copying LANG_TEMPLATE folder:
 
