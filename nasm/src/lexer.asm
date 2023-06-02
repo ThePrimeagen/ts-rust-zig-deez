@@ -10,20 +10,21 @@
 ; TokenType
 ; =========================================================================== ;
 %define TOKEN_EOF          0
+%define TOKEN_ILLEGAL      1
 
-%define TOKEN_LSQUIRLY     1        ; {
-%define TOKEN_RSQUIRLY     2        ; }
-%define TOKEN_LPAREN       3        ; (
-%define TOKEN_RPAREN       4        ; )
+%define TOKEN_LSQUIRLY     2        ; {
+%define TOKEN_RSQUIRLY     3        ; }
+%define TOKEN_LPAREN       4        ; (
+%define TOKEN_RPAREN       5        ; )
 
-%define TOKEN_PLUS         5        ; +
-%define TOKEN_DASH         6        ; -
-%define TOKEN_COMMA        7        ; ,
-%define TOKEN_SEMICOLON    8        ; ;
-%define TOKEN_BANG         9        ; !
-%define TOKEN_ASTERIKS     10       ; *
-%define TOKEN_ASSIGN       11       ; =
-%define TOKEN_FORWARDSLASH 12       ; /
+%define TOKEN_PLUS         6        ; +
+%define TOKEN_DASH         7        ; -
+%define TOKEN_COMMA        8        ; ,
+%define TOKEN_SEMICOLON    9        ; ;
+%define TOKEN_BANG         10       ; !
+%define TOKEN_ASTERIKS     11       ; *
+%define TOKEN_ASSIGN       12       ; =
+%define TOKEN_FORWARDSLASH 13       ; /
 
 section .text
 
