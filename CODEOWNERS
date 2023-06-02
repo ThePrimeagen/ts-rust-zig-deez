@@ -2,6 +2,7 @@
 @ThePrimeagen
 
 # Degenerate language maintainers.
+/R5RS/          @Fesaa
 /c/             @zivlakmilos
 /c-boreddad/    @boreddad
 /chatgpt/       @unconv
@@ -14,13 +15,24 @@
 /erlang/        @mikimaine
 /fortran/       @greuben92
 /fsharp/        @meenzen
+/go/            @GiorgosAthanasopoulos
 /haskell/       @alexjercan
 /java/          @xNaCly
+/javascript/    @trvswgnr
+/nim/           @Echriser
+/pascal/        @attilakapostyak
 /ocaml/         @tjdevries
+/jai/           @marvhus
+/kotlin2/       @hermannm
+/lua/           @aretrosen
+/luajit/        @Okanoa
+/bash/          @aretrosen
 /odin/          @jon-lipstate
 /php/           @wartab
 /python/        @BatikanHyt
 /roc/           @bhansconnect
 /rust/          @ThePrimeagen
 /typescript/    @ThePrimeagen
+/x64_nasm/      @Sirraide
 /zig/           @ThePrimeagen
+/swift/         @marcusziade
