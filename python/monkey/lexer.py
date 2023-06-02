@@ -19,14 +19,11 @@ class Lexer:
         self.ch = self.peek_char()
         self.position = self.read_position
         self.read_position += 1
-    
+
     def peek_char(self) -> str:
         if self.read_position >= self.input_length:
             return "\0"
         return self.input[self.read_position]
-    
-    def new_token(self,a,b):
-        return Token(a,b)
 
     def get_next_token(self) -> Token:
         self.skip_whitespace()
@@ -37,12 +34,12 @@ class Lexer:
             tok = FIXED_TOKENS[self.ch]
         match tok:
             case Token(TokenType.ASSING):
-                #PEEK
+                # PEEK
                 if self.peek_char() == "=":
                     self.read_char()
                     tok = FIXED_TOKENS["=="]
             case Token(TokenType.BANG):
-                #PEEK
+                # PEEK
                 if self.peek_char() == "=":
                     self.read_char()
                     tok = FIXED_TOKENS["!="]
@@ -51,11 +48,11 @@ class Lexer:
                     ident = self.read_ident()
                     if ident in RESERVED_KEYWORDS:
                         return RESERVED_KEYWORDS[ident]
-                    return Token(TokenType.IDENT,ident)
+                    return Token(TokenType.IDENT, ident)
                 elif self.ch.isdigit():
                     return Token(TokenType.INT, self.read_int())
-                tok = Token(TokenType.ILLEGAL,TokenType.ILLEGAL)
-        
+                tok = Token(TokenType.ILLEGAL, TokenType.ILLEGAL)
+
         self.read_char()
         return tok
 

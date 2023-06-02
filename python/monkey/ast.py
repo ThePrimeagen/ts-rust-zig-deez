@@ -7,9 +7,8 @@ from monkey.token import Token
 class Node(ABC):
     token: Token
 
-    @abstractmethod
     def token_literal(self) -> str:
-        pass
+        return self.token.literal
 
 
 @dataclass
@@ -43,9 +42,6 @@ class Identifier(Expression):
     def expression_node(self) -> None:
         pass
 
-    def token_literal(self) -> str:
-        return self.token.literal
-
 
 @dataclass
 class IntegerLiteral(Expression):
@@ -54,8 +50,49 @@ class IntegerLiteral(Expression):
     def expression_node(self) -> None:
         pass
 
-    def token_literal(self) -> str:
-        return self.token.literal
+
+@dataclass
+class Boolean(Expression):
+    value: bool
+
+    def expression_node(self) -> None:
+        pass
+
+
+@dataclass
+class BlockStatement(Expression):
+    statements: list[Statement]
+
+    def expression_node(self) -> None:
+        pass
+
+
+@dataclass
+class IfExpression(Expression):
+    condition: Expression = None
+    consequence: BlockStatement = None
+    Alternative: BlockStatement = None
+
+    def expression_node(self) -> None:
+        pass
+
+
+@dataclass
+class FunctionLiteral(Expression):
+    parameters: list[Identifier]
+    body: BlockStatement = None
+
+    def expression_node(self) -> None:
+        pass
+
+
+@dataclass
+class CallExpression(Expression):
+    function: Expression
+    arguments: list[Expression]
+
+    def expression_node(self) -> None:
+        pass
 
 
 @dataclass
@@ -65,9 +102,6 @@ class PrefixExpression(Expression):
 
     def expression_node(self) -> None:
         pass
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
 
 @dataclass
@@ -79,9 +113,6 @@ class InfixExpression(Expression):
     def expression_node(self) -> None:
         pass
 
-    def token_literal(self) -> str:
-        return self.token.literal
-
 
 @dataclass
 class LetStatement(Statement):
@@ -91,19 +122,13 @@ class LetStatement(Statement):
     def statement_node(self):
         pass
 
-    def token_literal(self) -> str:
-        return self.token.literal
-
 
 @dataclass
 class ReturnStatement(Statement):
-    return_value: Expression
+    return_value: Expression = None
 
     def statement_node(self) -> None:
         pass
-
-    def token_literal(self) -> str:
-        return self.token.literal
 
 
 @dataclass
@@ -112,6 +137,3 @@ class ExpressionStatement(Statement):
 
     def statement_node(self) -> None:
         pass
-
-    def token_literal(self) -> str:
-        return self.token.literal
