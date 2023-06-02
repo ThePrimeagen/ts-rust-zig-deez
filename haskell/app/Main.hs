@@ -1,10 +1,10 @@
 module Main where
 
 import Lexer.Basic qualified
+import Lexer.Lens qualified
 import Lexer.Monad qualified
 import Lexer.Parsec qualified
 import Lexer.State qualified
-import Lexer.Lens qualified
 
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitSuccess, exitWith)

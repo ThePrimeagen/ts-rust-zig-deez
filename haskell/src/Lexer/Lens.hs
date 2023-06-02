@@ -3,14 +3,14 @@
 
 module Lexer.Lens where
 
+import Control.Lens (makeLenses)
+import Control.Lens.Operators ((&), (+~), (.~), (^.))
 import Control.Monad.State (State, evalState, get, modify)
 import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
 import Data.Char (isDigit, isLetter, isSpace)
 import Data.Function (fix)
 import Token (Token (..), Tokenizer, identToken)
-import Control.Lens              (makeLenses)
-import Control.Lens.Operators    ((+~), (.~), (^.), (&))
 
 type Input = ByteString
 
@@ -42,7 +42,7 @@ nextToken :: LexerT Token
 nextToken = do
     skipWhitespace
     lexer <- get
-    case lexer^.ch of
+    case lexer ^. ch of
         '{' -> LSquirly <$ advance
         '}' -> RSquirly <$ advance
         '(' -> LParen <$ advance
@@ -71,11 +71,11 @@ nextToken = do
 peek :: LexerT Char
 peek = do
     lexer <- get
-    pure $ if (lexer^.position) >= BS.length (lexer^.input) then '\0' else BS.index (lexer^.input) (lexer^.position)
+    pure $ if (lexer ^. position) >= BS.length (lexer ^. input) then '\0' else BS.index (lexer ^. input) (lexer ^. position)
 
 advance :: LexerT ()
 advance = modify $ \lexer ->
-    lexer & position +~ 1 & ch .~ if (lexer^.position) >= BS.length (lexer^.input) then '\0' else BS.index (lexer^.input) (lexer^.position)
+    lexer & position +~ 1 & ch .~ if (lexer ^. position) >= BS.length (lexer ^. input) then '\0' else BS.index (lexer ^. input) (lexer ^. position)
 
 skipWhitespace :: LexerT ()
 skipWhitespace = skipWhile isSpace
@@ -92,13 +92,13 @@ isIdentChar c = isLetter c || c == '_'
 readWhile :: (Char -> Bool) -> LexerT String
 readWhile p = fix $ \loop -> do
     lexer <- get
-    case lexer^.ch of
+    case lexer ^. ch of
         x | p x -> advance >> (x :) <$> loop
         _ -> pure ""
 
 skipWhile :: (Char -> Bool) -> LexerT ()
 skipWhile p = fix $ \loop -> do
     lexer <- get
-    case lexer^.ch of
+    case lexer ^. ch of
         x | p x -> advance >> loop
         _ -> pure ()
