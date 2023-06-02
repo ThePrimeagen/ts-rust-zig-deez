@@ -1,15 +1,15 @@
 import java.util.HashMap;
 import java.util.Optional;
 
-class Lexer {
+public class Lexer {
 
     private final String input;
     private int pos = 0;
 
     final HashMap<String, Token> keywordMap = new HashMap<>() {
         {
-            put("fn", createToken(TokenType.FUNC, "fn"));
-            put("let", createToken(TokenType.LET, "let"));
+            put("fn", TokenType.FUNC.createToken("fn"));
+            put("let", TokenType.LET.createToken("let"));
         }
     };
 
@@ -34,8 +34,8 @@ class Lexer {
         };
 
         var token = switch (tokenType) {
-            case EOF -> this.createToken(tokenType, "eof");
-            default -> this.createToken(tokenType, String.valueOf(this.getCc()));
+            case EOF -> tokenType.createToken("eof");
+            default -> tokenType.createToken(String.valueOf(this.getCc()));
         };
 
         if (token.type() != TokenType.ILLEGAL) {
@@ -48,9 +48,9 @@ class Lexer {
 
             return Optional
                     .ofNullable(this.keywordMap.get(ident))
-                    .orElseGet(() -> createToken(TokenType.IDENT, ident));
+                    .orElseGet(() -> TokenType.IDENT.createToken(ident));
         } else if (Character.isDigit(this.getCc())) {
-            return this.createToken(TokenType.INT, this.number());
+            return TokenType.INT.createToken(this.number());
         }
 
         this.advance();
@@ -69,10 +69,6 @@ class Lexer {
             return '\0';
         }
         return this.input.charAt(this.pos);
-    }
-
-    private Token createToken(TokenType type, String literal) {
-        return new Token(type, literal);
     }
 
     private String number() {
