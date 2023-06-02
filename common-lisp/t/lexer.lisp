@@ -9,6 +9,48 @@
   :in deez)
 (in-suite deez/lexer)
 
+(def-test next-token ()
+  (macrolet ((next-is (expected)
+               `(is-true (eql (lex) ,expected)))
+             (test-all (list)
+               `(loop for item in ,list
+                      do (next-is item))))
+    (with-input-from-string (*standard-input* "let five = 5;
+let ten = 10;
+
+let add = fn(x, y) {
+  x + y;
+};
+
+let result = add(five, ten);
+!-/*5;
+5 < 10 > 5;
+
+if (5 < 10) {
+    return true;
+} else {
+    return false;
+}
+
+10 == 10;
+10 != 9;
+")
+      (test-all '(deez/runtime:|let| deez/user::|five| #\= 5 #\;
+                  deez/runtime:|let| deez/user::|ten| #\= 10 #\;
+                  deez/runtime:|let| deez/user::|add| #\= deez/runtime:|fn| #\( deez/user::|x| #\, deez/user::|y| #\) #\{
+                  deez/user::|x| deez/runtime:+ deez/user::|y| #\;
+                  #\} #\;
+                  deez/runtime:|let| deez/user::|result| #\= deez/user::|add| #\( deez/user::|five| #\, deez/user::|ten| #\) #\;
+                  deez/runtime:! deez/runtime:- deez/runtime:/ deez/runtime:* 5 #\;
+                  5 deez/runtime:< 10 deez/runtime:> 5 #\;
+                  deez/runtime:|if| #\( 5 deez/runtime:< 10 #\) #\{
+                  deez/runtime:|return| deez/runtime:|true| #\;
+                  #\} deez/runtime:|else| #\{
+                  deez/runtime:|return| deez/runtime:|false| #\;
+                  #\}
+                  10 deez/runtime:|==| 10 #\;
+                  10 deez/runtime:|!=| 9 #\;)))))
+
 (def-test variable-definitions ()
   (loop for (code expected-tokens) in '(("let version = 1;"
                                          (deez/runtime:|let| deez/user::|version| #\= 1 #\;))
