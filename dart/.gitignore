@@ -1,3 +1,11 @@
 # https://dart.dev/guides/libraries/private-files
 # Created by `dart pub`
 .dart_tool/
+
+# Files generated during tests
+.test_coverage.dart
+coverage/
+.test_runner.dart
+
+# macOS cruft
+.DS_Store
