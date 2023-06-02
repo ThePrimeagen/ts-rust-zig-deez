@@ -4,25 +4,29 @@
 (loader "token")
 (loader "parser")
 (loader "eval")
+(loader "environment")
 
-(define input-prompt ";;; Monkey-Eval input:")
-(define output-prompt ";;; Monkey-Eval value:")
+(define input-prompt ">>")
 
 (define (prompt-for-input string)
-  (newline) (newline) (display string) (newline))
+  (newline) (display string))
 
 (define (display-parse-errors p)
   (if (not (= 0 (length (parser-errors p)))) (for-each (lambda (error) (display-l error)) (parser-errors p))))
 
-(define (start)
+(define (repl env)
   (prompt-for-input input-prompt)
   (define input (read-line))
   (let*
       ((lexer (new-lexer input))
        (parser (new-parser lexer))
        (p (parse-programme parser)))
-    (begin (parser-errors p) (display-parse-errors p) (let* ((evaluated (monkey-eval p))) (display-l (inspect evaluated)))))
-  (start))
+    (begin (parser-errors p) (display-parse-errors p) (let* ((evaluated (monkey-eval p env))) (if (not (obj-null? evaluated)) (display-l (inspect evaluated))))))
+  (repl env))
+
+(define (start)
+  (define env (new-environment))
+  (repl env))
 
 (start)
   

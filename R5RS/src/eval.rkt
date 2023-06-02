@@ -7,17 +7,17 @@
 (define (is-error? obj)
   (if (obj-null? obj) #f (obj-error? obj)))
 
-(define (eval-program stmts)
-  (let* ((stmt (car stmts)) (result (monkey-eval stmt)))
+(define (eval-program stmts env)
+  (let* ((stmt (car stmts)) (result (monkey-eval stmt env)))
     (cond
       ((obj-return-value? result) (obj-value result))
       ((obj-error? result) result)
-      ((> (length (cdr stmts)) 0) (eval-program (cdr stmts)))
+      ((> (length (cdr stmts)) 0) (eval-program (cdr stmts) env))
       (else result))))
 
-(define (eval-block-statement block)
+(define (eval-block-statement block env)
   (define (inner stmts)
-    (let* ((stmt (car stmts)) (result (monkey-eval stmt)))
+    (let* ((stmt (car stmts)) (result (monkey-eval stmt env)))
       (cond
         ((and (not (obj-null? result)) (or (obj-return-value? result) (obj-error? result))) result)
         ((> (length (cdr stmts)) 0) (inner (cdr stmts)))
@@ -48,12 +48,12 @@
     
     (else (format-error "unknown operator: " operator (obj-type right)))))
 
-(define (eval-if-expression node)
-  (define condition (monkey-eval (if-cond node)))
+(define (eval-if-expression node env)
+  (define condition (monkey-eval (if-cond node) env))
   (cond
     ((is-error? condition) condition)
-    ((is-truthy condition) (monkey-eval (if-cons node)))
-    ((not (obj-null? (if-alt node))) (monkey-eval (if-alt node)))
+    ((is-truthy condition) (monkey-eval (if-cons node) env))
+    ((not (obj-null? (if-alt node))) (monkey-eval (if-alt node) env))
     (else THE_NULL)))
 
 (define (eval-integer-infix-expression operator left right)
@@ -80,16 +80,48 @@
     ((not (eq? (obj-type left) (obj-type right))) (format-error "type mismatch: " (obj-type left) " " operator " " (obj-type right)))
     (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
 
-(define (monkey-eval node)
+(define (eval-identifier node env)
+  (define id (get-from-environment env (id-value node)))
+  (if (null? id) (format-error "identifier not found: " (id-value node)) id))
+
+(define (eval-expressions exps env)
+  (define (inner exps out)
+    (define exp (car exps))
+    (let* ((evaluated (monkey-eval exp env))) (if (is-error? evaluated) (list evaluated) (if (> (length (cdr exps)) 0) (inner (cdr exps) (add-to-list out evaluated)) (add-to-list out evaluated)))))
+    (inner exps '()))
+
+(define (apply-functions function args)
+  (if (not (obj-fn? function)) (format-error "not a function: " (obj-type function))
+      (let* ((extended-env (extend-function-env function args)) (evaluated (monkey-eval (obj-fn-body function) extended-env))) (unwrap-return-value evaluated))))
+
+(define (extend-function-env function args)
+  (define env (new-enclosed-environment (obj-fn-env function)))
+  (define (inner params args)
+    (define param (car params))
+    (define arg (car args))
+    (add-to-environment env (int-value param) arg)
+    (if (> (length (cdr params)) 0) (inner (cdr params) (cdr args)) env))
+  (inner (obj-fn-params function) args))
+
+(define (unwrap-return-value obj)
+  (if (obj-return-value? obj) (obj-value obj) obj))
+
+(define (monkey-eval node env)
   (cond
-    ((is-parser? node) (eval-program (parser-stmts node)))
-    ((expression-stmt? node) (monkey-eval (expression-value node)))
+    ((is-parser? node) (eval-program (parser-stmts node) env))
+    ((expression-stmt? node) (monkey-eval (expression-value node) env))
     ((int-literal? node) (new-int (int-value node)))
     ((bool-literal? node) (new-bool-obj-from-native (bool-value node)))
-    ((prefix-exp? node) (let* ((right (monkey-eval (prefix-exp-right node)))) (if (is-error? right) right (eval-prefix-expression (prefix-exp-operator node) right))))
-    ((infix-exp? node) (let* ((left (monkey-eval (infix-exp-left node)))) (if (is-error? left) left (let* ((right (monkey-eval (infix-exp-right node)))) (eval-infix-expression (infix-exp-operator node) left right)))))
-    ((block-stmt? node) (eval-block-statement node))
-    ((if-exp? node) (eval-if-expression node))
-    ((return-stmt? node) (let* ((val (monkey-eval (return-value node)))) (if (is-error? val) val (new-return-value val))))
-
+    ((prefix-exp? node) (let* ((right (monkey-eval (prefix-exp-right node) env))) (if (is-error? right) right (eval-prefix-expression (prefix-exp-operator node) right))))
+    ((infix-exp? node) (let* ((left (monkey-eval (infix-exp-left node) env))) (if (is-error? left) left (let* ((right (monkey-eval (infix-exp-right node) env))) (eval-infix-expression (infix-exp-operator node) left right)))))
+    ((block-stmt? node) (eval-block-statement node env))
+    ((if-exp? node) (eval-if-expression node env))
+    ((return-stmt? node) (let* ((val (monkey-eval (return-value node) env))) (if (is-error? val) val (new-return-value val))))
+    ((let-stmt? node) (let* ((val (monkey-eval (let-value node) env))) (if (is-error? val) val (begin (add-to-environment env (let-name node) val) THE_NULL))))
+    ((id-stmt? node) (eval-identifier node env))
+    ((fn? node) (new-function (fn-params node) (fn-body node) env))
+    ((call-exp? node) (let* ((function (monkey-eval (call-fn node) env)))
+                        (if (is-error? function) functions
+                            (let* ((args (eval-expressions (call-args node) env)))
+                              (if (and (= (length args) 1) (is-error? (car args))) (car args) (apply-functions function args))))))
     (else THE_NULL)))

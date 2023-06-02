@@ -7,22 +7,21 @@
 (define NULL_OBJ         "NULL")
 (define RETURN_VALUE_OBJ "RETURN_VALUE")
 (define ERROR_OBJ        "ERROR")
+(define FUNCTIONS_OBJ    "FUNCTION")
 
 
 ; OBJ METHODS
 (define (inspect obj)
   (define value (obj-value obj))
   (cond
-
     ((obj-int? obj) (number->string value))
     ((obj-bool? obj) (if value "true" "false"))
     ((obj-null? obj) "null")
     ((obj-return-value? obj) "return value")
     ((obj-error? obj) (format "ERROR: " (obj-value obj)))
+    ((obj-fn? obj) (format "fn(" (string-join ", " (map inspect (obj-fn-params obj))) ") {\n" (inspect (obj-fn-body obj)) "\n}"))
 
-    (else "Could not convert to string")
-    )
-  )
+    (else (begin (display obj) "Could not convert to string so just displaying randomly"))))
 
 (define (obj-value obj)
   (caddr obj))
@@ -61,7 +60,7 @@
   (tagged-list? obj 'object-return-value))
 
 
-;; ERROR
+; ERROR
 (define (new-error err)
   (list 'object-error ERROR_OBJ err))
 
@@ -71,6 +70,23 @@
 (define (format-error format . objs)
   (for-each (lambda (obj) (set! format (string-append format (if (number? obj) (string (integer->char obj)) obj)))) objs)
   (new-error format))
+
+; FUNCTION
+(define (new-function params body env)
+  (list 'obj-function params body env))
+
+(define (obj-fn? obj)
+  (tagged-list? obj 'obj-function))
+
+(define (obj-fn-params fn)
+  (cadr fn))
+
+(define (obj-fn-body fn)
+  (caddr fn))
+
+(define (obj-fn-env fn)
+  (cadddr fn))
+
 
 
 ; NULL

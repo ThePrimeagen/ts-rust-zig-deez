@@ -31,6 +31,12 @@
               )) args)
   out)
 
+(define (string-join del lst)
+  (define out "")
+  (define index 0)
+  (for-each (lambda (el) (set! index (+ 1 index)) (if (= index (length lst)) (set! out (string-append out el)) (set! out (string-append (string-append out el) del)))) lst)
+  out)
+
 
 ; CHECKERS
 (define (letter? char)

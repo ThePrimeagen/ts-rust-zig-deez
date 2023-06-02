@@ -19,6 +19,9 @@
 (define (let-id stmt)
   (caddr stmt))
 
+(define (let-name l)
+  (id-value (let-id l)))
+
 
 ; IDENTENTIFIER STATEMENT
 ; (token value)
