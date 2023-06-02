@@ -17,7 +17,7 @@ void main(List<String> arguments) async {
 
   final contents = await file.readAsString();
 
-  final lexer = Tokenizer(contents);
+  final lexer = Lexer(contents);
 
   for (final tok in lexer.iter()) {
     print(tok);

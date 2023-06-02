@@ -5,32 +5,44 @@ import 'token.dart';
 
 const $EOF = "\u0000";
 
-class Tokenizer {
+class Lexer {
   int _pos = 0;
   int _readPos = 0;
   String ch = $EOF;
 
   final String input;
 
-  Tokenizer(this.input) {
+  Lexer(this.input) {
     _readChar();
   }
 
   Token nextToken() {
     _skipWhitespace();
 
-    final tok = switch (ch) {
-      "=" => Token.equal(),
-      "+" => Token.plus(),
-      "," => Token.comma(),
-      ";" => Token.semicolon(),
-      "(" => Token.lParen(),
-      ")" => Token.rParen(),
-      "{" => Token.lSquirly(),
-      "}" => Token.rSquirly(),
-      $EOF => Token.eof(),
-      String c when c.isLetter() => _readIdentifier(),
-      String c when c.isNumber() => _readNumber(),
+    final ch = this.ch;
+    final nextCh = _peekChar();
+    final tok = switch ((ch, nextCh)) {
+      ("=", "=") => _skipNextAs(Token.equal()),
+      ("=", _) => Token.assign(),
+      ("!", "=") => _skipNextAs(Token.notEqual()),
+      ("!", _) => Token.bang(),
+      ("+", _) => Token.plus(),
+      ("-", _) => Token.minus(),
+      ("/", _) => Token.slash(),
+      ("*", _) => Token.asterisk(),
+      ("<", "=") => _skipNextAs(Token.lte()),
+      (">", "=") => _skipNextAs(Token.gte()),
+      ("<", _) => Token.lt(),
+      (">", _) => Token.gt(),
+      (",", _) => Token.comma(),
+      (";", _) => Token.semicolon(),
+      ("(", _) => Token.lParen(),
+      (")", _) => Token.rParen(),
+      ("{", _) => Token.lSquirly(),
+      ("}", _) => Token.rSquirly(),
+      ($EOF, _) => Token.eof(),
+      (String c, _) when c.isLetter() => _readIdentifier(),
+      (String c, _) when c.isNumber() => _readNumber(),
       _ => Token(TokenType.illegal, ch)
     };
 
@@ -42,6 +54,11 @@ class Tokenizer {
     return switch (ident) {
       "let" => Token.let(),
       "fn" => Token.fn(),
+      "true" => Token.true_(),
+      "false" => Token.false_(),
+      "if" => Token.if_(),
+      "else" => Token.else_(),
+      "return" => Token.return_(),
       _ => Token.ident(ident),
     };
   }
@@ -62,10 +79,22 @@ class Tokenizer {
     _readPos += 1;
   }
 
-  void _goBack() {
+  String _peekChar() {
+    return switch (_readPos) {
+      int p when p >= input.length => $EOF,
+      _ => input[_readPos],
+    };
+  }
+
+  void _rewind() {
     _pos -= 1;
     _readPos -= 1;
     ch = input[_pos];
+  }
+
+  T _skipNextAs<T>(T t) {
+    _readChar();
+    return t;
   }
 
   Token _readIdentifier() {
@@ -74,7 +103,7 @@ class Tokenizer {
       _readChar();
     }
     final id = input.substring(pos, _pos);
-    _goBack();
+    _rewind();
     return _lookupIdent(id);
   }
 
@@ -84,7 +113,7 @@ class Tokenizer {
       _readChar();
     }
     final number = input.substring(pos, _pos);
-    _goBack();
+    _rewind();
     return Token.int(number);
   }
 
