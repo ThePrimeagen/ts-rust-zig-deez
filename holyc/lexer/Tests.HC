@@ -99,5 +99,3 @@ Free(l);
 
 " [OK]\nTests done.\n";
 
-Exit;
-
