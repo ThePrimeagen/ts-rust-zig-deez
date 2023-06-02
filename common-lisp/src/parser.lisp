@@ -38,7 +38,7 @@
                (deez/runtime:- . 3)
                (deez/runtime:* . 4)
                (deez/runtime:/ . 5)
-               (deez/runtime:! . 6)
+               (:prefix . 6)
                (#\( . 7)
                (#\[ . 7))))
   (defun precedence (token)
@@ -167,7 +167,7 @@
                      (parse-if))
                     ((or (eq token 'deez/runtime:!)
                          (eq token 'deez/runtime:-))
-                     (list token (parse-expression (precedence token))))
+                     (list token (parse-expression (precedence :prefix))))
                     (t token)))
                  (character
                   (cond
