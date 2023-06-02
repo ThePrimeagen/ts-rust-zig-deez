@@ -129,6 +129,7 @@
                  (list "fn(x) { x; }(5)" 5)))
   (for-each (lambda (t) (define evaluated (test-eval (car t))) (test-integer-obj evaluated (cadr t))) tests))
 
+(display-nl "Starting eval tests...")
 (test-eval-integer)
 (test-eval-bool)
 (test-bang-operator)
@@ -138,3 +139,4 @@
 (test-let-statements)
 (test-function-object)
 (test-function-applications)
+(display-nl "\tEval tests have passed without errros")

@@ -11,11 +11,11 @@
   )
 
 (define (test-let-stmt stmt name)
-  (if (not (let-stmt? stmt))
+  (if (not (let-node? stmt))
       (error (format stmt " was not a let stmt!")))
 
-  (if (not (string=? (id-value (let-id stmt)) name))
-      (error (format "Wrong name.value, not :'" name "' got:'"  (id-value (let-id stmt)) "'")))
+  (if (not (string=? (identifier-value (let-id stmt)) name))
+      (error (format "Wrong name.value, not :'" name "' got:'"  (identifier-value (let-id stmt)) "'")))
   )
 
 (define (test-parser-let)
@@ -33,9 +33,7 @@
               (define stmt (get-nth-element programme index))
               (test-let-stmt stmt t)
               (set! index (+ index 1))
-              ) test)
-  ;(display-l p)
-  )
+              ) test))
 
 
 (define (test-parser-return)
@@ -44,21 +42,13 @@ return 5;
 return 10;
 return 993322;
 "))))
-
   (check-parse-errors p)
   (define programme (parser-stmts p))
 
   (if (not (= (length programme) 3))
       (error (format "Program did not have 3 statements. Had:" (length programme))))
 
-  (for-each (lambda (stmt)
-              (if (not (return-stmt? stmt))
-                  (error (format stmt " was not a return stmt!")))
-
-              
-              ) programme)
-  ;(display-l programme)
-  ) 
+  (for-each (lambda (stmt) (if (not (return-node? stmt)) (error (format stmt " was not a return stmt!")))) programme)) 
 
 (define (test-identifier-expression)
   (define p (parse-programme (new-parser (new-lexer "foobar;"))))
@@ -68,15 +58,14 @@ return 993322;
       (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
   (define exp (car (parser-stmts p)))
-  (if (not (expression-stmt? exp))
+  (if (not (exp-node? exp))
       (error (format "Statement is not an  expression statement Is:" exp)))
 
-  (if (not (string=? "foobar" (id-value (expression-value exp))))
-      (error (format "Value not " "foobar" ". got=" (expression-value exp))))
+  (if (not (string=? "foobar" (identifier-value (exp-value exp))))
+      (error (format "Value not " "foobar" ". got=" (exp-value exp))))
 
-  (if (not (string=? "foobar" (token-literal (expression-token exp))))
-      (error (format "Value not " "foobar" ". got=" (token-literal (expression-token exp)))))
-  )
+  (if (not (string=? "foobar" (token-literal (node-token exp))))
+      (error (format "Value not " "foobar" ". got=" (token-literal (node-token exp))))))
 
 (define (test-integer-literal-expression)
   (define p (parse-programme (new-parser (new-lexer "5;"))))
@@ -86,10 +75,10 @@ return 993322;
       (error (format "Program did not have 1 statements. Had: " (length (parser-stmts p)))))
 
   (define exp (car (parser-stmts p)))
-  (if (not (expression-stmt? exp))
+  (if (not (exp-node? exp))
       (error (format "Statement is not an  expression statement Is:" exp)))
 
-  (define literal (expression-value exp))
+  (define literal (exp-value exp))
   (if (not (int-literal? literal))
       (error (format "exp is not an int leteral Is:" literal)))
 
@@ -97,9 +86,7 @@ return 993322;
       (error (format "Value is not 5, was:" (int-value literal))))
 
   (if (not (string=? (token-literal-from-state literal) "5"))
-      (error (format "Token Literal is not 5, was:" (token-literal-from-state literal))))
-  ;(display-l (parser-stmts p))
-  )
+      (error (format "Token Literal is not 5, was:" (token-literal-from-state literal)))))
 
 (define (test-interger-literal il value)
   (if (not (int-literal? il))
@@ -109,36 +96,29 @@ return 993322;
       (error (format "Integer value not: " value " got:" (int-value il))))
 
   (if (not (string=? (token-literal-from-state il) (number->string value)))
-      (error (format "Token literal not: " value " got:" (token-literal-from-state il))))
-  )
+      (error (format "Token literal not: " value " got:" (token-literal-from-state il)))))
 
 (define (test-identifier id value)
-   (if (not (id-stmt? id))
+   (if (not (identifier-node? id))
       (error (format "exp is not an identifier. But is:" id)))
 
-  (if (not (string=? value (id-value id)))
+  (if (not (string=? value (identifier-value id)))
       (error (format "Identifier value not: " value " got:" (int-valueidl))))
 
   (if (not (string=? (token-literal-from-state id) value))
-      (error (format "Token literal not: " value " got:" (token-literal-from-state il))))
-  )
+      (error (format "Token literal not: " value " got:" (token-literal-from-state il)))))
 
 (define (test-bool b value)
-  (if (not (bool-literal? id))
-      (error (format "exp is not an bool. But is:" id)))
+  (if (not (bool-literal? b))
+      (error (format "exp is not an bool. But is:" b)))
 
-  (if (not (eq? value (int-value il)))
-      (error (format "Integer value not: " value " got:" (int-value il))))
-
-  (if (not (string=? (token-literal-from-state il) (number->string value)))
-      (error (format "Token literal not: " value " got:" (token-literal-from-state il))))
-
-  )
+  (if (not (eq? value (bool-value b)))
+      (error (format "Bool value not: " value " got:" (bool-value b)))))
 
 (define (test-literal-expression exp expected)
-  (cond (number? expected) (test-interger-literal exp expected)
-        (string? expected) (test-identifier exp expected)
-        (bool? expected) (test-bool exp expected)))
+  (cond ((number? expected) (test-interger-literal exp expected))
+        ((string? expected) (test-identifier exp expected))
+        ((bool? expected) (test-bool exp expected))))
 
 (define (test-prefix-expressions)
 
@@ -152,32 +132,28 @@ return 993322;
                    (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
               (define stmt (car (parser-stmts p)))
-              (if (not (expression-stmt? stmt))
+              (if (not (exp-node? stmt))
                   (error (format "Statement is not an  expression statement Is:" stmt)))
 
-              (define exp (expression-value stmt))
-              (if (not (prefix-exp? exp))
+              (define exp (exp-value stmt))
+              (if (not (prefix-node? exp))
                   (error (format "exp is not an prefix exp. Is:" exp)))
 
-              (if (not (char-eq? (prefix-exp-operator exp) (cadr t)))
-                  (error (format "Operator is not " (cadr t) "is not. But was" (prefix-exp-operator exp))))
+              (if (not (char-eq? (prefix-operator exp) (cadr t)))
+                  (error (format "Operator is not " (cadr t) "is not. But was" (prefix-operator exp))))
 
-              (test-literal-expression (prefix-exp-right exp) (caddr t))
-              
-              ) tests)
-  )
-
+              (test-literal-expression (prefix-right exp) (caddr t))) tests))
+  
 (define (test-infix-expression exp left operator right)
-  (if (not (infix-exp? exp))
+  (if (not (infix-node? exp))
       (error (format "exp is not an infix exp. Is: " exp)))
 
-  (test-literal-expression (infix-exp-left exp) left)
+  (test-literal-expression (infix-left exp) left)
 
-  (if (not (or (char-eq? (infix-exp-operator exp) operator) (string=? (infix-exp-operator exp) operator)))
-                  (error (format "Operator is not '" operator "' . But was:'" (infix-exp-operator exp) "'")))
+  (if (not (or (char-eq? (infix-operator exp) operator) (string=? (infix-operator exp) operator)))
+                  (error (format "Operator is not '" operator "' . But was:'" (infix-operator exp) "'")))
 
-  (test-literal-expression (infix-exp-right exp) right)
-  )
+  (test-literal-expression (infix-right exp) right))
 
 (define (test-infix-expressions)
 
@@ -203,22 +179,19 @@ return 993322;
                    (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
               (define stmt (car (parser-stmts p)))
-              (if (not (expression-stmt? stmt))
+              (if (not (exp-node? stmt))
                   (error (format "Statement is not an  expression statement Is:" stmt)))
 
-              (define exp (expression-value stmt))
-              (if (not (infix-exp? exp))
+              (define exp (exp-value stmt))
+              (if (not (infix-node? exp))
                   (error (format "exp is not an infix exp. Is:" exp)))
 
-              (test-literal-expression (infix-exp-left exp) (cadr t))
+              (test-literal-expression (infix-left exp) (cadr t))
 
-              (if (not (or (char-eq? (infix-exp-operator exp) (caddr t)) (string=? (infix-exp-operator exp) (caddr t))))
-                  (error (format "Operator is not '" (caddr t) "' . But was'" (infix-exp-operator exp) "'")))
+              (if (not (or (char-eq? (infix-operator exp) (caddr t)) (string=? (infix-operator exp) (caddr t))))
+                  (error (format "Operator is not '" (caddr t) "' . But was'" (infix-operator exp) "'")))
 
-              (test-literal-expression (infix-exp-right exp) (cadddr t))
-              
-              ) tests)
-  )
+              (test-literal-expression (infix-right exp) (cadddr t))) tests) )
 
 (define (test-bool-expressions)
 
@@ -232,18 +205,15 @@ return 993322;
                    (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
               (define stmt (car (parser-stmts p)))
-              (if (not (expression-stmt? stmt))
+              (if (not (exp-node? stmt))
                   (error (format "Statement is not an  expression statement Is:" stmt)))
 
-              (define exp (expression-value stmt))
+              (define exp (exp-value stmt))
               (if (not (bool-literal? exp))
                   (error (format "exp is not an bool-literal. Is:" exp)))
 
               (if (not (eq? (cdr t) (bool-value exp)))
-                  (error (format "Operator is not '" (cadr t) "' . But was'" (bool-value exp) "'")))
-              
-              ) test)
-  )
+                  (error (format "Operator is not '" (cadr t) "' . But was'" (bool-value exp) "'")))) test))
 
 (define (test-if-expression)
   (define p (parse-programme (new-parser (new-lexer "if (x < y) { x } else { y }"))))
@@ -253,11 +223,11 @@ return 993322;
       (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
   (define stmt (car (parser-stmts p)))
-  (if (not (expression-stmt? stmt))
+  (if (not (exp-node? stmt))
       (error (format "Statement is not an expression statement Is:" stmt)))
 
-  (define exp (expression-value stmt))
-  (if (not (if-exp? exp))
+  (define exp (exp-value stmt))
+  (if (not (if-node? exp))
       (error (format "Statement is not an if expression Is:" exp)))
 
   (test-infix-expression (if-cond exp) "x" "<" "y")
@@ -267,21 +237,20 @@ return 993322;
       (error (format "Cons did not have 1 statement. Had:" (length cons-stmts))))
 
   (define cons (car cons-stmts))
-  (if (not (expression-stmt? cons))
+  (if (not (exp-node? cons))
       (error (format "Cons statement is not an expression statement Is:" cons)))
 
-  (test-identifier (expression-value cons) "x")
+  (test-identifier (exp-value cons) "x")
 
   (define alt-stmt (block-stmts (if-alt exp)))
   (if (not (= (length alt-stmt) 1))
       (error (format "Alt did not have 1 statement. Had:" (length alt-stmt))))
 
   (define alt (car alt-stmt))
-  (if (not (expression-stmt? alt))
+  (if (not (exp-node? alt))
       (error (format "Alt statement is not an expression statement Is:" alt)))
 
-  (test-identifier (expression-value alt) "y")
-  )
+  (test-identifier (exp-value alt) "y"))
 
 (define (test-function-literal)
   (define p (parse-programme (new-parser (new-lexer "fn(x, y) { x + y; }"))))
@@ -291,10 +260,10 @@ return 993322;
       (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
   (define stmt (car (parser-stmts p)))
-  (if (not (expression-stmt? stmt))
+  (if (not (exp-node? stmt))
       (error (format "Statement is not an expression statement Is:" stmt)))
 
-  (define fn (expression-value stmt))
+  (define fn (exp-value stmt))
   (if (not (fn? fn))
       (error (format "Statement is not an fn literal. Is:" fn)))
 
@@ -310,11 +279,10 @@ return 993322;
       (error (format "Fn has wrong body. Want 1 stmt, got:" (length body))))
 
   (define body-stmt (car body))
-  (if (not (expression-stmt? body-stmt))
+  (if (not (exp-node? body-stmt))
       (error (format "Body is not an expression statement Is:" body-stmt)))
 
-  (test-infix-expression (expression-value body-stmt) "x" "+" "y")
-  )
+  (test-infix-expression (exp-value body-stmt) "x" "+" "y"))
 
 (define (test-functions-parameters)
   (define tests (list
@@ -328,7 +296,7 @@ return 993322;
               (check-parse-errors p)
 
               (define stmt (car (parser-stmts p)))
-              (define fn (expression-value stmt))
+              (define fn (exp-value stmt))
               (if (not (fn? fn))
                   (error (format "Statement is not an fn literal. Is:" fn)))
               
@@ -337,10 +305,7 @@ return 993322;
                   (error (format "Length of paramers wrong want" (length (cadr t) "but got" (length params)))))
               
               (define index 0)
-              (for-each (lambda (param) (test-literal-expression (get-nth-element params index) param) (set! index (+ index 1))) (cadr t))
-              
-              ) tests) 
-  )
+              (for-each (lambda (param) (test-literal-expression (get-nth-element params index) param) (set! index (+ index 1))) (cadr t))) tests))
 
 (define (test-call-expressions)
   (define p (parse-programme (new-parser (new-lexer "add(1, 2 * 3, 4 + 5);"))))
@@ -350,10 +315,10 @@ return 993322;
       (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
   (define stmt (car (parser-stmts p)))
-  (if (not (expression-stmt? stmt))
+  (if (not (exp-node? stmt))
       (error (format "Statement is not an expression statement Is:" stmt)))
 
-  (define c (expression-value stmt))
+  (define c (exp-value stmt))
   (if (not (call-exp? c))
       (error (format "Statement is not a call exp. Is:" c)))
 
@@ -365,8 +330,7 @@ return 993322;
 
   (test-literal-expression (get-nth-element params 0) 1)
   (test-infix-expression (get-nth-element params 1) 2 "*" 3)
-  (test-infix-expression (get-nth-element params 2) 4 "+" 5)
-  )
+  (test-infix-expression (get-nth-element params 2) 4 "+" 5))
 
 (define (test-let-statements)
   (define tests (list
@@ -382,12 +346,11 @@ return 993322;
               (if (not (= (length (parser-stmts p)) 1))
                   (error (format "Program did not have 1 statements. Had:" (length (parser-stmts p)))))
 
-              (define let (car (parser-stmts p)))
-              (test-let-stmt let (cadr t))
-              (test-literal-expression (let-value let) (caddr t))
-              
-              ) tests))
+              (define let-stmt (car (parser-stmts p)))
+              (test-let-stmt let-stmt (cadr t))
+              (test-literal-expression (let-value let-stmt) (caddr t))) tests))
 
+(display-nl "Starting parser tests...")
 (test-parser-let)
 (test-parser-return)
 (test-identifier-expression)
@@ -400,3 +363,4 @@ return 993322;
 (test-functions-parameters)
 (test-call-expressions)
 (test-let-statements)
+(display-nl "\tParser tests have passed without errros")

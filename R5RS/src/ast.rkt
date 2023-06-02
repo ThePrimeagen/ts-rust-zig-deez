@@ -2,112 +2,108 @@
 (loader "token")
 
 
-; LET STATEMENT
-; (token 'identifier-state EXP)
-(define (new-let-state id value)
-  (list 'let-state (to-token LET "let") id value))
+; NODE
+(define (node-type node)
+  (car node))
 
-(define (let-stmt? s)
-  (tagged-list? s 'let-state))
+(define (node-token node)
+  (cadr node))
 
-(define (set-let-value! l value)
-  (if (not (null? l)) (set-car! (cdddr l) value)))
 
-(define (let-value l)
-  (cadddr l))
+; EXPRESSION NODE
+; (token value)
+(define (new-exp-node token value)
+  (list 'expression-node token value))
 
-(define (let-id stmt)
-  (caddr stmt))
+(define (exp-node? node)
+  (tagged-list? node 'expression-node))
 
-(define (let-name l)
-  (id-value (let-id l)))
+(define (exp-value s)
+  (caddr s))
 
 
 ; IDENTENTIFIER STATEMENT
 ; (token value)
-(define (new-identifier token value)
-  (list 'identifier-state token value))
+(define (new-identifier-node token value)
+  (list 'identifier-node token value))
 
-(define (new-identifier-from-token token)
-  (new-identifier token (token-literal token)))
+(define (new-identifier-node-from-token token)
+  (new-identifier-node token (token-literal token)))
 
-(define (new-identifier-from-type type)
-  (new-identifier-from-token (token-from-type type)))
+(define (new-identifier-node-from-type type)
+  (new-identifier-node-from-token (token-from-type type)))
 
-(define (id-stmt? s)
-  (tagged-list? s 'identifier-state))
+(define (identifier-node? s)
+  (tagged-list? s 'identifier-node))
 
-(define (id-value id)
+(define (identifier-value id)
   (caddr id))
 
-(define (id-token id)
-  (cadr id))
 
-
-; RETURN STATEMENT
-; (RETURN EXP)
-(define (new-return-state exp)
-  (list 'return-state (token-from-type RETURN) exp))
-
-(define (return-stmt? s)
-  (tagged-list? s 'return-state))
-
-(define (return-value s)
-  (caddr s))
-
-
-; EXPRESSION STATEMENT
+; LET NODE
 ; (token exp)
-(define (new-expression-state first-token value)
-  (list 'expression-state first-token value))
+(define (new-let-node name value)
+  (list 'let-node (to-token LET "let") name value))
 
-(define (expression-stmt? s)
-  (tagged-list? s 'expression-state))
+(define (let-node? node)
+  (tagged-list? node 'let-node))
 
-(define (expression-value s)
-  (caddr s))
+(define (set-let-value! node value)
+  (if (not (null? node)) (set-car! (cdddr node) value)))
 
-(define (expression-token s)
-  (cadr s))
+(define (let-value node)
+  (cadddr node))
+
+(define (let-id node)
+  (caddr node))
+
+(define (let-name node)
+  (identifier-value (let-id node)))
 
 
-;; PREFIX EXPRESSION
+; RETURN NODE
+; (token value)
+(define (new-return-node value)
+  (list 'return-node (token-from-type RETURN) value))
+
+(define (return-node? node)
+  (tagged-list? node 'return-node))
+
+(define (return-value node)
+  (caddr node))
+
+
+; PREFIX NODE
 ; (token operator right)
-(define (new-prefix-expression token operator right)
-  (list 'prefix-expression token operator right))
+(define (new-prefix-node token operator right)
+  (list 'prefix-node token operator right))
 
-(define (prefix-exp? s)
-  (tagged-list? s 'prefix-expression))
+(define (prefix-node? node)
+  (tagged-list? node 'prefix-node))
 
-(define (prefix-exp-right exp)
-  (car (cdddr exp)))
+(define (prefix-right node)
+  (car (cdddr node)))
 
-(define (prefix-exp-operator exp)
-  (caddr exp))
-
-(define (prefix-exp-token s)
-  (cadr s))
+(define (prefix-operator node)
+  (caddr node))
 
 
-; INFIX EXPRESSIONS
+; INFIX NODE
 ; (token left operator right)
-(define (new-infix-expressions token left operator right)
-  (list 'infix-expression token left operator right))
+(define (new-infix-node token left operator right)
+  (list 'infix-node token left operator right))
 
-(define (infix-exp? s)
-  (tagged-list? s 'infix-expression))
+(define (infix-node? node)
+  (tagged-list? node 'infix-node))
 
-(define (infix-exp-right exp)
-  (cadr (cdddr exp)))
+(define (infix-left node)
+  (caddr node))
 
-(define (infix-exp-operator exp)
-  (car (cdddr exp)))
+(define (infix-operator node)
+  (car (cdddr node)))
 
-(define (infix-exp-left exp)
-  (caddr exp))
-
-(define (infix-exp-token s)
-  (cadr s))
+(define (infix-right node)
+  (cadr (cdddr node)))
 
 
 ; INTEGER LITERAL
@@ -140,25 +136,22 @@
   (cadr s))
 
 
-; IF EXPRESSION
+; IF NODE
 ; (token condition consequence alternative)
-(define (new-if-exp token condition consequence alternative)
-  (list 'if-exp token condition consequence alternative))
+(define (new-if-node token condition consequence alternative)
+  (list 'if-node token condition consequence alternative))
 
-(define (if-exp? s)
-  (tagged-list? s 'if-exp))
+(define (if-node? node)
+  (tagged-list? node 'if-node))
 
-(define (if-token s)
-  (cadr s))
+(define (if-cond node)
+  (caddr node))
 
-(define (if-cond s)
-  (caddr s))
+(define (if-cons node)
+  (cadddr node))
 
-(define (if-cons s)
-  (cadddr s))
-
-(define (if-alt s)
-  (cadr (cdddr s)))
+(define (if-alt node)
+  (cadr (cdddr node)))
 
 
 ; BLOCK STATEMENT

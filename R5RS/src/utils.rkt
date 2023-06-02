@@ -14,10 +14,10 @@
 (define (append-i s i)
   (string-append s (number->string i)))
 
-(define display-shadow display)
+(define (display-nl t) (display t) (newline))
 
 (define (display-l . args)
-  (for-each (lambda (arg) (display-shadow arg) (display-shadow " ")) args)
+  (for-each (lambda (arg) (display arg) (display " ")) args)
   (newline)
   (newline))
 
@@ -48,6 +48,9 @@
 (define (digit? char)
   (define ch (integer->char char))
   (and (char>=? ch #\0) (char<=? ch #\9)))
+
+(define (bool? b)
+  (or (eq? b #f) (eq? b #t)))
 
 
 ; LIST FUNCTIONS

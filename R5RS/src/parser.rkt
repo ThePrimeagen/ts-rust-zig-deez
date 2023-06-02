@@ -165,7 +165,7 @@
       (inner (prefix p))))
 
 (define (parse-identifier p)
-  (new-identifier-from-token (parser-cur p)))
+  (new-identifier-node-from-token (parser-cur p)))
 
 (define (parse-integer-literal p)
   (let* ((token (parser-cur p))
@@ -191,8 +191,8 @@
               (if (parser-expect-peek p LBRACE)
                   (let* ((cons (parse-block p)))
                     (if (parser-peek-is p ELSE_)
-                        (begin (parser-next-token p) (if (parser-expect-peek p LBRACE) (new-if-exp token condition cons (parse-block p))'()))
-                        (new-if-exp token condition cons '()))) '()) '()))) '()))
+                        (begin (parser-next-token p) (if (parser-expect-peek p LBRACE) (new-if-node token condition cons (parse-block p))'()))
+                        (new-if-node token condition cons '()))) '()) '()))) '()))
 
 (define (parse-block p)
   (define block (new-block-stmt (parser-cur p) '()))
@@ -217,7 +217,7 @@
         (begin
           (parser-next-token p)
           (parser-next-token p)
-          (set! identifiers (add-to-list identifiers (new-identifier-from-token (parser-cur p))))
+          (set! identifiers (add-to-list identifiers (new-identifier-node-from-token (parser-cur p))))
           (inner)
           ))
     )
@@ -225,7 +225,7 @@
   (if (parser-peek-is p RPAREN) (begin (parser-next-token p) '())
       (begin
         (parser-next-token p)
-        (set! identifiers (add-to-list identifiers (new-identifier-from-token (parser-cur p))))
+        (set! identifiers (add-to-list identifiers (new-identifier-node-from-token (parser-cur p))))
         (inner)
         (if (parser-expect-peek p RPAREN)
             identifiers
@@ -246,7 +246,7 @@
   (if (not (parser-expect-peek p IDENT))
       (set! stmt '()))
 
-  (set! stmt (new-let-state (new-identifier-from-token (parser-cur p))  (new-identifier-from-type ILLEGAL)))
+  (set! stmt (new-let-node (new-identifier-node-from-token (parser-cur p))  (new-identifier-node-from-type ILLEGAL)))
 
   (if (not (parser-expect-peek p ASSIGN))
       (set! stmt '()))
@@ -259,7 +259,7 @@
 (define (parse-return-stmt p)
   (parser-next-token p)
 
-  (define stmt (new-return-state (parse-expression p LOWEST)))
+  (define stmt (new-return-node (parse-expression p LOWEST)))
   
   (define (inner)
     (if (not (parser-cur-is p SEMICOLON))
@@ -268,7 +268,7 @@
   stmt)
 
 (define (parse-expression-stmt p)
-  (define exp (new-expression-state (parser-cur p) (parse-expression p LOWEST)))
+  (define exp (new-exp-node (parser-cur p) (parse-expression p LOWEST)))
 
   (if (parser-peek-is p SEMICOLON)
       (parser-next-token p))
@@ -278,13 +278,13 @@
 (define (parse-prefix-exp p)
   (let* ((token (parser-cur p))
         (operator (token-literal token)))
-    (begin (parser-next-token p) (new-prefix-expression token operator (parse-expression p PREFIX)))))
+    (begin (parser-next-token p) (new-prefix-node token operator (parse-expression p PREFIX)))))
 
 (define (parse-infix-exp p left)
   (let* ((token (parser-cur p))
          (operator (token-literal token))
          (precedence (parser-cur-precedences p)))
-    (begin (parser-next-token p) (new-infix-expressions token left operator (parse-expression p precedence)))))
+    (begin (parser-next-token p) (new-infix-node token left operator (parse-expression p precedence)))))
 
 (define (parse-call-exp p fn)
   (new-call-expression (parser-cur p) fn (parse-call-args p)))

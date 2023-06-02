@@ -112,11 +112,9 @@ let ten = 10;
                     (
                      (not (or (char-eq? (token-literal t) (cdr token)) (string=? (token-literal t) (cdr token))))
                      (error (format "tests[" index "] - literal wrong. expected " (cdr token) " got " (token-literal t)))
-                     )
-                    (else (begin (display t) (newline)))
-                    )
-              (set! index (+ index 1))
-              )
-            tests))
+                     ))
+              (set! index (+ index 1))) tests))
 
+(display-nl "Starting lexer tests...")
 (test-new-token)
+(display-nl "\tLexer tests have passed without errros")
