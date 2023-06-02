@@ -1,4 +1,5 @@
 package lexer
+import "core:strings"
 // Usage: `odin test .` in this folder to exec tests
 Lexer :: struct {
 	data:   []u8,
@@ -42,40 +43,53 @@ scan_tokens :: proc(l: ^Lexer) {
 	append(&l.tokens, Token{offset=l.offset,kind = .EOF})
 }
 scan_token :: proc(t: ^Lexer) {
-	c := next(t)
-    // fmt.print(rune(c))
-	switch c {
+    skip_whitespace(t)
+
+    start := t.offset
+
+	switch c := next(t); c {
 	case '(':
-		append(&t.tokens, Token{t.offset-1, .Lparen, "("})
+		append(&t.tokens, Token{start, .Lparen, "("})
 	case ')':
-		append(&t.tokens, Token{t.offset-1, .Rparen, ")"})
+		append(&t.tokens, Token{start, .Rparen, ")"})
 	case '{':
-		append(&t.tokens, Token{t.offset-1, .LSquirly, "{"})
+		append(&t.tokens, Token{start, .LSquirly, "{"})
 	case '}':
-		append(&t.tokens, Token{t.offset-1, .RSquirly, "}"})
+		append(&t.tokens, Token{start, .RSquirly, "}"})
 	case ';':
-		append(&t.tokens, Token{t.offset-1, .Semicolon, ":"})
+		append(&t.tokens, Token{start, .Semicolon, ":"})
     case '=':
-        append(&t.tokens, Token{t.offset-1, .Equal, "="})
+        append(&t.tokens, Token{start, .Equal, "="})
     case '+':
-        append(&t.tokens, Token{t.offset-1, .Plus, "+"})
+        append(&t.tokens, Token{start, .Plus, "+"})
 	case ',':
-		append(&t.tokens, Token{t.offset-1, .Comma, ","})
-	case ' ', '\n', '\r': // nop
+		append(&t.tokens, Token{start, .Comma, ","})
+    case 'a'..='z', 'A'..='Z', '_':
+        read_ident(t)
+        switch ident := string(t.data[start : t.offset]); ident {
+        case "let":
+            append(&t.tokens, Token{start, .Let, "let"})
+        case "fn":
+            append(&t.tokens, Token{start, .Function, "fn"})
+        case:
+            append(&t.tokens, Token{start, .Ident, ident})
+        }
+    case '0'..='9':
+        read_number(t)
+        append(&t.tokens, Token{start, .Number, string(t.data[start : t.offset])})
+    case 0:
+        append(&t.tokens, Token{start, .EOF, ""})
 	case:
-		if is_digit(c) {
-			number(t)
-		} else if is_alpha(c) {
-            if let(t) do break
-            if fn(t) do break
-            ident(t)
-		} else {
-			append(&t.tokens, Token{t.offset-1, .Illegal,""})
-		}
+        append(&t.tokens, Token{start, .Illegal, ""})
 	}
 }
 is_at_end :: proc(lexer: ^Lexer) -> bool {
 	return lexer.offset >= len(lexer.data)
+}
+skip_whitespace :: proc(lexer: ^Lexer) {
+    for strings.is_ascii_space(rune(peek(lexer))) {
+        next(lexer)
+    }
 }
 next :: proc(lexer: ^Lexer) -> u8 #no_bounds_check {
 	next: u8
@@ -103,43 +117,11 @@ is_alpha_numeric :: proc(c: u8) -> bool {
 	return is_alpha(c) || is_digit(c)
 }
 //
-number :: proc(t: ^Lexer) {
-	start := t.offset - 1
+read_number :: proc(t: ^Lexer) {
 	for is_digit(peek(t)) do next(t)
-	append(&t.tokens, Token{start, .Number, string(t.data[start:t.offset])})
 }
-let :: proc(l: ^Lexer) -> bool {
-    start := l.offset - 1
-
-    if l.offset + 2 >= len(l.data) || 
-       l.data[l.offset] != 'e' || 
-       l.data[l.offset + 1] != 't' || 
-       is_alpha_numeric(l.data[l.offset + 2]) {
-        return false
-    }
-
-    l.offset += 2 // skip 'e' and 't'
-    append(&l.tokens, Token{start, .Let, string(l.data[start:l.offset])})
-
-    return true
-}
-fn :: proc(l: ^Lexer) -> bool {
-    start := l.offset - 1
-    if l.offset + 1 >= len(l.data) || 
-       l.data[l.offset] != 'n' || 
-       is_alpha_numeric(l.data[l.offset + 1]) {
-        return false
-    }
-    l.offset += 1 // skip 'n'
-    append(&l.tokens, Token{start, .Function, string(l.data[start:l.offset])})
-    return true
-}
-
-
-ident :: proc(t: ^Lexer) {
-	start := t.offset - 1
+read_ident :: proc(t: ^Lexer) {
 	for is_alpha_numeric(peek(t)) do next(t)
-	append(&t.tokens, Token{start, .Ident, string(t.data[start:t.offset])})
 }
 
 import "core:testing"
