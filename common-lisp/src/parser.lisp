@@ -95,9 +95,9 @@
         (else (when (eq (lex-peek) 'deez/runtime:|else|)
                 (lex)
                 (parse-block))))
-    `(if (not (eq ,test deez/runtime:|false|))
-         ,then
-         ,else)))
+    `(deez/runtime:|if| ,test
+                   ,then
+                   ,else)))
 
 (defun parse-block ()
   (ensure-next #\{)

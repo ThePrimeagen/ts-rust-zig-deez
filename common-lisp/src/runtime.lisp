@@ -29,6 +29,14 @@
   `(cl:defparameter ,symbol (cl:lambda ,lambda-list
                               ,@body)))
 
+(cl:defmacro |if| (test then else)
+  (cl:let ((evaled-test (cl:gensym "EVALED-TEST")))
+    `(cl:let ((,evaled-test ,test))
+       (cl:if (cl:or (cl:null ,evaled-test)
+                     (cl:eq ,evaled-test |false|))
+              ,else
+              ,then))))
+
 (cl:defparameter |true| '|true|)
 (cl:defparameter |false| '|false|)
 
