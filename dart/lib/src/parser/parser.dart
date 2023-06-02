@@ -17,8 +17,8 @@ class Parser {
   final Lexer lexer;
   final errors = <String>[];
   // late implies that the variable will be initialized but not directly in the constructor.
-  late Token _currentToken;
-  late Token _peekToken;
+  late Token _currentToken = const Token.eof();
+  late Token _peekToken = const Token.eof();
 
   Parser(this.lexer) {
     _nextToken();
@@ -95,12 +95,7 @@ class Parser {
   }
 
   void _nextToken() {
-    // Do this to avoid late initialization error when calling _nextToken() in the constructor
-    // before _peekToken is initialized.
-    try {
-      _currentToken = _peekToken;
-      // ignore: empty_catches
-    } catch (e) {}
+    _currentToken = _peekToken;
     _peekToken = lexer.nextToken();
   }
 
