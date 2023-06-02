@@ -1,24 +1,27 @@
 defmodule LexerTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Monkey.Lexer
-  alias Monkey.Token
+
+  doctest Lexer
 
   describe "lex/1" do
     test "tokenizes simple set of syntax symbols" do
-      result = "=+(){},;" |> Lexer.lex()
+      input = "=+(){},;"
 
-      assert result == [
-               %Token{type: :assign, literal: "="},
-               %Token{type: :plus, literal: "+"},
-               %Token{type: :lparen, literal: "("},
-               %Token{type: :rparen, literal: ")"},
-               %Token{type: :lbrace, literal: "{"},
-               %Token{type: :rbrace, literal: "}"},
-               %Token{type: :comma, literal: ","},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      expected_tokens = [
+        :assign,
+        :plus,
+        :lparen,
+        :rparen,
+        :lsquirly,
+        :rsquirly,
+        :comma,
+        :semicolon,
+        :eof
+      ]
+
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes variable declarations" do
@@ -27,21 +30,21 @@ defmodule LexerTest do
       let ten = 10;
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        :let,
+        {:ident, "five"},
+        :assign,
+        {:int, "5"},
+        :semicolon,
+        :let,
+        {:ident, "ten"},
+        :assign,
+        {:int, "10"},
+        :semicolon,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :let, literal: "let"},
-               %Token{type: :ident, literal: "five"},
-               %Token{type: :assign, literal: "="},
-               %Token{type: :int, literal: "5"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :let, literal: "let"},
-               %Token{type: :ident, literal: "ten"},
-               %Token{type: :assign, literal: "="},
-               %Token{type: :int, literal: "10"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes function expression" do
@@ -51,27 +54,27 @@ defmodule LexerTest do
       };
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        :let,
+        {:ident, "add"},
+        :assign,
+        :function,
+        :lparen,
+        {:ident, "x"},
+        :comma,
+        {:ident, "y"},
+        :rparen,
+        :lsquirly,
+        {:ident, "x"},
+        :plus,
+        {:ident, "y"},
+        :semicolon,
+        :rsquirly,
+        :semicolon,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :let, literal: "let"},
-               %Token{type: :ident, literal: "add"},
-               %Token{type: :assign, literal: "="},
-               %Token{type: :fn, literal: "fn"},
-               %Token{type: :lparen, literal: "("},
-               %Token{type: :ident, literal: "x"},
-               %Token{type: :comma, literal: ","},
-               %Token{type: :ident, literal: "y"},
-               %Token{type: :rparen, literal: ")"},
-               %Token{type: :lbrace, literal: "{"},
-               %Token{type: :ident, literal: "x"},
-               %Token{type: :plus, literal: "+"},
-               %Token{type: :ident, literal: "y"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :rbrace, literal: "}"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes function call, result assigned to variable" do
@@ -79,21 +82,21 @@ defmodule LexerTest do
       let result = add(five, ten);
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        :let,
+        {:ident, "result"},
+        :assign,
+        {:ident, "add"},
+        :lparen,
+        {:ident, "five"},
+        :comma,
+        {:ident, "ten"},
+        :rparen,
+        :semicolon,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :let, literal: "let"},
-               %Token{type: :ident, literal: "result"},
-               %Token{type: :assign, literal: "="},
-               %Token{type: :ident, literal: "add"},
-               %Token{type: :lparen, literal: "("},
-               %Token{type: :ident, literal: "five"},
-               %Token{type: :comma, literal: ","},
-               %Token{type: :ident, literal: "ten"},
-               %Token{type: :rparen, literal: ")"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes operators" do
@@ -102,23 +105,23 @@ defmodule LexerTest do
       5 < 10 > 5;
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        :bang,
+        :minus,
+        :slash,
+        :asterisk,
+        {:int, "5"},
+        :semicolon,
+        {:int, "5"},
+        :less_than,
+        {:int, "10"},
+        :greater_than,
+        {:int, "5"},
+        :semicolon,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :bang, literal: "!"},
-               %Token{type: :minus, literal: "-"},
-               %Token{type: :slash, literal: "/"},
-               %Token{type: :asterisk, literal: "*"},
-               %Token{type: :int, literal: "5"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :int, literal: "5"},
-               %Token{type: :less_than, literal: "<"},
-               %Token{type: :int, literal: "10"},
-               %Token{type: :greater_than, literal: ">"},
-               %Token{type: :int, literal: "5"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes if/else statement" do
@@ -130,28 +133,28 @@ defmodule LexerTest do
       }
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        :if,
+        :lparen,
+        {:int, "5"},
+        :less_than,
+        {:int, "10"},
+        :rparen,
+        :lsquirly,
+        :return,
+        true,
+        :semicolon,
+        :rsquirly,
+        :else,
+        :lsquirly,
+        :return,
+        false,
+        :semicolon,
+        :rsquirly,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :if, literal: "if"},
-               %Token{type: :lparen, literal: "("},
-               %Token{type: :int, literal: "5"},
-               %Token{type: :less_than, literal: "<"},
-               %Token{type: :int, literal: "10"},
-               %Token{type: :rparen, literal: ")"},
-               %Token{type: :lbrace, literal: "{"},
-               %Token{type: :return, literal: "return"},
-               %Token{type: true, literal: "true"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :rbrace, literal: "}"},
-               %Token{type: :else, literal: "else"},
-               %Token{type: :lbrace, literal: "{"},
-               %Token{type: :return, literal: "return"},
-               %Token{type: false, literal: "false"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :rbrace, literal: "}"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes equivalence operators" do
@@ -160,19 +163,19 @@ defmodule LexerTest do
       11 != 10;
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        {:int, "10"},
+        :equal,
+        {:int, "10"},
+        :semicolon,
+        {:int, "11"},
+        :not_equal,
+        {:int, "10"},
+        :semicolon,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :int, literal: "10"},
-               %Token{type: :equal_equal, literal: "=="},
-               %Token{type: :int, literal: "10"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :int, literal: "11"},
-               %Token{type: :not_equal, literal: "!="},
-               %Token{type: :int, literal: "10"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
     end
 
     test "tokenizes return statements" do
@@ -182,23 +185,44 @@ defmodule LexerTest do
       return add(15);
       """
 
-      result = input |> Lexer.lex()
+      expected_tokens = [
+        :return,
+        {:int, "5"},
+        :semicolon,
+        :return,
+        {:int, "10"},
+        :semicolon,
+        :return,
+        {:ident, "add"},
+        :lparen,
+        {:int, "15"},
+        :rparen,
+        :semicolon,
+        :eof
+      ]
 
-      assert result == [
-               %Token{type: :return, literal: "return"},
-               %Token{type: :int, literal: "5"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :return, literal: "return"},
-               %Token{type: :int, literal: "10"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :return, literal: "return"},
-               %Token{type: :ident, literal: "add"},
-               %Token{type: :lparen, literal: "("},
-               %Token{type: :int, literal: "15"},
-               %Token{type: :rparen, literal: ")"},
-               %Token{type: :semicolon, literal: ";"},
-               %Token{type: :eof, literal: ""}
-             ]
+      assert Lexer.init(input) == expected_tokens
+    end
+
+    test "tokenizes identifiers with keywords as part of the name" do
+      input = """
+      let returnfoo = 1;
+      return returnfoo;
+      """
+
+      expected_tokens = [
+        :let,
+        {:ident, "returnfoo"},
+        :assign,
+        {:int, "1"},
+        :semicolon,
+        :return,
+        {:ident, "returnfoo"},
+        :semicolon,
+        :eof
+      ]
+
+      assert Lexer.init(input) == expected_tokens
     end
   end
 end

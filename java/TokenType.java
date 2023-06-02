@@ -1,4 +1,4 @@
-enum TokenType {
+public enum TokenType {
     ILLEGAL,
     EOF,
     IDENT,
@@ -12,5 +12,9 @@ enum TokenType {
     LSQIRLY,
     RSQIRLY,
     FUNC,
-    LET,
+    LET;
+
+    public Token createToken(String literal) {
+        return new Token(this, literal);
+    }
 }
