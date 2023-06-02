@@ -135,7 +135,6 @@
     `(funcall ,symbol ,@args)))
 
 (defun parse-array/hash-access (symbol)
-  (lex)
   (prog1
       `(deez/runtime::array/hash-access ,symbol ,(parse-expression))
     (ensure-next #\])))
