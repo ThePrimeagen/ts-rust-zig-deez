@@ -25,8 +25,14 @@ class Lexer {
 	}
 
 	private function skipWhitespace() {
-		while (currentCharCode == " ".code || currentCharCode == "\t".code || currentCharCode == "\n".code || currentCharCode == "\r".code) {
-			movePos();
+		var loop = true;
+		while (loop) {
+			switch (currentCharCode) {
+				case " ".code | "\t".code | "\n".code | "\r".code:
+					movePos();
+				default:
+					loop = false;
+			}
 		}
 	}
 
