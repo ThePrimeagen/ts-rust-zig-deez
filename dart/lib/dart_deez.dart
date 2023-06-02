@@ -1,2 +1,1 @@
-export 'src/token.dart';
-export 'src/lexer.dart';
+export 'src/lexer/lexer.dart';

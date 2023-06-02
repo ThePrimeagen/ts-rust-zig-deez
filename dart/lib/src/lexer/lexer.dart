@@ -1,7 +1,7 @@
-// ignore_for_file: unnecessary_string_escapes
-
 import 'utils.dart';
 import 'token.dart';
+
+export 'token.dart';
 
 const $EOF = "\u0000";
 
