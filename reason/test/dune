@@ -1,0 +1,3 @@
+(test
+ (name monkey_test)
+ (libraries monkey alcotest))

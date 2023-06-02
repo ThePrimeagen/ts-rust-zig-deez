@@ -1,16 +1,62 @@
-# Lexer
+# MonkeyLang Interpreter in Haskell
 
-- complete noob attempt at lexer in Haskell
-- changes and rewrites will be very much appreciated
+## Quickstart
 
-- find bellow a list of imports used and why.
+To test the application you can use the Makefile commands as described in the
+repo readme.
 
-## [Control.Lens](https://hackage.haskell.org/package/lens-5.2.2/docs/Control-Lens.html)
+```console
+make docker-ready
+```
 
-- record syntax in Haskell  is not very good
-- reading and updating fields is verbose and using lenses makes it more like to to other languages where `recored^.field` is equivalent to `record.field` and `record & field .~ value` is equivalent to `record.field = value`
+Small cli tool that allows to switch between the different lexer
+implementations and tokenize from stdin. (basic, monad, state, parsec)
 
-for example given a record
+```console
+cat program.monkey | cabal run haskell basic
+```
+
+## Tools used
+
+- [Fourmolu](https://hackage.haskell.org/package/fourmolu) to format code
+- [HLint](https://hackage.haskell.org/package/hlint) to check code
+- [Cabal](https://hackage.haskell.org/package/Cabal) the build tool
+
+## Lexer
+
+### Basic
+
+`Lexer.Basic` is an attempt to make a very simple implementation of a lexer
+using only pattern matching and iterating over a string.
+
+### Monad
+
+`Lexer.Monad` is an example of how you would implement a Lexer using
+Transformer Monads. `Lexer.State` is the actual implementation using a State
+Monad. This one feels the most similar to the book implementation.
+
+### Megaparsec
+
+`Lexer.Parsec` is an implementation of a lexer using the megaparsec library.
+For some reason it feels really slow.
+
+Overall I think it is cool to see different implementations for how to
+implement lexers.
+
+### Lens
+
+`Lexer.Lens` is an implementation of a lexer using State and Lens.
+
+## Why use certain packages?
+
+### [Control.Lens](https://hackage.haskell.org/package/lens-5.2.2/docs/Control-Lens.html)
+
+Record syntax in Haskell is not very user friendly. Reading and updating fields
+is verbose and using lenses makes it more like to to other languages where
+`recored^.field` is equivalent to `record.field` and `record & field .~ value`
+is equivalent to `let mut temp = record.clone(); temp.field = value; temp`
+
+For example given a record
 
 ```haskell
   Lexer
@@ -63,51 +109,63 @@ with lenses we can do this
 lexer' = lexer & input %~(take 2) & position +~1 & readPosition +~1 & ch .~ 'b'
 ```
 
-This seems trivial here but when if we have a record with many fields it becomes very verbose and hard to read particularly with nested records.
+This seems trivial here but when if we have a record with many fields it
+becomes very verbose and hard to read particularly with nested records.
 
-## [Data.ByteString.Char8](https://hackage.haskell.org/package/bytestring-0.11.4.0/docs/Data-ByteString-Char8.html)
+### [Data.ByteString.Char8](https://hackage.haskell.org/package/bytestring-0.11.4.0/docs/Data-ByteString-Char8.html)
 
-Haskell `String` type is actually a list of `char`.
-This is not very performant, e.g., `length` and indexing `(!!)` operations are O(N). Also, indexing is unsafe (can fail) with crafting or importing safe operations. With `ByteString` we have O(1) operations and built in safe indexing that return `Maybe` types (Option in Rust).
-
-## [Data.Maybe](https://hackage.haskell.org/package/base-4.18.0.0/docs/Data-Maybe.html)
-
-Used to unwrap `Maybe` type (with default in our case).
-
-## [Data.Char](https://hackage.haskell.org/package/base-4.18.0.0/docs/Data-Char.html)
-
-Used  for built in `isSpace` , `isDigit`, `isLetter`
+Haskell `String` type is actually a linked list of `char`. This is not very
+performant, e.g., `length` and indexing `(!!)` operations are O(N). Also,
+indexing is unsafe (can fail) with crafting or importing safe operations. With
+`ByteString` we have O(1) operations and built in safe indexing that return
+`Maybe` types (Option in Rust).
 
 ## [Control.Monad.Trans.State](https://hackage.haskell.org/package/transformers-0.6.1.0/docs/Control-Monad-Trans-State.html)
 
-since we are working with immutable variables, we have to keep passing the state around. You can see this in the `OCaml` version where `lexer` is being parsed around recursively and returned in a tuple?.
+Since we work with pure function (that have no side effects), we have to keep
+passing the state around. You can see this in the `Lexer.Basic` version where
+the lexer (a simple `String` in that case) is being parsed around recursively
+and returned in a tuple `nextToken :: Lexer -> (Token, Lexer)`. In languages
+like Rust we can implement a function for a structure to mutate it `pub fn
+next_token(&mut self) -> Token`.
 
-The `state` monad allows us to obfuscate the passing around of the state and perform updates on the state within a function without the need for new variable names.
+The `state` monad allows us to obfuscate the passing around of the state and
+perform updates on the state within a function without the need for new
+variable names.
 
 ```haskell
-getToken :: (Lexer, Token) -> (Lexer, Token)
-getToken (lexer, token) = (lexer'', token')
-  where
-    lexer'            = skipWhitespace lexer
-    (lexer'', token') =    -- tracking the state of the lexer is a pain
-      case lexer'^.ch of   -- imagine if we were doing multiple updates
-        '+' -> (readChar lexer', Token PLUS)
-        _   -> (readChar lexer', Token EOF)
+nextToken :: Lexer -> (Token, Lexer)
+nextToken lexer = (token, lexer'')
+    where
+        lexer'           = skipWhitespace lexer
+        (token, lexer'') =
+            case lexer' ^. ch of
+                '{' -> (LSquirly, advance lexer')
+                ...
 ```
 
 becomes
 
 ```haskell
-getToken :: State Lexer Token
-getToken = do              -- no need to manaully track the state & value of the lexer
-  modify skipWhitespace    -- we can modify state with get, put and modify
-  lexer <- get
-  case lexer^.ch of
-    '+' -> modify readchar >> pure (Token PLUS)
-    _   -> modify readcahr >> pure (Token EOF)
+nextToken :: State Lexer Token
+nextToken = do
+    modify skipWhitespace
+    lexer <- get
+    case lexer ^. ch of
+        '{' -> LSquirly <$ advance
+        ...
 ```
 
-## External - Make.cmd
+See how the logic of doing the actual parsing stays the same, we only hide the
+fact that we need to return the current state of the lexer from this function.
 
-- used [HIndent](https://hackage.haskell.org/package/hindent) to format code - don't like it
-- used [HLint](https://hackage.haskell.org/package/hlint) to check code - don't like it
+## Some weird things
+
+1. How to deal with `dist-newstyle` when building with docker? Since the
+   Makefile mounts the `$pwd` to the container it generates garbage files in
+   the host filesystem. My workaround was to run `cabal clean` at the end, but
+   is there a better way?
+
+## Contributions
+
+Any changes in terms of performance, refactoring, adding other lexers are welcome.
