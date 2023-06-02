@@ -1,0 +1,2 @@
+#json
+[{"type":"let"},{"text":"answer","type":"ident"},{"type":"equal"},{"text":"42","type":"int"},{"type":"plus"},{"text":"3","type":"int"},{"type":"asterisk"},{"text":"9","type":"int"},{"type":"semicolon"},{"type":"eof"}]

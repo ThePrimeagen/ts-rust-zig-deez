@@ -29,7 +29,7 @@ type t =
   | If
   | Else
   | Return
-[@@deriving show, eq]
+[@@deriving show, eq, sexp]
 
 let lookup_ident str =
   match str with
