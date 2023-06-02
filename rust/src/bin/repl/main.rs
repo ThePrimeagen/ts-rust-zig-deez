@@ -1,4 +1,4 @@
-use monka::{lexer::Token, Lexer};
+use monka::lex::{Lexer, Token};
 use std::io::{self, Stdin, Stdout, Write};
 
 const TITLE: &str = r#"

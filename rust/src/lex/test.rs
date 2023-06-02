@@ -1,9 +1,10 @@
-use anyhow::Result;
-
+// use anyhow::Result;
 use super::{Lexer, Token};
 
+type DynResult<T> = Result<T, Box<dyn std::error::Error>>;
+
 #[test]
-fn get_next_token() -> Result<()> {
+fn get_next_token() -> DynResult<()> {
     let input = "=+(){},;";
     let mut lexer = Lexer::new(input.into());
 
@@ -28,7 +29,7 @@ fn get_next_token() -> Result<()> {
 }
 
 #[test]
-fn get_next_complete() -> Result<()> {
+fn get_next_complete() -> DynResult<()> {
     let input = r#"let five = 5;
             let ten = 10;
             let add = fn(x, y) {
@@ -88,7 +89,7 @@ fn get_next_complete() -> Result<()> {
 }
 
 #[test]
-fn gen_all_tokens() -> Result<()> {
+fn gen_all_tokens() -> DynResult<()> {
     let input = r#"let rust = true;
 let go = false;
 

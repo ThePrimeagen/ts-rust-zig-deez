@@ -4,6 +4,45 @@ mod test;
 
 pub use error::{Error, Result};
 
+pub enum TokenKind {
+    Ident,
+    Int,
+
+    Illegal,
+    Eof,
+
+    Lparen,
+    Rparen,
+    LSquirly,
+    RSquirly,
+
+    Assign,
+    Comma,
+    Semicolon,
+    Plus,
+    Minus,
+    Asterisk,
+    ForwardSlash,
+    Not,
+    LessThan,
+    GreaterThan,
+    Equal,
+    NotEqual,
+
+    Function,
+    Let,
+    True,
+    False,
+    If,
+    Else,
+    Return,
+}
+
+struct TokenTemp<'a> {
+    kind: TokenKind,
+    literal: &'a str,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Ident(String),
@@ -39,6 +78,7 @@ pub enum Token {
     Return,
 }
 
+#[derive(Debug)]
 pub struct Lexer {
     position: usize,
     read_position: usize,

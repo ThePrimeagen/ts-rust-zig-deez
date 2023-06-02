@@ -5,12 +5,15 @@ edition = "2021"
 
 [lib]
 name = "monka"
-file = "src/lib.rs"
+path = "src/lib.rs"
 
 [[bin]]
 name = "monka-repl"
-file = "src/bin/repl/main.rs"
+path = "src/bin/repl/main.rs"
+
+[[bin]]
+name = "monka-interpret"
+path = "src/bin/repl/main.rs"
 
 [dependencies]
-anyhow = "1.0.71"
 thiserror = "1.0.40"
