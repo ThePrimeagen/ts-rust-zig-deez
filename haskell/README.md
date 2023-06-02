@@ -54,7 +54,7 @@ implement lexers.
 Record syntax in Haskell is not very user friendly. Reading and updating fields
 is verbose and using lenses makes it more like to to other languages where
 `recored^.field` is equivalent to `record.field` and `record & field .~ value`
-is equivalent to `record.field = value`
+is equivalent to `let mut temp = record.clone(); temp.field = value; temp`
 
 For example given a record
 
@@ -122,36 +122,42 @@ indexing is unsafe (can fail) with crafting or importing safe operations. With
 
 ## [Control.Monad.Trans.State](https://hackage.haskell.org/package/transformers-0.6.1.0/docs/Control-Monad-Trans-State.html)
 
-since we are working with immutable variables, we have to keep passing the
-state around. You can see this in the `OCaml` version where `lexer` is being
-parsed around recursively and returned in a tuple?.
+Since we work with pure function (that have no side effects), we have to keep
+passing the state around. You can see this in the `Lexer.Basic` version where
+the lexer (a simple `String` in that case) is being parsed around recursively
+and returned in a tuple `nextToken :: Lexer -> (Token, Lexer)`. In languages
+like Rust we can implement a function for a structure to mutate it `pub fn
+next_token(&mut self) -> Token`.
 
 The `state` monad allows us to obfuscate the passing around of the state and
 perform updates on the state within a function without the need for new
 variable names.
 
 ```haskell
-getToken :: (Lexer, Token) -> (Lexer, Token)
-getToken (lexer, token) = (lexer'', token')
-  where
-    lexer'            = skipWhitespace lexer
-    (lexer'', token') =    -- tracking the state of the lexer is a pain
-      case lexer'^.ch of   -- imagine if we were doing multiple updates
-        '+' -> (readChar lexer', Token PLUS)
-        _   -> (readChar lexer', Token EOF)
+nextToken :: Lexer -> (Token, Lexer)
+nextToken lexer = (lexer'', token)
+    where
+        lexer'           = skipWhitespace lexer
+        (lexer'', token) =
+            case lexer' ^. ch of
+                '{' -> LSquirly <$ advance
+                ...
 ```
 
 becomes
 
 ```haskell
-getToken :: State Lexer Token
-getToken = do              -- no need to manaully track the state & value of the lexer
-  modify skipWhitespace    -- we can modify state with get, put and modify
-  lexer <- get
-  case lexer^.ch of
-    '+' -> modify readchar >> pure (Token PLUS)
-    _   -> modify readcahr >> pure (Token EOF)
+nextToken :: State Lexer Token
+nextToken = do
+    modify skipWhitespace
+    lexer <- get
+    case lexer ^. ch of
+        '{' -> LSquirly <$ advance
+        ...
 ```
+
+See how the logic of doing the actual parsing stays the same, we only hide the
+fact that we need to return the current state of the lexer from this function.
 
 ## Some weird things
 
