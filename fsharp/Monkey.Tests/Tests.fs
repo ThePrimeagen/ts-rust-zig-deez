@@ -1,12 +1,12 @@
-module Tests
+module Monkey.Tests
 
 open Xunit
 open FsUnit.Xunit
-open Program.Lexer
+open Monkey.Lexer
 
 [<Fact>]
 let ``tokenize empty`` () =
-    let code = fromString ""
+    let code = ""
 
     let expectedTokens = [ Eof ]
 
@@ -14,7 +14,7 @@ let ``tokenize empty`` () =
 
 [<Fact>]
 let ``tokenize simple`` () =
-    let code = fromString "=+(){},;"
+    let code = "=+(){},;"
 
     let expectedTokens =
         [ Equal; Plus; LParen; RParen; LSquirly; RSquirly; Comma; Semicolon; Eof ]
@@ -23,7 +23,7 @@ let ``tokenize simple`` () =
 
 [<Fact>]
 let ``tokenize simple with whitespace`` () =
-    let code = fromString " = + ( ) { } , ; "
+    let code = " = + ( ) { } , ; "
 
     let expectedTokens =
         [ Equal; Plus; LParen; RParen; LSquirly; RSquirly; Comma; Semicolon; Eof ]
@@ -33,8 +33,7 @@ let ``tokenize simple with whitespace`` () =
 [<Fact>]
 let ``tokenize complex`` () =
     let code =
-        fromString
-            """let five = 5;
+        """let five = 5;
 let ten = 10;
 let add = fn(x, y) {
     x + y;
