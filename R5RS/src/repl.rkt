@@ -12,7 +12,7 @@
   (display string))
 
 (define (display-parse-errors p)
-  (if (not (= 0 (length (parser-errors p)))) (for-each (lambda (error) (display-l error)) (parser-errors p))))
+  (if (not (= 0 (length (parser-errors p)))) (for-each (lambda (error) (display-chain "Error while parsing: " error) (newline)) (parser-errors p))))
 
 (define (repl env)
   (prompt-for-input input-prompt)

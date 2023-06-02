@@ -12,7 +12,8 @@
 
 ; OBJ METHODS
 (define (inspect obj)
-  (define value (obj-value obj))
+  (if (not (null? obj))
+  (let* ((value (obj-value obj)))
   (cond
     ((obj-int? obj) (number->string value))
     ((obj-bool? obj) (if value "true" "false"))
@@ -21,7 +22,7 @@
     ((obj-error? obj) (format "ERROR: " (obj-value obj)))
     ((obj-fn? obj) (format "fn(" (string-join ", " (map inspect (obj-fn-params obj))) ") {\n" (inspect (obj-fn-body obj)) "\n}"))
 
-    (else (begin (display obj) "Could not convert to string so just displaying randomly"))))
+    (else (begin (display obj) "Could not convert to string so just displaying randomly"))))))
 
 (define (obj-value obj)
   (caddr obj))

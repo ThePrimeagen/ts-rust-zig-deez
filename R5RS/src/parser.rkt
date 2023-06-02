@@ -115,7 +115,7 @@
   (set-parser-errors! p (add-to-list (parser-errors p) (format "could not parse as integer " t))))
 
 (define (parser-prefix-parse-error p t)
-  (set-parser-errors! p (add-to-list (parser-errors p) (format "no prefix parse function found for " t))))
+  (set-parser-errors! p (add-to-list (parser-errors p) (format "no prefix parse function found for " t " with literal:'" (token-literal-as-string (parser-cur p)) "'"))))
 
 (define (add-stmt p stmt)
   (if (not (eq? stmt '()))
@@ -272,7 +272,6 @@
 
   (if (parser-peek-is p SEMICOLON)
       (parser-next-token p))
-  
   exp)
 
 (define (parse-prefix-exp p)

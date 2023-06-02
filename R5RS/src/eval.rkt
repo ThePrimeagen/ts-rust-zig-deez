@@ -8,12 +8,13 @@
   (if (obj-null? obj) #f (obj-error? obj)))
 
 (define (eval-program stmts env)
+  (if (null? stmts) THE_NULL
   (let* ((stmt (car stmts)) (result (monkey-eval stmt env)))
     (cond
       ((obj-return-value? result) (obj-value result))
       ((obj-error? result) result)
       ((> (length (cdr stmts)) 0) (eval-program (cdr stmts) env))
-      (else result))))
+      (else result)))))
 
 (define (eval-block-statement block env)
   (define (inner stmts)

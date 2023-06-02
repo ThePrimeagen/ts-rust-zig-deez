@@ -58,6 +58,13 @@
     (if (token? token)
         (caddr token)))
 
+(define (token-literal-as-string token)
+  (define lit (token-literal token))
+  (cond
+    ((number? lit) (string (integer->char lit)))
+    ((string? lit) lit)
+    (else "IDK what to do with this")))
+
 
 
 ; EQ?
@@ -136,7 +143,7 @@
     ((letter? ch) (lookup-ident (lexer-read-identifier l)))
     ((digit? ch) (to-token INT (lexer-read-integer l)))
 
-    (else (to-token ILLEGAL ch))
+    (else (begin (lexer-read-char l) (to-token ILLEGAL ch)))
     )
   )
 

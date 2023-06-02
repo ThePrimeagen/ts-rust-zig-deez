@@ -14,10 +14,12 @@
 (define (append-i s i)
   (string-append s (number->string i)))
 
+(define (display-chain . args) (for-each (lambda (arg) (display arg)) args))
+
 (define (display-nl t) (display t) (newline))
 
 (define (display-l . args)
-  (for-each (lambda (arg) (display arg) (display " ")) args)
+  (for-each (lambda (arg) (display-chain arg " ")) args)
   (newline)
   (newline))
 
