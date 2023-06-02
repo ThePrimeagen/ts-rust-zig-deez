@@ -11,3 +11,7 @@ bin           = @["lexer"]
 # Dependencies
 
 requires "nim >= 1.6.12"
+
+task test, "Run lexer tests":
+  withDir "tests":
+    exec "nim c -r test"
