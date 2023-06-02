@@ -1,0 +1,4 @@
+name = "Lexer"
+uuid = "67b3fea0-a3e0-49f6-a4f5-944f3e181eff"
+authors = ["rezaarezvan <reza@rezvan.xyz>"]
+version = "0.1.0"
