@@ -135,12 +135,12 @@ variable names.
 
 ```haskell
 nextToken :: Lexer -> (Token, Lexer)
-nextToken lexer = (lexer'', token)
+nextToken lexer = (token, lexer'')
     where
         lexer'           = skipWhitespace lexer
-        (lexer'', token) =
+        (token, lexer'') =
             case lexer' ^. ch of
-                '{' -> LSquirly <$ advance
+                '{' -> (LSquirly, advance lexer')
                 ...
 ```
 
