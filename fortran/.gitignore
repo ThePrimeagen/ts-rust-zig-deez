@@ -1,0 +1,6 @@
+*.o
+*.mod
+./repl
+./test-lexer
+./test-ast
+./test-parser
