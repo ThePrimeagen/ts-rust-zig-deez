@@ -24,12 +24,6 @@ type Code =
       mutable ReadPosition: int
       mutable Char: char }
 
-let toCode source =
-    { Source = source
-      Position = 0
-      ReadPosition = 0
-      Char = Char.MinValue }
-
 let isLetter char =
     char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char = '_'
 
@@ -42,6 +36,16 @@ let readChar code =
 
     code.Position <- code.ReadPosition
     code.ReadPosition <- code.ReadPosition + 1
+
+let toCode source =
+    let code =
+        { Source = source
+          Position = 0
+          ReadPosition = 0
+          Char = Char.MinValue }
+
+    code |> readChar
+    code
 
 let skipWhitespace code =
     while code.Char = ' ' || code.Char = '\t' || code.Char = '\n' || code.Char = '\r' do
@@ -90,8 +94,6 @@ let nextToken code =
 
 
 let tokenizeCode code =
-    code |> readChar
-
     let rec loop tokens =
         match code |> nextToken with
         | Eof -> tokens @ [ Eof ]
