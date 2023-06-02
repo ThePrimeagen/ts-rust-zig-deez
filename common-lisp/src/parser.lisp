@@ -66,6 +66,9 @@
     (return-from parse-arglist nil))
   (loop for arg = (lex)
         for next = (lex)
+        unless (typep arg 'symbol)
+          do (error "Syntax error, function arguments can only be symbols, got ~A" arg)
+        do (ensure-not-reserved arg)
         collect arg
         while (and arg (not (eql next #\))))
         unless (eql next #\,)
@@ -75,10 +78,6 @@
   (ensure-next #\()
   (let ((args (parse-arglist))
         (body (parse-block)))
-    (loop for arg in args
-          unless (typep arg 'symbol)
-            do (error "Syntax error, function arguments can only be symbols, got ~A" arg)
-          do (ensure-not-reserved arg))
     (let ((return-label (gensym "RETURN")))
       `(lambda ,args
          (macrolet ((deez/runtime:|return| (form)
@@ -124,7 +123,16 @@
     finally (return array)))
 
 (defun parse-funcall (symbol)
-  `(funcall ,symbol ,@(parse-arglist)))
+  (let ((args (if (eql (lex-peek) #\))
+                  nil
+                  (prog1
+                      (loop with args = nil
+                            do (push (parse-expression) args)
+                            while (eql (lex-peek) #\,)
+                            do (lex)
+                            finally (return (nreverse args)))
+                    (ensure-next #\))))))
+    `(funcall ,symbol ,@args)))
 
 (defun parse-array/hash-access (symbol)
   (lex)
