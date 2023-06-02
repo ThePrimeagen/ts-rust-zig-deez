@@ -16,7 +16,7 @@ Build examples:
 - [HashLink](https://haxe.org/manual/target-hl-getting-started.html) `haxe build.tests.hxml --hl bin/hl`
 - [Flash](https://haxe.org/manual/target-flash.html) `haxe build.tests.hxml --swf bin/flash/test.swf --swf-version 15 --swf-header 960:640:60:f68712` (Gigachad target, btw)
 
-Actually, (V language)[https://vlang.io/] have their own C to V transpiler, so _theoretically_ you can transpile Haxe to V. :D
+Actually, [V language](https://vlang.io/) have their own C to V transpiler, so _theoretically_ you can transpile Haxe to V. :D
 
 ## Recompilation
 
