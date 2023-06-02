@@ -1,33 +1,33 @@
-; =========================================================================== ;
+; ============================================================================ ;
 ; Lexer:                  			non packed struct
 ;  - source: char*        			offset = 0
 ;  - length: uint64_t     			offset = 8
 ;  - pos: uint64_t        			offset = 16
 ;  - ch: char             			offset = 24
-; =========================================================================== ;
+; ============================================================================ ;
 
-; =========================================================================== ;
+; ============================================================================ ;
 ; TokenType
-; =========================================================================== ;
+; ============================================================================ ;
 %define TOKEN_EOF          0
 %define TOKEN_ILLEGAL      1
 %define TOKEN_IDENT        2
 
-%define TOKEN_LSQUIRLY     3        ; {
-%define TOKEN_RSQUIRLY     4        ; }
-%define TOKEN_LPAREN       5        ; (
-%define TOKEN_RPAREN       6        ; )
+%define TOKEN_LSQUIRLY     3        ; {                           byte code: 123
+%define TOKEN_RSQUIRLY     4        ; }                           byte code: 125
+%define TOKEN_LPAREN       5        ; (                           byte code: 40
+%define TOKEN_RPAREN       6        ; )                           byte code: 41
 
-%define TOKEN_PLUS         7        ; +
-%define TOKEN_DASH         8        ; -
-%define TOKEN_COMMA        9        ; ,
-%define TOKEN_SEMICOLON    10       ; ;
-%define TOKEN_BANG         11       ; !
-%define TOKEN_ASTERIKS     12       ; *
-%define TOKEN_ASSIGN       13       ; =
-%define TOKEN_FORWARDSLASH 14       ; /
-%define TOKEN_LESS         15       ; <
-%define TOKEN_GREATER      16       ; >
+%define TOKEN_PLUS         7        ; +                           byte code: 43
+%define TOKEN_DASH         8        ; -                           byte code: 45
+%define TOKEN_COMMA        9        ; ,                           byte code: 44
+%define TOKEN_SEMICOLON    10       ; ;                           byte code: 59
+%define TOKEN_BANG         11       ; !                           byte code: 33
+%define TOKEN_ASTERIKS     12       ; *                           byte code: 42
+%define TOKEN_ASSIGN       13       ; =                           byte code: 61
+%define TOKEN_FORWARDSLASH 14       ; /                           byte code: 47
+%define TOKEN_LESS         15       ; <                           byte code: 60
+%define TOKEN_GREATER      16       ; >                           byte code: 63
 
 %define TOKEN_EQUAL        17       ; ==
 %define TOKEN_NOTEQUAL     18       ; !=
@@ -41,18 +41,18 @@
 
 section .text
 
-; =========================================================================== ;
+; ============================================================================ ;
 ; public functions
-; =========================================================================== ;
+; ============================================================================ ;
 global lexer_init
 global lexer_next
 
-; =========================================================================== ;
+; ============================================================================ ;
 ; args:
 ;  - lexer: Lexer*                  offset = 0
 ;  - source: char*                  offset = 8
 ;  - length: uint64_t               offset = 16
-; =========================================================================== ;
+; ============================================================================ ;
 lexer_init:
 	mov [rdi], rsi                  ; lexer->source = source
 	mov [rdi + 8], rdx              ; lexer->length = length
@@ -60,10 +60,10 @@ lexer_init:
 
 	ret
 	
-; =========================================================================== ;
+; ============================================================================ ;
 ; args:
 ;  - lexer: Lexer*
-; =========================================================================== ;
+; ============================================================================ ;
 lexer_next:
 	call lexer_advance
 	call lexer_skipwhitespace
@@ -86,10 +86,10 @@ lexer_case_r_squirly:
 end:
 	ret
 
-; =========================================================================== ;
+; ============================================================================ ;
 ; args:
 ;  - lexer: Lexer*
-; =========================================================================== ;
+; ============================================================================ ;
 lexer_advance:
 	mov rax, [rdi + 16]             ; load the reference of position into rax
 	xor edx, edx                    ; set edx to 0
@@ -108,7 +108,7 @@ lexer_advance_write:
 	                                ; if not overwritten. This happens if pos >= length
 	ret
 
-; =========================================================================== ;
-; =========================================================================== ;
+; ============================================================================ ;
+; ============================================================================ ;
 lexer_skipwhitespace:
 	ret
