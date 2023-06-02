@@ -1,4 +1,4 @@
-## Google Sheets Version of a
+## Google Sheets Version
 
 Please make a Copy instead of editing the original file.
 Just in case someone else is also using it.
