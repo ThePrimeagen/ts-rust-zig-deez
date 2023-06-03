@@ -13,8 +13,10 @@ contains
     pure function is_whitepsace(ch) result(ret)
         character, intent(in) :: ch
         logical :: ret
+        integer :: ord
 
-        if (ch == ' ' .or. ch == '\t' .or. ch == '\n' .or. ch == '\r') then
+        ord = ichar(ch)
+        if (ord == 32 .or. ord == 9 .or. ord == 13 .or. ord == 10) then
             ret = .true.
         else
             ret = .false.
@@ -163,7 +165,7 @@ contains
         character :: ch
 
         if (l%read_position > len(l%input)) then
-            ch = '\0'
+            ch = achar(0)
         else
             ch = l%input(l%read_position:l%read_position)
         end if

@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+declare -A state
+declare -A token
+token=(
+	[ASSIGN]=0
+	[COMMA]=1
+	[EOF]=2
+	[FUNCTION]=3
+	[IDENTIFIER]=4
+	[ILLEGAL]=5
+	[INTEGER]=6
+	[LET]=7
+	[LPAREN]=8
+	[LSQUIRLY]=9
+	[PLUS]=10
+	[RPAREN]=11
+	[RSQUIRLY]=12
+	[SEMICOLON]=13
+)
+declare -A identifier_to_token=(
+	[fn]="${token[FUNCTION]}"
+	[let]="${token[LET]}"
+)
+
+function init {
+	local str="$1"
+	[[ -z "$str" ]] && return 1
+	state=([input]="$str" [pos]=0 [cur_byte]="${str:0:1}")
+}
+
+function read_next_byte {
+	if [[ $((state[pos] + 1)) -gt ${#state[input]} ]]; then
+		state[cur_byte]=$'\0'
+		return
+	fi
+
+	((state[pos]++))
+	state[cur_byte]="${state[input]:state[pos]:1}"
+}
+
+function is_letter {
+	if [[ ${state[cur_byte]} =~ [a-zA-Z_] ]]; then
+		return 0
+	fi
+	return 1
+}
+
+function is_digit {
+	if [[ ${state[cur_byte]} =~ [0-9] ]]; then
+		return 0
+	fi
+	return 1
+}
+
+function skip_whitespace {
+	local char=${state[cur_byte]}
+	while [[ $char == $'\n' || $char == " " || $char == $'\t' || $char == $'\r' ]]; do
+		read_next_byte
+		char=${state[cur_byte]}
+	done
+}
+
+function get_number {
+	local start=${state[pos]}
+	while is_digit; do
+		read_next_byte
+	done
+	eval "${1}='${state[input]:start:state[pos]-start}'"
+}
+
+function get_identifier {
+	local start=${state[pos]}
+	while is_letter; do
+		read_next_byte
+	done
+	eval "${1}='${state[input]:start:state[pos]-start}'"
+}
+
+function next_token {
+	skip_whitespace
+	local token_type=${token[ILLEGAL]}
+	local token_literal=${state[cur_byte]}
+
+	case "$token_literal" in
+	"=")
+		token_type=${token[ASSIGN]}
+		;;
+	"+")
+		token_type=${token[PLUS]}
+		;;
+	$'\0')
+		token_type=${token[EOF]}
+		token_literal="eof"
+		;;
+	";")
+		token_type=${token[SEMICOLON]}
+		;;
+	",")
+		token_type=${token[COMMA]}
+		;;
+	"(")
+		token_type=${token[LPAREN]}
+		;;
+	")")
+		token_type=${token[RPAREN]}
+		;;
+	"{")
+		token_type=${token[LSQUIRLY]}
+		;;
+	"}")
+		token_type=${token[RSQUIRLY]}
+		;;
+	esac
+
+	if is_digit; then
+		get_number token_literal
+		eval "${1}='${token[INTEGER]} $token_literal'"
+		return
+	fi
+
+	if is_letter; then
+		get_identifier token_literal
+		token_type=${identifier_to_token[token_literal]}
+		if [[ -n $token_type ]]; then
+			eval "${1}='$token_type $token_literal'"
+			return
+		fi
+		eval "${1}='${token[IDENTIFIER]} $token_literal'"
+		return
+	fi
+
+	read_next_byte
+	eval "${1}='$token_type $token_literal'"
+}

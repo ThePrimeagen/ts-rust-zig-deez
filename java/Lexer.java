@@ -1,12 +1,15 @@
 import java.util.HashMap;
+import java.util.Optional;
 
-class Lexer {
-    String input;
-    int pos;
-    HashMap<String, Token> keywordMap = new HashMap<String, Token>() {
+public class Lexer {
+
+    private final String input;
+    private int pos = 0;
+
+    final HashMap<String, Token> keywordMap = new HashMap<>() {
         {
-            put("fn", createToken(TokenType.FUNC, "fn"));
-            put("let", createToken(TokenType.LET, "let"));
+            put("fn", TokenType.FUNC.createToken("fn"));
+            put("let", TokenType.LET.createToken("let"));
         }
     };
 
@@ -17,74 +20,60 @@ class Lexer {
     public Token nextToken() {
         this.skipWhitespace();
 
-        Token t = null;
-        TokenType tt = TokenType.ILLEGAL;
-        switch (this.getCc()) {
-            case '{' -> tt = TokenType.LSQIRLY;
-            case '}' -> tt = TokenType.RSQIRLY;
-            case '(' -> tt = TokenType.LPAREN;
-            case ')' -> tt = TokenType.RPAREN;
-            case ',' -> tt = TokenType.COMMA;
-            case ';' -> tt = TokenType.SEMI;
-            case '+' -> tt = TokenType.PLUS;
-            case '=' -> tt = TokenType.EQUAL;
-            case '\0' -> tt = TokenType.EOF;
+        var tokenType = switch (this.getCc()) {
+            case '{' -> TokenType.LSQIRLY;
+            case '}' -> TokenType.RSQIRLY;
+            case '(' -> TokenType.LPAREN;
+            case ')' -> TokenType.RPAREN;
+            case ',' -> TokenType.COMMA;
+            case ';' -> TokenType.SEMI;
+            case '+' -> TokenType.PLUS;
+            case '=' -> TokenType.EQUAL;
+            case '\0' -> TokenType.EOF;
+            default -> TokenType.ILLEGAL;
+        };
+
+        var token = switch (tokenType) {
+            case EOF -> tokenType.createToken("eof");
+            default -> tokenType.createToken(String.valueOf(this.getCc()));
+        };
+
+        if (token.type() != TokenType.ILLEGAL) {
+            this.advance();
+            return token;
         }
 
-        if (tt.equals(TokenType.EOF)) {
-            t = this.createToken(tt, "eof");
-        } else {
-            t = this.createToken(tt, String.valueOf(this.getCc()));
-        }
+        if (Character.isLetter(this.getCc())) {
+            var ident = this.indent();
 
-        if (this.isLetter(this.getCc())) {
-            String ident = this.indent();
-            Token keyword = this.keywordMap.getOrDefault(ident, null);
-            if (keyword != null) {
-                return keyword;
-            } else {
-                return createToken(TokenType.IDENT, ident);
-            }
-        } else if (this.isNumber(this.getCc())) {
-            return this.createToken(TokenType.INT, this.number());
-        } else if (t == null) {
-            return this.createToken(TokenType.ILLEGAL, String.valueOf(this.getCc()));
+            return Optional
+                    .ofNullable(this.keywordMap.get(ident))
+                    .orElseGet(() -> TokenType.IDENT.createToken(ident));
+        } else if (Character.isDigit(this.getCc())) {
+            return TokenType.INT.createToken(this.number());
         }
 
         this.advance();
-        return t;
+        return token;
     }
 
     private void advance() {
-        if (this.pos + 1 >= this.input.length()) {
-            this.pos = -1;
+        if (this.pos >= this.input.length()) {
             return;
         }
         this.pos++;
     }
 
     private char getCc() {
-        if (this.pos > this.input.length() || this.pos < 0) {
-            return 0;
+        if (this.pos >= this.input.length()) {
+            return '\0';
         }
         return this.input.charAt(this.pos);
     }
 
-    private Token createToken(TokenType type, String literal) {
-        return new Token(type, literal);
-    }
-
-    private boolean isLetter(char c) {
-        return 'a' <= c && 'z' >= c || 'A' <= c && 'Z' >= c || c == '_';
-    }
-
-    private boolean isNumber(char c) {
-        return '0' <= c && '9' >= c;
-    }
-
     private String number() {
         int pos = this.pos;
-        while (this.isNumber(this.getCc())) {
+        while (Character.isDigit(this.getCc())) {
             this.advance();
         }
         return this.input.substring(pos, this.pos);
@@ -92,17 +81,15 @@ class Lexer {
 
     private String indent() {
         int pos = this.pos;
-        while (this.isLetter(this.getCc())) {
+        while (Character.isLetter(this.getCc())) {
             this.advance();
         }
         return this.input.substring(pos, this.pos);
     }
 
     private void skipWhitespace() {
-        char cc = this.getCc();
-        while (cc == ' ' || cc == '\t' || cc == '\n' || cc == '\r') {
+        while (Character.isWhitespace(this.getCc())) {
             this.advance();
-            cc = this.getCc();
         }
     }
 }
