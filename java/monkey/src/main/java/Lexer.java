@@ -19,7 +19,7 @@ public class Lexer {
             case ';' -> TokenType.SEMI.token();
             case '+' -> TokenType.PLUS.token();
             case '=' -> {
-                if (this.peek(this.pos + 1) == '=') {
+                if (this.peekNext() == '=') {
                     this.advance();
                     yield TokenType.EQUAL.token();
                 }
@@ -28,7 +28,7 @@ public class Lexer {
             }
             case '-' -> TokenType.MINUS.token();
             case '!' -> {
-                if (this.peek(this.pos + 1) == '=') {
+                if (this.peekNext() == '=') {
                     this.advance();
                     yield TokenType.NOT_EQUAL.token();
                 }
@@ -90,6 +90,10 @@ public class Lexer {
             return '\0';
         }
         return this.input.charAt(pos);
+    }
+
+    private char peekNext() {
+        return peek(this.pos + 1);
     }
 
     private boolean isLetter(char c) {
