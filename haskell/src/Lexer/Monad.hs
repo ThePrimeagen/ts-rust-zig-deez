@@ -1,108 +1,125 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Lexer.Monad where
 
-import Control.Monad (ap)
 import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
-import Data.Char qualified as Char
+import Data.Char (isDigit, isSpace)
 import Data.Function (fix)
-import Token (Token (..), Tokenizer, identToken)
+import Data.Maybe (fromMaybe)
+import Token (Token (..), Tokenizer, identToken, isIdentChar)
 
-newtype Position = Position Int
-    deriving (Eq, Show)
+type Input = ByteString
 
--- | Basically a `ReaderT ByteString (State Position)` monad.
-newtype Lexer a = Lexer {runLexer :: ByteString -> Position -> (a, Position)}
-    deriving (Functor)
+data Lexer = Lexer
+    { input :: Input
+    , position :: Int
+    , readPosition :: Int
+    , ch :: Char
+    }
 
-instance Applicative Lexer where
-    pure a = Lexer $ \_ position -> (a, position)
-    (<*>) = ap
+-- | Basically a `State Lexer` monad.
+newtype LexerT a = LexerT {runLexer :: Lexer -> (a, Lexer)}
 
-instance Monad Lexer where
-    m >>= k = Lexer $ \input position ->
-        let (a, nextPosition) = runLexer m input position
-         in runLexer (k a) input nextPosition
+instance Functor LexerT where
+    fmap f (LexerT m) = LexerT $ \lexer ->
+        let (a, lexer') = m lexer
+         in (f a, lexer')
+
+instance Applicative LexerT where
+    pure a = LexerT (a,)
+    (<*>) (LexerT mf) (LexerT ma) = LexerT $ \lexer ->
+        let (f, lexer') = mf lexer
+            (a, lexer'') = ma lexer'
+         in (f a, lexer'')
+
+instance Monad LexerT where
+    (LexerT m) >>= k = LexerT $ \lexer ->
+        let (a, lexer') = m lexer
+         in runLexer (k a) lexer'
 
 tokenize :: Tokenizer
-tokenize input = fst $ runLexer lexer (BS.pack input) (Position 0)
+tokenize = fst . runLexer (advance >> go) . newLexer . BS.pack
   where
-    lexer = do
-        t <- nextToken
-        if t == Eof
-            then pure [t]
-            else do
-                ts <- lexer
-                pure (t : ts)
+    go = do
+        nextToken >>= \case
+            Eof -> pure [Eof]
+            token -> (token :) <$> go
 
-advance :: Lexer ()
-advance = Lexer $ \_ (Position pos) -> ((), Position (pos + 1))
+newLexer :: Input -> Lexer
+newLexer input =
+    Lexer
+        { input = input
+        , position = 0
+        , readPosition = 0
+        , ch = '\0'
+        }
 
-peek :: Lexer (Maybe Char)
-peek = Lexer $ \input (Position pos) -> (BS.indexMaybe input pos, Position pos)
+nextToken :: LexerT Token
+nextToken = do
+    skipWhitespace
+    current >>= \case
+        '{' -> LSquirly <$ advance
+        '}' -> RSquirly <$ advance
+        '(' -> LParen <$ advance
+        ')' -> RParen <$ advance
+        ',' -> Comma <$ advance
+        ';' -> Semicolon <$ advance
+        '+' -> Plus <$ advance
+        '-' -> Minus <$ advance
+        '!' ->
+            peek >>= \case
+                '=' -> NotEqual <$ advance <* advance
+                _ -> Bang <$ advance
+        '>' -> GreaterThan <$ advance
+        '<' -> LessThan <$ advance
+        '*' -> Asterisk <$ advance
+        '/' -> Slash <$ advance
+        '=' ->
+            peek >>= \case
+                '=' -> Equal <$ advance <* advance
+                _ -> Assign <$ advance
+        '\0' -> Eof <$ advance
+        c | isIdentChar c -> identToken <$> readIdent
+        c | isDigit c -> Int <$> readInt
+        _ -> Illegal <$ advance
 
-{- | Read one `Char` at the current position and advance to the next position.
-Returns `Nothing` if the position reached the end of the input.
--}
-readChar :: Lexer (Maybe Char)
-readChar = peek <* advance
+peek :: LexerT Char
+peek = LexerT $ \lexer@Lexer{..} -> (fromMaybe '\0' $ input BS.!? readPosition, lexer)
 
-{- | Skip many whitespace `Char`s and return the first non space `Char`
-or `Nothing` if the input is exhausted.
--}
-skipWhitespace :: Lexer (Maybe Char)
-skipWhitespace =
-    readChar >>= \case
-        Nothing -> pure Nothing
-        Just c
-            | Char.isSpace c -> skipWhitespace
-            | otherwise -> pure (Just c)
+current :: LexerT Char
+current = LexerT $ \lexer@Lexer{..} -> (ch, lexer)
 
-nextToken :: Lexer Token
-nextToken =
-    skipWhitespace >>= \case
-        Nothing -> pure Eof
-        Just c -> case c of
-            '=' ->
-                peek >>= \case
-                    Just '=' -> Equal <$ advance
-                    _ -> pure Assign
-            '+' -> pure Plus
-            '-' -> pure Minus
-            '!' ->
-                peek >>= \case
-                    Just '=' -> NotEqual <$ advance
-                    _ -> pure Bang
-            '*' -> pure Asterisk
-            '/' -> pure Slash
-            '<' -> pure LessThan
-            '>' -> pure GreaterThan
-            ',' -> pure Comma
-            ';' -> pure Semicolon
-            '(' -> pure LParen
-            ')' -> pure RParen
-            '{' -> pure LSquirly
-            '}' -> pure RSquirly
-            x
-                | isIdentChar x -> readIdent x
-                | Char.isDigit x -> readInt x
-                | otherwise -> pure Illegal
+advance :: LexerT ()
+advance = LexerT $ \lexer@Lexer{..} ->
+    ( ()
+    , lexer
+        { position = readPosition
+        , readPosition = readPosition + 1
+        , ch = fromMaybe '\0' $ input BS.!? readPosition
+        }
+    )
 
-readIdent :: Char -> Lexer Token
-readIdent c = identToken . (c :) <$> readWhile isIdentChar
+{- Implementation details -}
 
-readInt :: Char -> Lexer Token
-readInt c = Int . (c :) <$> readWhile Char.isDigit
+skipWhitespace :: LexerT ()
+skipWhitespace = skipWhile isSpace
 
-readWhile :: (Char -> Bool) -> Lexer String
+readIdent :: LexerT String
+readIdent = readWhile isIdentChar
+
+readInt :: LexerT String
+readInt = readWhile isDigit
+
+readWhile :: (Char -> Bool) -> LexerT String
 readWhile p = fix $ \loop ->
-    peek >>= \case
-        Just x | p x -> do
-            advance
-            xs <- loop
-            pure (x : xs)
+    current >>= \case
+        x | p x -> advance >> (x :) <$> loop
         _ -> pure ""
 
-isIdentChar :: Char -> Bool
-isIdentChar c = Char.isLetter c || c == '_'
+skipWhile :: (Char -> Bool) -> LexerT ()
+skipWhile p = fix $ \loop ->
+    current >>= \case
+        x | p x -> advance >> loop
+        _ -> pure ()

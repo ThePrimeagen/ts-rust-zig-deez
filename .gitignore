@@ -4,5 +4,7 @@ zig-cache
 zig-out
 node_modules
 *.class
+/.idea
+*.iml
 .build/
 /rust/target/

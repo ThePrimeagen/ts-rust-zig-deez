@@ -61,6 +61,7 @@ library
     -- Modules exported by the library.
     exposed-modules:  Token,
                       Lexer.Basic,
+                      Lexer.Book,
                       Lexer.Monad,
                       Lexer.State,
                       Lexer.Parsec,
