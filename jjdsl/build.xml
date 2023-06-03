@@ -1,0 +1,46 @@
+<project name="JJDSL" default="buildJJDSL" basedir=".">
+    <description>
+        Configures and Builds the Power Platform that JJDSL is.
+    </description>
+
+    <property name="github" value="https://github.com/ThePrimeagen/ts-rust-zig-deez"/>
+
+
+    <target name="buildJJDSL">
+        <antcall target="createSource"/>
+        <antcall target="deleteSource"/>
+<!--        <antcall target="resetGit"/>-->
+    </target>
+
+    <target name="createSource">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/get-source.sh"/>
+            <arg value="${github}"/>
+        </exec>
+    </target>
+
+    <target name="loadFile">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/do-checkout.sh"/>
+            <arg value="${commit}"/>
+        </exec>
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/move-file.sh"/>
+            <arg value="${fileLocation}"/>
+            <arg value="${targetLocation}"/>
+        </exec>
+    </target>
+
+    <target name="deleteSource">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/delete-source.sh"/>
+            <arg value="${github}"/>
+        </exec>
+    </target>
+
+    <target name="resetGit">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/reset-git.sh"/>
+        </exec>
+    </target>
+</project>
