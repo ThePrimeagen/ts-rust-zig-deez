@@ -56,9 +56,20 @@
                              (ensure-next #\;)))
                           (t (error "Syntax error, expected ; or = but got ~A" next)))))
     (ensure-not-reserved sym)
+    ;; HACK: we need to do the setf stuff here, because otherwise we get
+    ;;       warnings in recursive functions. In case of the non toplevel let
+    ;;       it won't work at all without this either.
     (if toplevel-p
-        (values `(defparameter ,sym ,initial-value) nil)
-        (values `(let ((,sym ,initial-value))) t))))
+        (values `(progn
+                   (defparameter ,sym nil)
+                   (setf ,sym ,initial-value)
+                   nil)
+                nil)
+        ;; This doesn't quote because we might manipulate this list
+        (values (list 'let `((,sym))
+                      `(setf ,sym ,initial-value)
+                      nil)
+                t))))
 
 (defun parse-arglist ()
   (when (eql (lex-peek) #\))
@@ -100,15 +111,9 @@
 
 (defun parse-block ()
   (ensure-next #\{)
-  (cons
-   'progn
-   (loop for token = (lex-peek)
-         unless token
-           do (error "Syntax error, expected } got EOF")
-         until (eql token #\})
-         unless (eql token #\;)
-           collect (parse-statement)
-         finally (lex))))
+  (prog1
+      (%parse nil #\})
+    (ensure-next #\})))
 
 (defun parse-array ()
   (loop
@@ -122,9 +127,25 @@
       do (error "Syntax error, expected , but got ~A" next)
     finally (return array)))
 
+(defun parse-hash ()
+  (let ((hash (list 'deez/runtime::make-hash)))
+    (when (eql (lex-peek) #\})
+      (lex)
+      (return-from parse-hash hash))
+    (prog1
+        (loop do (push (parse-expression) hash)
+              do (ensure-next #\:)
+              do (push (parse-expression) hash)
+              while (eql (lex-peek) #\,)
+              do (lex)
+              finally (return (nreverse hash)))
+      (ensure-next #\}))))
+
 (defun parse-funcall (symbol)
   (let ((args (if (eql (lex-peek) #\))
-                  nil
+                  (prog1
+                      nil
+                    (lex))
                   (prog1
                       (loop with args = nil
                             do (push (parse-expression) args)
@@ -135,7 +156,6 @@
     `(funcall ,symbol ,@args)))
 
 (defun parse-array/hash-access (symbol)
-  (lex)
   (prog1
       `(deez/runtime::array/hash-access ,symbol ,(parse-expression))
     (ensure-next #\])))
@@ -183,6 +203,8 @@
                      (parse-group))
                     ((eql token #\[)
                      (parse-array))
+                    ((eql token #\{)
+                     (parse-hash))
                     (t (error "Syntax error, unexpected ~A" token))))
                  (atom token)
                  (t (error "Expected known token type, got ~A" (type-of token)))))))
@@ -201,22 +223,21 @@
                      (t (list op expr (parse-expression next-precedence)))))
           finally (return expr))))
 
-(defun %parse (&optional toplevel-p)
-  (loop
-    with forms = (list 'progn)
-    with head = forms
-    for token = (lex-peek)
-    while token
-    do (multiple-value-bind (next replace-p)
-           (parse-statement toplevel-p)
-         (push next forms)
-         (if replace-p
-             (setf forms next)
-             (setf head forms)))
-    finally (return (let ((forms (nreverse head)))
-                      (if (cddr forms)
-                          forms
-                          (cadr forms))))))
+(defun %parse (&optional toplevel-p stop-token)
+  (loop with forms = (list 'progn)
+        for token = (lex-peek)
+        while (and token (not (eql token stop-token)))
+        do (multiple-value-bind (next replace-p)
+               (parse-statement toplevel-p)
+             (when replace-p
+               (setf next (nreverse next))
+               (push (%parse toplevel-p stop-token) next)
+               (setf next (nreverse next)))
+             (push next forms))
+        finally (return (let ((forms (nreverse forms)))
+                          (if (cddr forms)
+                              forms
+                              (cadr forms))))))
 
 (defun parse ()
   (let ((*lookahead* nil))

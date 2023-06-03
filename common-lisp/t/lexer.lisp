@@ -11,7 +11,7 @@
 
 (def-test next-token ()
   (macrolet ((next-is (expected)
-               `(is-true (eql (lex) ,expected)))
+               `(is-true (equal (lex) ,expected)))
              (test-all (list)
                `(loop for item in ,list
                       do (next-is item))))
@@ -34,6 +34,10 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
+\"foobar\"
+\"foo bar\"
+[1, 2];
+{\"foo\": \"bar\"}
 ")
       (test-all '(deez/runtime:|let| deez/user::|five| #\= 5 #\;
                   deez/runtime:|let| deez/user::|ten| #\= 10 #\;
@@ -49,7 +53,11 @@ if (5 < 10) {
                   deez/runtime:|return| deez/runtime:|false| #\;
                   #\}
                   10 deez/runtime:|==| 10 #\;
-                  10 deez/runtime:|!=| 9 #\;)))))
+                  10 deez/runtime:|!=| 9 #\;
+                  "foobar"
+                  "foo bar"
+                  #\[ 1 #\, 2 #\] #\;
+                  #\{ "foo" #\: "bar" #\})))))
 
 (def-test variable-definitions ()
   (loop for (code expected-tokens) in '(("let version = 1;"

@@ -6,12 +6,24 @@
 #include <stdlib.h>
 
 ssize_t get_line(char** str, size_t* len);
+int run_repl();
 
 #define ROUTINE                                             \
     fprintf(stdout, ">> ");                                 \
     fflush(stdout);
 
 void start()
+{
+    for (;;)
+    {
+        if (run_repl() != 0)
+        {
+            break;
+        }
+    }
+}
+
+int run_repl()
 {
     char* line = NULL;
     size_t line_len = 0;
@@ -30,12 +42,18 @@ void start()
         {
             free(line);
         }
-        return;
+        return -1;
     }
 
     if (!line)
     {
-        return;
+        return -1;
+    }
+
+    if (strncmp(line, "exit", 4) == 0)
+    {
+        free(line);
+        return 1;
     }
 
     l = lexer_new(line);
@@ -43,17 +61,13 @@ void start()
     for (tok = lexer_next_token(l); tok->type != EOFT; tok = lexer_next_token(l))
     {
         printf("type: %u literal: %s\n", tok->type, tok->literal);
-        if ((tok->type == IDENT) || (tok->type == FUNCTION) || (tok->type == INT)
-                || (tok->type == TRUE) || (tok->type == FALSE)
-                || (tok->type == IF) || (tok->type == ELSE)
-                || (tok->type == RETURN))
-        {
-            free(tok->literal);
-        }
-        free(tok);
+        free_token(tok);
     }
 
+    free_token(tok);
+    free(l);
     free(line);
+    return 0;
 }
 
 ssize_t get_line(char** str, size_t* len)

@@ -1,3 +1,2 @@
 #!/bin/bash
-javac Tests.java
-java Tests
+mvn -f ./monkey/pom.xml test

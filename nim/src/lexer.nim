@@ -1,84 +1,77 @@
-import strutils, sequtils
+import std/[strutils, sequtils]
 
-type token* = enum
-  ident = "Ident"
-  t_int = "Int"
-  illegal = "Illegal"
-  equal = "Equals"
-  plus = "Plus"
-  comma = "Comma"
-  semicolon = "Semicolon"
-  leftparen = "LeftParen"
-  rightparen = "RightParen"
-  leftsquirrel = "LeftSquirrel"
-  rightsquirrel = "RightSquirrel"
-  function = "Function"
-  t_let = "Let"
+type 
+  TokenKind* = enum
+    tkIllegal
+    tkLet
+    tkIdent
+    tkFunction
+    tkInt
+    tkEqual
+    tkPlus
+    tkComma
+    tkSemicolon
+    tkLParen
+    tkRParen
+    tkLBrace
+    tkRBrace
+  Token* = object
+    kind*: TokenKind
+    value*: string
 
-proc getIdent*(s: string): token =
+proc getIdent*(s: string): TokenKind =
   case s:
     of "fn":
-      result = function
+      result = tkFunction
     of "let":
-      result = t_let
+      result = tkLet
     else:
-      result = ident
+      result = tkIdent
   for c in s:
     if not c.isDigit:
       return
-  result = t_int
+  result = tkInt
 
-proc getSymbol*(s: string): token =
+proc getSymbol*(s: string): TokenKind =
   case s:
-    of "=": result = equal
-    of "+": result = plus
-    of ",": result = comma
-    of ";": result = semicolon
-    of "(": result = leftparen
-    of ")": result = rightparen
-    of "{": result = leftsquirrel
-    of "}": result = rightsquirrel
-    else: result = illegal
+    of "=": result = tkEqual
+    of "+": result = tkPlus
+    of ",": result = tkComma
+    of ";": result = tkSemicolon
+    of "(": result = tkLParen
+    of ")": result = tkRParen
+    of "{": result = tkLBrace
+    of "}": result = tkRBrace
+    else: result = tkIllegal
 
-proc getType*(s: string): (token, string) =
+proc getType*(s: string): Token =
   var tokentype = getIdent(s)
-  result = (tokentype, $tokentype)
-  if tokentype == ident:
-    return (ident, "Ident " & s)
-  elif tokentype == t_int:
-    return (t_int, "Int " & s)
+  result = Token(kind: tokentype, value: $tokentype)
+  if tokentype == tkIdent:
+    return Token(kind: tkIdent, value: s)
+  elif tokentype == tkInt:
+    return Token(kind: tkInt, value: s)
   else:
     let tkn = getIdent(s)
-    return (tkn, $tkn)
+    return Token(kind: tkn, value: $tkn)
 
-iterator lex*(s: string): (token, string) =
-  var lexeme = ""
+iterator lex*(s: string): Token =
+  var lexme = ""
   for l in s:
     case l:
       of Letters:
-        lexeme &= l
+        lexme &= l
       of Digits:
-        lexeme &= l
+        lexme &= l
       of Whitespace:
-        if lexeme.len == 0:
+        if lexme.len == 0:
           continue
-        yield getType(lexeme)
-        lexeme = ""
+        yield getType(lexme)
+        lexme = ""
       else:
-        if lexeme.len > 0:
-          yield getType(lexeme)
+        if lexme.len > 0:
+          yield getType(lexme)
         let sym = getSymbol($l)
-        yield (sym, $sym)
-        lexeme = ""
+        yield Token(kind: sym, value: $sym)
+        lexme = ""
 
-let test = """
-let five = 5;
-let ten = 10;
-let add = fn(x, y) {
-    x + y;
-};
-let result = add(five, ten);
-"""
-
-for i in test.lex:
-  echo i[1]
