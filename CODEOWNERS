@@ -4,7 +4,7 @@
 # Degenerate language maintainers.
 /R5RS/          @Fesaa
 /bash/          @aretrosen
-/bash-twe/      @ThenWhenceComethEvil
+/bash-twce/     @ThenWhenceComethEvil
 /bf/            @sno2
 /c/             @zivlakmilos
 /c-boreddad/    @boreddad
@@ -15,6 +15,7 @@
 /cpp/           @nicdgonzalez
 /crystal/       @devnote-dev
 /csharp/        @MarioGK
+/csharp2/       @leo-costa @redducks100
 /clj/           @Vikasg7
 /d/             @ToraKuma42
 /dart/          @shreyassanthu77
