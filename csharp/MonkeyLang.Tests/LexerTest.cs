@@ -1,6 +1,4 @@
-using monkey;
-
-namespace lexer.tests;
+namespace MonkeyLang.Tests;
 
 public class Tests
 {
@@ -29,13 +27,13 @@ public class Tests
             new TokenInfo(Token.Eof)
         };
 
-        foreach(var expected in expectedResult)
+        foreach (var expected in expectedResult)
         {
             var result = lexer.NextToken();
             Assert.That(result, Is.EqualTo(expected));
         }
     }
-    
+
     [Test]
     public void Test2()
     {

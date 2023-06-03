@@ -1,8 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lexer", "lexer\lexer.csproj", "{1472458E-CC85-4A8E-8EC7-31E60467FCF4}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.33711.374
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonkeyLang", "MonkeyLang\MonkeyLang.csproj", "{1472458E-CC85-4A8E-8EC7-31E60467FCF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lexer.tests", "lexer.tests\lexer.tests.csproj", "{35C8E3B4-7A74-4B2B-8923-BEB6128DE98F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonkeyLang.Tests", "MonkeyLang.Tests\MonkeyLang.Tests.csproj", "{35C8E3B4-7A74-4B2B-8923-BEB6128DE98F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +21,8 @@ Global
 		{35C8E3B4-7A74-4B2B-8923-BEB6128DE98F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35C8E3B4-7A74-4B2B-8923-BEB6128DE98F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{35C8E3B4-7A74-4B2B-8923-BEB6128DE98F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

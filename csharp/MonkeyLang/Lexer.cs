@@ -1,4 +1,4 @@
-﻿namespace monkey;
+﻿namespace MonkeyLang;
 
 public struct Lexer
 {
