@@ -1,0 +1,5 @@
+﻿[
+  Integer { Value = 123456 },
+  Identifier { Value = abc },
+  EoF { }
+]
