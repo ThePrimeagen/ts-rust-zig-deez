@@ -8,14 +8,21 @@
 
     <target name="buildJJDSL">
         <antcall target="createSource"/>
+        <!--    References   -->
         <antcall target="loadFile">
             <param name="commit" value="df29eae5b8aea190228db5879eb5600d118a391c"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
-            <param name="targetLocation" value="${basedir}/out/scripts/references.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/1.js"/>
         </antcall>
-<!--        <antcall target="compileJava"/>-->
-<!--        <antcall target="deleteSource"/>-->
-<!--        <antcall target="resetGit"/>-->
+        <!--   Java Engine Loader     -->
+        <antcall target="loadFile">
+            <param name="commit" value="ba6c0eb3f85ccd3b7749253999c967703a1504ca"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/Loader.java"/>
+            <param name="targetLocation" value="${basedir}/Loader.java"/>
+        </antcall>
+        <antcall target="compileJava"/>
+        <antcall target="deleteSource"/>
+        <antcall target="resetGit"/>
     </target>
 
     <target name="createSource">
