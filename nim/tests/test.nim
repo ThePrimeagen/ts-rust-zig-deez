@@ -12,7 +12,7 @@ suite "lexer tests":
       let result = add(five, ten);
     """
     let lexemes = collect:
-      for val in lex(source): val[0]
+      for val in lex(source): val.kind
     let expected = @[
       t_let, ident, equal, t_int, semicolon,
       t_let, ident, equal, t_int, semicolon,

@@ -1,21 +1,25 @@
 import std/[strutils, sequtils]
 
-type Token* = enum
-  ident = "Ident"
-  t_int = "Int"
-  illegal = "Illegal"
-  equal = "Equals"
-  plus = "Plus"
-  comma = "Comma"
-  semicolon = "Semicolon"
-  leftparen = "LeftParen"
-  rightparen = "RightParen"
-  leftsquirrel = "LeftSquirrel"
-  rightsquirrel = "RightSquirrel"
-  function = "Function"
-  t_let = "Let"
+type 
+  TokenKind* = enum
+    ident = "Ident"
+    t_int = "Int"
+    illegal = "Illegal"
+    equal = "Equals"
+    plus = "Plus"
+    comma = "Comma"
+    semicolon = "Semicolon"
+    leftparen = "LeftParen"
+    rightparen = "RightParen"
+    leftsquirrel = "LeftSquirrel"
+    rightsquirrel = "RightSquirrel"
+    function = "Function"
+    t_let = "Let"
+  Token* = object
+    kind*: TokenKind
+    value*: string
 
-proc getIdent*(s: string): Token =
+proc getIdent*(s: string): TokenKind =
   case s:
     of "fn":
       result = function
@@ -28,7 +32,7 @@ proc getIdent*(s: string): Token =
       return
   result = t_int
 
-proc getSymbol*(s: string): Token =
+proc getSymbol*(s: string): TokenKind =
   case s:
     of "=": result = equal
     of "+": result = plus
@@ -40,34 +44,34 @@ proc getSymbol*(s: string): Token =
     of "}": result = rightsquirrel
     else: result = illegal
 
-proc getType*(s: string): (Token, string) =
+proc getType*(s: string): Token =
   var tokentype = getIdent(s)
-  result = (tokentype, $tokentype)
+  result = Token(kind: tokentype, value: $tokentype)
   if tokentype == ident:
-    return (ident, "Ident " & s)
+    return Token(kind: ident, value: s)
   elif tokentype == t_int:
-    return (t_int, "Int " & s)
+    return Token(kind: t_int, value: s)
   else:
     let tkn = getIdent(s)
-    return (tkn, $tkn)
+    return Token(kind: tkn, value: $tkn)
 
-iterator lex*(s: string): (Token, string) =
-  var lexeme = ""
+iterator lex*(s: string): Token =
+  var lexme = ""
   for l in s:
     case l:
       of Letters:
-        lexeme &= l
+        lexme &= l
       of Digits:
-        lexeme &= l
+        lexme &= l
       of Whitespace:
-        if lexeme.len == 0:
+        if lexme.len == 0:
           continue
-        yield getType(lexeme)
-        lexeme = ""
+        yield getType(lexme)
+        lexme = ""
       else:
-        if lexeme.len > 0:
-          yield getType(lexeme)
+        if lexme.len > 0:
+          yield getType(lexme)
         let sym = getSymbol($l)
-        yield (sym, $sym)
-        lexeme = ""
+        yield Token(kind: sym, value: $sym)
+        lexme = ""
 
