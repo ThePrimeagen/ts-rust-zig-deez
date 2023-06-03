@@ -6,7 +6,5 @@ node_modules
 *.class
 /.idea
 *.iml
-/.idea
-*.iml
 .build/
 /rust/target/
