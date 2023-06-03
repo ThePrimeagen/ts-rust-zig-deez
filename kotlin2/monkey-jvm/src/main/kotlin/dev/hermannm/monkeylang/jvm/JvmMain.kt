@@ -1,11 +1,12 @@
-﻿package dev.hermannm.monkeylang
+package dev.hermannm.monkeylang.jvm
 
-fun main() {
+import dev.hermannm.monkeylang.Lexer
+
+fun main(args: Array<String>) {
     while (true) {
         print(">> ")
         val line = readln()
         val lexer = Lexer(line)
-
         for (token in lexer) {
             println(token)
         }

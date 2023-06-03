@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 
 class LexerTest {
     @Test
-    fun `Test basic single-character symbols`() = testExpectedTokensInInput(
+    fun testBasicSingleCharacterSymbols() = testExpectedTokensInInput(
         input = "=+(){},;",
 
         expectedTokens = listOf(
@@ -22,7 +22,7 @@ class LexerTest {
     )
 
     @Test
-    fun `Test sample with identifiers`() = testExpectedTokensInInput(
+    fun testSampleWithIdentifiers() = testExpectedTokensInInput(
         input = """
             let five = 5;
             let ten = 10;
@@ -76,7 +76,7 @@ class LexerTest {
     )
 
     @Test
-    fun `Test extended symbols`() = testExpectedTokensInInput(
+    fun testExtendedSymbols() = testExpectedTokensInInput(
         input = """
             !-/*5;
             5 < 10 > 5;
@@ -110,7 +110,7 @@ class LexerTest {
     )
 
     @Test
-    fun `Test if statement`() = testExpectedTokensInInput(
+    fun testIfStatement() = testExpectedTokensInInput(
         input = """
             if (5 < 10) {
                 return true;
@@ -142,7 +142,7 @@ class LexerTest {
     )
 
     @Test
-    fun `Test strings`() = testExpectedTokensInInput(
+    fun testStrings() = testExpectedTokensInInput(
         input = """
             "foobar"
             "foo bar"
@@ -158,7 +158,7 @@ class LexerTest {
     )
 
     @Test
-    fun `Test arrays`() = testExpectedTokensInInput(
+    fun testArrays() = testExpectedTokensInInput(
         input = "[1, 2];",
 
         expectedTokens = listOf(
@@ -173,7 +173,7 @@ class LexerTest {
     )
 
     @Test
-    fun `Test maps`() = testExpectedTokensInInput(
+    fun testMaps() = testExpectedTokensInInput(
         input = """
             {"foo": "bar"}
         """.trimIndent(),
