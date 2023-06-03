@@ -1,7 +1,7 @@
 <?php
 enum TokenType: string {
     case Illegal = "ILLEGAL";
-    case Eof = "";
+    case Eof = "EOF";
     case Ident = "IDENT";
     case Int = "INT";
     case Equal = "=";
@@ -43,6 +43,10 @@ class Tokenizer {
     public function getNextToken(): Token {
         $this->skipWhitespaces();
 
+        if( $this->ch === null ) {
+            return new Token(TokenType::Eof);
+        }
+
         if( $token = TokenType::tryFrom($this->ch) ) {
             $this->readNextChar();
             return new Token($token);
@@ -56,7 +60,7 @@ class Tokenizer {
     }
 
     private function skipWhitespaces(): void {
-        while ( ctype_space( $this->ch ) ) {
+        while ($this->ch === " " || $this->ch === "\t" || $this->ch === "\n" || $this->ch === "\r") {
             $this->readNextChar();
         }
     }
