@@ -1,38 +1,26 @@
-USING: kernel prettyprint arrays strings math locals accessors 
-    sequences combinators namespaces vectors assocs ;
+USING: kernel prettyprint arrays strings math accessors 
+    sequences combinators namespaces vectors assocs 
+    combinators.short-circuit sbufs ;
 IN: deez.lexer
 
+SYMBOLS: tkIllegal tkEOF tkIdent tkInt
+    tkAssign tkEq tkBang tkNEq 
+    tkPlus tkMinus tkStar tkSlash 
+    tkLT tkGT tkLTEq tkGTEq 
+    tkLParen tkRParen tkLSquirly tkRSquirly tkComma 
+    tkFunction tkLet tkReturn
+    tkTrue tkFalse tkIf tkElse ;
 
-SYMBOL: tkIllegal
-SYMBOL: tkEOF
-SYMBOL: tkIdent
-SYMBOL: tkInt
-INITIALIZED-SYMBOL: tkAssign    [ "=" ]
-INITIALIZED-SYMBOL: tkEq        [ "==" ]
-INITIALIZED-SYMBOL: tkNEq       [ "!=" ]
-INITIALIZED-SYMBOL: tkPlus      [ "+" ]
-INITIALIZED-SYMBOL: tkMinus     [ "-" ]
-INITIALIZED-SYMBOL: tkBang      [ "!" ]
-INITIALIZED-SYMBOL: tkStar      [ "*" ]
-INITIALIZED-SYMBOL: tkSlash     [ "/" ]
-INITIALIZED-SYMBOL: tkComma     [ "," ]
-INITIALIZED-SYMBOL: tkLT        [ "<" ]
-INITIALIZED-SYMBOL: tkGT        [ ">" ]
-INITIALIZED-SYMBOL: tkLTEq      [ "<=" ]
-INITIALIZED-SYMBOL: tkGTEq      [ ">=" ]
-INITIALIZED-SYMBOL: tkLParen    [ "(" ]
-INITIALIZED-SYMBOL: tkRParen    [ ")" ]
-INITIALIZED-SYMBOL: tkLSquirly  [ "{" ]
-INITIALIZED-SYMBOL: tkRSquirly  [ "}" ]
-INITIALIZED-SYMBOL: tkFunction  [ "fn" ]
-INITIALIZED-SYMBOL: tkLet       [ "let" ]
-INITIALIZED-SYMBOL: tkTrue      [ "true" ]
-INITIALIZED-SYMBOL: tkFalse     [ "false" ]
-INITIALIZED-SYMBOL: tkIf        [ "if" ]
-INITIALIZED-SYMBOL: tkElse      [ "else" ]
-INITIALIZED-SYMBOL: tkReturn    [ "return" ]
-
-INITIALIZED-SYMBOL: token-type-lookups [ H{ 
+CONSTANT: token-lookup-table H{
+    { "="       tkAssign    }   { "=="      tkEq        }
+    { "!"       tkBang      }   { "!="      tkNEq       }
+    { "+"       tkPlus      }   { "-"       tkMinus     }
+    { "*"       tkStar      }   { "/"       tkSlash     }
+    { "<"       tkLT        }   { ">"       tkGT        }
+    { "<="      tkLTEq      }   { ">="      tkGTEq      }
+    { "("       tkLParen    }   { ")"       tkRParen    }
+    { "{"       tkLSquirly  }   { "}"       tkRSquirly  }
+    { ","       tkComma     }
     { "fn"      tkFunction  }
     { "let"     tkLet       }
     { "true"    tkTrue      }
@@ -40,9 +28,11 @@ INITIALIZED-SYMBOL: token-type-lookups [ H{
     { "if"      tkIf        }
     { "else"    tkElse      }
     { "return"  tkReturn    }
-} ] 
+}
 
-: sym-char ( sym -- ch ) get 0 swap nth ;
+: token-lookup ( ch -- sym ) 1string token-lookup-table at tkIllegal or ;
+
+: ?token-lookup ( ch/f -- sym ) [ token-lookup ] [ tkIllegal ] if* ;
 
 : letter? ( c -- t/f )
     { [ CHAR: a >= ] [ CHAR: z <= and ] 
@@ -50,11 +40,12 @@ INITIALIZED-SYMBOL: token-type-lookups [ H{
       [ CHAR: _ = or or ] } cleave ;
 
 : whitespace? ( c -- t/f ) 
-    { [ CHAR: space = ] [ CHAR: \t = ] [ CHAR: \n = ] [ CHAR: \r = ] } 
-    cleave or or or ;
+    { [ CHAR: space = ] [ CHAR: \t = ] [ CHAR: \n = ] [ CHAR: \r = ] } 1|| ;
 
-: digit? ( c -- t/f ) 
-    [ CHAR: 0 >= ] [ CHAR: 9 <= ] bi and ;
+: digit? ( c -- t/f ) { [ CHAR: 0 >= ] [ CHAR: 9 <= ] } 1&& ;
+
+: keyword-or-ident ( string -- kw/ident ) 
+    token-lookup-table at [ tkIdent ] unless* ;
 
 TUPLE: tokentype literal type ;
 C: <tokentype> tokentype
@@ -65,83 +56,54 @@ TUPLE: lexer
  { line fixnum }
  { col fixnum } ;
 
-: <lexer> ( text -- lexer )
-    0 1 1 lexer boa ;
+: <lexer> ( text -- lexer ) 0 1 1 lexer boa ;
 
-: lexing? ( lexer -- lexer t/f )
-    dup [ cursor>> ] [ text>> length ] bi < ;
+: lexing? ( lexer -- lexer t/f ) dup [ cursor>> ] [ text>> length ] bi < ;
 
-: inc-cursor ( lexer -- lexer )
-    dup cursor>> 1 + >>cursor ;
+: inc-cursor ( lexer -- lexer ) [ 1 + ] change-cursor ;
 
-: dec-cursor ( lexer -- lexer )
-    dup cursor>> 1 - >>cursor ;
+: dec-cursor ( lexer -- lexer ) [ 1 - ] change-cursor ;
 
-: current-char ( lexer -- lexer ch )
-    dup [ cursor>> ] [ text>> ] bi nth ;
-
-: peek-char ( lexer -- lexer ch/f )
-    dup [ cursor>> 1 + ] [ text>> ] [ text>> length ] tri
-    pick > [ nth ] [ 2drop f ] if ;
+: current-char? ( lexer -- lexer ch/f )
+    lexing? [ dup [ cursor>> ] [ text>> ] bi nth ] [ f ] if ;
 
 : next-char ( lexer -- lexer ch )
-    dup [ cursor>> ] [ text>> ] bi nth swap inc-cursor swap ;
+    dup [ cursor>> ] [ text>> ] bi nth [ inc-cursor ] dip ;
 
-: ?next-char ( lexer -- lexer ch/f )
-    lexing? [ next-char ] [ f ] if ;
+: next-char? ( lexer -- lexer ch/f ) lexing? [ next-char ] [ f ] if ;
 
 : read-identifier ( lexer ch -- lexer string ) 
-    1vector swap 
-    [ ?next-char dup [ dup letter? [ ] [ drop dec-cursor f ] if ] when ] 
-    [ pick push ] while* swap >string ;
+    1string >sbuf swap 
+    [ next-char? dup [ dup letter? [ drop dec-cursor f ] unless ] when ] 
+    [ pick push ] while* swap "" like ;
 
 : read-number ( lexer ch -- lexer string )
-    1vector swap
-    [ ?next-char dup [ dup digit? [ ] [ drop dec-cursor f ] if ] when ] 
-    [ pick push ] while* swap >string ;
+    1string >sbuf swap
+    [ next-char? dup [ dup digit? [ drop dec-cursor f ] unless ] when ] 
+    [ pick push ] while* swap "" like ;
 
 : skip-whitespace ( lexer -- lexer )
-    lexing? [ [ current-char whitespace? ] [ inc-cursor ] while ] when ;
+    lexing? [ [ current-char? whitespace? ] [ inc-cursor ] while ] when ;
 
-: ?keyword ( string -- string kw/ident )
-    dup token-type-lookups get at dup [ drop tkIdent ] unless ;
-
-
-: ?next-token ( lexer -- lexer token/f )
-    skip-whitespace ?next-char dup [ 
-     {
-        { [ dup tkAssign sym-char = ] 
-          [ over current-char tkAssign sym-char
-            = [ inc-cursor drop drop tkEq get tkEq ] 
-              [ drop tkAssign ] if ] }
-        { [ dup tkPlus sym-char = ] [ tkPlus ] }
-        { [ dup tkMinus sym-char = ] [ tkMinus ] }
-        { [ dup tkBang sym-char = ] 
-          [ over current-char tkAssign sym-char
-            = [ inc-cursor drop drop tkNEq get tkNEq ] 
-              [ drop tkBang ] if ] }
-        { [ dup tkStar sym-char = ] [ tkStar ] }
-        { [ dup tkSlash sym-char = ] [ tkSlash ] }
-        { [ dup tkComma sym-char = ] [ tkComma ] }
-        { [ dup tkLT sym-char = ] 
-          [ over current-char tkAssign sym-char
-            = [ inc-cursor drop drop tkLTEq get tkLTEq ] 
-              [ drop tkLT ] if ] }
-        { [ dup tkGT sym-char = ] 
-          [ over current-char tkAssign sym-char
-            = [ inc-cursor drop drop tkGTEq get tkGTEq ] 
-              [ drop tkGT ] if ] }
-        { [ dup tkLParen sym-char = ] [ tkLParen ] }
-        { [ dup tkRParen sym-char = ] [ tkRParen ] }
-        { [ dup tkLSquirly sym-char = ] [ tkLSquirly ] }
-        { [ dup tkRSquirly sym-char = ] [ tkRSquirly ] }
-        { [ dup tkPlus sym-char = ] [ tkPlus ] }
-        { [ dup letter? ] [ read-identifier ?keyword ] }
-        { [ dup digit? ] [ read-number tkInt ] }
-        [ tkIllegal ]
-    } cond <tokentype> ] [ drop f ] if ;
+: next-token? ( lexer -- lexer token/f )
+    skip-whitespace next-char? [ {
+        { [ dup letter? ] [ read-identifier dup keyword-or-ident ] }
+        { [ dup digit?  ] [ read-number tkInt ] }
+        [ dup token-lookup {
+            { tkAssign [ [ current-char? ] dip swap ?token-lookup tkAssign
+                = [ [ inc-cursor ] dip tkEq ] [ tkAssign ] if ] }
+            { tkBang [ [ current-char? ] dip swap ?token-lookup tkAssign
+                = [ [ inc-cursor ] dip tkNEq ] [ tkBang ] if ] }
+            { tkLT [ [ current-char? ] dip swap ?token-lookup tkAssign
+                = [ [ inc-cursor ] dip tkLTEq ] [ tkLT ] if ] }
+            { tkGT [ [ current-char? ] dip swap ?token-lookup tkAssign
+                = [ [ inc-cursor ] dip tkGTEq ] [ tkGT ] if ] }
+            [  ] ! case: default does not pop the matched item
+        } case ]
+    } cond <tokentype> ] [ f ] if* ;
 
 : lex ( lexer -- seq )
     0 <vector> swap [ 
-        ?next-token dup [ pick push t ] [ drop f ] if
+        next-token? [ pick push t ] [ f ] if*
     ] loop drop ;
+
