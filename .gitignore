@@ -4,12 +4,7 @@ zig-cache
 zig-out
 node_modules
 *.class
-
-
-# Added by cargo
-#
-# already existing elements were commented out
-
-#/target
-bf/target
-rust/target
+/.idea
+*.iml
+.build/
+/rust/target/

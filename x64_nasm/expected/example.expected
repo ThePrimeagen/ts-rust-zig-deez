@@ -1,0 +1,37 @@
+test/example.monkey at (0:3): let
+test/example.monkey at (4:4): <ident> five
+test/example.monkey at (9:1): =
+test/example.monkey at (11:1): <int> 5
+test/example.monkey at (12:1): ;
+test/example.monkey at (14:3): let
+test/example.monkey at (18:3): <ident> ten
+test/example.monkey at (22:1): =
+test/example.monkey at (24:2): <int> 10
+test/example.monkey at (26:1): ;
+test/example.monkey at (28:3): let
+test/example.monkey at (32:3): <ident> add
+test/example.monkey at (36:1): =
+test/example.monkey at (38:2): fn
+test/example.monkey at (40:1): (
+test/example.monkey at (41:1): <ident> x
+test/example.monkey at (42:1): ,
+test/example.monkey at (44:1): <ident> y
+test/example.monkey at (45:1): )
+test/example.monkey at (47:1): {
+test/example.monkey at (50:1): <ident> x
+test/example.monkey at (52:1): +
+test/example.monkey at (54:1): <ident> y
+test/example.monkey at (55:1): ;
+test/example.monkey at (57:1): }
+test/example.monkey at (58:1): ;
+test/example.monkey at (60:3): let
+test/example.monkey at (64:6): <ident> result
+test/example.monkey at (71:1): =
+test/example.monkey at (73:3): <ident> add
+test/example.monkey at (76:1): (
+test/example.monkey at (77:4): <ident> five
+test/example.monkey at (81:1): ,
+test/example.monkey at (83:3): <ident> ten
+test/example.monkey at (86:1): )
+test/example.monkey at (87:1): ;
+test/example.monkey at (89:0): <eof>

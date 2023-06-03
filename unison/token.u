@@ -1,0 +1,21 @@
+
+structural type Token = Illegal Text | Ident Text | Int Text | Eof
+    | Assign | Plus | Comma 
+    | Semicolon | Lparen | Rparen 
+    | Lbrace |  Rbrace | Minus 
+    | Bang | Asterisk| Slash 
+    | Fn | Let | Gt| Lt 
+    | True | False | If | Else
+    | Return | Eq | NotEq
+
+keyWords : Text -> Token
+keyWords word = 
+    match word with
+    "fn" -> Fn
+    "let" -> Let
+    "true" -> True
+    "false" -> False
+    "if" -> If
+    "else" -> Else
+    "return" -> Return
+    _ -> Ident word
