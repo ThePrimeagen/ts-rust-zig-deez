@@ -12,13 +12,13 @@ suite "lexer tests":
       let result = add(five, ten);
     """
     let lexemes = collect:
-      for val in lex(source): val[0]
+      for val in lex(source): val.kind
     let expected = @[
-      t_let, ident, equal, t_int, semicolon,
-      t_let, ident, equal, t_int, semicolon,
-      t_let, ident, equal, function, leftparen, ident, comma, ident, rightparen, leftsquirrel,
-      ident, plus, ident, semicolon,
-      rightsquirrel, semicolon,
-      t_let, ident, equal, ident, leftparen, ident, comma, ident, rightparen, semicolon,
+      tkLet, tkIdent, tkEqual, tkInt, tkSemicolon,
+      tkLet, tkIdent, tkEqual, tkInt, tkSemicolon,
+      tkLet, tkIdent, tkEqual, tkFunction, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkLBrace,
+      tkIdent, tkPlus, tkIdent, tkSemicolon,
+      tkRBrace, tkSemicolon,
+      tkLet, tkIdent, tkEqual, tkIdent, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkSemicolon,
     ]
     check lexemes == expected
