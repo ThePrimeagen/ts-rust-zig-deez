@@ -43,8 +43,6 @@
 (cl:setf (cl:symbol-function '-) #'cl:-)
 (cl:setf (cl:symbol-function '*) #'cl:*)
 (cl:setf (cl:symbol-function '/) #'cl:/)
-(cl:setf (cl:symbol-function '<) #'cl:<)
-(cl:setf (cl:symbol-function '>) #'cl:>)
 
 (cl:defun ! (thing)
   (cl:if (cl:and thing
@@ -61,6 +59,12 @@
   (cl:if (cl:equal left right)
          '|false|
          '|true|))
+
+(cl:defun < (left right)
+  (cl:if (cl:< left right) |true| |false|))
+
+(cl:defun > (left right)
+  (cl:if (cl:> left right) |true| |false|))
 
 (cl:defun + (left right)
   (cl:cond
