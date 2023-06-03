@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include "token.h"
 
@@ -49,4 +50,17 @@ TokenT lookup_ident(char* ident)
         return RETURN;
     }
     return IDENT;
+}
+
+void free_token(Token* tok)
+{
+    if ((tok->type == IDENT) || (tok->type == FUNCTION)
+            || (tok->type == INT) || (tok->type == LET)
+            || (tok->type == TRUE) || (tok->type == FALSE)
+            || (tok->type == IF) || (tok->type == ELSE)
+            || (tok->type == RETURN))
+    {
+        free(tok->literal);
+    }
+    free(tok);
 }

@@ -8,36 +8,41 @@ import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
 import Data.Char (isDigit, isLetter, isSpace)
 import Data.Function (fix)
+import Data.Maybe (fromMaybe)
 import Token (Token (..), Tokenizer, identToken)
 
 type Input = ByteString
 
-{- | The Lexer data structure, where `input` is the program that we need to tokenize,
-`ch` is the character that we are currenly over, and `position` is the read position.
--}
 data Lexer = Lexer
     { input :: Input
-    , ch :: Char
     , position :: Int
+    , readPosition :: Int
+    , ch :: Char
     }
 
 type LexerT = State Lexer
 
 tokenize :: Tokenizer
-tokenize = evalState (advance >> lexer) . newLexer . BS.pack
+tokenize = evalState (advance >> go) . newLexer . BS.pack
   where
-    lexer =
+    go = do
         nextToken >>= \case
             Eof -> pure [Eof]
-            t -> (t :) <$> lexer
+            token -> (token :) <$> go
 
 newLexer :: Input -> Lexer
-newLexer input = Lexer input '\0' 0
+newLexer input =
+    Lexer
+        { input = input
+        , position = 0
+        , readPosition = 0
+        , ch = '\0'
+        }
 
 nextToken :: LexerT Token
 nextToken = do
     skipWhitespace
-    gets ch >>= \case
+    current >>= \case
         '{' -> LSquirly <$ advance
         '}' -> RSquirly <$ advance
         '(' -> LParen <$ advance
@@ -66,15 +71,19 @@ nextToken = do
 peek :: LexerT Char
 peek = do
     input <- gets input
-    position <- gets position
-    pure $ if position >= BS.length input then '\0' else BS.index input position
+    readPosition <- gets readPosition
+    pure $ fromMaybe '\0' $ input BS.!? readPosition
+
+current :: LexerT Char
+current = gets ch
 
 advance :: LexerT ()
 advance = modify $ \lexer@Lexer{..} ->
     lexer
         { input = input
-        , ch = if position >= BS.length input then '\0' else BS.index input position
-        , position = position + 1
+        , ch = fromMaybe '\0' $ input BS.!? readPosition
+        , position = readPosition
+        , readPosition = readPosition + 1
         }
 
 skipWhitespace :: LexerT ()
@@ -91,12 +100,12 @@ isIdentChar c = isLetter c || c == '_'
 
 readWhile :: (Char -> Bool) -> LexerT String
 readWhile p = fix $ \loop ->
-    gets ch >>= \case
+    current >>= \case
         x | p x -> advance >> (x :) <$> loop
         _ -> pure ""
 
 skipWhile :: (Char -> Bool) -> LexerT ()
 skipWhile p = fix $ \loop ->
-    gets ch >>= \case
+    current >>= \case
         x | p x -> advance >> loop
         _ -> pure ()
