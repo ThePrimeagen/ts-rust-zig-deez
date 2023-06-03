@@ -27,4 +27,4 @@ lint:
 
 test:
 	@echo "===> Testing"
-	sbcl --load load.lisp --eval '(uiop:quit (if (asdf:test-system "deez") 0 1))'
+	sbcl --non-interactive --load load.lisp --eval '(uiop:quit (if (asdf:test-system "deez") 0 1))'
