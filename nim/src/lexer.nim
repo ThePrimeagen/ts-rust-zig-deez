@@ -71,14 +71,3 @@ iterator lex*(s: string): (token, string) =
         yield (sym, $sym)
         lexeme = ""
 
-let test = """
-let five = 5;
-let ten = 10;
-let add = fn(x, y) {
-    x + y;
-};
-let result = add(five, ten);
-"""
-
-for i in test.lex:
-  echo i[1]
