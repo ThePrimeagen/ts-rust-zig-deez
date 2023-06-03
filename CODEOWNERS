@@ -3,6 +3,8 @@
 
 # Degenerate language maintainers.
 /R5RS/          @Fesaa
+/bash/          @aretrosen
+/bash-twe/      @ThenWhenceComethEvil
 /c/             @zivlakmilos
 /c-boreddad/    @boreddad
 /chatgpt/       @unconv
@@ -16,6 +18,7 @@
 /dart-funk/     @Fa-C-Shus
 /elixir/        @ryanwinchester
 /erlang/        @mikimaine
+/factor/        @TriedAngle
 /fortran/       @greuben92
 /fsharp/        @meenzen
 /go/            @GiorgosAthanasopoulos
@@ -33,11 +36,10 @@
 /kotlin2/       @hermannm
 /lua/           @aretrosen
 /luajit/        @Okanoa
-/bash/          @aretrosen
 /odin/          @jon-lipstate
 /php/           @wartab
 /prolog/        @Kaixi26
-/prolog2/        @luizcoro2
+/prolog2/       @luizcoro2
 /purescript/    @yornaath
 /python/        @BatikanHyt
 /reason/        @lessp
