@@ -1,0 +1,28 @@
+#+TITLE: Deez in Common Lisp
+
+This mostly works but there might still be bugs somewhere.
+
+Note on eval: This does not implement an actual interpreter (for now at least). Instead it passes the parsed code to the Lisp evaluator.
+
+* What is still to do
+- [ ] Write tests for eval
+- [ ] Implement own eval function
+
+* CLI
+This comes with a CLI interface. To compile it, you need to install sbcl and quicklisp.
+
+Install sbcl with your package manager and quicklisp like so:
+
+#+begin_src shell
+  curl -O https://beta.quicklisp.org/quicklisp.lisp
+  sbcl --load quicklisp.lisp \
+       --eval '(quicklisp-quickstart:install)' \
+       --eval '(ql-util:without-prompting (ql:add-to-init-file))' \
+       --eval '(uiop:quit)'
+#+end_src
+
+After this you can simply ~make build~. This should create the =cl-deez= binary.
+
+Run with a filename as an argument it will parse and eval the file. Using the =--lex= and =--parse= switches, you can selectively invoke only the lexer or parser. The =--time= switch supresses output and instead times the operation.
+
+You can also create an executable out of your monkeylang source file by providing the =--output FILENAME= argument.

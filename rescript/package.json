@@ -1,0 +1,22 @@
+{
+  "name": "rescript-monkey",
+  "version": "0.0.1",
+  "keywords": [
+    "rescript"
+  ],
+  "author": "Dylan Fontaine <me@dylf.dev>",
+  "scripts": {
+    "build": "rescript build",
+    "clean": "rescript clean",
+    "dev": "rescript build -w",
+    "test": "retest lib/js/test/*.js"
+  },
+  "dependencies": {
+    "@rescript/core": "*",
+    "rescript": "*"
+  },
+  "devDependencies": {
+    "rescript-test": "^4.0.0",
+    "rescript-js": "^1.0.0-beta.2"
+  }
+}
