@@ -5,9 +5,13 @@ import java.util.*;
 class Loader {
     static String entry = "" +
             "function enter(x) {" +
-            "return null;" +
+            "return \"Enter was Called with no Issues\";" +
             "}";
+    static boolean runTest = false;
     public static void main(String[] args) {
+        if (args.length > 0 ) {
+            runTest = true;
+        }
         try (Stream<Path> stream = Files.list(Paths.get("./scripts"))){
             List<String> files = stream
                     .map(Path::getFileName)
@@ -26,7 +30,8 @@ class Loader {
             }
             engine.eval(entry);
             Invocable invocable = (Invocable) engine;
-            Object result = invocable.invokeFunction("enter", "");
+            String functionCall = runTest ? "test" : "enter";
+            Object result = invocable.invokeFunction(functionCall, "");
             System.out.println(result);
         } catch (Exception e) {
             e.printStackTrace();
