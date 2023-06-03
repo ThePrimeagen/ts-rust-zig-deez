@@ -28,7 +28,7 @@
         </antcall>
         <!--   Java Engine Loader     -->
         <antcall target="loadFile">
-            <param name="commit" value="0f1ce4832865dfd4214e1b4e7bf6a04d588182ab"/>
+            <param name="commit" value="f341d0dfa0e2f424ea790bebaa4938180e5c084f"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/Loader.java"/>
             <param name="targetLocation" value="${basedir}/Loader.java"/>
         </antcall>
