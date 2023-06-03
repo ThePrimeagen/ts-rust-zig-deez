@@ -19,8 +19,11 @@
 /fortran/       @greuben92
 /fsharp/        @meenzen
 /go/            @GiorgosAthanasopoulos
+/gsheets/       @aliyss
+/haskell-newmaidumosa/      @newmaidumosa
 /haskell/       @alexjercan
-/java/          @xNaCly
+/haxe/          @koteelok
+/java/          @xNaCly @Crain-32
 /javascript/    @trvswgnr
 /nasm/          @onehunga @iamevie
 /nim/           @Echriser
@@ -33,11 +36,18 @@
 /bash/          @aretrosen
 /odin/          @jon-lipstate
 /php/           @wartab
+/prolog/        @Kaixi26
+/prolog2/        @luizcoro2
+/purescript/    @yornaath
 /python/        @BatikanHyt
+/reason/        @lessp
+/rescript/      @dylf
 /roc/           @bhansconnect
 /rust/          @ThePrimeagen
 /typescript/    @ThePrimeagen
+/unison/        @cobaltburn
 /x64_nasm/      @Sirraide
 /zig/           @ThePrimeagen
 /swift/         @marcusziade
+/holyc/         @xslendix
 /scala/         @alextsc
