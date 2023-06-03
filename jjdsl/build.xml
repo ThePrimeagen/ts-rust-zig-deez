@@ -8,15 +8,27 @@
 
     <target name="buildJJDSL">
         <antcall target="createSource"/>
-        <!--    References   -->
+        <!--    Base Classes   -->
         <antcall target="loadFile">
-            <param name="commit" value="df29eae5b8aea190228db5879eb5600d118a391c"/>
+            <param name="commit" value="ade14fa068f28050615fa3960d37f6a5ab39a979"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/1.js"/>
         </antcall>
+        <!--    Helper Function   -->
+        <antcall target="loadFile">
+            <param name="commit" value="5b6d62abce322cdb13d0da0b1bd4f7aaf4d86808"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/2.js"/>
+        </antcall>
+        <!--   Lexer Definition    -->
+        <antcall target="loadFile">
+            <param name="commit" value="0b53b46df8c6e27acd79429ead54a427dbffc0b4"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/3.js"/>
+        </antcall>
         <!--   Java Engine Loader     -->
         <antcall target="loadFile">
-            <param name="commit" value="ba6c0eb3f85ccd3b7749253999c967703a1504ca"/>
+            <param name="commit" value="0f1ce4832865dfd4214e1b4e7bf6a04d588182ab"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/Loader.java"/>
             <param name="targetLocation" value="${basedir}/Loader.java"/>
         </antcall>
