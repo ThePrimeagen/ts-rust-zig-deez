@@ -100,15 +100,9 @@
 
 (defun parse-block ()
   (ensure-next #\{)
-  (cons
-   'progn
-   (loop for token = (lex-peek)
-         unless token
-           do (error "Syntax error, expected } got EOF")
-         until (eql token #\})
-         unless (eql token #\;)
-           collect (parse-statement)
-         finally (lex))))
+  (prog1
+      (%parse nil #\})
+    (ensure-next #\})))
 
 (defun parse-array ()
   (loop
@@ -216,22 +210,21 @@
                      (t (list op expr (parse-expression next-precedence)))))
           finally (return expr))))
 
-(defun %parse (&optional toplevel-p)
-  (loop
-    with forms = (list 'progn)
-    with head = forms
-    for token = (lex-peek)
-    while token
-    do (multiple-value-bind (next replace-p)
-           (parse-statement toplevel-p)
-         (push next forms)
-         (if replace-p
-             (setf forms next)
-             (setf head forms)))
-    finally (return (let ((forms (nreverse head)))
-                      (if (cddr forms)
-                          forms
-                          (cadr forms))))))
+(defun %parse (&optional toplevel-p stop-token)
+  (loop with forms = (list 'progn)
+        for token = (lex-peek)
+        while (and token (not (eql token stop-token)))
+        do (multiple-value-bind (next replace-p)
+               (parse-statement toplevel-p)
+             (when replace-p
+               (setf next (nreverse next))
+               (push (%parse toplevel-p stop-token) next)
+               (setf next (nreverse next)))
+             (push next forms))
+        finally (return (let ((forms (nreverse forms)))
+                          (if (cddr forms)
+                              forms
+                              (cadr forms))))))
 
 (defun parse ()
   (let ((*lookahead* nil))
