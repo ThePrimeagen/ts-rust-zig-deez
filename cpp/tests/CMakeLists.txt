@@ -9,21 +9,24 @@ FetchContent_MakeAvailable(googletest)
 add_library(GTest::GTest INTERFACE IMPORTED)
 target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
-add_executable(lexer_test lexer_test.cpp)
+add_executable(tests
+  lexer_test.cpp
+  parser_test.cpp
+)
 
 
 add_compile_options(
   -Wall -Wpedantic
 )
 
-target_include_directories(lexer_test
+target_include_directories(tests
  PUBLIC
   src
 )
 
-target_link_libraries(lexer_test
+target_link_libraries(tests
  PRIVATE
   GTest::GTest
   TsRustZigDeez_lib)
 
-add_test(NAME lexer_test COMMAND lexer_test)
+add_test(NAME tests COMMAND tests)

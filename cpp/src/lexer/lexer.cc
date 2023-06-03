@@ -2,6 +2,7 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 #include "lexer.hh"
 

@@ -10,4 +10,4 @@ WORKDIR /src/cbuild
 
 RUN cmake ../ && make
 
-CMD ["./tests/lexer_test"]
+CMD ["./tests/tests"]

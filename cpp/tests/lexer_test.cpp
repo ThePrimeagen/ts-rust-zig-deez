@@ -2,9 +2,9 @@
 #include <iostream>
 #include <utility>
 #include <gtest/gtest.h>
-#include "lexer/lexer.hh"
+#include "lexer.hh"
 
-TEST(TestLexer, TestLexer_One) {
+TEST(TestLexer, TestNextToken1) {
 
 	const TokenType testTokenTypes[] {
 		TokenType::Assign,
@@ -25,9 +25,10 @@ TEST(TestLexer, TestLexer_One) {
 		ASSERT_EQ(token.type, testTokenType);
 		lexer.next();
 	}
+	ASSERT_TRUE(lexer.eof());
 }
 
-TEST(TestLexer, TestLexer_Complete) {
+TEST(TestLexer, TestNextToken2) {
 
 	const Token testTokens[] {
 		{ TokenType::Let                  },
@@ -69,12 +70,12 @@ TEST(TestLexer, TestLexer_Complete) {
 		{ TokenType::Eof                  },
 	};
 
-	Lexer lexer {
-	  "let five = 5;"
-	  "let ten = 10;"
-	  "let add = fn(x, y) { x + y; };"
-	  "let result = add(five, ten);"
-	};
+	Lexer lexer {R"XXX(
+		let five = 5;
+		let ten = 10;
+		let add = fn(x, y) { x + y; };
+		let result = add(five, ten);
+	)XXX"};
 
 	for (const auto& testToken : testTokens) {
 		const auto token = lexer.peek();
@@ -82,4 +83,5 @@ TEST(TestLexer, TestLexer_Complete) {
 		ASSERT_EQ(token.literal, testToken.literal);
 		lexer.next();
 	}
+	ASSERT_TRUE(lexer.eof());
 }
