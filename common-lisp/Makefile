@@ -17,6 +17,9 @@ docker-ready: docker-build
 # Update those:
 ##
 
+build:
+	sbcl --non-interactive --load build.lisp
+
 fmt:
 	@echo "===> Formatting"
 	# TODO: add yours
