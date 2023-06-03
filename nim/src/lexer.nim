@@ -18,6 +18,7 @@ type
   Token* = object
     kind*: TokenKind
     value*: string
+  
 
 proc getIdent*(s: string): TokenKind =
   case s:
@@ -56,22 +57,22 @@ proc getType*(s: string): Token =
     return Token(kind: tkn, value: $tkn)
 
 iterator lex*(s: string): Token =
-  var lexme = ""
+  var lexeme = ""
   for l in s:
     case l:
       of Letters:
-        lexme &= l
+        lexeme &= l
       of Digits:
-        lexme &= l
+        lexeme &= l
       of Whitespace:
-        if lexme.len == 0:
+        if lexeme.len == 0:
           continue
-        yield getType(lexme)
-        lexme = ""
+        yield getType(lexeme)
+        lexeme = ""
       else:
-        if lexme.len > 0:
-          yield getType(lexme)
+        if lexeme.len > 0:
+          yield getType(lexeme)
         let sym = getSymbol($l)
         yield Token(kind: sym, value: $sym)
-        lexme = ""
+        lexeme = ""
 
