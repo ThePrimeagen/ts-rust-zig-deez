@@ -1,4 +1,5 @@
-import unittest, sugar, ../src/lexer
+import std/[unittest, sugar]
+import ../src/lexer
 
 suite "lexer tests":
   test "lexemes match":
