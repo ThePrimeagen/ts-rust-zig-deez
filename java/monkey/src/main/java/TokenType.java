@@ -1,27 +1,39 @@
+import java.util.Optional;
+
 public enum TokenType {
     ILLEGAL,
     EOF("eof"),
     IDENT,
     INT,
-    EQUAL("="),
-    PLUS("+"),
     COMMA(","),
     SEMI(";"),
     LPAREN("("),
     RPAREN(")"),
     LSQIRLY("{"),
     RSQIRLY("}"),
+
+    // Operations
+    EQUAL("="),
+    PLUS("+"),
+    MINUS("-"),
+    BANG("!"),
+    ASTERISK("*"),
+    SLASH("/"),
+    LT("<"),
+    GT(">"),
+
+    // Keywords
     FUNC("fn"),
     LET("let");
 
-    private final Token token;
-    TokenType(String literal) {
-        token = new Token(this, literal);
+    private final Optional<Token> token;
 
+    TokenType(String literal) {
+        token = Optional.of(new Token(this, literal));
     }
 
     TokenType() {
-        this.token=null;
+        this.token = Optional.empty();
     }
 
     public Token createToken(String literal) {
@@ -29,6 +41,8 @@ public enum TokenType {
     }
 
     public Token token() {
-        return token;
+        return token.orElseThrow(() -> new IllegalArgumentException(
+                "TokenType %s doesn't have a default Token. Create one using 'createToken'".formatted(this.name())
+        ));
     }
 }

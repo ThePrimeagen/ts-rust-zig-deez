@@ -37,7 +37,10 @@ public class LexerTest {
                 let add = fn(x, y) {
                      x + y;
                 };
-                let result = add(five, ten);""";
+                let result = add(five, ten);
+
+                !-/*5;
+                5 < 10 > 5;""";
         Lexer l = new Lexer(input);
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
@@ -75,6 +78,18 @@ public class LexerTest {
                 new Token(TokenType.COMMA, ","),
                 new Token(TokenType.IDENT, "ten"),
                 new Token(TokenType.RPAREN, ")"),
+                new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.BANG, "!"),
+                new Token(TokenType.MINUS, "-"),
+                new Token(TokenType.SLASH, "/"),
+                new Token(TokenType.ASTERISK, "*"),
+                new Token(TokenType.INT, "5"),
+                new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.INT, "5"),
+                new Token(TokenType.LT, "<"),
+                new Token(TokenType.INT, "10"),
+                new Token(TokenType.GT, ">"),
+                new Token(TokenType.INT, "5"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.EOF, "eof"),
         };
