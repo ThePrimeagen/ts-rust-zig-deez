@@ -10,13 +10,9 @@ the following command to run the tests:
 $ cargo test
 ```
 
-## Data Flow
+## Binary Format
 
-The program takes in the input source into the program and loads each byte using
-the comma operator (`,`).
-
-The tokens are outputted to the caller using the period `.` operator. The
-following byte table is used to define the the operators:
+The lexer outputs tokens using the following binary format:
 
 | Name                  | Value      |
 | --------------------- | ---------- |
@@ -31,11 +27,13 @@ following byte table is used to define the the operators:
 | Equal `=`             | 8          |
 | Identifier            | 9 byte* 0  |
 | Number                | 10 byte* 0 |
-| Illegal               | 11         |
+| Illegal               | 11 byte    |
 
-Later, we can pipe the lexer to a parser brainf*ck program to create an AST.
+Note we do not recognize keywords in the lexer because it requires backtracking
+input bytes which would need an ident buffer store which is quite hard to manage
+while lexing.
 
 ## Sources
 
-- If-equal algorithm adapted from
+- Equal algorithm adapted from
   https://www.reddit.com/r/brainfuck/comments/7ddo14/test_for_2_equal_values/

@@ -9,7 +9,6 @@ State machine loop [
     Set the continue flag at $0 to true
     < +
 
-
     Check if left paren
         Clone the input byte at $1 to $2 and advance to $3
         > [>+>+<<-]>>[<<+>>-]
@@ -20,10 +19,14 @@ State machine loop [
         Set $3 to equality
         [-<->]+<[>-<[-]]>
         
-        If they are equal [
-            [-]
+		If they are equal [
+			Reset continue flag at $3
             <<< [-] >>>
-            +.
+            
+			Emit left paren token
+			[-] +.
+			
+			Reset equality
             [-]
         ] <<<
     
@@ -38,9 +41,13 @@ State machine loop [
         [-<->]+<[>-<[-]]>
         
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            ++.
+            
+			Emit right paren token
+			[-] ++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -55,9 +62,13 @@ State machine loop [
         [-<->]+<[>-<[-]]>
         
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            +++.
+            
+			Emit left curly token
+			[-] +++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -70,11 +81,15 @@ State machine loop [
 
         Set $3 to equality
         [-<->]+<[>-<[-]]>
-        
+
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            ++++.
+            
+			Emit right curly token
+			[-] ++++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -89,9 +104,13 @@ State machine loop [
         [-<->]+<[>-<[-]]>
         
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            +++++.
+            
+			Emit comma token
+			[-] +++++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -106,9 +125,13 @@ State machine loop [
         [-<->]+<[>-<[-]]>
         
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            ++++++.
+            
+			Emit semi colon token
+			[-] ++++++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -123,9 +146,13 @@ State machine loop [
         [-<->]+<[>-<[-]]>
         
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            +++++++.
+            
+			Emit plus token
+			[-] +++++++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -140,9 +167,13 @@ State machine loop [
         [-<->]+<[>-<[-]]>
         
         If they are equal [
-            [-]
+			Reset continue flag at $3
             <<< [-] >>>
-            ++++++++.
+            
+			Emit equal token
+			[-] ++++++++.
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -159,6 +190,8 @@ State machine loop [
         If they are equal [
             Reset continue flag
             <<< [-] >>>
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -175,6 +208,8 @@ State machine loop [
         If they are equal [
             Reset continue flag
             <<< [-] >>>
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -187,10 +222,12 @@ State machine loop [
 
         Set $3 to equality
         [-<->]+<[>-<[-]]>
-        
+
         If they are equal [
             Reset continue flag
             <<< [-] >>>
+			
+			Reset equality
             [-]
         ] <<<
 
@@ -200,7 +237,7 @@ State machine loop [
         ten times which iterates all digit characters
 
         Store digit counter in $4
-        >>>> +++++++++
+        >>>> +++++++++++
 
         Loop through digits using counter and equality [
             Clone the input byte at $1 to $2 and advance to $3
@@ -225,9 +262,14 @@ State machine loop [
             [-<->]+<[>-<[-]]>
 
             If they are equal [
+                Reset equality
                 [-]
+
+                Set continue at $0 to false
                 <<< [-] >>>
-                > [-] ++++++++++ <
+
+                Reset digit counter at $4
+                > [-] +++++++++++ <
 
                 If eating is true >>> [
                     Emit digit start
@@ -237,9 +279,8 @@ State machine loop [
                     [-]
                 ] <<<
 
+                Emit current input byte and load next at $1
                 << ., >>
-
-                [-]
             ]
 
             Move to and decrement digit counter at $4
@@ -247,11 +288,14 @@ State machine loop [
         ] <<<<
 
     Check if ident [
-        This is based off of the number algorithm but composed to match through
-        upper and lower letters along with digits
 
+	The following algorithm is inspired by the number algorithm but it requires
+	creating another loop to ensure that we capture all characters
+
+	Move to $7 at ident continue and increment it
+	>>>>>>> [-] + [ <<<<<<<
         Store letter counter in $4
-        >>>> +++++++++++++++++++++++++
+        >>>> ++++++++++++++++++++++++++
 
         Loop through lower letters using counter and equality [
             Clone the input byte at $1 to $2 and advance to $3
@@ -276,9 +320,17 @@ State machine loop [
             [-<->]+<[>-<[-]]>
 
             If they are equal [
+                Reset continue flag at $0
                 [-]
+
+				Increment ident counter at $7
+				>>>> + <<<<
+
+                Reset continue flag at $0
                 <<< [-] >>>
-                > [-] +++++++++++++++++++++++++ <
+
+                Reset letter counter at $4
+                > [-] ++++++++++++++++++++++++++ <
 
                 If eating is true >>> [
                     Emit ident start
@@ -288,9 +340,8 @@ State machine loop [
                     [-]
                 ] <<<
 
+                Emit current input byte and load next at $1
                 << ., >>
-
-                [-]
             ]
 
             Move to and decrement digit counter at $4
@@ -298,7 +349,7 @@ State machine loop [
         ] <<<<
         
         Store letter counter in $4
-        >>>> +++++++++++++++++++++++++
+        >>>> ++++++++++++++++++++++++++
 
         Loop through upper letters using counter and equality [
             Clone the input byte at $1 to $2 and advance to $3
@@ -323,9 +374,14 @@ State machine loop [
             [-<->]+<[>-<[-]]>
 
             If they are equal [
-                [-]
+                Reset continue flag at $0
                 <<< [-] >>>
-                > [-] +++++++++++++++++++++++++ <
+
+				Increment ident counter at $7
+				>>>> + <<<<
+
+                Reset letter counter at $4
+                > [-] ++++++++++++++++++++++++++ <
 
                 If eating is true >>> [
                     Emit ident start
@@ -335,8 +391,10 @@ State machine loop [
                     [-]
                 ] <<<
 
+                Emit current input byte and load next at $1
                 << ., >>
 
+                Reset equality at $3
                 [-]
             ]
 
@@ -345,7 +403,7 @@ State machine loop [
         ] <<<<
 
         Store digit counter in $4
-        >>>> +++++++++
+        >>>> +++++++++++
 
         Loop through digits using counter and equality [
             Clone the input byte at $1 to $2 and advance to $3
@@ -370,23 +428,38 @@ State machine loop [
             [-<->]+<[>-<[-]]>
 
             If they are equal [
-                [-]
-                <<< [-] >>>
-                > [-] ++++++++++ <
-                << ., >>
+				Increment ident counter at $7
+				>>>> + <<<<
 
+                Reset equal at $3
                 [-]
+
+                Reset continue flag at $0
+                <<< [-] >>>
+
+                Store digit counter in $4
+                > [-] +++++++++++ <
+
+                Log out input byte and reload next byte in $1
+                << ., >>
             ]
 
             Move to and decrement digit counter at $4
             > -
-        ] <<<<
+        ]
+
+	Move back to ident continue flag at $7 and decrement it
+	>>> -
+	
+	Rerun ident loop and shift back to continue flag after
+	] <<<<<<<
 
     If continue flag still set emit illegal token [
-        [-]
-        Emit illegal token
-        +++++++++++.
-        [-]
+        Emit illegal token using continue flag as scratch
+        [-] +++++++++++. [-]
+
+        Emit illegal input byte in $1
+        > . <
     ]
 
     ]]]]]]]]]]]]
@@ -403,10 +476,10 @@ State machine loop [
     >>> [-] +
 
     If the eating flag at $6 is set eat forwards > [
-        Reset eating flag
+        Reset eating flag at $6
         [-]
 
-        Set else to false
+        Set else at $5 to false
         < - >
 
         Load the next input byte at $1

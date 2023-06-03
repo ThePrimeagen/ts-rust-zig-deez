@@ -3,7 +3,7 @@ use brainfuck::{
     tape::{ArrayTape, ModArrayTape},
     Interpreter,
 };
-use std::io::{self, Write};
+use std::io::{self, Cursor, Read, Write};
 use stringreader::StringReader;
 
 #[derive(Debug, PartialEq)]
@@ -19,10 +19,11 @@ enum Token {
     Equal,
     Ident(String),
     Number(String),
-    Illegal,
+    Illegal(char),
 }
 
 const LEXER: &'static str = include_str!("../lexer.b");
+const PARSER: &'static str = include_str!("../parser.b");
 
 macro_rules! expect_tokens {
     ($input: expr, $expected: expr) => {{
@@ -67,7 +68,7 @@ macro_rules! expect_tokens {
                     }
                     Token::Number(num)
                 }
-                11 => Token::Illegal,
+                11 => Token::Illegal((*iter.next().unwrap()).into()),
                 other => panic!("unexpected code: {}", other),
             });
         }
@@ -76,7 +77,8 @@ macro_rules! expect_tokens {
     }};
 }
 
-fn main() -> std::io::Result<()> {
+#[test]
+fn test_lexer() {
     expect_tokens!("123\0", [Token::Number("123".into()), Token::EOF]);
 
     expect_tokens!(
@@ -130,14 +132,76 @@ fn main() -> std::io::Result<()> {
     );
 
     expect_tokens!(
-        "aB5+05\0",
+        "aB5 + 05() 95\0",
         [
             Token::Ident("aB5".into()),
             Token::Plus,
             Token::Number("05".into()),
+            Token::LeftParen,
+            Token::RightParen,
+            Token::Number("95".into()),
             Token::EOF
         ]
     );
 
-    Ok(())
+    expect_tokens!(
+        "   ();[] asdf(\0",
+        [
+            Token::LeftParen,
+            Token::RightParen,
+            Token::Semi,
+            Token::Illegal('['),
+            Token::Illegal(']'),
+            Token::Ident("asdf".into()),
+            Token::LeftParen,
+            Token::EOF
+        ]
+    );
+
+    expect_tokens!(
+        "a123 B123 bA9 Z929\0",
+        [
+            Token::Ident("a123".into()),
+            Token::Ident("B123".into()),
+            Token::Ident("bA9".into()),
+            Token::Ident("Z929".into()),
+            Token::EOF,
+        ]
+    );
+
+    expect_tokens!(
+        "Ao oA oZ Zo ao oa zo oz fdsa\0",
+        [
+            Token::Ident("Ao".into()),
+            Token::Ident("oA".into()),
+            Token::Ident("oZ".into()),
+            Token::Ident("Zo".into()),
+            Token::Ident("ao".into()),
+            Token::Ident("oa".into()),
+            Token::Ident("zo".into()),
+            Token::Ident("oz".into()),
+            Token::Ident("fdsa".into()),
+            Token::EOF,
+        ]
+    );
+}
+
+fn main() {
+    let mut stdin: Cursor<&str> = Cursor::new("(\0");
+    let mut tokens = Vec::new();
+
+    let lexer = Program::parse(LEXER).unwrap();
+    let mut interp = Interpreter::<ModArrayTape>::new(lexer, &mut stdin, &mut tokens);
+    interp.run().unwrap();
+
+    println!("tokens: {:?}", tokens);
+
+    let mut tokens = Cursor::new(tokens);
+    let mut nodes = Vec::new();
+
+    let program = Program::parse(PARSER).unwrap();
+    let mut interp = Interpreter::<ModArrayTape>::new(program, &mut tokens, &mut nodes);
+    interp.run().unwrap();
+
+    println!(" nodes: {:?}", nodes);
 }
