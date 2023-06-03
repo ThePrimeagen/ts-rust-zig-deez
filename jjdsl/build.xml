@@ -22,9 +22,21 @@
         </antcall>
         <!--   Lexer Definition    -->
         <antcall target="loadFile">
-            <param name="commit" value="0b53b46df8c6e27acd79429ead54a427dbffc0b4"/>
+            <param name="commit" value="c3e8715e618c38c71a0931282a027dc1c5ef7ddb"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/3.js"/>
+        </antcall>
+        <!--   Token Helper Functions   -->
+        <antcall target="loadFile">
+            <param name="commit" value="7032f131feb73dc4febd8d35a4ccb6d988b47c8b"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/4.js"/>
+        </antcall>
+        <!--   Test Suit Functions   -->
+        <antcall target="loadFile">
+            <param name="commit" value="093a07c7af20de30cf01f7344ca7938cf2d73f22"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/99.js"/>
         </antcall>
         <!--   Java Engine Loader     -->
         <antcall target="loadFile">
