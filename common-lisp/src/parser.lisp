@@ -62,10 +62,13 @@
     (if toplevel-p
         (values `(progn
                    (defparameter ,sym nil)
-                   (setf ,sym ,initial-value))
+                   (setf ,sym ,initial-value)
+                   nil)
                 nil)
-        (values `(let ((,sym))
-                   (setf ,sym ,initial-value))
+        ;; This doesn't quote because we might manipulate this list
+        (values (list 'let `((,sym))
+                      `(setf ,sym ,initial-value)
+                      nil)
                 t))))
 
 (defun parse-arglist ()
