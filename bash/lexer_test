@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+source "./lexer"
+
+init "=+(){},; let  51"
+
+declare vari
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"
+next_token vari
+echo "$vari"

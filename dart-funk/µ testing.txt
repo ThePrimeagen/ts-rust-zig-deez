@@ -1,0 +1,20 @@
+## Activate package `coverage` (if needed):
+dart pub global activate coverage 1.6.3
+dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage --check-ignore
+
+dart run test --coverage=./coverage
+genhtml -o ./coverage/report ./coverage/lcov.info
+open ./coverage/report/index.html
+
+
+## complete test
+dart pub global activate coverage 1.6.3 && dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage --check-ignore && dart run test --coverage=./coverage
+
+## test with formatting and gen HTML
+dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage --check-ignore && dart run test --coverage=./coverage && genhtml -o ./coverage/report ./coverage/lcov.info
+
+
+## test with formatting and gen HTML display report on success
+dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage --check-ignore && dart run test --coverage=./coverage && genhtml -o ./coverage/report ./coverage/lcov.info && open ./coverage/report/index.html
+
+

@@ -605,14 +605,7 @@ if (5 < 10) {\n\
         ck_assert_ptr_nonnull(tok);
         ck_assert_uint_eq(tok->type, t.exp_type);
         ck_assert_str_eq(tok->literal, t.literal);
-        if ((tok->type == IDENT) || (tok->type == FUNCTION) || (tok->type == INT)
-                || (tok->type == TRUE) || (tok->type == FALSE)
-                || (tok->type == IF) || (tok->type == ELSE)
-                || (tok->type == RETURN))
-        {
-            free(tok->literal);
-        }
-        free(tok);
+        free_token(tok);
     }
     free(l);
     ck_assert_uint_eq(1, 1);
