@@ -49,10 +49,25 @@ class Tokenizer {
         }
 
         return match (true) {
-            ctype_alpha($this->ch) => $this->readWordToken(),
+            self::isLetter($this->ch) => $this->readWordToken(),
             ctype_digit($this->ch) => new Token(TokenType::Int, $this->readInteger()),
             default => new Token(TokenType::Illegal, $this->ch)
         };
+    }
+
+    private function skipWhitespaces(): void {
+        while ( ctype_space( $this->ch ) ) {
+            $this->readNextChar();
+        }
+    }
+
+    private function readNextChar(): void {
+        $this->position = $this->readPosition;
+        $this->ch = $this->input[$this->readPosition++] ?? null;
+    }
+
+    private static function isLetter(string $ch): bool {
+        return $ch >= "a" && $ch <= "z" || $ch >= "A" && $ch <= "Z" || $ch === "_";
     }
 
     private function readWordToken(): Token {
@@ -65,21 +80,10 @@ class Tokenizer {
         return new Token(TokenType::Ident, $word);
     }
 
-    private function readNextChar(): void {
-        $this->position = $this->readPosition;
-        $this->ch = $this->input[$this->readPosition++] ?? null;
-    }
-
-    private function skipWhitespaces(): void {
-        while ( ctype_space( $this->ch ) ) {
-            $this->readNextChar();
-        }
-    }
-
     private function readWord(): string {
         $position = $this->position;
 
-        while (ctype_alpha($this->ch) || $this->ch === "_") {
+        while (self::isLetter($this->ch)) {
             $this->readNextChar();
         }
 
