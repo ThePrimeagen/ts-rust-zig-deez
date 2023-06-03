@@ -64,12 +64,12 @@ public class Tests
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "five"), // five
             new TokenInfo(Token.Assign),      // =
-            new TokenInfo(Token.Integer, 5),    // 5
+            new TokenInfo(Token.Integer, "5"),    // 5
             new TokenInfo(Token.Semicolon),  // ;
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "ten"), // ten
             new TokenInfo(Token.Assign),      // =
-            new TokenInfo(Token.Integer, 10),    // 10
+            new TokenInfo(Token.Integer, "10"),    // 10
             new TokenInfo(Token.Semicolon),  // ;
             new TokenInfo(Token.Let),        // let
             new TokenInfo(Token.Ident, "add"), // add
@@ -101,19 +101,19 @@ public class Tests
             new TokenInfo(Token.Minus),  // -
             new TokenInfo(Token.Slash),  // /
             new TokenInfo(Token.Asterisk),  // *
-            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.Integer, "5"), // 5
             new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.Integer, "5"), // 5
             new TokenInfo(Token.LT), // <
-            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.Integer, "10"), // 10
             new TokenInfo(Token.GT), // >
-            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.Integer, "5"), // 5
             new TokenInfo(Token.Semicolon), // ;
             new TokenInfo(Token.If), // if
             new TokenInfo(Token.LParen), // (
-            new TokenInfo(Token.Integer, 5), // 5
+            new TokenInfo(Token.Integer, "5"), // 5
             new TokenInfo(Token.LT), // <
-            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.Integer, "10"), // 10
             new TokenInfo(Token.RParen), // )
             new TokenInfo(Token.LSquirly), // {
             new TokenInfo(Token.Return), // return
@@ -126,13 +126,13 @@ public class Tests
             new TokenInfo(Token.False), // false
             new TokenInfo(Token.Semicolon), // ;
             new TokenInfo(Token.RSquirly), // }
-            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.Integer, "10"), // 10
             new TokenInfo(Token.EQ), // ==
-            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.Integer, "10"), // 10
             new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.Integer, 10), // 10
+            new TokenInfo(Token.Integer, "10"), // 10
             new TokenInfo(Token.NOT_EQ), // !=
-            new TokenInfo(Token.Integer, 9), // 9
+            new TokenInfo(Token.Integer, "9"), // 9
             new TokenInfo(Token.Semicolon), // ;
             new TokenInfo(Token.Eof),
         };

@@ -35,9 +35,9 @@ public enum Token
 public readonly struct TokenInfo
 {
     public Token Type { get; }
-    public object? Value { get; }
+    public string? Value { get; }
 
-    public TokenInfo(Token type, object? value)
+    public TokenInfo(Token type, string? value)
     {
         Type = type;
         Value = value;

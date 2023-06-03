@@ -5,16 +5,14 @@ public struct Lexer
     private int _position;
     private int _read_position;
     private char _current_char;
-    private readonly ReadOnlyMemory<char> _input;
-
-    private ReadOnlySpan<char> _inputSpan { get { return _input.Span; } }
+    private readonly string _input;
 
     public Lexer(string input)
     {
         _position = 0;
         _read_position = 0;
         _current_char = '\0';
-        _input = input.AsMemory();
+        _input = input;
 
         ReadChar();
     }
@@ -86,7 +84,7 @@ public struct Lexer
             '{' => new TokenInfo(Token.LSquirly),
             '}' => new TokenInfo(Token.RSquirly),
             '\0' => new TokenInfo(Token.Eof),
-            _ => new TokenInfo(Token.Illegal, _current_char),
+            _ => new TokenInfo(Token.Illegal, _input[_position.._read_position].ToString()),
         };
 
         ReadChar();
@@ -103,14 +101,14 @@ public struct Lexer
         }
         else
         {
-            _current_char = _inputSpan[_read_position];
+            _current_char = _input[_read_position];
         }
 
         _position = _read_position;
         _read_position++;
     }
 
-    private char Peek()
+    private readonly char Peek()
     {
         if (_read_position >= _input.Length)
         {
@@ -118,22 +116,28 @@ public struct Lexer
         }
         else
         {
-            return _inputSpan[_read_position];
+            return _input[_read_position];
         }
     }
 
     private void SkipWhitespace()
     {
-        ReadWhile(char.IsWhiteSpace);
+        while (char.IsWhiteSpace(_current_char))
+        {
+            ReadChar();
+        }
     }
 
     private ReadOnlySpan<char> ReadIdent()
     {
         var start = _position;
 
-        ReadWhile(c => char.IsLetter(c) || c == '_');
+        while (char.IsLetter(_current_char) || _current_char == '_')
+        {
+            ReadChar();
+        }
 
-        return _inputSpan[start.._position];
+        return _input.AsSpan()[start.._position];
     }
 
     private ReadOnlySpan<char> ReadString()
@@ -145,35 +149,33 @@ public struct Lexer
 
         var start = _position;
 
-        ReadWhile(c => c != '\0' && c != '\"');
+        while (_current_char is not '\0' and not '\"')
+        {
+            ReadChar();
+        }
 
         if (_current_char == '\0')
         {
             throw new Exception("Unterminated string literal.");
         }
 
-        var stringValue = _inputSpan[start.._position];
+        var stringValue = _input.AsSpan()[start.._position];
 
         ReadChar();
 
         return stringValue;
     }
 
-    private void ReadWhile(Func<char, bool> predicate)
-    {
-        while (predicate(_current_char))
-        {
-            ReadChar();
-        }
-    }
-
-    private int ReadInt()
+    private string ReadInt()
     {
         var start = _position;
 
-        ReadWhile(char.IsDigit);
+        while (char.IsDigit(_current_char))
+        {
+            ReadChar();
+        }
 
-        return int.Parse(_inputSpan[start.._position]);
+        return _input[start.._position].ToString();
     }
 
     private TokenInfo SkipAndReturn(TokenInfo tokenInfo)
