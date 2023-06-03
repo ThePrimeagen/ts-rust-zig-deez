@@ -1,2 +1,2 @@
 #!/bin/bash
-git switch -
+git switch $1

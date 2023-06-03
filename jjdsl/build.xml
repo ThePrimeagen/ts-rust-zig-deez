@@ -66,6 +66,7 @@
     <target name="resetGit">
         <exec executable="/bin/bash">
             <arg value="${basedir}/reset-git.sh"/>
+            <arg value="${branch}"/>
         </exec>
     </target>
 </project>
