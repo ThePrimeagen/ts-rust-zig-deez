@@ -665,3 +665,5 @@ tags
 # Persistent undo
 [._]*.un~
 
+# Groovy compiled items
+target/
