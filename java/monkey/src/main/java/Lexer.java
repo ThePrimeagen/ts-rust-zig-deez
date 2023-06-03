@@ -43,7 +43,7 @@ public class Lexer {
             return token;
         }
 
-        if (Character.isLetter(this.getCc())) {
+        if (this.isLetter(this.getCc())) {
             var ident = this.indent();
 
             return Optional
@@ -59,16 +59,21 @@ public class Lexer {
 
     private void advance() {
         if (this.pos >= this.input.length()) {
+            this.pos = -1;
             return;
         }
         this.pos++;
     }
 
     private char getCc() {
-        if (this.pos >= this.input.length()) {
+        if (this.pos >= this.input.length() || this.pos < 0) {
             return '\0';
         }
         return this.input.charAt(this.pos);
+    }
+
+    private boolean isLetter(char c) {
+        return Character.isLetter(c) || c == '_';
     }
 
     private String number() {
@@ -81,7 +86,7 @@ public class Lexer {
 
     private String indent() {
         int pos = this.pos;
-        while (Character.isLetter(this.getCc())) {
+        while (this.isLetter(this.getCc())) {
             this.advance();
         }
         return this.input.substring(pos, this.pos);
