@@ -17,6 +17,9 @@ docker-ready: docker-build
 # Update those:
 ##
 
+build:
+	sbcl --non-interactive --load build.lisp
+
 fmt:
 	@echo "===> Formatting"
 	# TODO: add yours
@@ -27,4 +30,4 @@ lint:
 
 test:
 	@echo "===> Testing"
-	sbcl --load load.lisp --eval '(uiop:quit (if (asdf:test-system "deez") 0 1))'
+	sbcl --non-interactive --load load.lisp --eval '(uiop:quit (if (asdf:test-system "deez") 0 1))'

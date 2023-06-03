@@ -8,6 +8,7 @@
 
 typedef struct{
     char* input;
+    size_t input_len;
     size_t position;
     size_t read_position;
     uint8_t ch;

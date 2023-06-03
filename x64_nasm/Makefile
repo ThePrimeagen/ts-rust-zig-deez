@@ -29,11 +29,16 @@ test: lexer
 	./lexer test/example.monkey  | diff - expected/example.expected
 	./lexer test/example2.monkey | diff - expected/example2.expected
 
-NASM_FLAGS = -felf64 -isrc
+NASM_FLAGS = -felf64 -isrc -isys
 ASM_FILES = $(wildcard src/*.asm)
 
 # The runtime of this is so minuscule that we can recompile it every time.
 .PHONY: lexer
-lexer: $(ASM_FILES)
+lexer: $(ASM_FILES) sys/sys.asm
 	nasm src/main.asm -o main.o $(NASM_FLAGS)
 	cc main.o -o lexer
+
+sys/sys.asm: sys/gen_header.c
+	@echo "===> Generating sys.asm"
+	cc sys/gen_header.c -o gen_header -std=gnu11 -Wall -Wextra
+	./gen_header > sys/sys.asm

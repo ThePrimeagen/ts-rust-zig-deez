@@ -1,8 +1,8 @@
 module Lexer.Basic (tokenize) where
 
 import Data.Bifunctor (first)
-import Data.Char (isDigit, isLetter, isSpace)
-import Token (Token (..), Tokenizer, identToken)
+import Data.Char (isDigit, isSpace)
+import Token (Token (..), Tokenizer, identToken, isIdentChar)
 
 tokenize :: Tokenizer
 tokenize input = case nextToken input of
@@ -38,6 +38,3 @@ readIdent = first identToken . span isIdentChar
 
 readInt :: String -> (Token, String)
 readInt = first Int . span isDigit
-
-isIdentChar :: Char -> Bool
-isIdentChar c = isLetter c || c == '_'
