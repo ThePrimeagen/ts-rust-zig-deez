@@ -16,4 +16,4 @@ type Token =
     | Function
     | Let
 
-val tokenize: string -> Token list
+val tokenize: string -> Token seq
