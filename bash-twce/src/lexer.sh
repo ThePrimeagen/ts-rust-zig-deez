@@ -67,8 +67,12 @@ function token_new {
 
 
 function lexer_advance {
-   (( ++CURSOR['colno'] )) ||:
-   (( ++CURSOR['index'] )) ||:
+   # As the index is initially primed to `-1' prior to the lexer starting, the
+   # first increment sets it to `0'. In an arithmetic context, that evaluates
+   # to a non-0 exit code. This is a silly way to ensure the increment always
+   # returns a successful status.
+   (( ++CURSOR['index'] , 1 ))
+   (( ++CURSOR['colno']     ))
    local -i idx="${CURSOR[index]}"
 
    declare -g CHAR="${CHARRAY[$idx]}"
