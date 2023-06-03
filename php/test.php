@@ -3,6 +3,7 @@
 require_once "Tokenizer.php";
 
 $tokenizer = new Tokenizer("
+let zero = 0;
 let five = 5;
 let ten = 10;
 let add_them = fn(x, y) {
@@ -12,6 +13,11 @@ let result = add(five, ten);");
 
 
 $expectedTokens = [
+    new Token(TokenType::Let),
+    new Token(TokenType::Ident, "zero"),
+    new Token(TokenType::Equal),
+    new Token(TokenType::Int, "0"),
+    new Token(TokenType::Semicolon),
     new Token(TokenType::Let),
     new Token(TokenType::Ident, "five"),
     new Token(TokenType::Equal),
