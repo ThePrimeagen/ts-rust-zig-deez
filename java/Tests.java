@@ -29,12 +29,13 @@ class Tests {
     }
 
     public static void multiCharacterTokenTests() {
-        String input = "let five = 5;\n"
-                + "let ten = 10;\n"
-                + "let add = fn(x, y) {\n"
-                + "     x + y;\n"
-                + "};\n"
-                + "let result = add(five, ten);";
+        String input = """
+                let five = 5;
+                let ten = 10;
+                let add = fn(x, y) {
+                     x + y;
+                };
+                let result = add(five, ten);""";
         Lexer l = new Lexer(input);
         Token[] expected = {
                 new Token(TokenType.LET, "let"),

@@ -1,6 +1,6 @@
-import strutils, sequtils
+import std/[strutils, sequtils]
 
-type token* = enum
+type Token* = enum
   ident = "Ident"
   t_int = "Int"
   illegal = "Illegal"
@@ -15,7 +15,7 @@ type token* = enum
   function = "Function"
   t_let = "Let"
 
-proc getIdent*(s: string): token =
+proc getIdent*(s: string): Token =
   case s:
     of "fn":
       result = function
@@ -28,7 +28,7 @@ proc getIdent*(s: string): token =
       return
   result = t_int
 
-proc getSymbol*(s: string): token =
+proc getSymbol*(s: string): Token =
   case s:
     of "=": result = equal
     of "+": result = plus
@@ -40,7 +40,7 @@ proc getSymbol*(s: string): token =
     of "}": result = rightsquirrel
     else: result = illegal
 
-proc getType*(s: string): (token, string) =
+proc getType*(s: string): (Token, string) =
   var tokentype = getIdent(s)
   result = (tokentype, $tokentype)
   if tokentype == ident:
@@ -51,7 +51,7 @@ proc getType*(s: string): (token, string) =
     let tkn = getIdent(s)
     return (tkn, $tkn)
 
-iterator lex*(s: string): (token, string) =
+iterator lex*(s: string): (Token, string) =
   var lexeme = ""
   for l in s:
     case l:
@@ -71,14 +71,3 @@ iterator lex*(s: string): (token, string) =
         yield (sym, $sym)
         lexeme = ""
 
-let test = """
-let five = 5;
-let ten = 10;
-let add = fn(x, y) {
-    x + y;
-};
-let result = add(five, ten);
-"""
-
-for i in test.lex:
-  echo i[1]

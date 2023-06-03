@@ -1,0 +1,52 @@
+
+test : '{IO, Exception} Boolean
+test = do
+    result = lexer """let five = 5;
+        let ten = 10;
+        let add = fn(x, y) {
+            x + y;
+        };
+        let result = add(five, ten);"""
+    expect = [Let, 
+    Ident("five"),
+    Assign, 
+    Int("5"), 
+    Semicolon,
+    Let, 
+    Ident("ten"), 
+    Assign, Int("10"), 
+    Semicolon,
+    Let, 
+    Ident("add"), 
+    Assign,
+    Fn, 
+    Lparen, 
+    Ident("x"), 
+    Comma, 
+    Ident("y"), 
+    Rparen, 
+    Lbrace,
+    Ident("x"), 
+    Plus,
+    Ident("y"), 
+    Semicolon,
+    Rbrace,
+    Semicolon,
+    Let, 
+    Ident("result"), 
+    Assign, 
+    Ident("add"), 
+    Lparen, 
+    Ident("five"), 
+    Comma, 
+    Ident("ten"), 
+    Rparen, 
+    Semicolon] 
+    result === expect
+
+
+testFile : '{IO, Exception} [Token]
+testFile = do
+    path = FilePath !readLine
+    tokens = lexer << getText <| open path Read
+    tokens :+ Eof

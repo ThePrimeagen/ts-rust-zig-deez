@@ -38,5 +38,6 @@ typedef struct {
 }Token;
 
 TokenT lookup_ident(char* ident);
+extern void free_token(Token* tok);
 
 #endif /*!__TOKEN_H__*/
