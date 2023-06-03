@@ -33,11 +33,11 @@ lint:
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
-	# TODO: replace this line with your testing commands
+	dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage --check-ignore && dart run test --coverage=./coverage && genhtml -o ./coverage/report ./coverage/lcov.info && open ./coverage/report/index.html
 
 test-lexer:
 	@echo "===> Testing lexer"
-	# TODO: replace this line with your lexer testing commands
+	dart test ./test/src/lexer_test.dart
 
 test-ast:
 	@echo "===> Testing AST"
