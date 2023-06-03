@@ -2,6 +2,7 @@ type t =
   | Return of t
   | Integer of int
   | Boolean of bool
+  | StringLit of string
   | Function of func
   | Null
 

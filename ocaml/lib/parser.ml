@@ -215,6 +215,7 @@ and parse_prefix_expression parser =
   | Token.LeftParen -> expr_parse_grouped parser
   | Token.If -> expr_parse_if parser
   | Token.Function -> expr_parse_fn parser
+  | Token.StringLit _ -> expr_parse_string parser |> map_parser
   | tok -> Error (Fmt.str "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
 
 and parse_infix_expression parser left =
@@ -261,6 +262,12 @@ and expr_parse_identifier parser =
   match parser.current with
   | Some (Ident identifier) -> Ok (Ast.Identifier { identifier })
   | _ -> Error "missing number"
+
+and expr_parse_string parser =
+  match parser.current with
+  | Some (StringLit str) -> Ok (Ast.StringLit(str))
+  | _ -> Error "missing number"
+
 
 and expr_parse_number parser =
   match parser.current with
@@ -554,4 +561,25 @@ let 838383; |} in
     `Lowest > `Call -> false
     `Lowest > `Lowest -> true |}]
   ;;
+  let%expect_test "strings" =
+    expect_program {|"foobar"|};
+    [%expect
+      {|
+    Program: [
+      EXPR: (StringLit "foobar");
+    ] |}]
+  ;;
+  let%expect_test "some infixes strings" =
+    expect_program {|(1 < 2) == "true";|};
+    [%expect {|
+      Program: [
+        EXPR: Infix {
+        left =
+        Infix {left = (Integer 1); operator = Token.LessThan; right = (Integer 2)};
+        operator = Token.Equal; right = (StringLit "true")};
+      ] |}]
+  ;;
+
+
+
 end

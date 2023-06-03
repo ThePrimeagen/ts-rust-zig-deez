@@ -19,6 +19,7 @@ let rec eval_input input =
   let lexer = Lexer.init input in
   let parser = Parser.init lexer in
   let* program = Parser.parse parser |> map_error in
+  (*let _ = Parser.print_node program in*)
   eval program (Environment.init ())
 
 and eval node env =
@@ -106,6 +107,7 @@ and eval_expr expr env =
         ~finish:Result.return
     in
     apply_function fn args
+  | Ast.StringLit s -> Ok (MonkeyObject.StringLit s)
   | expr -> Fmt.error "unhandled expr: %s" (Ast.show_expression expr)
 
 and apply_function fn args =
@@ -136,6 +138,7 @@ and eval_identifier identifier env =
 and eval_infix operator left right =
   match operator, left, right with
   | _, Integer left, Integer right -> eval_integer_infix operator left right
+  | _, StringLit left, StringLit right -> eval_string_infix operator left right
   | Token.Equal, left, right -> Ok (Boolean (phys_equal left right))
   | Token.NotEqual, left, right -> Ok (Boolean (not @@ phys_equal left right))
   | _, left, right ->
@@ -162,6 +165,20 @@ and eval_integer_infix operator left right =
   in
   Ok (maker left right)
 
+and eval_string_infix operator left right =
+  let make_str op a b = MonkeyObject.StringLit (op a b) in
+  let make_bool op a b = MonkeyObject.Boolean (op a b) in
+  let* maker =
+    match operator with
+    | Token.Plus -> Ok (make_str ( ^ ))
+    | Token.LessThan -> Ok (make_bool String.(<))
+    | Token.GreaterThan -> Ok (make_bool String.(>))
+    | Token.Equal -> Ok (make_bool String.(=))
+    | Token.NotEqual -> Ok (make_bool String.(<>))
+    | tok -> Fmt.error "unexpected int infix op: %a" Token.pp tok
+  in
+  Ok (maker left right)
+
 and eval_bang = function
   | x when phys_equal x monkey_true -> Ok monkey_false
   | x when phys_equal x monkey_false -> Ok monkey_true
@@ -177,6 +194,13 @@ module Test = struct
   let expect_int input =
     match eval_input input with
     | Ok (Integer i) -> Fmt.pr "%d\n" i
+    | Ok _ -> Fmt.pr "MISSING THE TYPE"
+    | Error msg -> Fmt.failwith "%s" msg
+  ;;
+
+  let expect_string_lit input =
+    match eval_input input with
+    | Ok (StringLit s) -> Fmt.pr "%s\n" s
     | Ok _ -> Fmt.pr "MISSING THE TYPE"
     | Error msg -> Fmt.failwith "%s" msg
   ;;
@@ -279,4 +303,53 @@ module Test = struct
       true
       4 |}]
   ;;
+  let%expect_test "eval string lits" =
+    expect_string_lit {|"abc"|};
+    [%expect {|
+        abc
+    |}]
+  ;;
+
+  let%expect_test "string cat" =
+    expect_string_lit {|"123" + "456"|};
+    [%expect {|
+        123456
+    |}]
+  ;;
+
+  let%expect_test "string cmp" =
+    expect_bool {|"aaa" < "bbb"|};
+    [%expect {|
+        true
+    |}]
+  ;;
+
+  let%expect_test "return string" =
+    expect_int
+      {|
+      let a = "a"
+      if (a + "b" == "a" + "b") {
+          return 10;
+      } 
+      else {
+        return 1;
+      }
+    |};
+    [%expect {| 10 |}]
+  ;;
+
+  let%expect_test "strings greeter" =
+    expect_string_lit
+      {|
+    let makeGreeter = fn(greeting) { fn(name) { greeting + " " + name + "!" } };
+    let hello = makeGreeter("Hello");
+    let heythere = makeGreeter("Hey there");
+    hello("Thorsten") + " " + heythere("Thorsten");
+    |};
+    [%expect {|
+    Hello Thorsten! Hey there Thorsten!
+    |}]
+  ;;
+
+
 end

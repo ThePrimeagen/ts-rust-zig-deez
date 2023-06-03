@@ -3,6 +3,7 @@ type t =
   (* Identifiers *)
   | Ident of string
   | Integer of string
+  | StringLit of string
   (* Operators *)
   | Assign
   | Plus

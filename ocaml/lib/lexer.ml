@@ -35,6 +35,7 @@ let rec next_token lexer =
       | '}' -> advance lexer, RightBrace
       | '!' -> if_peeked lexer '=' ~default:Bang ~matched:NotEqual
       | '=' -> if_peeked lexer '=' ~default:Assign ~matched:Equal
+      | '"' -> read_stringlit lexer
       | ch when is_identifier ch -> read_identifier lexer
       | ch when is_number ch -> read_number lexer
       | ch -> Fmt.failwith "unknown char: %c" ch
@@ -76,6 +77,14 @@ and read_number lexer =
   let lexer, int = read_while lexer is_number in
   lexer, Token.Integer int
 
+and read_stringlit lexer =
+    let lexer' = advance lexer in
+    let lexer'', str = read_while lexer' is_not_quote in
+    match lexer''.ch with 
+    | Some '"' ->  advance lexer'', Token.StringLit str
+    (* Maybe parser should handle unclosed strings *)
+    | _ -> Fmt.failwith "unclosed string literal error %s" str 
+
 and skip_whitespace lexer =
   let lexer, _ =
     seek lexer (fun ch ->
@@ -95,6 +104,7 @@ and if_peeked lexer ch ~default ~matched =
 
 and is_identifier ch = Char.(ch = '_' || is_alpha ch)
 and is_number ch = Char.is_digit ch
+and is_not_quote ch = not Char.(ch = '"')
 
 module Test = struct
   let input_to_tokens input =
@@ -137,6 +147,108 @@ module Test = struct
     Token.Semicolon
     Token.Semicolon |}]
   ;;
+
+  let%expect_test "basic string test" =
+    let input = {|
+    "hello world!"
+    |}
+    in 
+    let tokens = input_to_tokens input in 
+    print_tokens tokens;
+    [%expect
+        {|
+        (Token.StringLit "hello world!")
+        |}
+    ]
+
+  let%expect_test "basic string no close" =
+    let input = {|"hello world!|}
+    in 
+    try print_tokens (input_to_tokens input) with
+            | Stdlib.Failure f ->  Fmt.pr "%s\n" f;
+    [%expect
+        {|
+        unclosed string literal error hello world
+        |}
+    ]
+
+
+  let%expect_test "string test with let" =
+    let input = {|
+            let a = "hello world!";
+            let b = "foo bar";
+            let c = "20";
+            let d = 3000;
+    |}
+    in 
+    let tokens = input_to_tokens input in 
+    print_tokens tokens;
+    [%expect
+        {|
+        Token.Let
+        (Token.Ident "a")
+        Token.Assign
+        (Token.StringLit "hello world!")
+        Token.Semicolon
+        Token.Let
+        (Token.Ident "b")
+        Token.Assign
+        (Token.StringLit "foo bar")
+        Token.Semicolon
+        Token.Let
+        (Token.Ident "c")
+        Token.Assign
+        (Token.StringLit "20")
+        Token.Semicolon
+        Token.Let
+        (Token.Ident "d")
+        Token.Assign
+        (Token.Integer "3000")
+        Token.Semicolon
+        |}
+    ]
+
+  let%expect_test "string test with let" =
+    let input = {|
+            let a = "hello" + "world" + "><!===";
+            let b = "foo bar"; "hey"
+            let c = "20";
+            let d = 3000;
+    |}
+    in 
+    let tokens = input_to_tokens input in 
+    print_tokens tokens;
+    [%expect
+        {|
+        Token.Let
+        (Token.Ident "a")
+        Token.Assign
+        (Token.StringLit "hello")
+        Token.Plus
+        (Token.StringLit "world")
+        Token.Plus
+        (Token.StringLit "><!===")
+        Token.Semicolon
+        Token.Let
+        (Token.Ident "b")
+        Token.Assign
+        (Token.StringLit "foo bar")
+        Token.Semicolon
+        (Token.StringLit "hey")
+        Token.Let
+        (Token.Ident "c")
+        Token.Assign
+        (Token.StringLit "20")
+        Token.Semicolon
+        Token.Let
+        (Token.Ident "d")
+        Token.Assign
+        (Token.Integer "3000")
+        Token.Semicolon
+        |}
+    ]
+
+
 
   let%expect_test "hello" =
     let input =

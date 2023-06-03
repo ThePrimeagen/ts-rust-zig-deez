@@ -7,6 +7,7 @@ and expression =
   | Identifier of identifier
   | Integer of int
   | Boolean of bool
+  | StringLit of string
   | Prefix of
       { operator : Token.t
       ; right : expression
