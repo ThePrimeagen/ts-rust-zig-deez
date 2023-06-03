@@ -4,11 +4,17 @@
     </description>
 
     <property name="github" value="https://github.com/ThePrimeagen/ts-rust-zig-deez"/>
+    <property name="branch" value="master"/>
 
     <target name="buildJJDSL">
         <antcall target="createSource"/>
-        <antcall target="compileJava"/>
-        <antcall target="deleteSource"/>
+        <antcall target="loadFile">
+            <param name="commit" value="df29eae5b8aea190228db5879eb5600d118a391c"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/references.js"/>
+        </antcall>
+<!--        <antcall target="compileJava"/>-->
+<!--        <antcall target="deleteSource"/>-->
 <!--        <antcall target="resetGit"/>-->
     </target>
 
@@ -16,6 +22,7 @@
         <exec executable="/bin/bash">
             <arg value="${basedir}/get-source.sh"/>
             <arg value="${github}"/>
+            <arg value="${branch}"/>
         </exec>
     </target>
 

@@ -1,2 +1,2 @@
 #!/bin/bash
-ant $1
+ant $@
