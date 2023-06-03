@@ -17,6 +17,7 @@ and func =
 
 and builtin = 
   | StringToInt of (string -> int)
+  | StringToString of (string -> string)
 [@@deriving show]
 
 let monkey_true = Boolean true

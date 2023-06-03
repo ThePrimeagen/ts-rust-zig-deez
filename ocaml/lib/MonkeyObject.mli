@@ -15,6 +15,7 @@ and func =
 
 and builtin = 
   | StringToInt of (string -> int)
+  | StringToString of (string -> string)
 
 val show : t -> string
 (* val pp : Format.formatter -> t -> unit *)

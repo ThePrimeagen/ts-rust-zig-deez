@@ -1,11 +1,12 @@
 open Base
 
 (* Types of all the builtin functions *)
-
 let builtins = function 
     | "len" -> Ok (MonkeyObject.Function (Builtin (StringToInt String.length)))
+    | "rev" -> Ok (MonkeyObject.Function (Builtin (StringToString String.rev)))
     | _ -> Error "id not found"
 ;;
+(* Is there a better way to do builtins ? *)
 
 let monkey_true = MonkeyObject.monkey_true
 let monkey_false = MonkeyObject.monkey_false
@@ -132,6 +133,15 @@ and apply_function fn args =
 and eval_builtin fn args = 
     match fn with
     | StringToInt f -> eval_stringtoint_builtin f args
+    | StringToString f -> eval_stringtostring_builtin f args
+
+
+and eval_stringtostring_builtin f args =
+    match args with
+    | [MonkeyObject.StringLit s] -> Ok (MonkeyObject.StringLit (f s))
+    | [] -> Error "expected one argument"
+    | [obj] -> Error (Fmt.str "Expected type string got: %s" (MonkeyObject.show obj))
+    | _ -> Error "too many arguments"
 
 and eval_stringtoint_builtin f args =
     match args with
@@ -398,7 +408,7 @@ module Test = struct
 
 
 
-  let%expect_test "built-in string len" =
+  let%expect_test "built-in string len error" =
     expect_error
       {|
         let a = 3;
@@ -408,6 +418,43 @@ module Test = struct
         (Error Expected type string got: (MonkeyObject.Integer 3))
     |}]
   ;;
+
+  let%expect_test "built-in string rev" =
+    expect_string_lit
+      {|
+        let a = "foo";
+        let b = "bar";
+        rev(a + b)
+    |};
+    [%expect {|
+        raboof
+    |}]
+  ;;
+
+  let%expect_test "built-in string rev" =
+    expect_string_lit
+      {|
+        let a = "foo";
+        let b = rev(a);
+        a + b + a
+    |};
+    [%expect {|
+        fooooffoo
+    |}]
+  ;;
+
+  let%expect_test "built-in string rev error" =
+    expect_error
+      {|
+        let a = 10;
+        let b = rev(a);
+        a + b
+    |};
+    [%expect {|
+        (Error Expected type string got: (MonkeyObject.Integer 10))
+    |}]
+  ;;
+
 
 
 
