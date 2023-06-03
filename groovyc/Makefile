@@ -3,8 +3,8 @@
 ##
 
 # Inspired by the Fortran Makefile. Thanks @greuben92!
-REPL_SRC=src/list.groovy src/token.groovy src/lexer.groovy src/ast.groovy src/parser.groovy src/repl.groovy
-TEST_LEXER_SRC=src/list.groovy src/token.groovy src/lexer.groovy src/test_lexer.groovy
+REPL_SRC=src/token.groovy src/lexer.groovy src/repl.groovy
+TEST_LEXER_SRC=src/token.groovy src/lexer.groovy src/test_lexer.groovy
 TEST_AST_SRC=src/list.groovy src/token.groovy src/lexer.groovy src/ast.groovy src/test_ast.groovy
 TEST_PARSER_SRC=src/list.groovy src/token.groovy src/lexer.groovy src/ast.groovy src/parser.groovy src/test_parser.groovy
 
@@ -27,9 +27,7 @@ docker-ready: docker-build
 
 repl: $(REPL_SRC)
 	groovyc -d target $(REPL_SRC)
-
-run:
-	cd target && java -cp ".:/${GROOVY_HOME}/lib/*" hello_world
+	cd target && java -cp ".:/${GROOVY_HOME}/lib/*" repl
 
 clean:
 	rm -rf target
@@ -38,7 +36,8 @@ test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
 
 test-lexer:
-	groovyc $(TEST_LEXER_SRC) -d target
+	@echo "===> Testing LEXER"
+	groovyc -d target $(TEST_LEXER_SRC)
 	cd target && java -cp ".:/${GROOVY_HOME}/lib/*" test_lexer
 
 test-ast: $(TEST_AST_SRC)
