@@ -28,7 +28,12 @@
       <Unit>
         <Filename Value="Lexer.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="lexer"/>
+        <UnitName Value="LexerProgram"/>
+      </Unit>
+      <Unit>
+        <Filename Value="lexerunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LexerUnit"/>
       </Unit>
     </Units>
   </ProjectOptions>
