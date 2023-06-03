@@ -56,9 +56,17 @@
                              (ensure-next #\;)))
                           (t (error "Syntax error, expected ; or = but got ~A" next)))))
     (ensure-not-reserved sym)
+    ;; HACK: we need to do the setf stuff here, because otherwise we get
+    ;;       warnings in recursive functions. In case of the non toplevel let
+    ;;       it won't work at all without this either.
     (if toplevel-p
-        (values `(defparameter ,sym ,initial-value) nil)
-        (values `(let ((,sym ,initial-value))) t))))
+        (values `(progn
+                   (defparameter ,sym nil)
+                   (setf ,sym ,initial-value))
+                nil)
+        (values `(let ((,sym))
+                   (setf ,sym ,initial-value))
+                t))))
 
 (defun parse-arglist ()
   (when (eql (lex-peek) #\))
