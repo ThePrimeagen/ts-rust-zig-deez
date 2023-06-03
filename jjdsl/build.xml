@@ -5,9 +5,9 @@
 
     <property name="github" value="https://github.com/ThePrimeagen/ts-rust-zig-deez"/>
 
-
     <target name="buildJJDSL">
         <antcall target="createSource"/>
+        <antcall target="compileJava"/>
         <antcall target="deleteSource"/>
 <!--        <antcall target="resetGit"/>-->
     </target>
@@ -17,6 +17,17 @@
             <arg value="${basedir}/get-source.sh"/>
             <arg value="${github}"/>
         </exec>
+    </target>
+
+    <target name="compileJava">
+        <javac
+            fork="${java8}"
+            srcdir="${basedir}"
+            destdir="${basedir}/out"
+            target="1.8"
+            source="1.8">
+            <include name="*.java"/>
+        </javac>
     </target>
 
     <target name="loadFile">
