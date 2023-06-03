@@ -1,5 +1,12 @@
 open Base
 
+(* Types of all the builtin functions *)
+
+let builtins = function 
+    | "len" -> Ok (MonkeyObject.Function (Builtin (StringToInt String.length)))
+    | _ -> Error "id not found"
+;;
+
 let monkey_true = MonkeyObject.monkey_true
 let monkey_false = MonkeyObject.monkey_false
 
@@ -19,7 +26,6 @@ let rec eval_input input =
   let lexer = Lexer.init input in
   let parser = Parser.init lexer in
   let* program = Parser.parse parser |> map_error in
-  (*let _ = Parser.print_node program in*)
   eval program (Environment.init ())
 
 and eval node env =
@@ -93,7 +99,7 @@ and eval_expr expr env =
      | _, Some alternative -> eval_block alternative.block env
      | _, _ -> Ok Null)
   | Ast.FunctionLiteral { parameters; body } ->
-    Ok (MonkeyObject.Function { parameters; body; env = Environment.enclosed env })
+    Ok (MonkeyObject.Function (UserDef { parameters; body; env = Environment.enclosed env }))
   | Ast.Call { fn; args } ->
     let* fn = eval_expr fn env in
     let* args =
@@ -116,12 +122,26 @@ and apply_function fn args =
     | MonkeyObject.Function fn -> Ok fn
     | _ -> Error "bad function"
   in
-  let env = extend_env fn args in
-  let* evaluated = eval_block fn.body.block env in
-  Ok (unwrap_return evaluated)
+  match fn with
+    | UserDef {parameters; body; env} -> 
+        let env = extend_env parameters env args in
+        let* evaluated = eval_block body.block env in
+        Ok (unwrap_return evaluated)
+    | Builtin f -> eval_builtin f args
 
-and extend_env fn args =
-  List.foldi fn.parameters ~init:(Environment.enclosed fn.env) ~f:(fun idx env arg ->
+and eval_builtin fn args = 
+    match fn with
+    | StringToInt f -> eval_stringtoint_builtin f args
+
+and eval_stringtoint_builtin f args =
+    match args with
+    | [MonkeyObject.StringLit s] -> Ok (MonkeyObject.Integer (f s))
+    | [] -> Error "expected one argument"
+    | [obj] -> Error (Fmt.str "Expected type string got: %s" (MonkeyObject.show obj))
+    | _ -> Error "too many arguments"
+
+and extend_env parameters env args =
+  List.foldi parameters ~init:(Environment.enclosed env) ~f:(fun idx env arg ->
     Environment.set env arg.identifier (List.nth_exn args idx);
     env)
 
@@ -133,7 +153,13 @@ and unwrap_return expr =
 and eval_identifier identifier env =
   match Environment.get env identifier.identifier with
   | Some value -> Ok value
-  | None -> Error "missing identifier"
+  | None -> get_builtin identifier.identifier 
+
+and get_builtin identifier = 
+    let builtin = builtins identifier in
+    match builtin with 
+    | Ok fn -> Ok fn
+    | Error _ -> Error "missing identifier"
 
 and eval_infix operator left right =
   match operator, left, right with
@@ -210,6 +236,12 @@ module Test = struct
     | Ok (Boolean b) -> Fmt.pr "%b\n" b
     | Ok expr -> Fmt.pr "WRONG TYPES: %s@." (MonkeyObject.show expr)
     | Error msg -> Fmt.failwith "%s" msg
+  ;;
+  
+  let expect_error input = 
+    match eval_input input with
+    | Ok x -> Fmt.failwith "Expected failure got: %s" (MonkeyObject.show x)
+    | Error msg -> Fmt.pr "(Error %s)" msg
   ;;
 
   let%expect_test "eval integer" =
@@ -350,6 +382,33 @@ module Test = struct
     Hello Thorsten! Hey there Thorsten!
     |}]
   ;;
+
+
+  let%expect_test "built-in string len" =
+    expect_int
+      {|
+        let a = "foo";
+        let b = "bar";
+        len(a) + len(b)
+    |};
+    [%expect {|
+        6
+    |}]
+  ;;
+
+
+
+  let%expect_test "built-in string len" =
+    expect_error
+      {|
+        let a = 3;
+        len(a)
+    |};
+    [%expect {|
+        (Error Expected type string got: (MonkeyObject.Integer 3))
+    |}]
+  ;;
+
 
 
 end

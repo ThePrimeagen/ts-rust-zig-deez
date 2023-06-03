@@ -7,10 +7,14 @@ type t =
   | Null
 
 and func =
-  { parameters : Ast.identifier list
+  | UserDef of { parameters : Ast.identifier list
   ; body : Ast.block
   ; env : t Environment.environment [@opaque]
   }
+  | Builtin of builtin
+
+and builtin = 
+  | StringToInt of (string -> int)
 
 val show : t -> string
 (* val pp : Format.formatter -> t -> unit *)
