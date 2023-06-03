@@ -2,89 +2,81 @@
 
 public struct Lexer
 {
-    private int _position;
-    private int _read_position;
-    private char _current_char;
-    private readonly string _input;
+    private int position;
+    private int readPosition;
+    private char currentChar;
+    private readonly string input;
 
     public Lexer(string input)
     {
-        _position = 0;
-        _read_position = 0;
-        _current_char = '\0';
-        _input = input;
+        this.input = input;
 
         ReadChar();
     }
 
-    public IEnumerable<TokenInfo> ParseTokens()
+    public IEnumerable<Token> ParseTokens()
     {
-        TokenInfo tok;
-        while ((tok = NextToken()).Type != Token.Eof)
+        Token token;
+        do
         {
-            yield return tok;
-        }
+            yield return token = NextToken();
 
-        yield return tok;
+        } while (token.Type is not TokenType.Eof);
     }
 
-    public TokenInfo NextToken()
+    public Token NextToken()
     {
         SkipWhitespace();
 
-        if (_current_char == '\"')
-        {
-            return new TokenInfo(Token.String, ReadString().ToString());
-        }
+        if (currentChar is '\"')
+            return new Token(TokenType.String, ReadString().ToString());
 
-        if (char.IsLetter(_current_char) || _current_char == '_')
+        if (char.IsLetter(currentChar) || currentChar is '_')
         {
-            var ident = ReadIdent();
-            return ident switch
+            var identifier = ReadIdentifier();
+            return identifier switch
             {
-                "fn" => new TokenInfo(Token.Function),
-                "let" => new TokenInfo(Token.Let),
-                "true" => new TokenInfo(Token.True),
-                "false" => new TokenInfo(Token.False),
-                "if" => new TokenInfo(Token.If),
-                "else" => new TokenInfo(Token.Else),
-                "return" => new TokenInfo(Token.Return),
-                _ => new TokenInfo(Token.Ident, ident.ToString())
+                "fn" => new Token(TokenType.Function),
+                "let" => new Token(TokenType.Let),
+                "true" => new Token(TokenType.True),
+                "false" => new Token(TokenType.False),
+                "if" => new Token(TokenType.If),
+                "else" => new Token(TokenType.Else),
+                "return" => new Token(TokenType.Return),
+                _ => new Token(TokenType.Identifier, identifier.ToString())
             };
         }
 
-        if (char.IsDigit(_current_char))
-        {
-            return new TokenInfo(Token.Integer, ReadInt());
-        }
+        if (char.IsDigit(currentChar))
+            return new Token(TokenType.Integer, ReadInt());
 
-        var token = _current_char switch
+        var token = currentChar switch
         {
-            '=' => Peek() switch
+            '=' => PeekChar() switch
             {
-                '=' => SkipAndReturn(new TokenInfo(Token.EQ)),
-                _ => new TokenInfo(Token.Assign),
+                '=' => SkipAndReturn(new Token(TokenType.EQ)),
+                _ => new Token(TokenType.Assign),
             }
             ,
-            '!' => Peek() switch
+            '!' => PeekChar() switch
             {
-                '=' => SkipAndReturn(new TokenInfo(Token.NOT_EQ)),
-                _ => new TokenInfo(Token.Bang),
+                '=' => SkipAndReturn(new Token(TokenType.NOT_EQ)),
+                _ => new Token(TokenType.Bang),
             },
-            '-' => new TokenInfo(Token.Minus),
-            '/' => new TokenInfo(Token.Slash),
-            '*' => new TokenInfo(Token.Asterisk),
-            '<' => new TokenInfo(Token.LT),
-            '>' => new TokenInfo(Token.GT),
-            '+' => new TokenInfo(Token.Plus),
-            ',' => new TokenInfo(Token.Comma),
-            ';' => new TokenInfo(Token.Semicolon),
-            '(' => new TokenInfo(Token.LParen),
-            ')' => new TokenInfo(Token.RParen),
-            '{' => new TokenInfo(Token.LSquirly),
-            '}' => new TokenInfo(Token.RSquirly),
-            '\0' => new TokenInfo(Token.Eof),
-            _ => new TokenInfo(Token.Illegal, _input[_position.._read_position].ToString()),
+            '-' => new Token(TokenType.Minus),
+            '/' => new Token(TokenType.Slash),
+            '*' => new Token(TokenType.Asterisk),
+            '<' => new Token(TokenType.LT),
+            '>' => new Token(TokenType.GT),
+            '+' => new Token(TokenType.Plus),
+            ',' => new Token(TokenType.Comma),
+            ';' => new Token(TokenType.Semicolon),
+            '(' => new Token(TokenType.LParen),
+            ')' => new Token(TokenType.RParen),
+            '{' => new Token(TokenType.LSquirly),
+            '}' => new Token(TokenType.RSquirly),
+            '\0' => new Token(TokenType.Eof),
+            _ => new Token(TokenType.Illegal, input[position..readPosition]),
         };
 
         ReadChar();
@@ -92,93 +84,74 @@ public struct Lexer
         return token;
     }
 
-
     private void ReadChar()
     {
-        if (_read_position >= _input.Length)
-        {
-            _current_char = '\0';
-        }
-        else
-        {
-            _current_char = _input[_read_position];
-        }
-
-        _position = _read_position;
-        _read_position++;
+        currentChar = PeekChar();
+        position = readPosition;
+        readPosition++;
     }
 
-    private readonly char Peek()
+    private readonly char PeekChar()
     {
-        if (_read_position >= _input.Length)
-        {
+        if (readPosition >= input.Length)
             return '\0';
-        }
-        else
-        {
-            return _input[_read_position];
-        }
+
+        return input[readPosition];
     }
 
     private void SkipWhitespace()
     {
-        while (char.IsWhiteSpace(_current_char))
+        while (char.IsWhiteSpace(currentChar))
         {
             ReadChar();
         }
     }
 
-    private ReadOnlySpan<char> ReadIdent()
+    private ReadOnlySpan<char> ReadIdentifier()
     {
-        var start = _position;
+        int start = position;
 
-        while (char.IsLetter(_current_char) || _current_char == '_')
+        while (char.IsLetter(currentChar) || currentChar is '_')
         {
             ReadChar();
         }
 
-        return _input.AsSpan()[start.._position];
+        return input.AsSpan(start, position - start);
     }
 
     private ReadOnlySpan<char> ReadString()
     {
-        if (_current_char == '\"')
+        if (currentChar is '\"')
+            ReadChar();
+
+        int start = position;
+
+        while (currentChar is not '\0' and not '\"')
         {
             ReadChar();
         }
 
-        var start = _position;
-
-        while (_current_char is not '\0' and not '\"')
-        {
-            ReadChar();
-        }
-
-        if (_current_char == '\0')
-        {
+        if (currentChar is '\0')
             throw new Exception("Unterminated string literal.");
-        }
-
-        var stringValue = _input.AsSpan()[start.._position];
 
         ReadChar();
 
-        return stringValue;
+        return input.AsSpan(start, position - start - 1);
     }
 
     private string ReadInt()
     {
-        var start = _position;
+        int start = position;
 
-        while (char.IsDigit(_current_char))
+        while (char.IsDigit(currentChar))
         {
             ReadChar();
         }
 
-        return _input[start.._position].ToString();
+        return input[start..position].ToString();
     }
 
-    private TokenInfo SkipAndReturn(TokenInfo tokenInfo)
+    private Token SkipAndReturn(Token tokenInfo)
     {
         ReadChar();
         return tokenInfo;

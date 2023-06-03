@@ -1,6 +1,6 @@
 ﻿namespace MonkeyLang;
 
-public enum Token
+public enum TokenType
 {
     Assign,
     Plus,
@@ -18,7 +18,7 @@ public enum Token
     RParen,
     LSquirly,
     RSquirly,
-    Ident,
+    Identifier,
     Function,
     Let,
     True,
@@ -32,30 +32,13 @@ public enum Token
     Eof
 }
 
-public readonly struct TokenInfo
+public readonly record struct Token(TokenType Type, string? Literal = default)
 {
-    public Token Type { get; }
-    public string? Value { get; }
-
-    public TokenInfo(Token type, string? value)
-    {
-        Type = type;
-        Value = value;
-    }
-
-    public TokenInfo(Token type)
-    {
-        Type = type;
-        Value = null;
-    }
-
     public override string ToString()
     {
-        if (Value is null)
-        {
+        if (Literal is null)
             return Type.ToString();
-        }
 
-        return $"{Type}, {Value}";
+        return $"{Type}, {Literal}";
     }
 }

@@ -14,17 +14,17 @@ public class Tests
 
         var lexer = new Lexer(testInput);
 
-        var expectedResult = new List<TokenInfo>
+        var expectedResult = new List<Token>
         {
-            new TokenInfo(Token.Assign),
-            new TokenInfo(Token.Plus),
-            new TokenInfo(Token.LParen),
-            new TokenInfo(Token.RParen),
-            new TokenInfo(Token.LSquirly),
-            new TokenInfo(Token.RSquirly),
-            new TokenInfo(Token.Comma),
-            new TokenInfo(Token.Semicolon),
-            new TokenInfo(Token.Eof)
+            new Token(TokenType.Assign),
+            new Token(TokenType.Plus),
+            new Token(TokenType.LParen),
+            new Token(TokenType.RParen),
+            new Token(TokenType.LSquirly),
+            new Token(TokenType.RSquirly),
+            new Token(TokenType.Comma),
+            new Token(TokenType.Semicolon),
+            new Token(TokenType.Eof)
         };
 
         foreach (var expected in expectedResult)
@@ -59,82 +59,82 @@ public class Tests
 
         var lexer = new Lexer(testInput);
 
-        var expectedResult = new List<TokenInfo>
+        var expectedResult = new List<Token>
         {
-            new TokenInfo(Token.Let),        // let
-            new TokenInfo(Token.Ident, "five"), // five
-            new TokenInfo(Token.Assign),      // =
-            new TokenInfo(Token.Integer, "5"),    // 5
-            new TokenInfo(Token.Semicolon),  // ;
-            new TokenInfo(Token.Let),        // let
-            new TokenInfo(Token.Ident, "ten"), // ten
-            new TokenInfo(Token.Assign),      // =
-            new TokenInfo(Token.Integer, "10"),    // 10
-            new TokenInfo(Token.Semicolon),  // ;
-            new TokenInfo(Token.Let),        // let
-            new TokenInfo(Token.Ident, "add"), // add
-            new TokenInfo(Token.Assign),      // =
-            new TokenInfo(Token.Function),   // fn
-            new TokenInfo(Token.LParen),     // (
-            new TokenInfo(Token.Ident, "x"), // x
-            new TokenInfo(Token.Comma),      // ,
-            new TokenInfo(Token.Ident, "y"), // y
-            new TokenInfo(Token.RParen),     // )
-            new TokenInfo(Token.LSquirly),   // {
-            new TokenInfo(Token.Ident, "x"), // x
-            new TokenInfo(Token.Plus),       // +
-            new TokenInfo(Token.Ident, "y"), // y
-            new TokenInfo(Token.Semicolon),  // ;
-            new TokenInfo(Token.RSquirly),   // }
-            new TokenInfo(Token.Semicolon),  // ;
-            new TokenInfo(Token.Let),        // let
-            new TokenInfo(Token.Ident, "result"), // result
-            new TokenInfo(Token.Assign),      // =
-            new TokenInfo(Token.Ident, "add"), // add
-            new TokenInfo(Token.LParen),     // (
-            new TokenInfo(Token.Ident, "five"), // five
-            new TokenInfo(Token.Comma),      // ,
-            new TokenInfo(Token.Ident, "ten"), // ten
-            new TokenInfo(Token.RParen),     // )
-            new TokenInfo(Token.Semicolon),  // ;
-            new TokenInfo(Token.Bang),  // !
-            new TokenInfo(Token.Minus),  // -
-            new TokenInfo(Token.Slash),  // /
-            new TokenInfo(Token.Asterisk),  // *
-            new TokenInfo(Token.Integer, "5"), // 5
-            new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.Integer, "5"), // 5
-            new TokenInfo(Token.LT), // <
-            new TokenInfo(Token.Integer, "10"), // 10
-            new TokenInfo(Token.GT), // >
-            new TokenInfo(Token.Integer, "5"), // 5
-            new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.If), // if
-            new TokenInfo(Token.LParen), // (
-            new TokenInfo(Token.Integer, "5"), // 5
-            new TokenInfo(Token.LT), // <
-            new TokenInfo(Token.Integer, "10"), // 10
-            new TokenInfo(Token.RParen), // )
-            new TokenInfo(Token.LSquirly), // {
-            new TokenInfo(Token.Return), // return
-            new TokenInfo(Token.True), // true
-            new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.RSquirly), // }
-            new TokenInfo(Token.Else), // else
-            new TokenInfo(Token.LSquirly), // {
-            new TokenInfo(Token.Return), // return
-            new TokenInfo(Token.False), // false
-            new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.RSquirly), // }
-            new TokenInfo(Token.Integer, "10"), // 10
-            new TokenInfo(Token.EQ), // ==
-            new TokenInfo(Token.Integer, "10"), // 10
-            new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.Integer, "10"), // 10
-            new TokenInfo(Token.NOT_EQ), // !=
-            new TokenInfo(Token.Integer, "9"), // 9
-            new TokenInfo(Token.Semicolon), // ;
-            new TokenInfo(Token.Eof),
+            new Token(TokenType.Let),        // let
+            new Token(TokenType.Identifier, "five"), // five
+            new Token(TokenType.Assign),      // =
+            new Token(TokenType.Integer, "5"),    // 5
+            new Token(TokenType.Semicolon),  // ;
+            new Token(TokenType.Let),        // let
+            new Token(TokenType.Identifier, "ten"), // ten
+            new Token(TokenType.Assign),      // =
+            new Token(TokenType.Integer, "10"),    // 10
+            new Token(TokenType.Semicolon),  // ;
+            new Token(TokenType.Let),        // let
+            new Token(TokenType.Identifier, "add"), // add
+            new Token(TokenType.Assign),      // =
+            new Token(TokenType.Function),   // fn
+            new Token(TokenType.LParen),     // (
+            new Token(TokenType.Identifier, "x"), // x
+            new Token(TokenType.Comma),      // ,
+            new Token(TokenType.Identifier, "y"), // y
+            new Token(TokenType.RParen),     // )
+            new Token(TokenType.LSquirly),   // {
+            new Token(TokenType.Identifier, "x"), // x
+            new Token(TokenType.Plus),       // +
+            new Token(TokenType.Identifier, "y"), // y
+            new Token(TokenType.Semicolon),  // ;
+            new Token(TokenType.RSquirly),   // }
+            new Token(TokenType.Semicolon),  // ;
+            new Token(TokenType.Let),        // let
+            new Token(TokenType.Identifier, "result"), // result
+            new Token(TokenType.Assign),      // =
+            new Token(TokenType.Identifier, "add"), // add
+            new Token(TokenType.LParen),     // (
+            new Token(TokenType.Identifier, "five"), // five
+            new Token(TokenType.Comma),      // ,
+            new Token(TokenType.Identifier, "ten"), // ten
+            new Token(TokenType.RParen),     // )
+            new Token(TokenType.Semicolon),  // ;
+            new Token(TokenType.Bang),  // !
+            new Token(TokenType.Minus),  // -
+            new Token(TokenType.Slash),  // /
+            new Token(TokenType.Asterisk),  // *
+            new Token(TokenType.Integer, "5"), // 5
+            new Token(TokenType.Semicolon), // ;
+            new Token(TokenType.Integer, "5"), // 5
+            new Token(TokenType.LT), // <
+            new Token(TokenType.Integer, "10"), // 10
+            new Token(TokenType.GT), // >
+            new Token(TokenType.Integer, "5"), // 5
+            new Token(TokenType.Semicolon), // ;
+            new Token(TokenType.If), // if
+            new Token(TokenType.LParen), // (
+            new Token(TokenType.Integer, "5"), // 5
+            new Token(TokenType.LT), // <
+            new Token(TokenType.Integer, "10"), // 10
+            new Token(TokenType.RParen), // )
+            new Token(TokenType.LSquirly), // {
+            new Token(TokenType.Return), // return
+            new Token(TokenType.True), // true
+            new Token(TokenType.Semicolon), // ;
+            new Token(TokenType.RSquirly), // }
+            new Token(TokenType.Else), // else
+            new Token(TokenType.LSquirly), // {
+            new Token(TokenType.Return), // return
+            new Token(TokenType.False), // false
+            new Token(TokenType.Semicolon), // ;
+            new Token(TokenType.RSquirly), // }
+            new Token(TokenType.Integer, "10"), // 10
+            new Token(TokenType.EQ), // ==
+            new Token(TokenType.Integer, "10"), // 10
+            new Token(TokenType.Semicolon), // ;
+            new Token(TokenType.Integer, "10"), // 10
+            new Token(TokenType.NOT_EQ), // !=
+            new Token(TokenType.Integer, "9"), // 9
+            new Token(TokenType.Semicolon), // ;
+            new Token(TokenType.Eof),
         };
 
         foreach (var expected in expectedResult)

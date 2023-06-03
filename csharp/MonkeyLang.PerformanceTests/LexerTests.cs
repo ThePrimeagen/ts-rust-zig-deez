@@ -6,31 +6,31 @@ namespace MonkeyLang.PerformanceTests;
 public class LexerTests
 {
     [Benchmark]
-    public TokenInfo SmallCodeTest()
+    public Token SmallCodeTest()
     {
-        TokenInfo token;
+        Token token;
         var lexer = new Lexer(LexerTestCases.SmallCode);
 
         do
         {
             token = lexer.NextToken();
         }
-        while (token.Type is not Token.Eof);
+        while (token.Type is not TokenType.Eof);
 
         return token;
     }
 
     [Benchmark]
-    public TokenInfo LargeCodeTest()
+    public Token LargeCodeTest()
     {
-        TokenInfo token;
+        Token token;
         var lexer = new Lexer(LexerTestCases.LargeCode);
 
         do
         {
             token = lexer.NextToken();
         }
-        while (token.Type is not Token.Eof);
+        while (token.Type is not TokenType.Eof);
 
         return token;
     }
