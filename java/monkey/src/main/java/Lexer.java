@@ -82,10 +82,7 @@ public class Lexer {
     }
 
     private char getCc() {
-        if (this.pos >= this.input.length() || this.pos < 0) {
-            return '\0';
-        }
-        return this.input.charAt(this.pos);
+        return this.peek(this.pos);
     }
 
     private char peek(int pos) {
