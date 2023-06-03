@@ -19,7 +19,7 @@ Lexer.prototype.skipWhitespace = function () {
 }
 
 Lexer.prototype.readIdent = function () {
-    let pos = this.position;
+    var pos = this.position;
     while (this.isAlpha(this.ch)) {
         this.readChar();
     }
@@ -27,7 +27,7 @@ Lexer.prototype.readIdent = function () {
 }
 
 Lexer.prototype.readInt = function () {
-    let pos = this.position;
+    var pos = this.position;
     while (this.isNumeric(this.ch)) {
         this.readChar();
     }
@@ -47,16 +47,16 @@ Lexer.prototype.lookUpIdent = function (x) {
 Lexer.prototype.nextToken = function() {
     this.skipWhitespace();
 
-    let token = isSingleWidthToken(this.ch);
+    var token = isSingleWidthToken(this.ch);
 
     if (token === null) {
         if (this.isAlpha(this.ch)) {
-            let ident = this.readIdent();
+            var ident = this.readIdent();
             token = this.lookupIdent(ident);
         }
 
         if (this.isNumeric(this.ch)) {
-            let intVal = this.readInt();
+            var intVal = this.readInt();
             token = new Token("INT", intVal);
         }
 
