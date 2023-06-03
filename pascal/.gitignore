@@ -1,0 +1,7 @@
+fp.*
+lib
+backup
+*.bak
+*.exe
+*.o
+*tests/*
