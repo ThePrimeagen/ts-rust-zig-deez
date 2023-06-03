@@ -140,7 +140,9 @@
 
 (defun parse-funcall (symbol)
   (let ((args (if (eql (lex-peek) #\))
-                  nil
+                  (prog1
+                      nil
+                    (lex))
                   (prog1
                       (loop with args = nil
                             do (push (parse-expression) args)
