@@ -2,19 +2,19 @@ import std/[strutils, sequtils]
 
 type 
   TokenKind* = enum
-    tkIdent = "Ident"
-    tkInt = "Int"
-    tkIllegal = "Illegal"
-    tkEqual = "Equals"
-    tkPlus = "Plus"
-    tkComma = "Comma"
-    tkSemicolon = "Semicolon"
-    tkLParen = "LeftParen"
-    tkRParen = "RightParen"
-    tkLBrace = "LeftSquirrel"
-    tkRBrace = "RightSquirrel"
-    tkFunction = "Function"
-    tkLet = "Let"
+    tkIllegal
+    tkLet
+    tkIdent
+    tkFunction
+    tkInt
+    tkEqual
+    tkPlus
+    tkComma
+    tkSemicolon
+    tkLParen
+    tkRParen
+    tkLBrace
+    tkRBrace
   Token* = object
     kind*: TokenKind
     value*: string
