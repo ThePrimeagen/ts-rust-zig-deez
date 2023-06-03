@@ -13,16 +13,6 @@ suite "lexer tests":
     """
     var lexer = newLexer(source)
     let lexemes = collect:
-<<<<<<< HEAD
-      for val in lex(source): val.kind
-    let expected = @[
-      tkLet, tkIdent, tkEqual, tkInt, tkSemicolon,
-      tkLet, tkIdent, tkEqual, tkInt, tkSemicolon,
-      tkLet, tkIdent, tkEqual, tkFunction, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkLBrace,
-      tkIdent, tkPlus, tkIdent, tkSemicolon,
-      tkRBrace, tkSemicolon,
-      tkLet, tkIdent, tkEqual, tkIdent, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkSemicolon,
-=======
       for a in toSeq(lexer.tokens()): a.kind
     let expected = @[
       tkLet, tkIdent, tkAssign, tkInt, tkSemicolon,
@@ -31,6 +21,5 @@ suite "lexer tests":
       tkIdent, tkPlus, tkIdent, tkSemicolon,
       tkRBrace, tkSemicolon,
       tkLet, tkIdent, tkAssign, tkIdent, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkSemicolon, tkEof
->>>>>>> temp
     ]
     check lexemes == expected
