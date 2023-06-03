@@ -20,7 +20,7 @@ var
 begin
   Application := TMyTestRunner.Create(nil);
   Application.Initialize;
-  Application.Title := 'FPCUnit Console test runner';
+  Application.Title := 'Lexer Console test runner';
   Application.Run;
   Application.Free;
 end.

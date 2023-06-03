@@ -9,35 +9,23 @@
         <Filename Value="Lexer.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="LexerProgram"/>
-        <CursorPos Y="4"/>
-        <UsageCount Value="22"/>
+        <IsVisibleTab Value="True"/>
+        <CursorPos X="30" Y="7"/>
+        <UsageCount Value="27"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="lexerunit.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="LexerUnit"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="43"/>
-        <CursorPos Y="34"/>
-        <UsageCount Value="22"/>
+        <TopLine Value="112"/>
+        <CursorPos X="51" Y="125"/>
+        <UsageCount Value="27"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="20">
-      <Position>
-        <Filename Value="Lexer.lpr"/>
-        <Caret Line="9" Column="19"/>
-      </Position>
-      <Position>
-        <Filename Value="Lexer.lpr"/>
-        <Caret Line="10" Column="16"/>
-      </Position>
-      <Position>
-        <Filename Value="Lexer.lpr"/>
-        <Caret Line="29" Column="26" TopLine="10"/>
-      </Position>
+    <JumpHistory HistoryIndex="29">
       <Position>
         <Filename Value="Lexer.lpr"/>
         <Caret Line="15" Column="14" TopLine="10"/>
@@ -108,6 +96,54 @@
       <Position>
         <Filename Value="lexerunit.pas"/>
         <Caret Line="34"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="24" Column="40" TopLine="7"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="26" Column="28" TopLine="7"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="43" Column="30" TopLine="19"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="42" Column="14" TopLine="25"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="105" Column="12" TopLine="83"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="76" Column="88" TopLine="57"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="110" Column="29" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="91" Column="16" TopLine="74"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="99" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="30" Column="56" TopLine="17"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="124" Column="33" TopLine="104"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="66" Column="16" TopLine="40"/>
       </Position>
     </JumpHistory>
     <RunParams>

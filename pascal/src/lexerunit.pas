@@ -5,7 +5,7 @@ unit LexerUnit;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, fgl;
 
 type
     TokenType = (Illegal, Eof, Ident, Int, Equal, Plus, Comma, Semicolon, LParen, RParen, LSquirly, RSquirly, FunctionType, Let);
@@ -15,15 +15,20 @@ type
         Literal: String;
     end;
 
+    TKeywords = specialize TFPGMap<String, TokenType>;
+
     Lexer = class
         Input: String;
         InputLength: Integer;
         Position: Integer;
         ReadPosition: Integer;
         Ch: Char;
+        Keywords: TKeywords;
 
         constructor Create(InputCode: String);
         procedure ReadChar();
+        function CreateToken(Token_Type: TokenType; Literal: string): Token;
+        function LookupIdent(ident: string): TokenType;
         function GetNextToken(): Token;
         function ReadInt(): String;
         function ReadIdent(): String;
@@ -36,6 +41,10 @@ implementation
 
 constructor Lexer.Create(InputCode: String);
 begin
+    Keywords:= TKeywords.Create();
+    Keywords.Add('fn', TokenType.FunctionType);
+    Keywords.Add('let', TokenType.Let);
+
     self.Input := InputCode;
     self.InputLength := Length(InputCode);
     self.Position := 0;
@@ -54,7 +63,7 @@ begin
     Inc(self.ReadPosition);
 end;
 
-function CreateToken(Token_Type: TokenType; Literal: string): Token;
+function Lexer.CreateToken(Token_Type: TokenType; Literal: string): Token;
 var
     tok: Token;
 begin
@@ -66,7 +75,7 @@ end;
 
 function IsAlpha(c: Char): Boolean;
 begin
-    Result := ((c >= 'a') and (c <= 'z')) or ((c >= 'A') and (c <= 'Z'));
+    Result := ((c >= 'a') and (c <= 'z')) or ((c >= 'A') and (c <= 'Z')) or (c = '_');
 end;
 
 function IsDigit(c: Char): Boolean;
@@ -77,6 +86,18 @@ end;
 function IsSpace(c: Char): Boolean;
 begin
     Result := (c = ' ') or (c = #9) or (c = #10) or (c = #13);
+end;
+
+function Lexer.LookupIdent(ident: string): TokenType;
+var
+    index: integer;
+begin
+     if Keywords.IndexOf(ident) >= 0 then
+     begin
+         Result:= Keywords[ident];
+     end
+     else
+         Result:= TokenType.Ident;
 end;
 
 function Lexer.GetNextToken(): Token;
@@ -94,16 +115,21 @@ begin
     if Ch = ')' then tok := CreateToken(RParen, ')') else
     if Ch = '{' then tok := CreateToken(LSquirly, '{') else
     if Ch = '}' then tok := CreateToken(RSquirly, '}') else
-    if Ch = #0 then tok := CreateToken(Eof, #0) else
-    if (IsAlpha(Ch)) or (Ch = '_') then
+    if Ch = #0 then tok := CreateToken(Eof, '') else
+    if (IsAlpha(Ch)) then
     begin
         indent := self.ReadIdent();
-        if indent = 'fn' then tok := CreateToken(FunctionType, 'fn') else
-        if indent = 'let' then tok := CreateToken(Let, 'let') else
-        tok := CreateToken(Ident, indent);
+
+        tok := CreateToken(LookupIdent(indent), indent);
+        Result:= tok;
+        exit;
     end else
     if IsDigit(Ch) then
-        tok := CreateToken(Int, self.ReadInt())
+    begin
+        tok := CreateToken(Int, self.ReadInt());
+        Result:= tok;
+        exit;
+    end
     else
         tok := CreateToken(Illegal, Ch);
 
