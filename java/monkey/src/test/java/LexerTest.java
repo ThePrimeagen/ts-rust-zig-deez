@@ -87,4 +87,32 @@ public class LexerTest {
             }
         });
     }
+
+    @Test
+    void testUnderscoreInIdentifier() {
+        String input = """
+                let two_plus_two = 2 + 2;
+                let _result = two_plus_two;""";
+        Lexer l = new Lexer(input);
+        Token[] expected = {
+                new Token(TokenType.LET, "let"),
+                new Token(TokenType.IDENT, "two_plus_two"),
+                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.INT, "2"),
+                new Token(TokenType.PLUS, "+"),
+                new Token(TokenType.INT, "2"),
+                new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.LET, "let"),
+                new Token(TokenType.IDENT, "_result"),
+                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.IDENT, "two_plus_two"),
+                new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.EOF, "eof"),
+        };
+
+        for (Token t : expected) {
+            Token g = l.nextToken();
+            Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
 }

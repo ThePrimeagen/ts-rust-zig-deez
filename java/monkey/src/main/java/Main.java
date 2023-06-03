@@ -9,7 +9,14 @@ public class Main {
             let result = add(five, ten);""";
 
     public static void main(String[] args) {
-        new Lexer(placeholder);
-        System.out.println("Test");
+        var lexer = new Lexer(placeholder);
+
+        var t = lexer.nextToken();
+        while (t.type() != TokenType.EOF) {
+            System.out.println(t);
+            t = lexer.nextToken();
+        }
+
+        System.out.println(t);
     }
 }
