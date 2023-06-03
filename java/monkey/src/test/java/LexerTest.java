@@ -8,7 +8,7 @@ public class LexerTest {
         String input = "=+(){},;";
         Lexer l = new Lexer(input);
         TokenType[] expected = {
-                TokenType.EQUAL,
+                TokenType.ASSIGN,
                 TokenType.PLUS,
                 TokenType.LPAREN,
                 TokenType.RPAREN,
@@ -45,17 +45,17 @@ public class LexerTest {
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
                 new Token(TokenType.IDENT, "five"),
-                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.INT, "5"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
                 new Token(TokenType.IDENT, "ten"),
-                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.INT, "10"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
                 new Token(TokenType.IDENT, "add"),
-                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.FUNC, "fn"),
                 new Token(TokenType.LPAREN, "("),
                 new Token(TokenType.IDENT, "x"),
@@ -71,7 +71,7 @@ public class LexerTest {
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
                 new Token(TokenType.IDENT, "result"),
-                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.IDENT, "add"),
                 new Token(TokenType.LPAREN, "("),
                 new Token(TokenType.IDENT, "five"),
@@ -112,17 +112,64 @@ public class LexerTest {
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
                 new Token(TokenType.IDENT, "two_plus_two"),
-                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.INT, "2"),
                 new Token(TokenType.PLUS, "+"),
                 new Token(TokenType.INT, "2"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
                 new Token(TokenType.IDENT, "_result"),
-                new Token(TokenType.EQUAL, "="),
+                new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.IDENT, "two_plus_two"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.EOF, "eof"),
+        };
+
+        for (Token t : expected) {
+            Token g = l.nextToken();
+            Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
+
+    @Test
+    void testNewOperationsAndKeywords() {
+        String input = """
+                if (5 < 10) {
+                    return true;
+                } else {
+                    return false;
+                }
+                10 == 10; 10 != 9;""";
+
+        Lexer l = new Lexer(input);
+
+        Token[] expected = {
+                TokenType.IF.token(),
+                TokenType.LPAREN.token(),
+                TokenType.INT.createToken("5"),
+                TokenType.LT.token(),
+                TokenType.INT.createToken("10"),
+                TokenType.RPAREN.token(),
+                TokenType.LSQIRLY.token(),
+                TokenType.RETURN.token(),
+                TokenType.TRUE.token(),
+                TokenType.SEMI.token(),
+                TokenType.RSQIRLY.token(),
+                TokenType.ELSE.token(),
+                TokenType.LSQIRLY.token(),
+                TokenType.RETURN.token(),
+                TokenType.FALSE.token(),
+                TokenType.SEMI.token(),
+                TokenType.RSQIRLY.token(),
+                TokenType.INT.createToken("10"),
+                TokenType.EQUAL.token(),
+                TokenType.INT.createToken("10"),
+                TokenType.SEMI.token(),
+                TokenType.INT.createToken("10"),
+                TokenType.NOT_EQUAL.token(),
+                TokenType.INT.createToken("9"),
+                TokenType.SEMI.token(),
+                TokenType.EOF.token(),
         };
 
         for (Token t : expected) {

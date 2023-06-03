@@ -13,7 +13,7 @@ public enum TokenType {
     RSQIRLY("}"),
 
     // Operations
-    EQUAL("="),
+    ASSIGN("="),
     PLUS("+"),
     MINUS("-"),
     BANG("!"),
@@ -21,10 +21,17 @@ public enum TokenType {
     SLASH("/"),
     LT("<"),
     GT(">"),
+    EQUAL("=="),
+    NOT_EQUAL("!="),
 
     // Keywords
     FUNC("fn"),
-    LET("let");
+    LET("let"),
+    TRUE("true"),
+    FALSE("false"),
+    IF("if"),
+    ELSE("else"),
+    RETURN("return");
 
     private final Optional<Token> token;
 
