@@ -1,5 +1,3 @@
-﻿[
-  Integer { Value = 123456 },
-  Identifier { Value = abc },
-  EoF { }
-]
+﻿IntegerToken { Integer = 123456 }
+IdentifierToken { Identifier = abc }
+EoFToken { }

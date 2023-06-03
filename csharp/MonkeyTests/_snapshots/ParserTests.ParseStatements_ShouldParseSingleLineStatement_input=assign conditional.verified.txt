@@ -1,0 +1,5 @@
+﻿let foo = if ((bar > 8)) {
+74;
+} else {
+return ((4 * 6) - 9);
+};
