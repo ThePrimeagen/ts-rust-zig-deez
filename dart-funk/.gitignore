@@ -9,6 +9,12 @@
 *.userosscache
 *.sln.docstates
 
+# Files and directories created by pub
+.dart_tool/
+.packages
+build/
+pubspec.lock
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
