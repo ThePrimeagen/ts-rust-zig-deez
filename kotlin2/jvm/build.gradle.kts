@@ -1,6 +1,7 @@
-plugins {
+﻿plugins {
     kotlin("multiplatform") version "1.8.20"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
+    application
 }
 
 group = "dev.hermannm"
@@ -23,22 +24,29 @@ kotlin {
         }
     }
 
-    js(IR) {
-        browser()
-    }
-
     sourceSets {
-        val commonMain by getting {
+        val jvmMain by getting {
             kotlin.setSrcDirs(listOf("src"))
             resources.setSrcDirs(listOf("resources"))
-        }
-        val commonTest by getting {
-            kotlin.setSrcDirs(listOf("test"))
-            resources.setSrcDirs(listOf("test-resources"))
 
             dependencies {
-                implementation(kotlin("test"))
+                implementation(project(":")) // Common root package
             }
         }
+        val jvmTest by getting {
+            kotlin.setSrcDirs(listOf("test"))
+            resources.setSrcDirs(listOf("test-resources"))
+        }
     }
+}
+
+application {
+    mainClass.set("dev.hermannm.monkeylang.jvm.ReplKt")
+}
+
+// From https://slack-chats.kotlinlang.org/t/522898/how-should-i-correctly-replace-application-mainclass-set-com
+tasks.named<JavaExec>("run") {
+    dependsOn(tasks.named<Jar>("jvmJar"))
+    classpath(tasks.named<Jar>("jvmJar"))
+    standardInput = System.`in`
 }

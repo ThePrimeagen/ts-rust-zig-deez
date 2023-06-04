@@ -23,18 +23,29 @@ lint:
 	@echo "===> Linting"
 	./gradlew ktlintCheck
 
-test:
-	@echo "===> Testing"
-	./gradlew :monkey-common:te st --tests dev.hermannm.monkeylang.LexerTest
+test: test-lexer test-ast test-parser
+	@echo "===> Testing EVERYTHING"
+
+test-lexer:
+	@echo "===> Testing lexer"
+	./gradlew test --tests dev.hermannm.monkeylang.LexerTest
+
+test-ast:
+	@echo "===> Testing AST"
+	@echo "[Not yet implemented]"
+
+test-parser:
+	@echo "===> Testing parser"
+	@echo "[Not yet implemented]"
 
 repl:
 	@echo "===> Running REPL (JVM)"
-	./gradlew :monkey-jvm:run --quiet --console=plain
+	./gradlew :jvm:run --quiet --console=plain
 
 repl-browser:
-	@echo "===> Running REPL (JS in browser)"
-	./gradlew :monkey-js:jsBrowserRun
+	@echo "===> Running REPL (Kotlin-JS in browser)"
+	./gradlew :web:jsBrowserRun
 
 repl-browser-dev:
-	@echo "===> Running REPL (JS in browser) [Development mode with hot reload]"
-	./gradlew :monkey-js:jsBrowserDevelopmentRun --continuous
+	@echo "===> Running REPL (Kotlin-JS in browser) [Development mode with hot reload]"
+	./gradlew :web:jsBrowserDevelopmentRun --continuous

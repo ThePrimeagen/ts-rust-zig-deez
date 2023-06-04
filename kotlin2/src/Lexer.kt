@@ -38,7 +38,8 @@ class Lexer(private val input: String) : Iterator<Token> {
     }
 
     override fun hasNext(): Boolean {
-        return currentIndex < input.length
+        // <= instead of <, to include final Token.EndOfFile
+        return currentIndex <= input.length
     }
 
     private fun getCurrentCharacter(): Char? = input.getOrNull(currentIndex)

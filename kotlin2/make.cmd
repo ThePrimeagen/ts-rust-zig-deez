@@ -48,21 +48,36 @@ endlocal
 	if %ready%=="yes" goto "test" else goto exit
 
 :"test"
-	echo ^=^=^=^> Testing
-	call .\gradlew.bat :monkey-common:allTests
+	echo ^=^=^=^> Testing EVERYTHING
+	set test_all=yes
+	goto "test-lexer"
+
+:"test-lexer"
+	echo ^=^=^=^> Testing lexer
+	call .\gradlew.bat test --tests dev.hermannm.monkeylang.LexerTest
+	if %test_all%=="yes" goto "test-ast" else goto exit
+
+:"test-ast"
+	echo ^=^=^=^> Testing AST
+	echo [Not yet implemented]
+	if %test_all%=="yes" goto "test-parser" else goto exit
+
+:"test-parser"
+	echo ^=^=^=^> Testing parser
+	echo [Not yet implemented]
 	goto exit
 
 :"repl"
 	echo ^=^=^=^> Running REPL
-	call .\gradlew.bat :monkey-jvm:run --quiet --console=plain
+	call .\gradlew.bat :jvm:run --quiet --console=plain
 	goto exit
 
 :"repl-browser":
-	echo ^=^=^=^> Running REPL (JS in browser)
-	call .\gradlew.bat :monkey-js:jsBrowserRun
+	echo ^=^=^=^> Running REPL (Kotlin-JS in browser)
+	call .\gradlew.bat :web:jsBrowserRun
 	goto exit
 
 :"repl-browser-dev":
-    echo ^=^=^=^> Running REPL (JS in browser) [Development mode with hot reload]
-    call .\gradlew.bat :monkey-js:jsBrowserDevelopmentRun --continuous
-    goto exit
+	echo ^=^=^=^> Running REPL (Kotlin-JS in browser) [Development mode with hot reload]
+	call .\gradlew.bat :web:jsBrowserDevelopmentRun --continuous
+	goto exit

@@ -3,27 +3,16 @@
 sealed class Token {
     // Tokens with data
     data class Identifier(val name: String) : Token() {
-        override fun toString(): String {
-            return "Identifier($name)"
-        }
+        override fun toString(): String = "Identifier($name)"
     }
-
     data class Integer(val value: Int) : Token() {
-        override fun toString(): String {
-            return "Integer($value)"
-        }
+        override fun toString(): String = "Integer($value)"
     }
-
     data class StringLiteral(val value: String) : Token() {
-        override fun toString(): String {
-            return "StringLiteral($value)"
-        }
+        override fun toString(): String = "StringLiteral(\"$value\")"
     }
-
     data class Illegal(val source: String) : Token() {
-        override fun toString(): String {
-            return "Illegal($source)"
-        }
+        override fun toString(): String = "Illegal($source)"
     }
 
     // Keywords
@@ -59,7 +48,5 @@ sealed class Token {
     object NotEquals : Token()
     object EndOfFile : Token()
 
-    override fun toString(): String {
-        return this::class.simpleName ?: "Unknown"
-    }
+    override fun toString(): String = this::class.simpleName ?: "UnknownToken"
 }

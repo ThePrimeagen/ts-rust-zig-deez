@@ -1,15 +1,71 @@
-package dev.hermannm.monkeylang.jvm
+﻿package dev.hermannm.monkeylang.web
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.* // ktlint-disable no-wildcard-imports
 import dev.hermannm.monkeylang.Lexer
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.autoFocus
 import org.jetbrains.compose.web.attributes.onSubmit
 import org.jetbrains.compose.web.attributes.placeholder
-import org.jetbrains.compose.web.css.*
-import org.jetbrains.compose.web.dom.*
-import org.jetbrains.compose.web.renderComposable
+import org.jetbrains.compose.web.css.* // ktlint-disable no-wildcard-imports
+import org.jetbrains.compose.web.dom.* // ktlint-disable no-wildcard-imports
 import org.w3c.dom.HTMLPreElement
+
+@Composable
+fun ReplConsole() {
+    var input by remember { mutableStateOf("") }
+    var buffer by remember { mutableStateOf("") }
+    var bufferElement: HTMLPreElement? = null
+
+    fun printLineToBuffer(text: String) {
+        buffer += text + "\n"
+    }
+
+    fun evaluateInput(input: String) {
+        Lexer(input).forEach { token ->
+            printLineToBuffer(token.toString())
+        }
+        buffer += "\n"
+    }
+
+    fun scrollBufferToBottom() {
+        val element = bufferElement ?: return
+        element.scrollTop = 99999999.0
+    }
+
+    Div({
+        classes(ReplStyleSheet.replLayout)
+    }) {
+        Pre({
+            classes(ReplStyleSheet.replBuffer)
+            ref { element ->
+                bufferElement = element
+                onDispose { bufferElement = null }
+            }
+        }) {
+            Text(buffer)
+            DisposableEffect(buffer) {
+                // Scroll to bottom on buffer change
+                scrollBufferToBottom()
+                onDispose { }
+            }
+        }
+        Form(attrs = {
+            onSubmit {
+                it.preventDefault()
+                evaluateInput(input)
+                input = ""
+            }
+        }) {
+            Input(InputType.Text) {
+                classes(ReplStyleSheet.replInput)
+                value(input)
+                onInput { input = it.value }
+                placeholder("Enter code here...")
+                autoFocus()
+            }
+        }
+    }
+}
 
 object ReplStyleSheet : StyleSheet() {
     val backgroundColor = Color("#1e1e1e")
@@ -81,68 +137,5 @@ object ReplStyleSheet : StyleSheet() {
                 color(activeBorderColor)
             }
         }
-    }
-}
-
-@Composable
-fun ReplConsole() {
-    var input by remember { mutableStateOf("") }
-    var buffer by remember { mutableStateOf("") }
-    var bufferElement: HTMLPreElement? = null
-
-    fun printLineToBuffer(text: String) {
-        buffer += text + "\n"
-    }
-
-    fun evaluateInput(input: String) {
-        Lexer(input).forEach { token ->
-            printLineToBuffer(token.toString())
-        }
-    }
-
-    fun scrollBufferToBottom() {
-        val element = bufferElement?: return
-        element.scrollTop = 99999999.0
-    }
-
-    Div({
-        classes(ReplStyleSheet.replLayout)
-    }) {
-        Pre({
-            classes(ReplStyleSheet.replBuffer)
-            ref { element ->
-                bufferElement = element
-                onDispose { bufferElement = null }
-            }
-        }) {
-            Text(buffer)
-            DisposableEffect(buffer) {
-                // Scroll to bottom on buffer change
-                scrollBufferToBottom()
-                onDispose { }
-            }
-        }
-        Form(attrs = {
-            onSubmit {
-                it.preventDefault()
-                evaluateInput(input)
-                input = ""
-            }
-        }) {
-            Input(InputType.Text) {
-                classes(ReplStyleSheet.replInput)
-                value(input)
-                onInput { input = it.value }
-                placeholder("Enter code here...")
-                autoFocus()
-            }
-        }
-    }
-}
-
-fun main(args: Array<String>) {
-    renderComposable(rootElementId = "root") {
-        Style(ReplStyleSheet)
-        ReplConsole()
     }
 }

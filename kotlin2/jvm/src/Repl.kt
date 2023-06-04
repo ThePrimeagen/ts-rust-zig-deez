@@ -2,7 +2,7 @@ package dev.hermannm.monkeylang.jvm
 
 import dev.hermannm.monkeylang.Lexer
 
-fun main(args: Array<String>) {
+fun main() {
     while (true) {
         print(">> ")
         val line = readln()
