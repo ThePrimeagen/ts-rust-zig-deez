@@ -15,13 +15,13 @@ public enum TokenType {
     LET("let");
 
     private final Token token;
+
     TokenType(String literal) {
         token = new Token(this, literal);
-
     }
 
     TokenType() {
-        this.token=null;
+        this.token = null;
     }
 
     public Token createToken(String literal) {

@@ -2,7 +2,7 @@
 
 namespace MonkeyTests;
 
-public static class StaticSettingsUsage
+public static class VerifyInit
 {
     [ModuleInitializer]
     public static void Initialize() =>

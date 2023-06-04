@@ -1,11 +1,9 @@
-﻿[
-  Assign { },
-  Plus { },
-  LParen { },
-  RParen { },
-  LSquirly { },
-  RSquirly { },
-  Comma { },
-  Semicolon { },
-  EoF { }
-]
+﻿AssignToken { }
+PlusToken { }
+LParenToken { }
+RParenToken { }
+LSquirlyToken { }
+RSquirlyToken { }
+CommaToken { }
+SemicolonToken { }
+EoFToken { }

@@ -1,13 +1,12 @@
 FROM alpine:3.18.0
 
-RUN apk add cmake make g++ git
+RUN apk add cmake g++ git samurai
 
 COPY . /src
+WORKDIR /src
 
-RUN mkdir /src/cbuild
+RUN mkdir -p build
+RUN cmake -S . -B build -G Ninja
+RUN cmake --build build
 
-WORKDIR /src/cbuild
-
-RUN cmake ../ && make
-
-CMD ["./tests/lexer_test"]
+CMD ["./build/tests/tests"]
