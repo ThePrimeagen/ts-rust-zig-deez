@@ -189,6 +189,39 @@ class LexerTest {
         ),
     )
 
+    @Test
+    fun testPositions() {
+        val input = """
+            let a = "foobar"
+            let b = "foo
+            bar"
+            a == b
+        """.trimIndent()
+
+        val expectedTokens = listOf(
+            Token(TokenType.Let, "let", DocumentRange.fromPositions(1, 0, 1, 3)),
+            Token(TokenType.Identifier, "a", DocumentRange.fromPositions(1, 4, 1, 5)),
+            Token(TokenType.Assign, "=", DocumentRange.fromPositions(1, 6, 1, 7)),
+            Token(TokenType.StringLiteral, "\"foobar\"", DocumentRange.fromPositions(1, 8, 1, 16)),
+            Token(TokenType.Let, "let", DocumentRange.fromPositions(2, 0, 2, 3)),
+            Token(TokenType.Identifier, "b", DocumentRange.fromPositions(2, 4, 2, 5)),
+            Token(TokenType.Assign, "=", DocumentRange.fromPositions(2, 6, 2, 7)),
+            Token(TokenType.StringLiteral, "\"foo\nbar\"", DocumentRange.fromPositions(2, 8, 3, 4)),
+            Token(TokenType.Identifier, "a", DocumentRange.fromPositions(4, 0, 4, 1)),
+            Token(TokenType.Equals, "==", DocumentRange.fromPositions(4, 2, 4, 4)),
+            Token(TokenType.Identifier, "b", DocumentRange.fromPositions(4, 5, 4, 6)),
+            Token(TokenType.EndOfFile, "", DocumentRange.fromPositions(4, 6, 4, 6)),
+        )
+
+        val actualTokens = Lexer(input)
+        for (token in expectedTokens) {
+            val nextToken = actualTokens.next()
+            assertEquals(token.type, nextToken.type)
+            assertEquals(token.literal, nextToken.literal)
+            assertEquals(token.range, nextToken.range)
+        }
+    }
+
     private fun testExpectedTokensInInput(input: String, expectedTokens: List<TestToken>) {
         val lexer = Lexer(input)
         for (token in expectedTokens) {

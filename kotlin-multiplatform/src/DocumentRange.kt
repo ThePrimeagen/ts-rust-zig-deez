@@ -25,4 +25,10 @@ data class DocumentRange(val start: DocumentPosition, val end: DocumentPosition)
     init {
         require(start <= end) { "DocumentRange start can not be after the end" }
     }
+
+    companion object {
+        fun fromPositions(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int): DocumentRange {
+            return DocumentPosition(startLine, startColumn)..DocumentPosition(endLine, endColumn)
+        }
+    }
 }
