@@ -54,10 +54,10 @@ class FunctionLiteral < Expression
 end
 
 class Call < Expression
-  property name : String
-  property args : Array(Expression)
+  property function : Expression
+  property arguments : Array(Expression)
 
-  def initialize(@name, @args)
+  def initialize(@function, @arguments)
   end
 end
 

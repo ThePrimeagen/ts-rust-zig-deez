@@ -82,27 +82,45 @@ class Parser
   end
 
   private def parse_expression(prec : Precedence) : Expression
-    left = parse_prefix_expression current_token
+    left = parse_prefix_proc current_token
     raise "cannot parse prefix for type #{current_token.type}" if left.nil?
 
-    while peek_token.type.semicolon? && prec < Precedence.from(peek_token.type)
-      _next = parse_prefix_expression next_token
-      return left if _next.nil?
-      left = parse_infix_expression _next
+    while !peek_token.type.semicolon? && prec < Precedence.from(peek_token.type)
+      infix = parse_infix_proc peek_token, left
+      return left if infix.nil?
 
       next_token
+      left = infix
     end
 
     left
   end
 
-  private def parse_prefix_expression(token : Token) : Expression?
+  private def parse_prefix_proc(token : Token) : Expression?
     case token.type
     when .ident?         then parse_identifier token
     when .integer?       then parse_integer token
+    when .bang?, .minus? then parse_prefix_expression
     when .true?, .false? then parse_boolean token
-    when .function?      then parse_function token
+    when .left_paren?    then parse_grouped_expression
+    when .function?      then parse_function
     end
+  end
+
+  private def parse_infix_proc(token : Token, expr : Expression) : Expression?
+    case token.type
+    when .plus?, .minus?, .slash?, .asterisk?, .equal?, .not_equal?, .less_than?, .greater_than?
+      parse_infix_expression expr
+    when .left_paren?
+      parse_call expr
+    end
+  end
+
+  private def parse_prefix_expression : Expression
+    next_token
+    right = parse_expression :prefix
+
+    Prefix.new right
   end
 
   private def parse_infix_expression(left : Expression) : Expression
@@ -112,6 +130,14 @@ class Parser
     right = parse_expression prec
 
     Infix.new left, op, right
+  end
+
+  private def parse_grouped_expression : Expression
+    next_token
+    expr = parse_expression :lowest
+    expect_next :right_paren
+
+    expr
   end
 
   private def parse_identifier(token : Token) : Expression
@@ -126,24 +152,24 @@ class Parser
     BooleanLiteral.new token.type.true?
   end
 
-  private def parse_function(token : Token) : Expression
+  private def parse_function : Expression
     expect_next :left_paren
 
     parameters = [] of Identifier
-    loop do
-      token = next_token
-      case token.type
-      when .eof?
-        raise "unexpected End of File"
-      when .ident?
-        parameters << parse_identifier token
-        _next = expect_next :comma, :right_paren
-        @pos -= 1 if _next.type.right_paren?
-      when .right_paren?
-        break
-      else
-        raise "unexpected token #{token.type}"
+
+    if peek_token.type.right_paren?
+      next_token
+    else
+      token = expect_next :ident
+      parameters << parse_identifier token
+
+      while peek_token.type.comma?
+        next_token
+        next_token
+        parameters << parse_identifier current_token
       end
+
+      expect_next :right_paren
     end
 
     expect_next :left_squirly
@@ -152,22 +178,25 @@ class Parser
     FunctionLiteral.new parameters, body
   end
 
-  private def parse_call(token : Token) : Expression
-    name = token.value
-    expect_next :left_paren
-    args = [] of Expression
-    return Call.new(name, args) if next_token.type.right_paren?
+  private def parse_call(expr : Expression) : Expression
+    arguments = [] of Expression
 
-    args << parse_expression :lowest
+    if peek_token.type.right_paren?
+      next_token
+      return Call.new expr, arguments
+    end
+
+    next_token
+    arguments << parse_expression :lowest
     while peek_token.type.comma?
       next_token
       next_token
-      args << parse_expression :lowest
+      arguments << parse_expression :lowest
     end
 
     expect_next :right_paren
 
-    Call.new name, args
+    Call.new expr, arguments
   end
 
   private def parse_block : Block
