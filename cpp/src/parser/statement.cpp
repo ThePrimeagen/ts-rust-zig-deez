@@ -154,11 +154,12 @@ Value IfStatement::eval(EnvironmentP env) const
 {
 	auto value = condition->eval(env);
 	auto truthyValue = std::visit(overloaded{
-		[](NullValue val)            { throw std::runtime_error("invalid condition: NullValue"); return false; },
 		[](bool val)                 { return val; },
 		[](int64_t val)              { return val != 0; },
-		[](const std::string& val)   { throw std::runtime_error("invalid condition: '" + val + "'"); return false; },
-		[](const BoundFunction& val) { throw std::runtime_error("invalid condition: <fn>"); return false; }
+		[](const auto& val) {
+			throw std::runtime_error("invalid condition: " + std::to_string(val));
+			return false;
+		}
 	}, value);
 
 	if (truthyValue)

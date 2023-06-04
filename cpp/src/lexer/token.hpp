@@ -39,6 +39,8 @@ enum class TokenType
 
 	Eq,
 	Not_eq,
+
+	String,
 };
 
 using Identifier = std::string_view;

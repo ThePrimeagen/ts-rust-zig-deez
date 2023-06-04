@@ -41,6 +41,8 @@ std::string std::to_string(TokenType tokenType)
 
 		case TokenType::Eq:             return "==";
 		case TokenType::Not_eq:         return "!=";
+
+		case TokenType::String:         return "(String)";
 	}
 	return std::string{"(unhandled "} + std::to_string((int) tokenType) + ")";
 }
@@ -57,6 +59,7 @@ std::ostream& operator<<(std::ostream& os, const Token& token)
 	switch (token.type) {
 		case TokenType::Identifier: os << token.literal; break;
 		case TokenType::Integer:    os << token.literal; break;
+		case TokenType::String:     os << "\"" << token.literal << "\""; break;
 		default:                    os << token.type;    break;
 	}
 	return os;

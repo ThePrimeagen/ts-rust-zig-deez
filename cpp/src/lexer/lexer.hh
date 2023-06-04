@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include <vector>
 
 #include "token.hpp"
 
@@ -27,4 +28,5 @@ class Lexer final
 
 		const std::string_view input_;
 		std::string_view::iterator position_;
+		std::vector<std::string> stringPool_;
 };

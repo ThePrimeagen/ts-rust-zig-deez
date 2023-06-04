@@ -17,6 +17,8 @@ using StatementP = ExpressionP;
 
 struct Expression
 {
+	virtual ~Expression() = default;
+
 	static ExpressionP parse(Lexer& lexer);
 
 	static ExpressionP parseEquality(Lexer& lexer);
@@ -75,22 +77,55 @@ private:
 	const std::vector<ExpressionP> arguments;
 };
 
-struct FunctionExpression : public Expression
+struct AbstractFunctionExpression : public Expression
 {
-	FunctionExpression(std::vector<Identifier>&& parameters, StatementP&& body);
+	AbstractFunctionExpression(std::vector<Identifier>&& parameters);
+	virtual ~AbstractFunctionExpression() = default;
 
-	static ExpressionP parse(Lexer& lexer);
 	void print(std::ostream& str) const override;
 	Value eval(EnvironmentP env) const override;
+	virtual Value call(
+		EnvironmentP closureEnv,
+		EnvironmentP callerEnv,
+		const std::vector<ExpressionP>& arguments
+	) const = 0;
+
+	const auto& params() const noexcept { return parameters; }
+
+protected:
+	std::vector<Identifier> parameters;	
+};
+
+struct LenFunctionExpression : public AbstractFunctionExpression
+{
+	LenFunctionExpression(std::vector<Identifier>&& parameters)
+	: AbstractFunctionExpression{std::move(parameters)}
+	{}
+
 	Value call(
 		EnvironmentP closureEnv,
 		EnvironmentP callerEnv,
 		const std::vector<ExpressionP>& arguments
-	) const;
+	) const override;
+
+	static LenFunctionExpression singleton;
+};
+
+struct FunctionExpression : public AbstractFunctionExpression
+{
+	FunctionExpression(std::vector<Identifier>&& parameters, StatementP&& body);
+
+	static ExpressionP parse(Lexer& lexer);
+	Value call(
+		EnvironmentP closureEnv,
+		EnvironmentP callerEnv,
+		const std::vector<ExpressionP>& arguments
+	) const override;
+
+	const auto& params() const noexcept { return parameters; }
 
 private:
 	EnvironmentP parentEnv;
-	std::vector<Identifier> parameters;
 	StatementP body;
 };
 
@@ -129,6 +164,18 @@ struct BooleanLiteralExpression : public Expression
 
 private:
 	const bool value;
+};
+
+struct StringLiteralExpression : public Expression
+{
+	StringLiteralExpression(const std::string value)
+	: value{value} {}
+
+	void print(std::ostream& str) const override;
+	Value eval(EnvironmentP env) const override;
+
+private:
+	const std::string value;
 };
 
 

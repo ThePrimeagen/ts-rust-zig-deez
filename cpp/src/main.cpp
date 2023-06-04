@@ -16,14 +16,6 @@ int main() {
 		Lexer lexer{line};
 		auto program = Program::parse(lexer);
 		auto value = program->eval(global);
-
-		std::visit(overloaded{
-			[](NullValue val)            { std::cout << "NullValue: " << "\n"; },
-			[](bool val)                 { std::cout << "bool: "      << (val ? "true" : "false") << "\n"; },
-			[](int64_t val)              { std::cout << "int64_t: "   << val << "\n"; },
-			[](const std::string& val)   { std::cout << "string: "    << val << "\n"; },
-			[](const BoundFunction& val) { std::cout << "fn\n"; }
-		}, value);
+		std::cout << value << "\n";
 	}
-
 }

@@ -22,6 +22,12 @@ auto testEval(std::string str, Value expected)
 	}
 }
 
+void runTests(const std::vector<std::pair<std::string, Value>>& tests)
+{
+	for (const auto& [program, expected] : tests) {
+		testEval(program, expected);
+	}
+}
 
 TEST(TestLexer, TestLetStatements) {
 
@@ -40,7 +46,7 @@ TEST(TestLexer, TestLetStatements) {
 
 TEST(TestLexer, TestEvalIntegerExpression) {
 
-	std::vector<std::pair<std::string, int64_t>> tests {
+	runTests({
 		{"5", 5},
 		{"10", 10},
 		{"-5", -5},
@@ -56,16 +62,13 @@ TEST(TestLexer, TestEvalIntegerExpression) {
 		{"3 * 3 * 3 + 10", 37},
 		{"3 * (3 * 3) + 10", 37},
 		{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 
 TEST(TestLexer, TestEvalBooleanExpression) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{"true", true},
 		{"false", false},
 		{"1 < 2", true},
@@ -86,31 +89,25 @@ TEST(TestLexer, TestEvalBooleanExpression) {
 		{"(1 < 2) == false", false},
 		{"(1 > 2) == true", false},
 		{"(1 > 2) == false", true},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 TEST(TestLexer, TestBangOperator) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{"!true", false},
 		{"!false", true},
 		{"!5", false},
 		{"!!true", true},
 		{"!!false", false},
 		{"!!5", true},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 
 TEST(TestLexer, TestIfElseExpressions) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{"if (true) { 10 }", 10},
 		{"if (false) { 10 }", nil},
 		{"if (1) { 10 }", 10},
@@ -118,16 +115,13 @@ TEST(TestLexer, TestIfElseExpressions) {
 		{"if (1 > 2) { 10 }", nil},
 		{"if (1 > 2) { 10 } else { 20 }", 20},
 		{"if (1 < 2) { 10 } else { 20 }", 10},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 
 TEST(TestLexer, TestReturnStatements) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{"return 10;", 10},
 		{"return 10; 9;", 10},
 		{"return 2 * 5; 9;", 10},
@@ -140,46 +134,37 @@ TEST(TestLexer, TestReturnStatements) {
 				return 1;
 			}
 			)XXX", 10,},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 
 TEST(TestLexer, TestLetStatements2) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{"let a = 5; a;", 5},
 		{"let a = 5 * 5; a;", 25},
 		{"let a = 5; let b = a; b;", 5},
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 
 TEST(TestLexer, TestFunctionApplication) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{"let identity = fn(x) { x; }; identity(5);", 5},
 		{"let identity = fn(x) { return x; }; identity(5);", 5},
 		{"let double = fn(x) { x * 2; }; double(5);", 10},
 		{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
 		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
 		{"fn(x) { x; }(5)", 5},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
 
 TEST(TestLexer, TestClosures) {
 
-	std::vector<std::pair<std::string, Value>> tests {
+	runTests({
 		{R"XXX(
 			let newAdder = fn(x) {
 				fn(y) { x + y };
@@ -187,9 +172,30 @@ TEST(TestLexer, TestClosures) {
 			let addTwo = newAdder(2);
 			addTwo(2);
 			)XXX", 4},
-	};
-	for (const auto& [program, expected] : tests) {
-		testEval(program, expected);
-	}
+	});
 }
 
+
+TEST(TestLexer, TestStringLiteralExpression) {
+
+	runTests({
+		{R"XXX( "hello world" )XXX", "hello world" },
+	});
+}
+
+TEST(TestLexer, TestStringConcatenation) {
+	runTests({
+		{R"XXX( "Hello" + " " + "World!" )XXX", "Hello World!" },
+		//{R"XXX( "Hello" - "World!" )XXX", "unknown operator: STRING - STRING" },
+	});
+}
+
+TEST(TestLexer, TestBuiltinFunctions) {
+	runTests({
+		{R"XXX( len("") )XXX", 0},
+		{R"XXX( len("four") )XXX", 4},
+		{R"XXX( len("hello world") )XXX", 11},
+		//{R"XXX( len(1) )XXX", "argument to `len` not supported, got INTEGER"},
+		//{R"XXX( len("one", "two") )XXX", "wrong number of arguments. got=2, want=1"},
+	});
+}
