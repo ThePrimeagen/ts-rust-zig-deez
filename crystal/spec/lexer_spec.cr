@@ -5,7 +5,7 @@ describe Lexer do
   it "parses random tokens" do
     lexer = Lexer.new("=+(){},;")
     tokens = {
-      Token.new(:equal),
+      Token.new(:assign),
       Token.new(:plus),
       Token.new(:left_paren),
       Token.new(:right_paren),
@@ -34,17 +34,17 @@ describe Lexer do
     tokens = {
       Token.new(:let),
       Token.new(:ident, "five"),
-      Token.new(:equal),
+      Token.new(:assign),
       Token.new(:integer, "5"),
       Token.new(:semicolon),
       Token.new(:let),
       Token.new(:ident, "ten"),
-      Token.new(:equal),
+      Token.new(:assign),
       Token.new(:integer, "10"),
       Token.new(:semicolon),
       Token.new(:let),
       Token.new(:ident, "add"),
-      Token.new(:equal),
+      Token.new(:assign),
       Token.new(:function),
       Token.new(:left_paren),
       Token.new(:ident, "x"),
@@ -60,7 +60,7 @@ describe Lexer do
       Token.new(:semicolon),
       Token.new(:let),
       Token.new(:ident, "result"),
-      Token.new(:equal),
+      Token.new(:assign),
       Token.new(:ident, "add"),
       Token.new(:left_paren),
       Token.new(:ident, "five"),

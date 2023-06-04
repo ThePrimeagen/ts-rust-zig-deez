@@ -35,8 +35,11 @@ class Lexer
         return next_token
       end
     when '='
-      next_char
-      type = :equal
+      if next_char == '='
+        type = :equal
+      else
+        type = :assign
+      end
     when '!'
       if next_char == '='
         type = :not_equal

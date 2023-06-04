@@ -8,6 +8,7 @@ struct Token
     Integer
 
     # operators
+    Assign
     Equal
     NotEqual
     Plus
