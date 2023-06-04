@@ -72,9 +72,16 @@
 
     (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
 
+(define (eval-string-infix-expression operator left right)
+  (cond
+    ((char-eq? operator "+") (new-string-obj (string-append (obj-value left) (obj-value right))))
+    (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
+
 (define (eval-infix-expression operator left right)
   (cond
     ((and (obj-int? left) (obj-int? right)) (eval-integer-infix-expression operator left right))
+    ((and (obj-string? left) (obj-string? right)) (eval-string-infix-expression operator left right))
+    
     ((char-eq? operator "==") (new-bool-obj-from-native (eq? left right)))
     ((char-eq? operator "!=") (new-bool-obj-from-native (not (eq? left right))))
 

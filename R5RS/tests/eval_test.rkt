@@ -99,7 +99,8 @@
                  (list "true + false" "unknown operator: BOOLEAN + BOOLEAN")
                  (list "5; true + false; 5" "unknown operator: BOOLEAN + BOOLEAN")
                  (list "if (10 > 1) { true + false; }" "unknown operator: BOOLEAN + BOOLEAN")
-                 (list "foobar" "identifier not found: foobar")))
+                 (list "foobar" "identifier not found: foobar")
+                 (list "\"hello\" - \"world\"" "unknown operator: STRING - STRING")))
   (for-each (lambda (t)
               (define evaluated (test-eval (car t)))             
               (if (not (obj-error? evaluated)) (error (format "no error object returned, got: " evaluated)))
@@ -135,6 +136,13 @@
   (if (not (obj-string? evaluated)) (error (format "object is not String. got:" evaluated)))
   (if (not (string=? (obj-value evaluated) "I'm Amelia <3")) (error (format "String has wrong value. got:" evaluted))))
 
+(define (test-string-concatenation)
+  (define evaluated (test-eval "\"I'm \" +  \"Amelia \" +  \"<3\""))
+
+  (if (not (obj-string? evaluated)) (error (format "object is not String. got:" evaluated)))
+  (if (not (string=? (obj-value evaluated) "I'm Amelia <3")) (error (format "String has wrong value. got:" evaluated))))
+  
+
 (display-nl "Starting eval tests...")
 (test-eval-integer)
 (test-eval-bool)
@@ -146,4 +154,5 @@
 (test-function-object)
 (test-function-applications)
 (test-eval-string)
+(test-string-concatenation)
 (display-nl "\tEval tests have passed without errros")
