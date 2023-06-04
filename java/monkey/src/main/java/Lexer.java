@@ -1,5 +1,3 @@
-
-
 public class Lexer {
 
     private final String input;
@@ -25,27 +23,27 @@ public class Lexer {
             default -> TokenType.ILLEGAL.createToken(String.valueOf(this.getCc()));
         };
 
-
         if (token.type() != TokenType.ILLEGAL) {
             this.advance();
             return token;
         }
-       switch ((Character)this.getCc()){
+
+        switch ((Character) this.getCc()) {
             case Character c when isLetter(c) -> {
                 var ident = this.indent();
                 return switch (ident) {
-                    case "fn" ->  TokenType.FUNC.token();
-                    case "let" ->  TokenType.LET.token();
-                    default ->  TokenType.IDENT.createToken(ident);
+                    case "fn" -> TokenType.FUNC.token();
+                    case "let" -> TokenType.LET.token();
+                    default -> TokenType.IDENT.createToken(ident);
                 };
             }
             case Character c when Character.isDigit(c) -> {
                 return TokenType.INT.createToken(this.number());
             }
-           default -> {
-               this.advance();
-               return token;
-           }
+            default -> {
+                this.advance();
+                return token;
+            }
        }
 
     }
