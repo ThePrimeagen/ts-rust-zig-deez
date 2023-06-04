@@ -1,3 +1,8 @@
+package lexer
+
+/**
+ * a token type
+ */
 enum TokenType {
 
     ILLEGAL,
@@ -30,7 +35,9 @@ enum TokenType {
 
 }
 
-
+/**
+ * represents a token in the lexer.
+ */
 class Token {
 
     TokenType type
@@ -48,11 +55,17 @@ class Token {
 
 }
 
-
+/**
+ * a lexer that tokenizes a string input
+ */
 class Lexer {
 
-    private int position = 0
-    private int readPosition = 0
+    private static final int ZERO = 0
+    private static final String NULL_CHAR = '\0'
+    private static final String EQUAL_SIGN = '='
+
+    private int position = ZERO
+    private int readPosition = ZERO
     private String ch
     private final String input
 
@@ -61,7 +74,7 @@ class Lexer {
         readChar()
     }
 
-    Token getNextToken() {
+    Token nextToken() {
         skipWhitespace()
 
         Token token
@@ -82,7 +95,7 @@ class Lexer {
                 token = new Token(TokenType.COMMA)
                 break
             case '!':
-                if (peek() == '=') {
+                if (peek() == EQUAL_SIGN) {
                     readChar()
                     token = new Token(TokenType.NOT_EQUAL)
                 } else {
@@ -110,27 +123,23 @@ class Lexer {
             case '+':
                 token = new Token(TokenType.PLUS)
                 break
-            case '=':
-                if (peek() == '=') {
+            case EQUAL_SIGN:
+                if (peek() == EQUAL_SIGN) {
                     readChar()
                     token = new Token(TokenType.EQUAL)
                 } else {
                     token = new Token(TokenType.ASSIGN)
                 }
                 break
-            case '\0':
+            case NULL_CHAR:
                 token = new Token(TokenType.EOF)
                 break
         }
 
         if (isLetter(ch)) {
             String ident = readIdent()
-            Token keyword = getKeywords()[ident]
-            if (keyword) {
-                return keyword
-            } else {
-                return new Token(TokenType.IDENT, ident)
-            }
+            Token keyword = keywords[ident]
+            return keyword ?: new Token(TokenType.IDENT, ident)
         } else if (isNumber(ch)) {
             return new Token(TokenType.INT, readInt())
         } else if (!token) {
@@ -142,7 +151,7 @@ class Lexer {
     }
 
     private String peek() {
-        return readPosition >= input.length() ? '\0' : input[readPosition]
+        return readPosition >= input.length() ? NULL_CHAR : input[readPosition]
     }
 
     private void skipWhitespace() {
@@ -152,7 +161,7 @@ class Lexer {
     }
 
     private void readChar() {
-        ch = readPosition >= input.length() ? '\0' : input[readPosition]
+        ch = readPosition >= input.length() ? NULL_CHAR : input[readPosition]
         position = readPosition
         readPosition++
     }
@@ -178,23 +187,21 @@ class Lexer {
     }
 
     private boolean isLetter(String character) {
-        return character[0] in ('a'..'z') + ('A'..'Z') + '_'
+        return character[ZERO] in ('a'..'z') + ('A'..'Z') + '_'
     }
 
     private boolean isNumber(String character) {
-        return character[0] in ('0'..'9')
+        return character[ZERO] in ('0'..'9')
     }
 
-    private Map<String, Token> getKeywords() {
-        return [
-            'fn': new Token(TokenType.FUNCTION),
-            'let': new Token(TokenType.LET),
-            'return': new Token(TokenType.RETURN),
-            'true': new Token(TokenType.TRUE),
-            'false': new Token(TokenType.FALSE),
-            'if': new Token(TokenType.IF),
-            'else': new Token(TokenType.ELSE)
-        ]
-    }
+    private final Map<String, Token> keywords = [
+        'fn': new Token(TokenType.FUNCTION),
+        'let': new Token(TokenType.LET),
+        'return': new Token(TokenType.RETURN),
+        'true': new Token(TokenType.TRUE),
+        'false': new Token(TokenType.FALSE),
+        'if': new Token(TokenType.IF),
+        'else': new Token(TokenType.ELSE)
+    ]
 
 }
