@@ -1,5 +1,4 @@
-require "spec"
-require "../src/*"
+require "./spec_helper"
 
 describe Lexer do
   it "parses random tokens" do
