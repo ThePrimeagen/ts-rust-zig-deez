@@ -2,4 +2,3 @@
 
 [*.{kt,kts}]
 max_line_length = 100
-ij_kotlin_allow_trailing_comma_on_call_site = true
