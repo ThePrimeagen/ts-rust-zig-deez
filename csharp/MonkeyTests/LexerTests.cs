@@ -1,21 +1,26 @@
-using Monkey;
+using Monkey.Lexing;
+using Monkey.Parsing;
+using Xunit.Abstractions;
 
 namespace MonkeyTests;
 
 [UsesVerify]
 public class LexerTests
 {
-    [Fact]
-    public Task ParseTokens_ShouldParseSimpleCharacters() 
-        => VerifyLexerOn("=+(){},;");
+    private readonly ITestOutputHelper _output;
+    public LexerTests(ITestOutputHelper output) => _output = output;
 
     [Fact]
-    public Task ParseTokens_ShouldParseDigitsEndingWithLettersAsNumbersAndIdentifiers() 
-        => VerifyLexerOn("123456abc");
-    
+    public Task ParseTokens_ShouldParseSimpleCharacters()
+        => Verify(Parse("=+(){},;"));
+
     [Fact]
-    public Task ParseTokens_ShouldParseDigitsStartingWithLetterAsIdentifier() 
-        => VerifyLexerOn("a123456");
+    public Task ParseTokens_ShouldParseDigitsEndingWithLettersAsNumbersAndIdentifiers()
+        => Verify(Parse("123456abc"));
+
+    [Fact]
+    public Task ParseTokens_ShouldParseDigitsStartingWithLetterAsIdentifier()
+        => Verify(Parse("a123456"));
 
     [Fact]
     public Task ParseTokens_ShouldParseAnExampleProgram()
@@ -34,17 +39,18 @@ public class LexerTests
             } else {
                 return false;
             }
-            
+
             10 == 10;
             10 != 9;
             """;
-        
-        return VerifyLexerOn(input);
+
+        return Verify(Parse(input));
     }
 
-    private static Task VerifyLexerOn(string input)
-        => VerifyTokens(Lexer.ParseTokens(input));
-    
-    private static Task VerifyTokens(IEnumerable<Token> tokens) 
-        => Verify(tokens.Select(token => token.ToString()));
+    private string Parse(string input)
+    {
+        var output = Lexer.ParseTokens(input).Format();
+        _output.WriteLine(output);
+        return output;
+    }
 }

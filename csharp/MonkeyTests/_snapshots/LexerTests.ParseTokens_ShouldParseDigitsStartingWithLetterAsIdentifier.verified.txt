@@ -1,4 +1,2 @@
-﻿[
-  Identifier { Value = a123456 },
-  EoF { }
-]
+﻿IdentifierToken { Identifier = a123456 }
+EoFToken { }
