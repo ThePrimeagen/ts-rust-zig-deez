@@ -27,7 +27,12 @@ data class DocumentRange(val start: DocumentPosition, val end: DocumentPosition)
     }
 
     companion object {
-        fun fromPositions(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int): DocumentRange {
+        fun fromPositions(
+            startLine: Int,
+            startColumn: Int,
+            endLine: Int,
+            endColumn: Int,
+        ): DocumentRange {
             return DocumentPosition(startLine, startColumn)..DocumentPosition(endLine, endColumn)
         }
     }

@@ -26,7 +26,7 @@ class Lexer(private val input: String) : Iterator<Token> {
             '[' -> consumeToken(TokenType.LeftBracket)
             ']' -> consumeToken(TokenType.RightBracket)
             '=' -> when (peek(1)) {
-                '=' -> consumeToken(TokenType.Equals,2)
+                '=' -> consumeToken(TokenType.Equals, 2)
                 else -> consumeToken(TokenType.Assign)
             }
             '!' -> when (peek(1)) {
