@@ -1,4 +1,5 @@
 import XCTest
+@testable import Lexer
 
 final class LexerTests: XCTestCase {
 
