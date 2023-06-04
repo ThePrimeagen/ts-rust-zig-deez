@@ -77,9 +77,9 @@ private:
 	const std::vector<ExpressionP> arguments;
 };
 
-struct AbstractFunctionExpression : public Expression
+struct AbstractFunctionExpression : public Expression, std::enable_shared_from_this<AbstractFunctionExpression>
 {
-	AbstractFunctionExpression(std::vector<Identifier>&& parameters);
+	AbstractFunctionExpression(std::vector<std::string>&& parameters);
 	virtual ~AbstractFunctionExpression() = default;
 
 	void print(std::ostream& str) const override;
@@ -93,13 +93,13 @@ struct AbstractFunctionExpression : public Expression
 	const auto& params() const noexcept { return parameters; }
 
 protected:
-	std::vector<Identifier> parameters;	
+	std::vector<std::string> parameters;
 };
 
 struct LenFunctionExpression : public AbstractFunctionExpression
 {
-	LenFunctionExpression(std::vector<Identifier>&& parameters)
-	: AbstractFunctionExpression{std::move(parameters)}
+	LenFunctionExpression()
+	: AbstractFunctionExpression{{"str"}}
 	{}
 
 	Value call(
@@ -113,7 +113,7 @@ struct LenFunctionExpression : public AbstractFunctionExpression
 
 struct FunctionExpression : public AbstractFunctionExpression
 {
-	FunctionExpression(std::vector<Identifier>&& parameters, StatementP&& body);
+	FunctionExpression(std::vector<std::string>&& parameters, StatementP&& body);
 
 	static ExpressionP parse(Lexer& lexer);
 	Value call(
@@ -123,6 +123,8 @@ struct FunctionExpression : public AbstractFunctionExpression
 	) const override;
 
 	const auto& params() const noexcept { return parameters; }
+
+	std::shared_ptr<FunctionExpression> shared_from_this() { return std::static_pointer_cast<FunctionExpression>(AbstractFunctionExpression::shared_from_this()); }
 
 private:
 	EnvironmentP parentEnv;

@@ -25,8 +25,8 @@ std::string std::to_string(const Value& value)
 				std::string str = "fn(";
 				bool first = true;
 				for (const auto& param : value.first->params()) {
-					if (first)
-						str += ", ";
+					if (!first)
+						str += ",";
 					first = false;
 					str += param;
 				}

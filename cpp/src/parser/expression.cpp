@@ -306,13 +306,14 @@ void CallExpression::print(std::ostream& os) const
 
 // AbstractFunctionExpression
 
-AbstractFunctionExpression::AbstractFunctionExpression(std::vector<Identifier>&& parameters)
+AbstractFunctionExpression::AbstractFunctionExpression(std::vector<std::string>&& parameters)
 : parameters{std::move(parameters)}
 {	
 }
 
 Value AbstractFunctionExpression::eval(EnvironmentP env) const
 {
+	//auto f = shared_from_this();
 	return std::make_pair(this, env);
 }
 
@@ -334,7 +335,7 @@ void AbstractFunctionExpression::print(std::ostream& os) const
 // FunctionExpression
 
 FunctionExpression::FunctionExpression(
-	std::vector<Identifier>&& parameters,
+	std::vector<std::string>&& parameters,
 	StatementP&& body
 )
 : AbstractFunctionExpression{std::move(parameters)}
@@ -347,10 +348,10 @@ ExpressionP FunctionExpression::parse(Lexer& lexer)
 	lexer.fetch(TokenType::Function);
 	lexer.fetch(TokenType::Lparen);
 
-	std::vector<Identifier> parameters;
+	std::vector<std::string> parameters;
 	while (lexer.type() != TokenType::Rparen) {
 		auto token = lexer.fetch(TokenType::Identifier);
-		parameters.push_back(token.literal);
+		parameters.push_back(std::string{token.literal});
 		lexer.get(TokenType::Comma);
 	}
 
@@ -413,16 +414,18 @@ Value LenFunctionExpression::call(
 	}, value);
 }
 
-LenFunctionExpression LenFunctionExpression::singleton{{"str"}};	
 
 // IdentifierExpression
+
+LenFunctionExpression LenFunctionExpression::singleton;
 
 Value IdentifierExpression::eval(EnvironmentP env) const
 {
 	auto value = env->get(identifier);
 	if (value == nil) {
-		if (identifier == "len")
+		if (identifier == "len") {
 			return std::make_pair(&LenFunctionExpression::singleton, EnvironmentP{});
+		}
 	}
 	return value;
 }

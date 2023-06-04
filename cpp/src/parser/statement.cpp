@@ -84,7 +84,7 @@ void ReturnStatement::print(std::ostream& os) const
 
 // BlockStatement
 
-StatementP BlockStatement::parse(Lexer& lexer)
+ExpressionP BlockStatement::parse(Lexer& lexer)
 {
 	lexer.fetch(TokenType::Lsquirly);
 
@@ -96,6 +96,9 @@ StatementP BlockStatement::parse(Lexer& lexer)
 		lexer.get(TokenType::Semicolon);
 	}
 	while(!lexer.get(TokenType::Rsquirly));
+
+	if (expressions.size() == 1)
+		return std::move(expressions[0]);
 
 	return std::make_unique<BlockStatement>(
 		std::move(expressions)

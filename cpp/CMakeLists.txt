@@ -27,6 +27,7 @@ add_compile_options(
   -Wall -Wpedantic
   -Wno-switch
   -g
+  -O3
 )
 
 enable_testing()

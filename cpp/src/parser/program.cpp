@@ -3,14 +3,16 @@
 #include "lexer.hh"
 #include "statement.hpp"
 
-Program::Program(std::vector<StatementP>&& statements)
-: statements{std::move(statements)}
-{
-}
 
 ProgramP Program::parse(Lexer& lexer)
 {
-	std::vector<StatementP> statements;
+	auto program = std::make_unique<Program>();
+	program->add(lexer);
+	return program;
+}
+
+void Program::add(Lexer& lexer)
+{
 	while (!lexer.eof()) {
 		auto statement = Statement::parseStatement(lexer);
 		if (statement) {
@@ -18,8 +20,6 @@ ProgramP Program::parse(Lexer& lexer)
 			lexer.get(TokenType::Semicolon);
 		}
 	}
-
-	return std::make_unique<Program>(std::move(statements));
 }
 
 Value Program::run()

@@ -10,8 +10,8 @@ using ProgramP = std::unique_ptr<Program>;
 class Lexer;
 struct Program : Expression
 {
-	Program(std::vector<StatementP>&& statements);
 	static ProgramP parse(Lexer& lexer);
+	void add(Lexer& lexer);
 
 	Value run();
 
