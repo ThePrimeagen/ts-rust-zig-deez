@@ -4,10 +4,10 @@ COPY --chown=gradle:gradle . /app
 WORKDIR /app
 
 CMD echo "===> Formatting"
-CMD ./gradlew ktlintFormat
+CMD ./gradlew formatKotlin
 
 CMD echo "===> Linting"
-CMD ./gradlew ktlintCheck
+CMD ./gradlew lintKotlin
 
 CMD echo "===> Testing"
 CMD ./gradlew cleanAllTests allTests

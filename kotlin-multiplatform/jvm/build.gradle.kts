@@ -1,6 +1,6 @@
 ﻿plugins {
     kotlin("multiplatform") version "1.8.20"
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
+    id("org.jmailen.kotlinter")
     application
 }
 

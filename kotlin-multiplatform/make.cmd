@@ -39,12 +39,12 @@ endlocal
 
 :"fmt"
 	echo ^=^=^=^> Formatting
-	call .\gradlew.bat ktlintFormat
+	call .\gradlew.bat formatKotlin
 	if %ready%=="yes" goto "lint" else goto exit
 
 :"lint"
 	echo ^=^=^=^> Linting
-	call .\gradlew.bat ktlintCheck
+	call .\gradlew.bat lintKotlin
 	if %ready%=="yes" goto "test" else goto exit
 
 :"test"

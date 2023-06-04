@@ -17,11 +17,11 @@ clean:
 
 fmt:
 	@echo "===> Formatting"
-	./gradlew ktlintFormat
+	./gradlew formatKotlin
 
 lint:
 	@echo "===> Linting"
-	./gradlew ktlintCheck
+	./gradlew lintKotlin
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
