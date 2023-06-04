@@ -10,6 +10,7 @@ on:
   pull_request:
     # for new PRs, or those who are ready and/or request a review
     types: [opened, ready_for_review, review_requested]
+    branches: [master]  # only run the workflow on merging into the master branch
 
 defaults:
   run:
@@ -21,6 +22,8 @@ jobs:
     steps:
       - name: Checking out the repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # to retrieve all commits        
         
       - name: Get changed files
         id: changed-files-dir-names
