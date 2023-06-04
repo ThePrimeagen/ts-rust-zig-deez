@@ -7,34 +7,36 @@ class Lexer(private val input: String) : Iterator<Token> {
 
     override fun next(): Token {
         skipWhitespace()
-
-        val token = when (val character = getCurrentCharacter()) {
-            '+' -> Token.Plus
-            '-' -> Token.Minus
-            '/' -> Token.Slash
-            '*' -> Token.Asterisk
-            '<' -> Token.LessThan
-            '>' -> Token.GreaterThan
-            ',' -> Token.Comma
-            ';' -> Token.Semicolon
-            ':' -> Token.Colon
-            '(' -> Token.LeftParen
-            ')' -> Token.RightParen
-            '{' -> Token.LeftSquirly
-            '}' -> Token.RightSquirly
-            '[' -> Token.LeftBracket
-            ']' -> Token.RightBracket
-            '=' -> if (consumeNextIfMatching('=')) Token.Equals else Token.Assign
-            '!' -> if (consumeNextIfMatching('=')) Token.NotEquals else Token.Bang
-            in 'a'..'z', in 'A'..'Z', '_' -> return readKeywordOrIdentifier()
-            in '0'..'9' -> return readInteger()
-            '"' -> return readString()
-            null -> Token.EndOfFile
-            else -> Token.Illegal(character.toString())
+        return when (peek()) {
+            '+' -> Token(TokenType.Plus, consume())
+            '-' -> Token(TokenType.Minus, consume())
+            '/' -> Token(TokenType.Slash, consume())
+            '*' -> Token(TokenType.Asterisk, consume())
+            '<' -> Token(TokenType.LessThan, consume())
+            '>' -> Token(TokenType.GreaterThan, consume())
+            ',' -> Token(TokenType.Comma, consume())
+            ';' -> Token(TokenType.Semicolon, consume())
+            ':' -> Token(TokenType.Colon, consume())
+            '(' -> Token(TokenType.LeftParen, consume())
+            ')' -> Token(TokenType.RightParen, consume())
+            '{' -> Token(TokenType.LeftSquirly, consume())
+            '}' -> Token(TokenType.RightSquirly, consume())
+            '[' -> Token(TokenType.LeftBracket, consume())
+            ']' -> Token(TokenType.RightBracket, consume())
+            '=' -> when (peek(1)) {
+                '=' -> Token(TokenType.Equals, consume(2))
+                else -> Token(TokenType.Assign, consume())
+            }
+            '!' -> when (peek(1)) {
+                '=' -> Token(TokenType.NotEquals, consume(2))
+                else -> Token(TokenType.Bang, consume())
+            }
+            in 'a'..'z', in 'A'..'Z', '_' -> consumeKeywordOrIdentifier()
+            in '0'..'9' -> consumeInteger()
+            '"' -> return consumeStringLiteral()
+            null -> Token(TokenType.EndOfFile, "")
+            else -> Token(TokenType.Illegal, consume())
         }
-
-        currentIndex++
-        return token
     }
 
     override fun hasNext(): Boolean {
@@ -42,75 +44,51 @@ class Lexer(private val input: String) : Iterator<Token> {
         return currentIndex <= input.length
     }
 
-    private fun getCurrentCharacter(): Char? = input.getOrNull(currentIndex)
-
-    private fun consumeNextIfMatching(characterToMatch: Char): Boolean {
-        val matching = input.getOrNull(currentIndex + 1) == characterToMatch
-        if (matching) {
-            currentIndex++
-        }
-        return matching
-    }
-
-    private fun readKeywordOrIdentifier(): Token {
-        val startIndex = currentIndex
-
-        while (true) {
-            when (getCurrentCharacter()) {
-                in 'a'..'z', in 'A'..'Z', '_' -> { currentIndex++ }
-                else -> break
+    private fun consume(amount: Int = 1): String = buildString {
+        repeat(amount) {
+            if (currentIndex >= input.length) {
+                error("Tried to consume past the end of input.")
             }
-        }
-
-        return when (val word = input.substring(startIndex, currentIndex)) {
-            "fn" -> Token.Function
-            "let" -> Token.Let
-            "if" -> Token.If
-            "else" -> Token.Else
-            "return" -> Token.Return
-            "true" -> Token.True
-            "false" -> Token.False
-            else -> Token.Identifier(word)
+            append(input[currentIndex++])
         }
     }
 
-    private fun readInteger(): Token {
-        val startIndex = currentIndex
-        while (getCurrentCharacter() in '0'..'9') {
-            currentIndex++
+    private fun consumeWhile(predicate: (char: Char?) -> Boolean) = buildString {
+        while (predicate(peek())) {
+            append(consume())
         }
+    }
 
-        val string = input.substring(startIndex, currentIndex)
+    private fun peek(forward: Int = 0): Char? = input.getOrNull(currentIndex + forward)
 
+    private fun consumeKeywordOrIdentifier(): Token {
+        fun isIdentifier(char: Char) = char.isLetterOrDigit() || char == '_'
+        val identifier = consumeWhile { char -> char != null && isIdentifier(char) }
+        val type = lookupIdentifier(identifier)
+        return Token(type, identifier)
+    }
+
+    private fun consumeInteger(): Token {
+        val literal = consumeWhile { char -> char != null && char.isDigit() }
+        return Token(TokenType.Integer, literal)
+    }
+
+    private fun consumeStringLiteral(): Token {
+        var stringLiteral = buildString {
+            append(consume()) // consume the initial quote
+            append(consumeWhile { char -> char != null && char != '"' })
+        }
         return try {
-            Token.Integer(string.toInt())
-        } catch (_: NumberFormatException) {
-            Token.Illegal(string)
+            stringLiteral += consume() // consume the closing quote
+            Token(TokenType.StringLiteral, stringLiteral)
+        } catch (e: Exception) {
+            Token(TokenType.Illegal, stringLiteral)
         }
-    }
-
-    private fun readString(): Token {
-        val startIndex = currentIndex + 1
-
-        while (true) {
-            currentIndex++
-            when (getCurrentCharacter()) {
-                '"' -> break
-                null -> return Token.Illegal(input.substring(startIndex - 1, currentIndex))
-            }
-        }
-
-        val string = input.substring(startIndex, currentIndex)
-
-        // Skip closing quote
-        currentIndex++
-
-        return Token.StringLiteral(string)
     }
 
     private fun skipWhitespace() {
-        while (getCurrentCharacter()?.isWhitespace() == true) {
-            currentIndex++
+        while (peek()?.isWhitespace() == true) {
+            consume()
         }
     }
 }
