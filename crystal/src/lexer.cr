@@ -172,7 +172,7 @@ class Lexer
   end
 
   private def read_ident_from(start : Int32) : String
-    while current_char.ascii_letter?
+    while current_char.ascii_letter? || current_char == '_'
       next_char
     end
 
