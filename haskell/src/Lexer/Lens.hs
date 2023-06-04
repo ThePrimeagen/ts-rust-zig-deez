@@ -6,14 +6,12 @@ module Lexer.Lens where
 import Control.Lens (makeLenses)
 import Control.Lens.Combinators (use)
 import Control.Lens.Operators ((.=), (<<+=))
-import Control.Monad (void)
 import Control.Monad.State (State, evalState)
 import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
 import Data.Char (isDigit, isLetter, isSpace)
 import Data.Function (fix)
 import Data.Maybe (fromMaybe)
-import Lexer.Lens (readPosition)
 import Token (Token (..), Tokenizer, identToken)
 
 type Input = ByteString
