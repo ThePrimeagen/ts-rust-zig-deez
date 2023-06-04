@@ -141,6 +141,21 @@
 
   (if (not (obj-string? evaluated)) (error (format "object is not String. got:" evaluated)))
   (if (not (string=? (obj-value evaluated) "I'm Amelia <3")) (error (format "String has wrong value. got:" evaluated))))
+
+(define (test-buildin-functions)
+  (define tests (list
+                 (list "len(\"\")" 0)
+                 (list "len(\"four\")" 4)
+                 (list "len(1)" "argument to 'len' not supported, got INTEGER")
+                 (list "len(\"one\",\"two\")" "wrong number of arguments. got=2, want=1")))
+  (for-each (lambda (t)
+              (define evaluated (test-eval (car t)))
+              (cond
+                ((number? (cadr t)) (test-integer-obj evaluated (cadr t)))
+                ((string? (cadr t)) (begin
+                                      (if (not (obj-error? evaluated)) (error (format "no error object returned, got: " evaluated)))
+                                      (if (not (string=? (obj-value evaluated) (cadr t)))
+                                          (error (format "wrong error message, expected='" (cadr t) "' but got='" (obj-value evaluated) "'"))))))) tests))
   
 
 (display-nl "Starting eval tests...")
@@ -155,4 +170,5 @@
 (test-function-applications)
 (test-eval-string)
 (test-string-concatenation)
+(test-buildin-functions)
 (display-nl "\tEval tests have passed without errros")

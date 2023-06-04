@@ -9,6 +9,7 @@
 (define ERROR_OBJ        "ERROR")
 (define FUNCTIONS_OBJ    "FUNCTION")
 (define STRING_OBJ       "STRING")
+(define BUILDIN_OBJ "BUILDIN")
 
 
 ; OBJ METHODS
@@ -82,22 +83,33 @@
   (for-each (lambda (obj) (set! format (string-append format (if (number? obj) (string (integer->char obj)) obj)))) objs)
   (new-error format))
 
+
 ; FUNCTION
 (define (new-function params body env)
-  (list 'obj-function params body env))
+  (list 'obj-function FUNCTIONS_OBJ params body env))
 
 (define (obj-fn? obj)
   (tagged-list? obj 'obj-function))
 
 (define (obj-fn-params fn)
-  (cadr fn))
-
-(define (obj-fn-body fn)
   (caddr fn))
 
-(define (obj-fn-env fn)
+(define (obj-fn-body fn)
   (cadddr fn))
 
+(define (obj-fn-env fn)
+  (cadr (cdddr fn)))
+
+
+; BUILDIN FUNCTION
+(define (new-buildin function)
+  (list 'obj-buildin BUILDIN_OBJ function))
+
+(define (obj-buildin? obj)
+  (tagged-list? obj 'obj-buildin))
+
+(define (buildin-function buildin)
+  (caddr buildin))
 
 
 ; NULL

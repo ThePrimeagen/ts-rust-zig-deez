@@ -3,6 +3,13 @@
 (loader "object")
 (loader "token")
 
+(define BUILDIN_FUNCTIONS (make-hash))
+
+(hash-set! BUILDIN_FUNCTIONS "len" (new-buildin (lambda (args)
+                                                  (if (or (not (pair? args)) (not (= (length args) 1))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=1")
+                                                      (if (obj-string? (car args)) (new-int (string-length (string-value (car args))))
+                                                          (format-error "argument to 'len' not supported, got " (obj-type (car args))))))))
+
 
 (define (is-error? obj)
   (if (obj-null? obj) #f (obj-error? obj)))
@@ -89,18 +96,22 @@
     (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
 
 (define (eval-identifier node env)
-  (define id (get-from-environment env (identifier-value node)))
-  (if (null? id) (format-error "identifier not found: " (identifier-value node)) id))
+  (define buildin (hash-ref BUILDIN_FUNCTIONS (identifier-value node) '()))
+  (if (null? buildin) (let* ((id (get-from-environment env (identifier-value node))))
+  (if (null? id) (format-error "identifier not found: " (identifier-value node)) id)) buildin))
 
 (define (eval-expressions exps env)
   (define (inner exps out)
     (define exp (car exps))
     (let* ((evaluated (monkey-eval exp env))) (if (is-error? evaluated) (list evaluated) (if (> (length (cdr exps)) 0) (inner (cdr exps) (add-to-list out evaluated)) (add-to-list out evaluated)))))
-    (inner exps '()))
+    (if (null? exps) '() (inner exps '())))
 
 (define (apply-functions function args)
-  (if (not (obj-fn? function)) (format-error "not a function: " (obj-type function))
-      (let* ((extended-env (extend-function-env function args)) (evaluated (monkey-eval (obj-fn-body function) extended-env))) (unwrap-return-value evaluated))))
+  (cond 
+      ((obj-fn? function) (let* ((extended-env (extend-function-env function args)) (evaluated (monkey-eval (obj-fn-body function) extended-env))) (unwrap-return-value evaluated)))
+      ((obj-buildin? function) ((buildin-function function) args))
+
+      (else (format-error "not a function: " (obj-type function)))))
 
 (define (extend-function-env function args)
   (define env (new-enclosed-environment (obj-fn-env function)))
@@ -129,7 +140,7 @@
     ((identifier-node? node) (eval-identifier node env))
     ((fn? node) (new-function (fn-params node) (fn-body node) env))
     ((call-exp? node) (let* ((function (monkey-eval (call-fn node) env)))
-                        (if (is-error? function) functions
+                        (if (is-error? function) function
                             (let* ((args (eval-expressions (call-args node) env)))
                               (if (and (= (length args) 1) (is-error? (car args))) (car args) (apply-functions function args))))))
     ((string-literal? node) (new-string-obj (string-value node)))
