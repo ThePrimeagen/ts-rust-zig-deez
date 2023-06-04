@@ -10,6 +10,8 @@ data class DocumentPosition(val line: Int, val column: Int) : Comparable<Documen
         return DocumentRange(this, other)
     }
 
+    override fun toString(): String = "$line:$column"
+
     override fun compareTo(other: DocumentPosition): Int {
         return when {
             line < other.line -> -1
@@ -25,6 +27,8 @@ data class DocumentRange(val start: DocumentPosition, val end: DocumentPosition)
     init {
         require(start <= end) { "DocumentRange start can not be after the end" }
     }
+
+    override fun toString(): String = "$start-$end"
 
     companion object {
         fun fromPositions(
