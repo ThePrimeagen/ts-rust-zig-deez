@@ -56,7 +56,7 @@ class Parser
   end
 
   private def parse_let : Statement
-    name = expect_next(:ident).value.as(String)
+    name = expect_next(:ident).value
     expect_next :assign
     value = parse_expression_statement next_token
 
@@ -115,11 +115,11 @@ class Parser
   end
 
   private def parse_identifier(token : Token) : Expression
-    Identifier.new token.value.as(String)
+    Identifier.new token.value
   end
 
   private def parse_integer(token : Token) : Expression
-    IntegerLiteral.new token.value.as(String).to_i64
+    IntegerLiteral.new token.value.to_i64
   end
 
   private def parse_boolean(token : Token) : Expression
@@ -151,7 +151,7 @@ class Parser
   end
 
   private def parse_call(token : Token) : Expression
-    name = token.value.as(String)
+    name = token.value
     expect_next :left_paren
     args = [] of Expression
     return Call.new(name, args) if next_token.type.right_paren?

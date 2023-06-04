@@ -38,9 +38,13 @@ struct Token
   end
 
   getter type : Type
-  getter value : String?
+  @value : String?
 
   def initialize(@type, @value = nil)
+  end
+
+  def value : String
+    @value.as(String)
   end
 
   def ==(other : Token) : Bool
