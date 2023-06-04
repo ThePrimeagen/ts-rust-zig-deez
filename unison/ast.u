@@ -1,0 +1,20 @@
+
+structural type Statement = LetStatement Token [Token] | ReturnStatement [Token] | ExpressionStatement [Token] | ErrorStatement [Token] Token
+
+Ast.toString : Statement -> Text
+Ast.toString = cases
+    LetStatement var exp -> "let " ++ Token.toString(var) ++ " = " ++ expressionToString exp |> trim
+    ReturnStatement exp -> "return " ++ expressionToString exp |> trim
+    ExpressionStatement exp -> expressionToString exp |> trim
+    ErrorStatement exp err -> ""            
+
+Ast.expressionToString: [Token] -> Text
+Ast.expressionToString tks =
+    loop : [Token] -> Text
+    loop tks =
+        match List.uncons tks with
+            Some(tk, rem) -> ( Token.toString tk ) ++ " " ++ loop rem
+            None -> ""
+    loop tks
+
+> Ast.toString (LetStatement (Ident("var")) [Int("5"), Plus, Int("5")])
