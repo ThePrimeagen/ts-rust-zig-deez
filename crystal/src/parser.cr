@@ -137,7 +137,8 @@ class Parser
         raise "unexpected End of File"
       when .ident?
         parameters << parse_identifier token
-        expect_next :comma
+        _next = expect_next :comma, :right_paren
+        @pos -= 1 if _next.type.right_paren?
       when .right_paren?
         break
       else
@@ -145,6 +146,7 @@ class Parser
       end
     end
 
+    expect_next :left_squirly
     body = parse_block
 
     FunctionLiteral.new parameters, body
@@ -169,7 +171,16 @@ class Parser
   end
 
   private def parse_block : Block
-    Block.new [] of Statement
+    statements = [] of Statement
+    next_token
+
+    until current_token.type.right_squirly? || current_token.type.eof?
+      statement = parse_statement next_token
+      raise "unexpected End of File" if statement.nil?
+      statements << statement
+    end
+
+    Block.new statements
   end
 
   private def next_token : Token
@@ -184,9 +195,19 @@ class Parser
     @tokens[@pos]
   end
 
-  private def expect_next(type : Token::Type) : Token
+  private def expect_next(*types : Token::Type) : Token
     token = next_token
-    raise "expected token #{type}; got #{token.type}" unless token.type == type
+
+    unless types.includes? token.type
+      message = if types.size > 1
+                  "expected one of tokens #{types.join(", ")}"
+                else
+                  "expected token #{types[0]}"
+                end
+
+      raise "#{message}; got #{token.type}"
+    end
+
     token
   end
 end
