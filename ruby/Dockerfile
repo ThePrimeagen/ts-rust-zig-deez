@@ -4,4 +4,5 @@ WORKDIR /deez
 COPY Gemfile* .
 RUN bundle install
 COPY . .
-CMD ["ruby", "test/lexer_text.rb"]
+CMD make clean && \
+    make ready

@@ -14,7 +14,7 @@
 /common-lisp/   @lh2
 /cpp/           @nicdgonzalez
 /crystal/       @devnote-dev
-/csharp/        @MarioGK
+/csharp/        @MarioGK @TomasDurica
 /csharp2/       @leo-costa @redducks100
 /clj/           @Vikasg7
 /d/             @ToraKuma42
@@ -38,7 +38,7 @@
 /pascal/        @attilakapostyak
 /ocaml/         @tjdevries
 /jai/           @marvhus
-/kotlin2/       @hermannm
+/kotlin-multiplatform/      @hermannm @ekgame @LizAinslie
 /lua/           @aretrosen
 /luajit/        @Okanoa
 /odin/          @jon-lipstate
@@ -50,7 +50,9 @@
 /reason/        @lessp
 /rescript/      @dylf
 /roc/           @bhansconnect
+/ruby/          @ayatofrench
 /rust/          @ThePrimeagen
+/rust_xiu/      @xiuxiu62
 /typescript/    @ThePrimeagen
 /unison/        @cobaltburn
 /vlang/         @FalconEthics
