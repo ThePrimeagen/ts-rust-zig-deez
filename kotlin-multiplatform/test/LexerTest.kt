@@ -17,8 +17,8 @@ class LexerTest {
             Token.RightSquirly,
             Token.Comma,
             Token.Semicolon,
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     @Test
@@ -71,8 +71,8 @@ class LexerTest {
             Token.Identifier("ten"),
             Token.RightParen,
             Token.Semicolon,
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     @Test
@@ -105,8 +105,8 @@ class LexerTest {
             Token.NotEquals,
             Token.Integer(9),
             Token.Semicolon,
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     @Test
@@ -137,8 +137,8 @@ class LexerTest {
             Token.False,
             Token.Semicolon,
             Token.RightSquirly,
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     @Test
@@ -153,8 +153,8 @@ class LexerTest {
             Token.StringLiteral("foobar"),
             Token.StringLiteral("foo bar"),
             Token.Illegal("\"foo bar baz"),
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     @Test
@@ -168,8 +168,8 @@ class LexerTest {
             Token.Integer(2),
             Token.RightBracket,
             Token.Semicolon,
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     @Test
@@ -184,8 +184,8 @@ class LexerTest {
             Token.Colon,
             Token.StringLiteral("bar"),
             Token.RightSquirly,
-            Token.EndOfFile,
-        ),
+            Token.EndOfFile
+        )
     )
 
     private fun testExpectedTokensInInput(input: String, expectedTokens: List<Token>) {
