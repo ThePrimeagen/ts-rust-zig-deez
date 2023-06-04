@@ -125,4 +125,5 @@
                         (if (is-error? function) functions
                             (let* ((args (eval-expressions (call-args node) env)))
                               (if (and (= (length args) 1) (is-error? (car args))) (car args) (apply-functions function args))))))
+    ((string-literal? node) (new-string-obj (string-value node)))
     (else THE_NULL)))

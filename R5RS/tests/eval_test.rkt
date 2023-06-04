@@ -129,6 +129,12 @@
                  (list "fn(x) { x; }(5)" 5)))
   (for-each (lambda (t) (define evaluated (test-eval (car t))) (test-integer-obj evaluated (cadr t))) tests))
 
+(define (test-eval-string)
+  (define evaluated (test-eval "\"I'm Amelia <3\""))
+
+  (if (not (obj-string? evaluated)) (error (format "object is not String. got:" evaluated)))
+  (if (not (string=? (obj-value evaluated) "I'm Amelia <3")) (error (format "String has wrong value. got:" evaluted))))
+
 (display-nl "Starting eval tests...")
 (test-eval-integer)
 (test-eval-bool)
@@ -139,4 +145,5 @@
 (test-let-statements)
 (test-function-object)
 (test-function-applications)
+(test-eval-string)
 (display-nl "\tEval tests have passed without errros")

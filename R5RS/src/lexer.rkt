@@ -26,26 +26,21 @@
   (cadr (cdddr l)))
 
 (define (lexer-byte l)
-  (char->integer (string-ref (lexer-input l) (lexer-read-pos l)))
-  )
+  (char->integer (string-ref (lexer-input l) (lexer-read-pos l))))
 
 
 ; SETTERS
 (define (set-input! l input)
-  (set-car! (cdr l) input)
-)
+  (set-car! (cdr l) input))
 
 (define (set-pos! l pos)
-  (set-car! (cddr l) pos)
-)
+  (set-car! (cddr l) pos))
 
 (define (set-read-pos! l read-pos)
-  (set-car! (cdddr l) read-pos)
-)
+  (set-car! (cdddr l) read-pos))
 
 (define (set-char! l char)
-  (set-car! (cdr (cdddr l)) char)
-)
+  (set-car! (cdr (cdddr l)) char))
 
 
 ; METHODS
@@ -55,9 +50,12 @@
 (define (lexer-peak-char l)
   (if (>= (lexer-read-pos l) (string-length (lexer-input l)))
       0
-      (lexer-byte l)
-      )
-  )
+      (lexer-byte l)))
+
+(define (lexer-peak-back-char l)
+  (if (= (lexer-pos l) 0)
+      0
+      (char->integer (string-ref (lexer-input l) (- (lexer-pos l) 1)))))
 
 
 ; LEXER METHODS
@@ -65,11 +63,9 @@
   (define read-pos (lexer-read-pos l))
   (if (>= read-pos (string-length (lexer-input l)))
       (set-char! l 0)
-      (set-char! l (lexer-byte l))
-  )
+      (set-char! l (lexer-byte l)))
   (set-pos! l read-pos)
-  (inc-read-pos! l)
-  )
+  (inc-read-pos! l))
 
 (define (lexer-skip-whitespace l)
   (if (or
@@ -85,13 +81,10 @@
   (define (inner l)
     (if (letter? (lexer-char l))
         (begin (lexer-read-char l)
-        (inner l))
-        '()
-        ))
+        (inner l)) '()))
   
   (inner l)
-  (substring (lexer-input l) pos (lexer-pos l))
-  )
+  (substring (lexer-input l) pos (lexer-pos l)))
 
 
 (define (lexer-read-integer l)
@@ -99,9 +92,17 @@
   (define (inner l)
     (if (digit? (lexer-char l))
         (begin (lexer-read-char l)
-               (inner l))
-        '()
-        ))
+               (inner l)) '()))
   (inner l)
-  (substring (lexer-input l) pos (lexer-pos l))
-  )
+  (substring (lexer-input l) pos (lexer-pos l)))
+
+(define (lexer-read-string l)
+  (define pos (+ (lexer-pos l) 1))
+  (define (inner)
+    (lexer-read-char l)
+    (cond
+      ((char-eq? (lexer-char l) "\"") (if (char-eq? (lexer-peak-back-char l) "\\") (inner) '()))
+      ((char-eq? (lexer-char l) 0) (error "EOF reached before string ended!"))
+      (else (inner))))
+  (inner)
+  (string-replace (substring (lexer-input l) pos (lexer-pos l)) "\\\"" "\""))

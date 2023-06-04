@@ -117,9 +117,6 @@
 (define (int-value literal)
   (caddr literal))
 
-(define (int-token s)
-  (cadr s))
-
 
 ; BOOLEAN
 ; (token value)
@@ -132,8 +129,18 @@
 (define (bool-value literal)
   (caddr literal))
 
-(define (bool-token s)
-  (cadr s))
+
+; STRING LITERAL
+; (token value)
+
+(define (new-string token value)
+  (list 'string token value))
+
+(define (string-literal? s)
+  (tagged-list? s 'string))
+
+(define (string-value literal)
+  (caddr literal))
 
 
 ; IF NODE

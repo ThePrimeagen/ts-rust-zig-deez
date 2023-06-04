@@ -350,6 +350,18 @@ return 993322;
               (test-let-stmt let-stmt (cadr t))
               (test-literal-expression (let-value let-stmt) (caddr t))) tests))
 
+(define (test-string-literal)
+  (define p (parse-programme (new-parser (new-lexer "\"hello world\";"))))
+  (check-parse-errors p)
+
+  (define s (exp-value (car (parser-stmts p))))
+  (if (not (string-literal? s))
+      (error (format "Statement is not a string literal. Is:" s)))
+
+  (if (not (string=? (string-value s) "hello world"))
+      (error (format "String value does not equal hello world. Got:" (string-value s)))))
+  
+
 (display-nl "Starting parser tests...")
 (test-parser-let)
 (test-parser-return)
@@ -363,4 +375,5 @@ return 993322;
 (test-functions-parameters)
 (test-call-expressions)
 (test-let-statements)
+(test-string-literal)
 (display-nl "\tParser tests have passed without errros")

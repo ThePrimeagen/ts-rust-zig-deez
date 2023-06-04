@@ -7,6 +7,7 @@
 
 (define IDENT "IDENT")
 (define INT "INT")
+(define MONKEY_STRING "STRING")
 
 (define ASSIGN "=")
 (define PLUS "+")
@@ -142,6 +143,7 @@
     
     ((letter? ch) (lookup-ident (lexer-read-identifier l)))
     ((digit? ch) (to-token INT (lexer-read-integer l)))
+    ((char-eq? ch "\"") (begin (set! out (to-token MONKEY_STRING (lexer-read-string l))) (lexer-read-char l) out))
 
     (else (begin (lexer-read-char l) (to-token ILLEGAL ch)))
     )

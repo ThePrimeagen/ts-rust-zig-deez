@@ -39,6 +39,20 @@
   (for-each (lambda (el) (set! index (+ 1 index)) (if (= index (length lst)) (set! out (string-append out el)) (set! out (string-append (string-append out el) del)))) lst)
   out)
 
+(define (string-replace str old new)
+  (define len (string-length str))
+  (define old-len (string-length old))
+  (define result '())
+  (define (inner i result)
+    (cond
+        ((>= i len)
+         (list->string (reverse result)))
+        ((and (<= (+ i old-len) len)
+              (string=? (substring str i (+ i old-len)) old))
+         (inner (+ i old-len) (append (string->list new) result)))
+        (else
+         (inner (+ i 1) (cons (string-ref str i) result)))))
+  (inner 0 result))
 
 ; CHECKERS
 (define (letter? char)

@@ -41,6 +41,7 @@
   (add-prefix! parser LPAREN parse-group-exp)
   (add-prefix! parser IF_ parse-if-exp)
   (add-prefix! parser FUNCTION parse-fn-literal)
+  (add-prefix! parser MONKEY_STRING parse-string-literal)
 
   (add-infix! parser PLUS parse-infix-exp)
   (add-infix! parser MINUS parse-infix-exp)
@@ -231,6 +232,8 @@
             identifiers
             '()))))
 
+(define (parse-string-literal p)
+  (new-string (parser-cur p) (token-literal (parser-cur p))))
 
 (define (parse-stmt p)
   (define token (parser-cur p))

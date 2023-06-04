@@ -8,6 +8,7 @@
 (define RETURN_VALUE_OBJ "RETURN_VALUE")
 (define ERROR_OBJ        "ERROR")
 (define FUNCTIONS_OBJ    "FUNCTION")
+(define STRING_OBJ       "STRING")
 
 
 ; OBJ METHODS
@@ -21,6 +22,7 @@
     ((obj-return-value? obj) "return value")
     ((obj-error? obj) (format "ERROR: " (obj-value obj)))
     ((obj-fn? obj) (format "fn(" (string-join ", " (map inspect (obj-fn-params obj))) ") {\n" (inspect (obj-fn-body obj)) "\n}"))
+    ((obj-string? obj) (string-value obj))
 
     (else (begin (display obj) "Could not convert to string so just displaying randomly"))))))
 
@@ -51,6 +53,14 @@
 
 (define (obj-bool? obj)
   (tagged-list? obj 'object-bool))
+
+
+; STRING
+(define (new-string-obj value)
+  (list 'object-string STRING_OBJ value))
+
+(define (obj-string? obj)
+  (tagged-list? obj 'object-string))
 
 
 ; RETURN VALUE

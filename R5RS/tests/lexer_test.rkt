@@ -77,9 +77,12 @@
                 (cons EQ "==")
                 (cons INT "10")
                 (cons SEMICOLON ";")
+                (cons MONKEY_STRING "foobar ")
                 (cons INT "10")
                 (cons NOT_EQ "!=")
                 (cons INT "9")
+                (cons SEMICOLON ";")
+                (cons MONKEY_STRING "foo \" bar")
                 (cons SEMICOLON ";")
                 (cons EOF "")
             ))
@@ -97,7 +100,9 @@ let ten = 10;
    } else {
        return false;}
 10 == 10;
+\"foobar \"
 10 != 9;
+\"foo \\\" bar\";
 "))
 
   
@@ -111,7 +116,7 @@ let ten = 10;
                      )
                     (
                      (not (or (char-eq? (token-literal t) (cdr token)) (string=? (token-literal t) (cdr token))))
-                     (error (format "tests[" index "] - literal wrong. expected " (cdr token) " got " (token-literal t)))
+                     (error (format "tests[" index "] - literal wrong. expected '" (cdr token) "' got '" (token-literal t) "'"))
                      ))
               (set! index (+ index 1))) tests))
 
