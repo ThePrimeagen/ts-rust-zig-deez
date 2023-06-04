@@ -2,5 +2,5 @@
 
 set -e pipefail
 
-docker build -t lexer-fsharp -f Lexer/Dockerfile .
-docker run -it --rm lexer-fsharp
+docker build -t monkey-fsharp -f Monkey/Dockerfile .
+docker run -it --rm monkey-fsharp

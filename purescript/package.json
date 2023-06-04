@@ -1,0 +1,29 @@
+{
+  "name": "ts-rust-zig-deez-purescript",
+  "version": "1.0.0",
+  "description": "Lexer in purescript using purescript-parsing(parsec ported from haskell)",
+  "main": "index.js",
+  "scripts": {
+    "test": "spago build && spago test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ThePrimeagen/ts-rust-zig-deez.git"
+  },
+  "keywords": [
+    "Purescript",
+    "lexer",
+    "parsec",
+    "deez"
+  ],
+  "author": "@yornaath - Jørn Andre Tangen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ThePrimeagen/ts-rust-zig-deez/issues"
+  },
+  "homepage": "https://github.com/ThePrimeagen/ts-rust-zig-deez#readme",
+  "devDependencies": {
+    "purescript": "^0.15.9",
+    "spago": "^0.21.0"
+  }
+}
