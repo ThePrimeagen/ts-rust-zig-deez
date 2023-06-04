@@ -44,7 +44,7 @@ enum class TokenType {
     RightBracket,
 }
 
-data class Token(val type: TokenType, val literal: String)
+data class Token(val type: TokenType, val literal: String, val range: DocumentRange)
 
 fun lookupIdentifier(identifier: String): TokenType {
     return when (identifier) {
