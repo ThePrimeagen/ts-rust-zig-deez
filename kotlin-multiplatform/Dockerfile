@@ -10,4 +10,4 @@ CMD echo "===> Linting"
 CMD ./gradlew ktlintCheck
 
 CMD echo "===> Testing"
-CMD ./gradlew cleanTest test
+CMD ./gradlew cleanAllTests allTests

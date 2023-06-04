@@ -39,5 +39,13 @@ test-parser:
 	@echo "[Not yet implemented]"
 
 repl:
-	@echo "===> Running REPL"
-	./gradlew run --quiet --console=plain
+	@echo "===> Running REPL (JVM)"
+	./gradlew :jvm:run --quiet --console=plain
+
+repl-browser:
+	@echo "===> Running REPL (Kotlin-JS in browser)"
+	./gradlew :web:jsBrowserRun
+
+repl-browser-dev:
+	@echo "===> Running REPL (Kotlin-JS in browser) [Development mode with hot reload]"
+	./gradlew :web:jsBrowserDevelopmentRun --continuous

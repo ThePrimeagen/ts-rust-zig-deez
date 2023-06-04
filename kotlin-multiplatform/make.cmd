@@ -69,4 +69,15 @@ endlocal
 
 :"repl"
 	echo ^=^=^=^> Running REPL
-	call .\gradlew.bat run --quiet --console=plain
+	call .\gradlew.bat :jvm:run --quiet --console=plain
+	goto exit
+
+:"repl-browser":
+	echo ^=^=^=^> Running REPL (Kotlin-JS in browser)
+	call .\gradlew.bat :web:jsBrowserRun
+	goto exit
+
+:"repl-browser-dev":
+	echo ^=^=^=^> Running REPL (Kotlin-JS in browser) [Development mode with hot reload]
+	call .\gradlew.bat :web:jsBrowserDevelopmentRun --continuous
+	goto exit
