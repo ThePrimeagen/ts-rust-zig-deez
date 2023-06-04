@@ -1,0 +1,4 @@
+﻿[
+  Identifier { Value = a123456 },
+  EoF { }
+]
