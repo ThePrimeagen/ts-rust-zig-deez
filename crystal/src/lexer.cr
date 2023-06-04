@@ -90,6 +90,7 @@ class Lexer
         type = :function
       when 'a'
         if next_sequence?('l', 's', 'e')
+          next_char
           type = :false
         else
           type = :ident
