@@ -6,6 +6,7 @@ class Lexer(private val input: String) : Iterator<Token> {
     private var currentIndex: Int = 0
     private var line = 1
     private var column = 0
+    private var isFinished = false
 
     override fun next(): Token {
         skipWhitespace()
@@ -36,15 +37,15 @@ class Lexer(private val input: String) : Iterator<Token> {
             in 'a'..'z', in 'A'..'Z', '_' -> consumeKeywordOrIdentifier()
             in '0'..'9' -> consumeInteger()
             '"' -> return consumeStringLiteral()
-            null -> Token(TokenType.EndOfFile, "", capturePositionAsRange())
+            null -> {
+                isFinished = true
+                Token(TokenType.EndOfFile, "", capturePositionAsRange())
+            }
             else -> consumeToken(TokenType.Illegal)
         }
     }
 
-    override fun hasNext(): Boolean {
-        // <= instead of <, to include final Token.EndOfFile
-        return currentIndex <= input.length
-    }
+    override fun hasNext(): Boolean = !isFinished
 
     private fun capturePosition(): DocumentPosition = DocumentPosition(line, column)
 
