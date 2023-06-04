@@ -89,8 +89,7 @@ class Lexer
         next_char
         type = :function
       when 'a'
-        if next_sequence?('l', 's', 'e')
-          next_char
+        if next_sequence?('l', 's', 'e') && check_char_bounds
           type = :false
         else
           type = :ident
@@ -102,8 +101,7 @@ class Lexer
       end
     when 'l'
       start = current_pos
-      if next_char == 'e' && next_char == 't'
-        next_char
+      if next_char == 'e' && next_char == 't' && check_char_bounds
         type = :let
       else
         type = :ident
@@ -111,16 +109,14 @@ class Lexer
       end
     when 't'
       start = current_pos
-      if next_sequence?('r', 'u', 'e')
-        next_char
+      if next_sequence?('r', 'u', 'e') && check_char_bounds
         type = :true
       else
         type = :ident
         value = read_ident_from start
       end
     when 'i'
-      if next_char == 'f'
-        next_char
+      if next_char == 'f' && check_char_bounds
         type = :if
       else
         type = :ident
@@ -128,8 +124,7 @@ class Lexer
       end
     when 'e'
       start = current_pos
-      if next_sequence?('l', 's', 'e')
-        next_char
+      if next_sequence?('l', 's', 'e') && check_char_bounds
         type = :else
       else
         type = :ident
@@ -137,8 +132,7 @@ class Lexer
       end
     when 'r'
       start = current_pos
-      if next_sequence?('e', 't', 'u', 'r', 'n')
-        next_char
+      if next_sequence?('e', 't', 'u', 'r', 'n') && check_char_bounds
         type = :return
       else
         type = :ident
@@ -204,5 +198,10 @@ class Lexer
 
   private def next_sequence?(*chars : Char) : Bool
     chars.all? { |char| next_char == char }
+  end
+
+  private def check_char_bounds : Bool
+    next_char
+    !current_char.ascii_letter? && current_char != '_'
   end
 end
