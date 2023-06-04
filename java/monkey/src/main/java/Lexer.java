@@ -10,7 +10,9 @@ public class Lexer {
     public Token nextToken() {
         this.skipWhitespace();
 
-        var token = switch (this.getCc()) {
+        var currentChar = this.readCc();
+
+        return switch ((Character) currentChar) {
             case '{' -> TokenType.LSQIRLY.token();
             case '}' -> TokenType.RSQIRLY.token();
             case '(' -> TokenType.LPAREN.token();
@@ -19,7 +21,7 @@ public class Lexer {
             case ';' -> TokenType.SEMI.token();
             case '+' -> TokenType.PLUS.token();
             case '=' -> {
-                if (this.peekNext() == '=') {
+                if (this.getCc() == '=') {
                     this.advance();
                     yield TokenType.EQUAL.token();
                 }
@@ -28,7 +30,7 @@ public class Lexer {
             }
             case '-' -> TokenType.MINUS.token();
             case '!' -> {
-                if (this.peekNext() == '=') {
+                if (this.getCc() == '=') {
                     this.advance();
                     yield TokenType.NOT_EQUAL.token();
                 }
@@ -40,18 +42,10 @@ public class Lexer {
             case '>' -> TokenType.GT.token();
             case '<' -> TokenType.LT.token();
             case '\0' -> TokenType.EOF.token();
-            default -> TokenType.ILLEGAL.createToken(String.valueOf(this.getCc()));
-        };
 
-        if (token.type() != TokenType.ILLEGAL) {
-            this.advance();
-            return token;
-        }
-
-        switch ((Character) this.getCc()) {
             case Character c when isLetter(c) -> {
                 var ident = this.indent();
-                return switch (ident) {
+                yield switch (ident) {
                     case "fn" -> TokenType.FUNC.token();
                     case "let" -> TokenType.LET.token();
                     case "true" -> TokenType.TRUE.token();
@@ -62,15 +56,9 @@ public class Lexer {
                     default -> TokenType.IDENT.createToken(ident);
                 };
             }
-            case Character c when Character.isDigit(c) -> {
-                return TokenType.INT.createToken(this.number());
-            }
-            default -> {
-                this.advance();
-                return token;
-            }
-        }
-
+            case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number());
+            default -> TokenType.ILLEGAL.createToken(String.valueOf(currentChar));
+        };
     }
 
     private void advance() {
@@ -85,6 +73,12 @@ public class Lexer {
         return this.peek(this.pos);
     }
 
+    private char readCc() {
+        var currentChar = this.getCc();
+        this.advance();
+        return currentChar;
+    }
+
     private char peek(int pos) {
         if (pos >= this.input.length() || pos < 0) {
             return '\0';
@@ -92,16 +86,12 @@ public class Lexer {
         return this.input.charAt(pos);
     }
 
-    private char peekNext() {
-        return peek(this.pos + 1);
-    }
-
     private boolean isLetter(char c) {
         return Character.isLetter(c) || c == '_';
     }
 
     private String number() {
-        int pos = this.pos;
+        int pos = this.pos - 1;
         while (Character.isDigit(this.getCc())) {
             this.advance();
         }
@@ -109,7 +99,7 @@ public class Lexer {
     }
 
     private String indent() {
-        int pos = this.pos;
+        int pos = this.pos - 1;
         while (this.isLetter(this.getCc())) {
             this.advance();
         }
