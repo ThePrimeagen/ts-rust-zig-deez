@@ -7,11 +7,13 @@ class Lexer(
 ) {
 
     private val keywords = hashMapOf(
-        "else" to ELSE,
-        "fun" to FUNCTION,
-        "if" to IF,
-        "return" to RETURN,
+        "fn" to FUNCTION,
         "let" to LET,
+        "true" to TRUE,
+        "false" to FALSE,
+        "if" to IF,
+        "else" to ELSE,
+        "return" to RETURN,
     )
 
     private val tokens: MutableList<Token> = mutableListOf()
@@ -20,22 +22,25 @@ class Lexer(
 
     private val isAtEnd get() = current >= source.length
     fun readTokens(): List<Token> {
-        while (!isAtEnd) { // We are at the beginning of the next lexeme.
+        while (!isAtEnd) {
             start = current
             readToken()
         }
-        addToken(EOF)
+        addToken(EOF, "")
         return tokens
     }
 
     private fun readToken() {
         when (val char = peek()) {
-            '(', ')', '{', '}', ',', ';', '+', '=', ' ', '\n', '\r', '\t', '\u00A0' -> singleCharToken(char)
+            '(', ')', '{', '}', ',', ';', '+', '/', '*', '-', ' ', '\n', '\r', '\t', '\u00A0' -> singleCharToken(char)
+            '!', '=', '<', '>' -> twoCharToken(char)
             '"' -> string()?.let { addToken(STRING, it) }
-            in '0'..'9' -> addToken(NUMBER, number())
-            in 'a'..'z', in 'A'..'Z', '_' -> addToken(identifier())
             else -> {
-                addToken(ILLEGAL)
+                when {
+                    char.isDigit() -> addToken(NUMBER, number())
+                    char.isAlpha() -> addToken(identifier())
+                    else -> addToken(ILLEGAL)
+                }
             }
         }
     }
@@ -57,12 +62,34 @@ class Lexer(
         ',' -> COMMA
         ';' -> SEMICOLON
         '+' -> PLUS
-        '=' -> EQUAL
+        '*' -> STAR
+        '-' -> MINUS
+        '/' -> SLASH
         ' ', '\r', '\t', '\u00A0' -> null
         else -> null
     }.also {
         advance()
     }?.let {
+        addToken(it, char.toString())
+    }
+
+    private fun twoCharToken(char: Char) = when (char) {
+        '!' -> if (peekNext() == '=') NOT_EQ else BANG
+        '=' -> if (peekNext() == '=') EQ else ASSIGN
+        '<' -> if (peekNext() == '=') LE else LESS
+        '>' -> if (peekNext() == '=') GE else GREATER
+        else -> null
+    }?.let {
+        when (it) {
+            NOT_EQ, EQ, LE, GE -> {
+                advance()
+                advance()
+            }
+
+            BANG, ASSIGN, LESS, GREATER -> advance()
+
+            else -> ILLEGAL
+        }
         addToken(it)
     }
 
@@ -94,9 +121,10 @@ class Lexer(
     private fun addToken(type: TokenType) = addToken(type, null)
 
     private fun addToken(type: TokenType, literal: String?) {
-        tokens += Token(type, literal)
+        val text = source.substring(start, current)
+        val token = Token(type, literal ?: text)
+        tokens += token
     }
-
     private fun peek() = if (!isAtEnd) source[current] else '\u0000'
     private fun peekNext() = if (current + 1 < source.length) source[current + 1] else '\u0000'
     private fun Char.isAlpha() = (this in 'a'..'z') || (this in 'A'..'Z') || this == '_'

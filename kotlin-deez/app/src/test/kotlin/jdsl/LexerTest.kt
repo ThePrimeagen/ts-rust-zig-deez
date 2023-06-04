@@ -13,15 +13,15 @@ class LexerTest {
         val tokens = lexer.readTokens()
 
         val expectedTokens = listOf(
-            Token(LSQUIRLY),
-            Token(RSQUIRLY),
-            Token(LPAREN),
-            Token(RPAREN),
-            Token(COMMA),
-            Token(SEMICOLON),
-            Token(PLUS),
-            Token(EQUAL),
-            Token(EOF, null),
+            Token(LSQUIRLY, "{"),
+            Token(RSQUIRLY, "}"),
+            Token(LPAREN, "("),
+            Token(RPAREN, ")"),
+            Token(COMMA, ","),
+            Token(SEMICOLON, ";"),
+            Token(PLUS, "+"),
+            Token(ASSIGN, "="),
+            Token(EOF, ""),
         )
 
         for (i in tokens.indices) {
@@ -34,12 +34,25 @@ class LexerTest {
     @Test
     fun testJDSL() {
         val input = """
-            let five = 5;
-            let ten = 10;
-            let add = fn(x, y) {
-                x + y;
-            };
-            let result = add(five, ten);
+    let five = 5;
+	let ten = 10;
+
+	let add = fn(x, y) {
+	x + y;
+	};
+
+	let result = add(five, ten);
+	!-/*5;
+	5 < 10 > 5;
+
+	if (5 < 10) {
+	return true;
+	} else {
+	return false;
+	}
+
+	10 == 10;
+	10 != 9;
         """.trimIndent()
 
         val lexer = Lexer(input)
@@ -48,41 +61,78 @@ class LexerTest {
         val expectedTokens = listOf(
             Token(LET, "let"),
             Token(IDENTIFIER, "five"),
-            Token(EQUAL),
+            Token(ASSIGN, "="),
             Token(NUMBER, "5"),
-            Token(SEMICOLON),
+            Token(SEMICOLON, ";"),
             Token(LET, "let"),
             Token(IDENTIFIER, "ten"),
-            Token(EQUAL),
+            Token(ASSIGN, "="),
             Token(NUMBER, "10"),
-            Token(SEMICOLON),
+            Token(SEMICOLON, ";"),
             Token(LET, "let"),
             Token(IDENTIFIER, "add"),
-            Token(EQUAL),
-            Token(FUNCTION, "func"),
-            Token(LPAREN),
+            Token(ASSIGN, "="),
+            Token(FUNCTION, "fn"),
+            Token(LPAREN, "("),
             Token(IDENTIFIER, "x"),
-            Token(COMMA),
+            Token(COMMA, ","),
             Token(IDENTIFIER, "y"),
-            Token(RPAREN),
-            Token(LSQUIRLY),
+            Token(RPAREN, ")"),
+            Token(LSQUIRLY, "{"),
             Token(IDENTIFIER, "x"),
-            Token(PLUS),
+            Token(PLUS, "+"),
             Token(IDENTIFIER, "y"),
-            Token(SEMICOLON),
-            Token(RSQUIRLY),
-            Token(SEMICOLON),
+            Token(SEMICOLON, ";"),
+            Token(RSQUIRLY, "}"),
+            Token(SEMICOLON, ";"),
             Token(LET, "let"),
             Token(IDENTIFIER, "result"),
-            Token(EQUAL),
+            Token(ASSIGN, "="),
             Token(IDENTIFIER, "add"),
-            Token(LPAREN),
+            Token(LPAREN, "("),
             Token(IDENTIFIER, "five"),
-            Token(COMMA),
+            Token(COMMA, ","),
             Token(IDENTIFIER, "ten"),
-            Token(RPAREN),
-            Token(SEMICOLON),
-            Token(EOF )
+            Token(RPAREN, ")"),
+            Token(SEMICOLON, ";"),
+            Token(BANG, "!"),
+            Token(MINUS, "-"),
+            Token(SLASH, "/"),
+            Token(STAR, "*"),
+            Token(NUMBER, "5"),
+            Token(SEMICOLON, ";"),
+            Token(NUMBER, "5"),
+            Token(LESS, "<"),
+            Token(NUMBER, "10"),
+            Token(GREATER, ">"),
+            Token(NUMBER, "5"),
+            Token(SEMICOLON, ";"),
+            Token(IF, "if"),
+            Token(LPAREN, "("),
+            Token(NUMBER, "5"),
+            Token(LESS, "<"),
+            Token(NUMBER, "10"),
+            Token(RPAREN, ")"),
+            Token(LSQUIRLY, "{"),
+            Token(RETURN, "return"),
+            Token(TRUE, "true"),
+            Token(SEMICOLON, ";"),
+            Token(RSQUIRLY, "}"),
+            Token(ELSE, "else"),
+            Token(LSQUIRLY, "{"),
+            Token(RETURN, "return"),
+            Token(FALSE, "false"),
+            Token(SEMICOLON, ";"),
+            Token(RSQUIRLY, "}"),
+            Token(NUMBER, "10"),
+            Token(EQ, "=="),
+            Token(NUMBER, "10"),
+            Token(SEMICOLON, ";"),
+            Token(NUMBER, "10"),
+            Token(NOT_EQ, "!="),
+            Token(NUMBER, "9"),
+            Token(SEMICOLON, ";"),
+            Token(EOF, ""),
         )
 
         for (i in tokens.indices) {
