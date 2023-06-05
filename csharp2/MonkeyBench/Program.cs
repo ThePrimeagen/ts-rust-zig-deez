@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-using lexer;
+using Monkey;
 
 BenchmarkRunner.Run<LexerBench>();
 

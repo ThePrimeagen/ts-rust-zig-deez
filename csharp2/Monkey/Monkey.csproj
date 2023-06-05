@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="lexer.tests" />
-    <InternalsVisibleTo Include="lexer.bench" />
+    <InternalsVisibleTo Include="MonkeyBench" />
+    <InternalsVisibleTo Include="MonkeyTests" />
   </ItemGroup>
 </Project>

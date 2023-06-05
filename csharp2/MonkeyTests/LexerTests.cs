@@ -1,38 +1,13 @@
 using Xunit;
 using FluentAssertions;
+using Monkey;
 
-namespace lexer.tests;
+namespace MonkeyTests;
 
 public class Tests
 {
     [Fact]
-    public void Get_Next_Token()
-    {
-        const string testInput = "=+(){},;";
-        var lexer = new Lexer(testInput);
-
-        var tokens = new List<Token>
-        {
-            new(TokenType.Assign),
-            new(TokenType.Plus),
-            new(TokenType.Lparen),
-            new(TokenType.Rparen),
-            new(TokenType.LSquirly),
-            new(TokenType.RSquirly),
-            new(TokenType.Comma),
-            new(TokenType.Semicolon),
-        };
-
-        foreach (var token in tokens)
-        {
-            var nextToken = lexer.NextToken();
-            token.Should().Be(nextToken);
-            // Assert.That(token, Is.EqualTo(nextToken));
-        }
-    }
-
-    [Fact]
-    public void Get_Next_Complete()
+    public void Get_NextToken_Complete()
     {
         const string testInput = """
             let five = 5;
@@ -93,7 +68,6 @@ public class Tests
             new(TokenType.Ident, "ten"),
             new(TokenType.Rparen),
             new(TokenType.Semicolon),
-
             new(TokenType.Bang),
             new(TokenType.Dash),
             new(TokenType.ForwardSlash),
@@ -123,7 +97,6 @@ public class Tests
             new(TokenType.False),
             new(TokenType.Semicolon),
             new(TokenType.RSquirly),
-
             new(TokenType.Int,"10"),
             new(TokenType.Equal),
             new(TokenType.Int,"10"),
