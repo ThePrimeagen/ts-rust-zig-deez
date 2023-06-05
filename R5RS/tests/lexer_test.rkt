@@ -84,6 +84,12 @@
                 (cons SEMICOLON ";")
                 (cons MONKEY_STRING "foo \" bar")
                 (cons SEMICOLON ";")
+                (cons LBRACKET "[")
+                (cons INT "1")
+                (cons COMMA ",")
+                (cons INT "2")
+                (cons RBRACKET "]")
+                (cons SEMICOLON ";")
                 (cons EOF "")
             ))
   (define l (new-lexer "let five = 5;
@@ -103,6 +109,7 @@ let ten = 10;
 \"foobar \"
 10 != 9;
 \"foo \\\" bar\";
+[1, 2];
 "))
 
   

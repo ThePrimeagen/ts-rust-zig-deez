@@ -28,6 +28,8 @@
 (define RPAREN ")")
 (define LBRACE "{")
 (define RBRACE "}")
+(define LBRACKET "[")
+(define RBRACKET "]")
 
 (define FUNCTION "FUNCTION")
 (define LET "LET")
@@ -115,10 +117,12 @@
          out)
     
     ((char-eq? ch SEMICOLON) (begin (lexer-read-char l) (to-token SEMICOLON ch)))
-    ((char-eq? ch LPAREN) (begin (lexer-read-char l) (to-token LPAREN ch)))
-    ((char-eq? ch RPAREN) (begin (lexer-read-char l) (to-token RPAREN ch)))
-    ((char-eq? ch LBRACE) (begin (lexer-read-char l) (to-token LBRACE ch)))
-    ((char-eq? ch RBRACE) (begin (lexer-read-char l) (to-token RBRACE ch)))
+    ((char-eq? ch LPAREN)    (begin (lexer-read-char l) (to-token LPAREN ch)))
+    ((char-eq? ch RPAREN)    (begin (lexer-read-char l) (to-token RPAREN ch)))
+    ((char-eq? ch LBRACE)    (begin (lexer-read-char l) (to-token LBRACE ch)))
+    ((char-eq? ch RBRACE)    (begin (lexer-read-char l) (to-token RBRACE ch)))
+    ((char-eq? ch LBRACKET)  (begin (lexer-read-char l) (to-token LBRACKET ch)))
+    ((char-eq? ch RBRACKET)  (begin (lexer-read-char l) (to-token RBRACKET ch)))
     
     ((char-eq? ch COMMA) (begin (lexer-read-char l) (to-token COMMA ch)))
     ((char-eq? ch PLUS) (begin (lexer-read-char l) (to-token PLUS ch)))

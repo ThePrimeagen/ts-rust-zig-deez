@@ -11,6 +11,7 @@
 (define PRODUCT 5)
 (define PREFIX 6)
 (define CALL 7)
+(define INDEX 8)
 
 (define precedences (make-hash))
 (hash-set! precedences EQ EQUALS)
@@ -22,6 +23,7 @@
 (hash-set! precedences SLASH PRODUCT)
 (hash-set! precedences ASTERISK PRODUCT)
 (hash-set! precedences LPAREN CALL)
+(hash-set! precedences LBRACKET INDEX)
 
 
 
@@ -42,6 +44,7 @@
   (add-prefix! parser IF_ parse-if-exp)
   (add-prefix! parser FUNCTION parse-fn-literal)
   (add-prefix! parser MONKEY_STRING parse-string-literal)
+  (add-prefix! parser LBRACKET parse-array-literal)
 
   (add-infix! parser PLUS parse-infix-exp)
   (add-infix! parser MINUS parse-infix-exp)
@@ -52,6 +55,7 @@
   (add-infix! parser LT parse-infix-exp)
   (add-infix! parser GT parse-infix-exp)
   (add-infix! parser LPAREN parse-call-exp)
+  (add-infix! parser LBRACKET parse-index-expression)
   
   parser)
 
@@ -235,6 +239,18 @@
 (define (parse-string-literal p)
   (new-string (parser-cur p) (token-literal (parser-cur p))))
 
+(define (parse-array-literal p)
+  (new-array (parser-cur p) (parse-expression-list p RBRACKET)))
+
+(define (parse-expression-list p end)
+  (define exps '())
+  (define (inner)
+    (if (parser-peek-is p COMMA) (begin (parser-next-token p) (parser-next-token p) (set! exps (add-to-list exps (parse-expression p LOWEST))) (inner))))
+
+  (if (parser-peek-is p end) (begin (parser-next-token p) exps)
+      (begin (parser-next-token p) (set! exps (add-to-list exps (parse-expression p LOWEST))) (inner)
+             (if (not (parser-expect-peek p end)) '() exps))))
+
 (define (parse-stmt p)
   (define token (parser-cur p))
   (cond
@@ -289,17 +305,14 @@
     (begin (parser-next-token p) (new-infix-node token left operator (parse-expression p precedence)))))
 
 (define (parse-call-exp p fn)
-  (new-call-expression (parser-cur p) fn (parse-call-args p)))
+  (new-call-expression (parser-cur p) fn (parse-expression-list p RPAREN)))
 
-
-(define (parse-call-args p)
-  (define args '())
-  (define (inner) (if (parser-peek-is p COMMA) (begin (parser-next-token p) (parser-next-token p) (set! args (add-to-list args (parse-expression p LOWEST))) (inner))))
-
-  (if (parser-peek-is p RPAREN)
-      (begin (parser-next-token p) args)
-      (begin (parser-next-token p) (set! args (add-to-list args (parse-expression p LOWEST))) (inner) (if (not (parser-expect-peek p RPAREN)) '() args))))
-
+(define (parse-index-expression p left)
+  (define token (parser-cur p))
+  (parser-next-token p)
+  (define index (parse-expression p LOWEST))
+  (if (not (parser-expect-peek p RBRACKET)) '() (new-index-node token left index)))
+  
 
 ; CALL PARSER
 (define (parse-programme p)

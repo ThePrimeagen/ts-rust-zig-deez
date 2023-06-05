@@ -360,6 +360,33 @@ return 993322;
 
   (if (not (string=? (string-value s) "hello world"))
       (error (format "String value does not equal hello world. Got:" (string-value s)))))
+
+(define (test-parsing-arrays)
+  (define p (parse-programme (new-parser (new-lexer "[1, 2 * 2, 3 + 3]"))))
+  (check-parse-errors p)
+
+  (define array (exp-value (car (parser-stmts p))))
+  (if (not (array? array))
+      (error (format "Statement is not an array literal. Is:" array)))
+
+  (define el (array-exps array))
+  (if (not (= (length el) 3))
+      (error (format "Array should have 3 elements. Got:" (length el))))
+
+  (test-interger-literal (get-nth-element el 0) 1)
+  (test-infix-expression (get-nth-element el 1) 2 "*" 2)
+  (test-infix-expression (get-nth-element el 2) 3 "+" 3))
+
+(define (test-parsing-index-exp)
+  (define p (parse-programme (new-parser (new-lexer "myArray[1 + 1]"))))
+  (check-parse-errors p)
+
+  (define node (exp-value (car (parser-stmts p))))
+  (if (not (index-node? node))
+      (error (format "Exp is not an index exp. Is:" node)))
+
+  (test-identifier (index-left node) "myArray")
+  (test-infix-expression (index-index node) 1 "+" 1))
   
 
 (display-nl "Starting parser tests...")
@@ -376,4 +403,6 @@ return 993322;
 (test-call-expressions)
 (test-let-statements)
 (test-string-literal)
+(test-parsing-arrays)
+(test-parsing-index-exp)
 (display-nl "\tParser tests have passed without errros")

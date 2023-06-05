@@ -106,6 +106,21 @@
   (cadr (cdddr node)))
 
 
+; INDEX NODE
+; (token left index)
+(define (new-index-node token left index)
+  (list 'index-node token left index))
+
+(define (index-node? node)
+  (tagged-list? node 'index-node))
+
+(define (index-left node)
+  (caddr node))
+
+(define (index-index node)
+  (car (cdddr node)))
+
+
 ; INTEGER LITERAL
 ; (token value)
 (define (new-integeral-literal token value)
@@ -132,7 +147,6 @@
 
 ; STRING LITERAL
 ; (token value)
-
 (define (new-string token value)
   (list 'string token value))
 
@@ -141,6 +155,18 @@
 
 (define (string-value literal)
   (caddr literal))
+
+
+; ARRAY LITERAL
+; (token (expression))
+(define (new-array token exps)
+  (list 'array token exps))
+
+(define (array? s)
+  (tagged-list? s 'array))
+
+(define (array-exps array)
+  (caddr array))
 
 
 ; IF NODE

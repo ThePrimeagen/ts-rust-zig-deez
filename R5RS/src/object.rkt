@@ -9,7 +9,8 @@
 (define ERROR_OBJ        "ERROR")
 (define FUNCTIONS_OBJ    "FUNCTION")
 (define STRING_OBJ       "STRING")
-(define BUILDIN_OBJ "BUILDIN")
+(define BUILDIN_OBJ      "BUILDIN")
+(define ARRAY_OBJ        "ARRAY")
 
 
 ; OBJ METHODS
@@ -24,6 +25,7 @@
     ((obj-error? obj) (format "ERROR: " (obj-value obj)))
     ((obj-fn? obj) (format "fn(" (string-join ", " (map inspect (obj-fn-params obj))) ") {\n" (inspect (obj-fn-body obj)) "\n}"))
     ((obj-string? obj) (string-value obj))
+    ((obj-array? obj) (format "[" (string-join ", " (map inspect (obj-value obj))) "]"))
 
     (else (begin (display obj) "Could not convert to string so just displaying randomly"))))))
 
@@ -62,6 +64,14 @@
 
 (define (obj-string? obj)
   (tagged-list? obj 'object-string))
+
+
+; ARRAY
+(define (new-array-obj el)
+  (list 'object-array ARRAY_OBJ el))
+
+(define (obj-array? obj)
+  (tagged-list? obj 'object-array))
 
 
 ; RETURN VALUE

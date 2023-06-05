@@ -7,8 +7,29 @@
 
 (hash-set! BUILDIN_FUNCTIONS "len" (new-buildin (lambda (args)
                                                   (if (or (not (pair? args)) (not (= (length args) 1))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=1")
-                                                      (if (obj-string? (car args)) (new-int (string-length (string-value (car args))))
-                                                          (format-error "argument to 'len' not supported, got " (obj-type (car args))))))))
+                                                      (cond
+                                                        ((obj-string? (car args)) (new-int (string-length (string-value (car args)))))
+                                                        ((obj-array? (car args)) (new-int (length (obj-value (car args)))))
+                                                        (else (format-error "argument to 'len' not supported, got " (obj-type (car args)))))))))
+
+(hash-set! BUILDIN_FUNCTIONS "first" (new-buildin (lambda (args)
+                                                    (if (or (not (pair? args)) (not (= (length args) 1))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=1")
+                                                        (if (obj-array? (car args)) (let* ((el (obj-value (car args)))) (if (> (length el) 0) (car el) THE_NULL)) (format-error "Argument to `first` must be ARRAY got:" (obj-type (car args))))))))
+
+(hash-set! BUILDIN_FUNCTIONS "rest" (new-buildin (lambda (args)
+                                                    (if (or (not (pair? args)) (not (= (length args) 1))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=1")
+                                                        (if (obj-array? (car args)) (let* ((el (obj-value (car args)))) (if (> (length el) 0) (new-array-obj (cdr el)) THE_NULL)) (format-error "Argument to `rest` must be ARRAY got:" (obj-type (car args))))))))
+
+; EW IMAGE PROVIDING A BUILDIN LAST FUNCTION. CADR THEM LISTS
+(hash-set! BUILDIN_FUNCTIONS "last" (new-buildin (lambda (args)
+                                                    (if (or (not (pair? args)) (not (= (length args) 1))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=1")
+                                                        (if (obj-array? (car args)) (let* ((el (obj-value (car args)))) (if (> (length el) 0) (get-nth-element el (- (length el) 1)) THE_NULL)) (format-error "Argument to `rest` must be ARRAY got:" (obj-type (car args))))))))
+; DISGUSTING.
+(hash-set! BUILDIN_FUNCTIONS "push" (new-buildin (lambda (args)
+                                                    (if (or (not (pair? args)) (not (= (length args) 2))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=2")
+                                                        (if (obj-array? (car args)) (let* ((el (obj-value (car args)))) (new-array-obj (add-to-list el (cadr args)))) (format-error "First argument to `push` must be ARRAY got:" (obj-type (car args))))))))
+
+
 
 
 (define (is-error? obj)
@@ -95,6 +116,16 @@
     ((not (eq? (obj-type left) (obj-type right))) (format-error "type mismatch: " (obj-type left) " " operator " " (obj-type right)))
     (else (format-error "unknown operator: " (obj-type left) " " operator " " (obj-type right)))))
 
+(define (eval-index-expression left index)
+  (cond
+    ((and (obj-array? left) (obj-int? index)) (eval-array-index left index))
+
+    (else (format-error "index operator not supported" (obj-type left)))))
+
+(define (eval-array-index array idx)
+  (let* ((index (obj-value idx)) (array-el (obj-value array)))
+  (if (or (< index 0) (>= index (length array-el))) THE_NULL (get-nth-element array-el index))))
+
 (define (eval-identifier node env)
   (define buildin (hash-ref BUILDIN_FUNCTIONS (identifier-value node) '()))
   (if (null? buildin) (let* ((id (get-from-environment env (identifier-value node))))
@@ -144,4 +175,6 @@
                             (let* ((args (eval-expressions (call-args node) env)))
                               (if (and (= (length args) 1) (is-error? (car args))) (car args) (apply-functions function args))))))
     ((string-literal? node) (new-string-obj (string-value node)))
+    ((array? node) (let* ((elements (eval-expressions (obj-value node) env))) (if (and (= (length elements) 1) (is-error? node)) (car elements) (new-array-obj elements))))
+    ((index-node? node) (let* ((left (monkey-eval (index-left node) env))) (if (is-error? left) left (begin (let* ((index (monkey-eval (index-index node) env))) (if (is-error? index) index (eval-index-expression left index)))))))
     (else THE_NULL)))

@@ -156,6 +156,32 @@
                                       (if (not (obj-error? evaluated)) (error (format "no error object returned, got: " evaluated)))
                                       (if (not (string=? (obj-value evaluated) (cadr t)))
                                           (error (format "wrong error message, expected='" (cadr t) "' but got='" (obj-value evaluated) "'"))))))) tests))
+
+(define (test-array-literals)
+  (define evaluated (test-eval "[1, 2 * 2, 3 + 3]"))
+  (if (not (obj-array? evaluated))
+      (error (format "Object is not an array. Got:" evaluated)))
+  (define el (obj-value evaluated))
+  (if (not (= (length el) 3))
+      (error (format "Array does not have 3 elements. Has:" (length el))))
+
+  (test-integer-obj (get-nth-element el 0) 1)
+  (test-integer-obj (get-nth-element el 1) 4)
+  (test-integer-obj (get-nth-element el 2) 6))
+
+(define (test-array-index-expressions)
+  (define tests (list
+                 (list "[1, 2, 3][0]" 1)
+                 (list "[1, 2, 3][1]" 2)
+                 (list "[1, 2, 3][2]" 3)
+                 (list "let i = 0;[1][0]" 1)
+                 (list "[1, 2, 3][1+1]" 3)
+                 (list "let myArray = [1, 2, 3]; myArray[2];" 3)
+                 (list "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];" 6)
+                 (list "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]" 2)
+                 (list "[1, 2, 3][3]" '())
+                 (list "[1, 2, 3][-1]" '())))
+  (for-each (lambda (t) (define evaluated (test-eval (car t))) (if (number? (cadr t)) (test-integer-obj evaluated (cadr t)) (test-null-obj evaluated))) tests))
   
 
 (display-nl "Starting eval tests...")
@@ -171,4 +197,6 @@
 (test-eval-string)
 (test-string-concatenation)
 (test-buildin-functions)
+(test-array-literals)
+(test-array-index-expressions)
 (display-nl "\tEval tests have passed without errros")
