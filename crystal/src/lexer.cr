@@ -147,6 +147,7 @@ class Lexer
     else
       type = :illegal
       value = "illegal token #{@reader.current_char.inspect}"
+      next_char
     end
 
     Token.new type, value
