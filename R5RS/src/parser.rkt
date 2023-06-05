@@ -45,6 +45,7 @@
   (add-prefix! parser FUNCTION parse-fn-literal)
   (add-prefix! parser MONKEY_STRING parse-string-literal)
   (add-prefix! parser LBRACKET parse-array-literal)
+  (add-prefix! parser LBRACE parse-hash-literal)
 
   (add-infix! parser PLUS parse-infix-exp)
   (add-infix! parser MINUS parse-infix-exp)
@@ -312,6 +313,19 @@
   (parser-next-token p)
   (define index (parse-expression p LOWEST))
   (if (not (parser-expect-peek p RBRACKET)) '() (new-index-node token left index)))
+
+(define (parse-hash-literal p)
+  (define hash (new-hash-literal (parser-cur p)))
+  (define (inner)
+    (if (not (parser-peek-is p RBRACE))
+        (begin (parser-next-token p)
+        (let* ((key (parse-expression p LOWEST)))
+          (if (not (parser-expect-peek p COLON)) '()
+              (begin (parser-next-token p) (let* ((value (parse-expression p LOWEST))) (hash-literal-set! hash key value))
+                     (if (and (not (parser-peek-is p RBRACE)) (not (parser-expect-peek p COMMA))) '() (inner))))))))
+
+  (inner)
+  (if (not (parser-expect-peek p RBRACE)) '() hash))
   
 
 ; CALL PARSER

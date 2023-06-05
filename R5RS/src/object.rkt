@@ -1,6 +1,28 @@
 (load "../src/utils.rkt")
 
 
+; HASHER
+(define HASHER-CACHE (make-hash))
+
+(define (make-hash-key obj)
+  (cond
+    ((obj-bool? obj) (list 'hash-key (obj-type obj) (if (obj-value obj) 1 0)))
+    ((obj-int? obj) (list 'hash-key (obj-type obj) (obj-value obj)))
+    ((obj-string? obj) (begin
+                         (let* ((val (obj-value obj))
+                                (hash-check (hash-ref HASHER-CACHE val '())))
+                           (if (not (null? hash-check)) hash-check
+                               (let* ((hash-value (fnv-hash (obj-value obj)))
+                                      (hash-key (list 'hash-key (obj-type obj) hash-value)))
+                                 (begin (hash-set! HASHER-CACHE val hash-key) hash-key))))))))
+
+(define (hash-key? key)
+  (tagged-list? key 'hash-key))
+
+(define (can-hash? obj)
+  (or (obj-bool? obj) (obj-int? obj) (obj-string? obj)))
+
+
 ; TYPES
 (define INTEGER_OBJ      "INTEGER")
 (define BOOLEAN_OBJ      "BOOLEAN")
@@ -11,6 +33,7 @@
 (define STRING_OBJ       "STRING")
 (define BUILDIN_OBJ      "BUILDIN")
 (define ARRAY_OBJ        "ARRAY")
+(define HASH_OBJ         "HASH")
 
 
 ; OBJ METHODS
@@ -120,6 +143,36 @@
 
 (define (buildin-function buildin)
   (caddr buildin))
+
+
+; HASH
+(define (new-hash-obj hash)
+  (list 'obj-hash HASH_OBJ hash))
+
+(define (obj-hash? obj)
+  (tagged-list? obj 'obj-hash))
+
+(define (hash-obj-hash hash)
+  (caddr hash))
+
+(define (hash-obj-set! h key value)
+  (hash-set! (hash-obj-hash h) key value))
+
+(define (hash-obj-ref h key)
+  (hash-ref (hash-obj-hash h) key '()))
+
+; HASH PAIR
+(define (new-hash-pair key value)
+  (list 'hash-pair key value))
+
+(define (hash-pair? pair)
+  (tagged-list? pair 'hash-pair))
+
+(define (hash-pair-key pair)
+  (cadr pair))
+
+(define (hash-pair-value pair)
+  (caddr pair))
 
 
 ; NULL

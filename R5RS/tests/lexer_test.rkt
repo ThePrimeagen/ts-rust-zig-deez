@@ -90,6 +90,11 @@
                 (cons INT "2")
                 (cons RBRACKET "]")
                 (cons SEMICOLON ";")
+                (cons LBRACE "{")
+                (cons MONKEY_STRING "foo")
+                (cons COLON ":")
+                (cons MONKEY_STRING "bar")
+                (cons RBRACE "}")
                 (cons EOF "")
             ))
   (define l (new-lexer "let five = 5;
@@ -110,6 +115,7 @@ let ten = 10;
 10 != 9;
 \"foo \\\" bar\";
 [1, 2];
+{\"foo\": \"bar\"}
 "))
 
   

@@ -23,6 +23,7 @@
 
 (define COMMA ",")
 (define SEMICOLON ";")
+(define COLON ":")
 
 (define LPAREN "(")
 (define RPAREN ")")
@@ -127,6 +128,7 @@
     ((char-eq? ch COMMA) (begin (lexer-read-char l) (to-token COMMA ch)))
     ((char-eq? ch PLUS) (begin (lexer-read-char l) (to-token PLUS ch)))
     ((char-eq? ch MINUS) (begin (lexer-read-char l) (to-token MINUS ch)))
+    ((char-eq? ch COLON) (begin (lexer-read-char l) (to-token COLON ch)))
     
     ((char-eq? ch BANG)
      (if (char-eq? (lexer-peak-char l) "=")

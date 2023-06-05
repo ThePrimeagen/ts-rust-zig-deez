@@ -168,6 +168,23 @@
 (define (array-exps array)
   (caddr array))
 
+; HASH LITERAL
+; (token hash)
+(define (new-hash-literal token)
+  (list 'hash token (make-hash)))
+
+(define (hash-literal? s)
+  (tagged-list? s 'hash))
+
+(define (hash-literal-hash hash)
+  (caddr hash))
+
+(define (hash-literal-set! h key value)
+  (hash-set! (hash-literal-hash h) key value))
+
+(define (hash-literal-ref h key)
+  (hash-ref (hash-literal-hash h) key '()))
+
 
 ; IF NODE
 ; (token condition consequence alternative)

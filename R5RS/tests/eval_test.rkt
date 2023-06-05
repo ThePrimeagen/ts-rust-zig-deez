@@ -182,6 +182,37 @@
                  (list "[1, 2, 3][3]" '())
                  (list "[1, 2, 3][-1]" '())))
   (for-each (lambda (t) (define evaluated (test-eval (car t))) (if (number? (cadr t)) (test-integer-obj evaluated (cadr t)) (test-null-obj evaluated))) tests))
+
+(define (test-hash-literal)
+  (define evaluated (test-eval "let two = \"two\";
+{
+           \"one\": 10 - 9,
+           two: 1 + 1,
+           \"thr\" + \"ee\": 6 / 2,
+           4: 4,
+           true: 5,
+           false: 6
+}"))
+
+  (if (not (obj-hash? evaluated))
+      (error (format "Eval didn't return Hash. Got:" evaluated)))
+
+  (define expected (list
+                    (list (make-hash-key (new-string-obj "one")) 1)
+                    (list (make-hash-key (new-string-obj "two")) 2)
+                    (list (make-hash-key (new-string-obj "three")) 3)
+                    (list (make-hash-key (new-int 4)) 4)
+                    (list (make-hash-key THE_TRUE) 5)
+                    (list (make-hash-key THE_FALSE) 6)))
+
+  (if (not (= (length expected) (hash-count (hash-obj-hash evaluated))))
+      (error (format "Hash has wrong num of pairs. Got:" (hash-count (hash-obj-hash evaluated)))))
+
+  (for-each (lambda (exp)
+              (define hash-pair (hash-obj-ref evaluated (car exp)))
+              (if (null? hash-pair)
+                  (error (format "No hash-pair for the given key:" (car exp))))
+              (test-integer-obj (hash-pair-value hash-pair) (cadr exp))) expected))
   
 
 (display-nl "Starting eval tests...")
@@ -199,4 +230,5 @@
 (test-buildin-functions)
 (test-array-literals)
 (test-array-index-expressions)
+(test-hash-literal)
 (display-nl "\tEval tests have passed without errros")

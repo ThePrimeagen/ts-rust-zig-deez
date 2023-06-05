@@ -387,6 +387,38 @@ return 993322;
 
   (test-identifier (index-left node) "myArray")
   (test-infix-expression (index-index node) 1 "+" 1))
+
+(define (test-parsing-hash)
+  (define p (parse-programme (new-parser (new-lexer "{\"one\": 1, \"two\": 2, \"three\": 3}"))))
+  (check-parse-errors p)
+
+  (define node (exp-value (car (parser-stmts p))))
+  (if (not (hash-literal? node))
+      (error (format "Exp is not a hash. Is:"  node)))
+
+  (if (not (= (hash-count (hash-literal-hash node)) 3))
+      (error (format "Hash does not have 3 entries. Has:" (hash-count (hash-literal-hash node)))))
+
+  (define expected (make-hash))
+  (hash-set! expected "one" 1)
+  (hash-set! expected "two" 2)
+  (hash-set! expected "three" 3)
+
+  (hash-for-each (hash-literal-hash node) (lambda (key value)
+              (if (not (string-literal? key))
+                  (error (format "Key is a not string literal. Was:" key)))
+              (test-interger-literal value (hash-ref expected (string-value key))))))
+
+(define (test-parsing-empty-hash)
+  (define p (parse-programme (new-parser (new-lexer "{}"))))
+  (check-parse-errors p)
+
+  (define node (exp-value (car (parser-stmts p))))
+  (if (not (hash-literal? node))
+      (error (format "Exp is not a hash. Is:"  node)))
+
+  (if (not (= (hash-count (hash-literal-hash node)) 0))
+      (error (format "Hash does not have 0 entries. Has:" (hash-count (hash-literal-hash node))))))
   
 
 (display-nl "Starting parser tests...")
@@ -405,4 +437,5 @@ return 993322;
 (test-string-literal)
 (test-parsing-arrays)
 (test-parsing-index-exp)
+(test-parsing-hash)
 (display-nl "\tParser tests have passed without errros")

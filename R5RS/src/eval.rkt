@@ -1,3 +1,4 @@
+(#%require (only racket/base hash-iterate-first hash-iterate-next hash-iterate-key hash-iterate-value))
 (load "../src/utils.rkt")
 (loader "ast")
 (loader "object")
@@ -120,7 +121,7 @@
   (cond
     ((and (obj-array? left) (obj-int? index)) (eval-array-index left index))
 
-    (else (format-error "index operator not supported" (obj-type left)))))
+    (else (format-error "index operator not supported: " (obj-type left)))))
 
 (define (eval-array-index array idx)
   (let* ((index (obj-value idx)) (array-el (obj-value array)))
@@ -156,6 +157,23 @@
 (define (unwrap-return-value obj)
   (if (obj-return-value? obj) (obj-value obj) obj))
 
+(define (eval-hash-literal node env)
+  (define node-hash (hash-obj-hash node))
+  (define hash (make-hash))
+
+  (define (inner pos)
+    (if (not (eq? pos #f))
+        (let* ((key (monkey-eval (hash-iterate-key node-hash pos) env)))
+        (if (is-error? key) key
+            (if (not (can-hash? key))
+                (format-error "unusable as hash key: " (obj-type key))
+                (let* ((value (monkey-eval (hash-iterate-value node-hash pos) env)))
+                  (if (is-error? value) value
+                      (begin (hash-set! hash (make-hash-key key) (new-hash-pair key value)) (inner (hash-iterate-next node-hash pos))))))))))
+  (inner (hash-iterate-first node-hash))
+
+  (new-hash-obj hash))
+
 (define (monkey-eval node env)
   (cond
     ((is-parser? node) (eval-program (parser-stmts node) env))
@@ -177,4 +195,5 @@
     ((string-literal? node) (new-string-obj (string-value node)))
     ((array? node) (let* ((elements (eval-expressions (obj-value node) env))) (if (and (= (length elements) 1) (is-error? node)) (car elements) (new-array-obj elements))))
     ((index-node? node) (let* ((left (monkey-eval (index-left node) env))) (if (is-error? left) left (begin (let* ((index (monkey-eval (index-index node) env))) (if (is-error? index) index (eval-index-expression left index)))))))
+    ((hash-literal? node) (eval-hash-literal node env))
     (else THE_NULL)))
