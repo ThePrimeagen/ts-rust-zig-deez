@@ -122,9 +122,11 @@ class Parser
   end
 
   private def parse_infix_expression(left : Expression) : Expression
-    op = Infix::Operator.from current_token.type
-    prec = Precedence.from current_token.type
     next_token
+    op = Infix::Operator.from current_token.type
+
+    next_token
+    prec = Precedence.from current_token.type
     right = parse_expression prec
 
     Infix.new left, op, right
@@ -133,7 +135,7 @@ class Parser
   private def parse_grouped_expression : Expression
     next_token
     expr = parse_expression :lowest
-    expect_next :right_paren
+    expect_next :right_paren unless current_token.type.right_paren?
 
     expr
   end
