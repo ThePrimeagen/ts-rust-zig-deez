@@ -26,7 +26,6 @@ RUN tar -xvf hlint-3.5-x86_64-linux.tar.gz
 RUN mv hlint-3.5/hlint /usr/local/bin/hlint
 
 # Commands for docker run
-CMD make fmt && \
-    make lint && \
-    make test ; \
+CMD make clean && \
+    make ready ; \
     make clean
