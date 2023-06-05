@@ -181,4 +181,53 @@ describe Parser do
       call.arguments[0].should eq Identifier.new("x")
     end
   end
+
+  describe "prefix operators" do
+    it "parses not-expressions" do
+      statements = parse("!true")
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a Prefix
+      expr = expr.as(Prefix)
+
+      expr.operator.should eq Prefix::Operator::Not
+      expr.right.should be_a BooleanLiteral
+      expr.right.as(BooleanLiteral).value.should be_true
+    end
+
+    it "parses signed-expressions" do
+      statements = parse("-23")
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a Prefix
+      expr = expr.as(Prefix)
+
+      expr.operator.should eq Prefix::Operator::Negative
+      expr.right.should be_a IntegerLiteral
+      expr.right.as(IntegerLiteral).value.should eq 23
+    end
+  end
+
+  describe "infix operators" do
+    {% for op, type in {
+                         "+" => "Add",
+                         "-" => "Subtract",
+                         "*" => "Multiply",
+                         "/" => "Divide",
+                       } %}
+      it "parses {{ type.downcase.id }} operators" do
+        statements = parse("6 {{ op.id }} 4;")
+
+        expr = statements[0].as(ExpressionStatement).expression
+        expr.should be_a Infix
+        expr = expr.as(Infix)
+
+        expr.left.should be_a IntegerLiteral
+        expr.left.as(IntegerLiteral).value.should eq 6
+        expr.operator.should eq Infix::Operator::{{ type.id }}
+        expr.right.should be_a IntegerLiteral
+        expr.right.as(IntegerLiteral).value.should eq 4
+      end
+    {% end %}
+  end
 end
