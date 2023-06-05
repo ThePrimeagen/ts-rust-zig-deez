@@ -45,9 +45,52 @@ describe Parser do
     statements[0].should be_a Let
 
     let = statements[0].as(Let)
-    let.name.should eq "foo"
+    let.name.should be_a Identifier
     let.value.should be_a ExpressionStatement
     let.value.expression.should be_a IntegerLiteral
     let.value.expression.as(IntegerLiteral).value.should eq 123
+  end
+
+  describe "function calls" do
+    it "parses no arguments" do
+      statements = parse("print();")
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a Call
+      expr = expr.as(Call)
+
+      expr.function.should be_a Identifier
+      expr.arguments.should be_empty
+    end
+
+    it "parses single arguments" do
+      statements = parse("print(123);")
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a Call
+      expr = expr.as(Call)
+
+      expr.function.should be_a Identifier
+      expr.arguments.size.should eq 1
+      expr.arguments[0].should be_a IntegerLiteral
+      expr.arguments[0].as(IntegerLiteral).value.should eq 123
+    end
+
+    it "parses multiple arguments" do
+      statements = parse("print(123, 456, 789);")
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a Call
+      expr = expr.as(Call)
+
+      expr.function.should be_a Identifier
+      expr.arguments.size.should eq 3
+      expr.arguments[0].should be_a IntegerLiteral
+      expr.arguments[0].as(IntegerLiteral).value.should eq 123
+      expr.arguments[1].should be_a IntegerLiteral
+      expr.arguments[1].as(IntegerLiteral).value.should eq 456
+      expr.arguments[2].should be_a IntegerLiteral
+      expr.arguments[2].as(IntegerLiteral).value.should eq 789
+    end
   end
 end

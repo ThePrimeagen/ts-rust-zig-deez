@@ -181,6 +181,7 @@ class Parser
   private def parse_call(expr : Expression) : Expression
     arguments = [] of Expression
 
+    next_token
     if peek_token.type.right_paren?
       next_token
       return Call.new expr, arguments
