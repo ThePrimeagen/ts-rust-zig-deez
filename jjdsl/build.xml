@@ -1,0 +1,96 @@
+<project name="JJDSL" default="buildJJDSL" basedir=".">
+    <description>
+        Configures and Builds the Power Platform that JJDSL is.
+    </description>
+
+    <property name="github" value="https://github.com/ThePrimeagen/ts-rust-zig-deez"/>
+    <property name="branch" value="master"/>
+
+    <target name="buildJJDSL">
+        <antcall target="createSource"/>
+        <!--    Base Classes   -->
+        <antcall target="loadFile">
+            <param name="commit" value="ade14fa068f28050615fa3960d37f6a5ab39a979"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/1.js"/>
+        </antcall>
+        <!--    Helper Function   -->
+        <antcall target="loadFile">
+            <param name="commit" value="5b6d62abce322cdb13d0da0b1bd4f7aaf4d86808"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/2.js"/>
+        </antcall>
+        <!--   Lexer Definition    -->
+        <antcall target="loadFile">
+            <param name="commit" value="c3e8715e618c38c71a0931282a027dc1c5ef7ddb"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/3.js"/>
+        </antcall>
+        <!--   Token Helper Functions   -->
+        <antcall target="loadFile">
+            <param name="commit" value="7032f131feb73dc4febd8d35a4ccb6d988b47c8b"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/4.js"/>
+        </antcall>
+        <!--   Test Suit Functions   -->
+        <antcall target="loadFile">
+            <param name="commit" value="093a07c7af20de30cf01f7344ca7938cf2d73f22"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
+            <param name="targetLocation" value="${basedir}/out/scripts/99.js"/>
+        </antcall>
+        <!--   Java Engine Loader     -->
+        <antcall target="loadFile">
+            <param name="commit" value="f341d0dfa0e2f424ea790bebaa4938180e5c084f"/>
+            <param name="fileLocation" value="${basedir}/source/jjdsl/Loader.java"/>
+            <param name="targetLocation" value="${basedir}/Loader.java"/>
+        </antcall>
+        <antcall target="compileJava"/>
+        <antcall target="deleteSource"/>
+        <antcall target="resetGit"/>
+    </target>
+
+    <target name="createSource">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/get-source.sh"/>
+            <arg value="${github}"/>
+            <arg value="${branch}"/>
+        </exec>
+    </target>
+
+    <target name="compileJava">
+        <javac
+            fork="${java8}"
+            srcdir="${basedir}"
+            destdir="${basedir}/out"
+            target="1.8"
+            source="1.8">
+            <include name="*.java"/>
+        </javac>
+    </target>
+
+    <target name="loadFile">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/do-checkout.sh"/>
+            <arg value="${commit}"/>
+        </exec>
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/move-file.sh"/>
+            <arg value="${fileLocation}"/>
+            <arg value="${targetLocation}"/>
+        </exec>
+    </target>
+
+    <target name="deleteSource">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/delete-source.sh"/>
+            <arg value="${github}"/>
+        </exec>
+    </target>
+
+    <target name="resetGit">
+        <exec executable="/bin/bash">
+            <arg value="${basedir}/reset-git.sh"/>
+            <arg value="${branch}"/>
+        </exec>
+    </target>
+</project>

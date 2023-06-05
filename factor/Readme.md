@@ -1,11 +1,12 @@
 # install & run
-## TODO: docker
+## docker
+TODO: write the docker and make file
 
 ## manually
-- download the latest development release factor from https://factorcode.org
+- download the latest factor **development** release from https://factorcode.org
 
-- symlink the `deez` directory to `factor/work/deez`
+- symlink the `deez` directory to your local factor folder `factor/work/deez`
 
-- open factor, either GUI or via `factor -run=listener`
+- open factor, either in GUI or in terminal via `factor -run=listener`
 
-- type `"deez" run` 
+- type `"deez" run` or import the vocabulary `USE: deez.repl` and run `repl`
