@@ -162,5 +162,23 @@ describe Parser do
       expr.parameters[1].should eq Identifier.new("y")
       expr.body.statements.should be_empty
     end
+
+    it "parses calls in function bodies" do
+      statements = parse("let foo = fn(x) { return bar(x); };")
+
+      statements[0].should be_a Let
+      expr = statements[0].as(Let).value.as(ExpressionStatement).expression
+
+      expr.should be_a FunctionLiteral
+      expr = expr.as(FunctionLiteral)
+
+      expr.parameters[0].should eq Identifier.new("x")
+      expr.body.statements[0].should be_a Return
+      expr.body.statements[0].as(Return).value.should be_a Call
+
+      call = expr.body.statements[0].as(Return).value.as(Call)
+      call.function.should eq Identifier.new("bar")
+      call.arguments[0].should eq Identifier.new("x")
+    end
   end
 end

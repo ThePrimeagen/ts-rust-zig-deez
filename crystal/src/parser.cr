@@ -67,7 +67,7 @@ class Parser
     return Return.new if next_token.type.semicolon?
 
     expr = parse_expression :lowest
-    expect_next :semicolon
+    expect_next :semicolon unless current_token.type.semicolon?
 
     Return.new expr
   end
