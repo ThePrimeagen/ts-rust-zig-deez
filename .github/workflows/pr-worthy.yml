@@ -23,11 +23,11 @@ jobs:
       - name: Checking out the repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # to retrieve previous commit as well       
+          fetch-depth: 0  # to retrieve all commits       
         
       - name: Get changed files
         id: changed-files-dir-names
-        uses: tj-actions/changed-files@v36.0.17
+        uses: tj-actions/changed-files@v35.9.3
         with:
           since_last_remote_commit: true
           dir_names: true
