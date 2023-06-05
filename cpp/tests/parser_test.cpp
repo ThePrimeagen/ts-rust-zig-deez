@@ -252,3 +252,20 @@ TEST(TestLexer, TestArrayBuiltinFunction) {
 		{ "rest([1, 2, 3])", Value{ Array{ Value{2}, Value{3} } } },
 	});
 }
+
+
+TEST(TestLexer, TestFibonacciFunction) {
+	runTests({
+		{R"XXX( 
+			let fibonacci = fn(x) {
+				if (x == 0) 0
+				else {
+					if (x == 1) 1
+					else fibonacci(x - 1) + fibonacci(x - 2);
+				}
+			}
+			fibonacci(26);
+
+		)XXX", Value{121393}},
+	});
+}
