@@ -104,7 +104,7 @@ class Infix < Expression
 end
 
 class Let < Statement
-  property name : String
+  property name : Identifier
   property value : ExpressionStatement
 
   def initialize(@name, @value)

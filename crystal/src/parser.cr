@@ -56,7 +56,7 @@ class Parser
   end
 
   private def parse_let : Statement
-    name = expect_next(:ident).value
+    name = parse_identifier expect_next(:ident)
     expect_next :assign
     value = parse_expression_statement next_token
 
