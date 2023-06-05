@@ -29,6 +29,7 @@ jobs:
         id: changed-files-dir-names
         uses: tj-actions/changed-files@v36
         with:
+          fetch_depth: 5000
           since_last_remote_commit: true
           dir_names: true
           dir_names_exclude_root: true
