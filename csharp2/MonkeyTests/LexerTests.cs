@@ -1,10 +1,10 @@
-using Xunit;
 using FluentAssertions;
 using Monkey;
+using Xunit;
 
 namespace MonkeyTests;
 
-public class Tests
+public class LexerTests
 {
     [Fact]
     public void Get_NextToken_Complete()
