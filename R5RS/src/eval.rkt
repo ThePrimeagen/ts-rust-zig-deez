@@ -120,12 +120,19 @@
 (define (eval-index-expression left index)
   (cond
     ((and (obj-array? left) (obj-int? index)) (eval-array-index left index))
+    ((obj-hash? left) (eval-hash-index-expression left index))
 
     (else (format-error "index operator not supported: " (obj-type left)))))
 
 (define (eval-array-index array idx)
   (let* ((index (obj-value idx)) (array-el (obj-value array)))
   (if (or (< index 0) (>= index (length array-el))) THE_NULL (get-nth-element array-el index))))
+
+(define (eval-hash-index-expression hash index)
+  (if (not (can-hash? index))
+      (format-error "unusable as hash key: " (obj-type index))
+      (let* ((pair (hash-obj-ref hash (make-hash-key index))))
+        (if (null? pair) THE_NULL (hash-pair-value pair)))))
 
 (define (eval-identifier node env)
   (define buildin (hash-ref BUILDIN_FUNCTIONS (identifier-value node) '()))

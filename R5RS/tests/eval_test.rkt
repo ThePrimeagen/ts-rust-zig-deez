@@ -100,7 +100,8 @@
                  (list "5; true + false; 5" "unknown operator: BOOLEAN + BOOLEAN")
                  (list "if (10 > 1) { true + false; }" "unknown operator: BOOLEAN + BOOLEAN")
                  (list "foobar" "identifier not found: foobar")
-                 (list "\"hello\" - \"world\"" "unknown operator: STRING - STRING")))
+                 (list "\"hello\" - \"world\"" "unknown operator: STRING - STRING")
+                 (list "{\"name\": \"Monkey\"}[fn(x) { x }];" "unusable as hash key: FUNCTION")))
   (for-each (lambda (t)
               (define evaluated (test-eval (car t)))             
               (if (not (obj-error? evaluated)) (error (format "no error object returned, got: " evaluated)))
@@ -213,6 +214,17 @@
               (if (null? hash-pair)
                   (error (format "No hash-pair for the given key:" (car exp))))
               (test-integer-obj (hash-pair-value hash-pair) (cadr exp))) expected))
+
+(define (test-hash-index-exp)
+  (define tests (list
+                 (list "{\"foo\": 5}[\"foo\"]" 5)
+                 (list "{\"foo\": 5}[\"bar\"]" '())
+                 (list "let key = \"foo\"; {\"foo\": 5}[key]" 5)
+                 (list "{}[\"foo\"]" '())
+                 (list "{5: 5}[5]" 5)
+                 (list "{true: 5}[true]" 5)
+                 (list "{false: 5}[false]" 5)))
+  (for-each (lambda (t) (define evaluated (test-eval (car t))) (if (number? (cadr t)) (test-integer-obj evaluated (cadr t)) (test-null-obj evaluated))) tests))
   
 
 (display-nl "Starting eval tests...")
@@ -231,4 +243,5 @@
 (test-array-literals)
 (test-array-index-expressions)
 (test-hash-literal)
+(test-hash-index-exp)
 (display-nl "\tEval tests have passed without errros")
