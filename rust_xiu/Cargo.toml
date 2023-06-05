@@ -1,0 +1,19 @@
+[package]
+name = "ts-rust-zig-deez"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "monka"
+path = "src/lib.rs"
+
+[[bin]]
+name = "monka-repl"
+path = "src/bin/repl/main.rs"
+
+[[bin]]
+name = "monka-interpret"
+path = "src/bin/repl/main.rs"
+
+[dependencies]
+thiserror = "1.0.40"

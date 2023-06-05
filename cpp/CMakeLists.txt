@@ -1,25 +1,47 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
+project(TsRustZigDeez)
 
-project(
-    lexer
-    VERSION 0.1.0
-    HOMEPAGE_URL "https://github.com/nicdgonzalez/Lexer"
-    LANGUAGES CXX
+set(This TsRustZigDeez)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+FILE(GLOB Headers
+  src/lexer/*.hh
+  src/lexer/*.hpp
+  src/parser/*.hpp
 )
 
-add_executable(${PROJECT_NAME} tests.cc)
-
-set_property(
-    TARGET ${PROJECT_NAME}
-    PROPERTY CXX_STANDARD 23
-)
-set_property(
-    TARGET ${PROJECT_NAME}
-    PROPERTY CXX_STANDARD_REQUIRED true
+FILE(GLOB Sources
+  src/lexer/*.cc
+  src/lexer/*.cpp
+  src/parser/*.cpp
 )
 
-target_sources(
-    ${PROJECT_NAME}
-    PRIVATE
-        "lexer/lexer.cc"
+#add_compile_options(
+#  -Wall -Wpedantic -g
+#)
+
+
+add_compile_options(
+  -Wall -Wpedantic
+  -Wno-switch
+  -g
+  -O3
+)
+
+enable_testing()
+
+add_subdirectory(tests)
+
+add_library(${This}_lib STATIC ${Sources} ${Headers})
+target_include_directories(${This}_lib
+  PUBLIC
+    src/lexer
+    src/parser
+)
+
+add_executable(${This} src/main.cpp)
+target_link_libraries(${This}
+  ${This}_lib
 )

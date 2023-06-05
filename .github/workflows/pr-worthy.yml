@@ -10,6 +10,7 @@ on:
   pull_request:
     # for new PRs, or those who are ready and/or request a review
     types: [opened, ready_for_review, review_requested]
+    branches: [master]  # only run the workflow on merging into the master branch
 
 defaults:
   run:
@@ -20,20 +21,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checking out the repo
-        uses: actions/checkout@v3 
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # to retrieve all commits        
+        
+      - name: Get changed files
+        id: changed-files-dir-names
+        uses: tj-actions/changed-files@v36
+        with:
+          fetch_depth: 5000
+          since_last_remote_commit: true
+          dir_names: true
+          dir_names_exclude_root: true
+          dir_names_max_depth: 2
 
-      - name: Initial setup + A list of all affected languages
-        run: |
-          sudo apt-get update && sudo apt install -y make curl git
-          changed_langs=($(git diff --name-only HEAD~1 | cut -d '/' -f 1 | sort | uniq))
-          if [ ${#changed_langs[@]} -eq 0 ]; then echo "===> No languages affected!" && exit 1; fi
-          for i in "${changed_langs[@]}"; do if [[ "$i" != .* ]] && [ -d "$i" ]; then echo "$i" >> list.txt; fi; done
-          
       - name: Build docker images for every language affected
+        if: steps.changed-files-dir-names.outputs.any_changed == 'true'
         run: |
-          while read -r i; do pushd "$i"; make docker-build; popd; done < list.txt
+          for i in ${{ steps.changed-files-dir-names.outputs.all_changed_and_modified_files }}; do pushd "$i"; make docker-build; popd; done
 
       - name: Run docker containers for built images
+        if: steps.changed-files-dir-names.outputs.any_changed == 'true'
         run: |
-          while read -r i; do pushd "$i"; make docker-ready; popd; done < list.txt
-          
+          for i in ${{ steps.changed-files-dir-names.outputs.all_changed_and_modified_files }}; do pushd "$i"; make docker-ready; popd; done

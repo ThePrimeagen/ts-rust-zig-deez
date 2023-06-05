@@ -1,0 +1,9 @@
+﻿AssignToken { }
+PlusToken { }
+LParenToken { }
+RParenToken { }
+LSquirlyToken { }
+RSquirlyToken { }
+CommaToken { }
+SemicolonToken { }
+EoFToken { }

@@ -1,0 +1,49 @@
+# SYSTEM
+.DS_Store
+Thumbs.db
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Temporary files
+*~
+*.swp
+*.tmp
+*.bak
+*.swx
+*.rej
+*.rej.*
+*.orig
+*.orig.*
+
+# IntelliJ IDEA files
+.idea/
+*.iml
+*.iws
+
+# Eclipse files
+.settings/
+.classpath
+.project
+
+# Gradle files
+.gradle/
+build/
+
+# Maven files
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+
+# Node.js modules
+node_modules/

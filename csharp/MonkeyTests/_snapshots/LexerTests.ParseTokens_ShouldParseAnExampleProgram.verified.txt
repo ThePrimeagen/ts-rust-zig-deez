@@ -1,0 +1,74 @@
+﻿LetToken { }
+IdentifierToken { Identifier = five }
+AssignToken { }
+IntegerToken { Integer = 5 }
+SemicolonToken { }
+LetToken { }
+IdentifierToken { Identifier = ten }
+AssignToken { }
+IntegerToken { Integer = 10 }
+SemicolonToken { }
+LetToken { }
+IdentifierToken { Identifier = add }
+AssignToken { }
+FunctionToken { }
+LParenToken { }
+IdentifierToken { Identifier = x }
+CommaToken { }
+IdentifierToken { Identifier = y }
+RParenToken { }
+LSquirlyToken { }
+IdentifierToken { Identifier = x }
+PlusToken { }
+IdentifierToken { Identifier = y }
+SemicolonToken { }
+RSquirlyToken { }
+SemicolonToken { }
+LetToken { }
+IdentifierToken { Identifier = result }
+AssignToken { }
+IdentifierToken { Identifier = add }
+LParenToken { }
+IdentifierToken { Identifier = five }
+CommaToken { }
+IdentifierToken { Identifier = ten }
+RParenToken { }
+SemicolonToken { }
+BangToken { }
+DashToken { }
+ForwardSlashToken { }
+AsteriskToken { }
+IntegerToken { Integer = 5 }
+SemicolonToken { }
+IntegerToken { Integer = 5 }
+LessThanToken { }
+IntegerToken { Integer = 10 }
+GreaterThanToken { }
+IntegerToken { Integer = 5 }
+SemicolonToken { }
+IfToken { }
+LParenToken { }
+IntegerToken { Integer = 5 }
+LessThanToken { }
+IntegerToken { Integer = 10 }
+RParenToken { }
+LSquirlyToken { }
+ReturnToken { }
+TrueToken { }
+SemicolonToken { }
+RSquirlyToken { }
+ElseToken { }
+LSquirlyToken { }
+ReturnToken { }
+FalseToken { }
+SemicolonToken { }
+RSquirlyToken { }
+IntegerToken { Integer = 10 }
+EqualToken { }
+IntegerToken { Integer = 10 }
+SemicolonToken { }
+IntegerToken { Integer = 10 }
+NotEqualToken { }
+IntegerToken { Integer = 9 }
+SemicolonToken { }
+EoFToken { }
