@@ -6,12 +6,28 @@ set(This TsRustZigDeez)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(Headers
-  src/lexer/lexer.hh
+FILE(GLOB Headers
+  src/lexer/*.hh
+  src/lexer/*.hpp
+  src/parser/*.hpp
 )
 
-set(Sources
-  src/lexer/lexer.cc
+FILE(GLOB Sources
+  src/lexer/*.cc
+  src/lexer/*.cpp
+  src/parser/*.cpp
+)
+
+#add_compile_options(
+#  -Wall -Wpedantic -g
+#)
+
+
+add_compile_options(
+  -Wall -Wpedantic
+  -Wno-switch
+  -g
+  -O3
 )
 
 enable_testing()
@@ -19,6 +35,13 @@ enable_testing()
 add_subdirectory(tests)
 
 add_library(${This}_lib STATIC ${Sources} ${Headers})
-target_include_directories(${This}_lib PUBLIC src)
+target_include_directories(${This}_lib
+  PUBLIC
+    src/lexer
+    src/parser
+)
 
-add_executable(${This} ${Sources} ${Headers} src/main.cpp)
+add_executable(${This} src/main.cpp)
+target_link_libraries(${This}
+  ${This}_lib
+)
