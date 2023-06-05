@@ -1,4 +1,4 @@
-(#%require (only racket/base hash-iterate-first hash-iterate-next hash-iterate-key hash-iterate-value))
+(#%require (only racket/base hash-iterate-first hash-iterate-next hash-iterate-key hash-iterate-value exit))
 (load "../src/utils.rkt")
 (loader "ast")
 (loader "object")
@@ -29,6 +29,10 @@
 (hash-set! BUILDIN_FUNCTIONS "push" (new-buildin (lambda (args)
                                                     (if (or (not (pair? args)) (not (= (length args) 2))) (format-error "wrong number of arguments. got=" (number->string (length args)) ", want=2")
                                                         (if (obj-array? (car args)) (let* ((el (obj-value (car args)))) (new-array-obj (add-to-list el (cadr args)))) (format-error "First argument to `push` must be ARRAY got:" (obj-type (car args))))))))
+
+(hash-set! BUILDIN_FUNCTIONS "puts" (new-buildin (lambda (args) (for-each (lambda (arg) (display (inspect arg)) (newline)) args) THE_NULL)))
+
+(hash-set! BUILDIN_FUNCTIONS "exit" (new-buildin (lambda (args) (exit))))
 
 
 
