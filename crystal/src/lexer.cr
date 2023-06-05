@@ -138,7 +138,7 @@ class Lexer
         type = :ident
         value = read_ident_from start
       end
-    when .ascii_letter?
+    when .ascii_letter?, '_'
       type = :ident
       value = read_ident_from current_pos
     when .ascii_number?
