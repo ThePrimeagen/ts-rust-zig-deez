@@ -161,14 +161,14 @@ private:
 
 struct IntegerLiteralExpression : public Expression
 {
-	IntegerLiteralExpression(const int64_t value)
+	IntegerLiteralExpression(const Integer value)
 	: value{value} {}
 
 	void print(std::ostream& str) const override;
 	Value eval(EnvironmentP env) const override;
 
 private:
-	const int64_t value;
+	const Integer value;
 };
 
 struct BooleanLiteralExpression : public Expression

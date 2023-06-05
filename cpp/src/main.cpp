@@ -12,6 +12,7 @@ int main(int argc, char *const argv[])
 {
 	const auto global = std::make_shared<Environment>();
 	std::vector<StatementP> statements;
+	std::vector<Lexer> lexers;
 
 	for(;;)
 	{
@@ -33,6 +34,7 @@ int main(int argc, char *const argv[])
 						lexer.get(TokenType::Semicolon);
 					}
 				}
+				lexers.push_back(std::move(lexer));
 				continue;
 			}
 
@@ -65,6 +67,8 @@ int main(int argc, char *const argv[])
 				lexer.get(TokenType::Semicolon);
 			}
 		}
+
+		lexers.push_back(std::move(lexer));
 
 		std::cout << value << "\n";
 	}

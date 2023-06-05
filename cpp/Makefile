@@ -39,6 +39,10 @@ test: build
 	@echo "===> Testing"
 	$(BUILD)/tests/tests
 
+repl: build
+	@echo "===> Testing"
+	$(BUILD)/TsRustZigDeez -f prelude
+
 clean:
 	@echo "===> Clean"
 	@rm -fr $(BUILD)/

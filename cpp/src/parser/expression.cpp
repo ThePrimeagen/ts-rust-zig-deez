@@ -189,7 +189,7 @@ ExpressionP Expression::parseValue(Lexer& lexer)
 	switch (tokenType) {
 		case TokenType::Identifier:
 		{
-			auto identifier = token.literal;
+			auto identifier = Identifier{token.literal};
 			lexer.next();
 			return std::make_unique<IdentifierExpression>(identifier);
 		}
@@ -229,7 +229,7 @@ Value BinaryExpression::eval(EnvironmentP env) const
 	auto evaluatedRight = right->eval(env);
 
 	return std::visit(overloaded{
-			[this](int64_t left, int64_t right) -> Value {
+			[this](Integer left, Integer right) -> Value {
 				switch(op) {
 					case TokenType::Asterisk: return Value{left * right};
 					case TokenType::Slash:    return Value{left / right};
@@ -269,6 +269,18 @@ Value BinaryExpression::eval(EnvironmentP env) const
 				}
 				throw std::runtime_error("invalid infix operation " + left + " " + std::to_string(op) + " " + right);
 			},
+			[this](const Array& left, const Array& right) -> Value {
+				switch(op) {
+					case TokenType::Plus:
+					{
+						Array result;
+						std::copy(left.cbegin(), left.cend(), std::back_inserter(result));
+						std::copy(right.cbegin(), right.cend(), std::back_inserter(result));
+						return Value{result};
+					}
+				}
+				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
+			},
 			[this](const auto& left, const auto& right) -> Value {
 				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
 			},
@@ -291,13 +303,13 @@ Value UnaryExpression::eval(EnvironmentP env) const
 	auto evaluatedValue = value->eval(env);
 	switch(op) {
 		case TokenType::Minus:
-			return Value{-std::get<int64_t>(evaluatedValue.data)};
+			return Value{-evaluatedValue.get<Integer>()};
 		case TokenType::Bang:
 			if (!std::holds_alternative<bool>(evaluatedValue.data))
 				return Value{false};
-			return Value{!std::get<bool>(evaluatedValue.data)};
+			return Value{!evaluatedValue.get<bool>()};
 		case TokenType::Tilde:
-			return Value{~std::get<int64_t>(evaluatedValue.data)};
+			return Value{~evaluatedValue.get<Integer>()};
 	}
 	throw std::runtime_error("invalid unary operation: " + std::to_string(op));
 }
@@ -312,7 +324,7 @@ void UnaryExpression::print(std::ostream& os) const
 
 Value CallExpression::eval(EnvironmentP env) const
 {
-	auto [fn, closureEnv] = std::get<BoundFunction>(function->eval(env).data);
+	auto [fn, closureEnv] = function->eval(env).get<BoundFunction>();
 	return fn->call(closureEnv, env, arguments);
 }
 
@@ -436,12 +448,14 @@ Value BuiltinFunctionExpression::call(
 Value IdentifierExpression::eval(EnvironmentP env) const
 {
 	auto value = env->get(identifier);
-	if (value == nil) {
-		if (const auto iter = builtins.find(identifier); iter != builtins.end()) {
-			return Value{std::make_pair(&(iter->second), EnvironmentP{})};
-		}
-	}
-	return value;
+	if (value != nil)
+		return value;
+
+	if (const auto iter = builtins.find(identifier); iter != builtins.end())
+		return Value{std::make_pair(&(iter->second), EnvironmentP{})};
+
+	std::cout << "WARNING: identifier '" + identifier + "' not found\n";
+	return nil;
 }
 
 void IdentifierExpression::print(std::ostream& os) const
@@ -533,16 +547,26 @@ void ArrayLiteralExpression::print(std::ostream& os) const
 
 Value ArrayIndexExpression::eval(EnvironmentP env) const
 {
-	const auto& evluatedArray = array->eval(env).data;
-	const auto& evaluatedIndex = index->eval(env).data;
+	const auto& evluatedArray = array->eval(env);
+	const auto& evaluatedIndex = index->eval(env);
 
-	const auto& arrayValue = std::get<std::vector<Value>>(evluatedArray);
-	const auto indexValue = std::get<int64_t>(evaluatedIndex);
+	const auto indexValue = evaluatedIndex.get<Integer>();
 
-	if (indexValue < 0 || indexValue >= static_cast<int64_t>(arrayValue.size()))
-		return nil;
-
-	return arrayValue[indexValue];
+	return std::visit(overloaded{
+		[indexValue](const Array& value) -> Value {
+			if (indexValue < 0 || indexValue >= static_cast<Integer>(value.size()))
+				return nil;
+			return value[indexValue];
+		},
+		[indexValue](const String& value) -> Value {
+			if (indexValue < 0 || indexValue >= static_cast<Integer>(value.length()))
+				return nil;
+			return Value{value.substr(indexValue, 1)};	// TODO: 'char' type?
+		},
+		[](auto& value) -> Value {
+			throw std::runtime_error("Error: can't index into ");// + std::to_string(value));
+		}
+	}, evluatedArray.data);
 }
 
 void ArrayIndexExpression::print(std::ostream& os) const
