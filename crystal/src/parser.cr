@@ -64,14 +64,12 @@ class Parser
   end
 
   private def parse_return : Statement
-    if peek_token.type.semicolon?
-      next_token
-      Return.new Nop.new
-    else
-      expr = parse_expression :lowest
-      expect_next :semicolon
-      Return.new expr
-    end
+    return Return.new if next_token.type.semicolon?
+
+    expr = parse_expression :lowest
+    expect_next :semicolon
+
+    Return.new expr
   end
 
   private def parse_expression_statement(token : Token) : Statement
@@ -205,9 +203,10 @@ class Parser
     next_token
 
     until current_token.type.right_squirly? || current_token.type.eof?
-      statement = parse_statement next_token
+      statement = parse_statement current_token
       raise "unexpected End of File" if statement.nil?
       statements << statement
+      next_token
     end
 
     Block.new statements

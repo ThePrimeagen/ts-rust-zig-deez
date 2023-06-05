@@ -112,9 +112,9 @@ class Let < Statement
 end
 
 class Return < Statement
-  property value : Expression
+  property value : Expression?
 
-  def initialize(@value)
+  def initialize(@value = nil)
   end
 end
 
