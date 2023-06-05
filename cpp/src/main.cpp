@@ -21,6 +21,10 @@ int main(int argc, char *const argv[])
 			case 'f':
 			{
 				std::ifstream ifs(optarg);
+				if (!ifs) {
+					std::cerr << "could not find file: " << optarg << "\n";
+					exit(1);
+				}
 				std::string content{(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
 
 				Lexer lexer{content};

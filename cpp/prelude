@@ -21,9 +21,13 @@ let dropwhile = fn(f, xs)
 	else xs
 
 let filter = fn(f, xs) {
-	let x = first(xs);
-	if (f(x)) [x] + filter(f, rest(xs))
-	else rest(xs);
+	if (len(xs) == 0) []
+	else {
+		let x = first(xs);
+		let fxs = filter(f, rest(xs));
+		if (f(x)) [x] + fxs
+		else fxs
+	}
 }
 
 let foldr = fn(op, r, xs)

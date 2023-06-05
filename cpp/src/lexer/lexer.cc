@@ -98,7 +98,7 @@ Token Lexer::nextToken() noexcept
 		case '"':
 		{
 			std::string str;
-			char strch;
+			char strch = '\0';
 			while (position_ < input_.end() && (strch = *position_++) != '"') {
 				if (strch == '\\') {
 					if (position_ == input_.end())

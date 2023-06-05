@@ -195,7 +195,7 @@ ExpressionP Expression::parseValue(Lexer& lexer)
 		}
 		case TokenType::Integer:
 		{
-			uint32_t value;
+			uint32_t value = 0;
 			std::from_chars(token.literal.data(), token.literal.data() + token.literal.size(), value);
 			lexer.next();
 			return std::make_unique<IntegerLiteralExpression>(value);

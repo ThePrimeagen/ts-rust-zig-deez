@@ -1,12 +1,17 @@
-FROM alpine:3.18.0
+FROM alpine:3.18.0 AS build
 
-RUN apk add cmake g++ git samurai
+RUN apk add cmake g++ git samurai make
 
 COPY . /src
 WORKDIR /src
 
-RUN mkdir -p build
-RUN cmake -S . -B build -G Ninja
-RUN cmake --build build
+RUN --mount=type=cache,target=/src/build,id=cpp-cache \
+	mkdir -p build \
+	&& make install
 
-CMD ["./build/tests/tests"]
+FROM alpine:3.18.0
+RUN apk add libstdc++ rlwrap
+COPY --from=build /src/dist /dist
+WORKDIR /dist
+
+CMD ["./bin/tests"]
