@@ -93,4 +93,74 @@ describe Parser do
       expr.arguments[2].as(IntegerLiteral).value.should eq 789
     end
   end
+
+  describe "function literals" do
+    it "parses anonymous functions" do
+      statements = parse("fn() {};")
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a FunctionLiteral
+      expr = expr.as(FunctionLiteral)
+
+      expr.parameters.should be_empty
+      expr.body.statements.should be_empty
+    end
+
+    it "parses bound functions" do
+      statements = parse("let noop = fn() {};")
+
+      statements[0].should be_a Let
+      let = statements[0].as(Let)
+
+      let.name.should be_a Identifier # pointless check, should check for value instead
+      let.value.should be_a ExpressionStatement
+
+      expr = let.value.as(ExpressionStatement).expression
+      expr.should be_a FunctionLiteral
+      expr = expr.as(FunctionLiteral)
+
+      expr.parameters.should be_empty
+      expr.body.statements.should be_empty
+    end
+
+    it "parses function return statements" do
+      statements = parse("let noop = fn() { return; };")
+
+      statements[0].should be_a Let
+      expr = statements[0].as(Let).value.as(ExpressionStatement).expression
+
+      expr.should be_a FunctionLiteral
+      expr = expr.as(FunctionLiteral)
+
+      expr.parameters.should be_empty
+      expr.body.statements[0].should be_a Return
+      expr.body.statements[0].as(Return).value.should be_nil
+
+      statements = parse("let zero = fn() { return 0; };")
+      expr = statements[0].as(Let).value.as(ExpressionStatement).expression
+
+      expr.should be_a FunctionLiteral
+      expr = expr.as(FunctionLiteral)
+      expr.parameters.should be_empty
+
+      expr.body.statements[0].should be_a Return
+      expr.body.statements[0].as(Return).value.should be_a IntegerLiteral
+      expr.body.statements[0].as(Return).value.as(IntegerLiteral).value.should eq 0
+    end
+
+    it "parses function arguments" do
+      statements = parse("let foo = fn(x, y) {};")
+
+      statements[0].should be_a Let
+      expr = statements[0].as(Let).value.as(ExpressionStatement).expression
+
+      expr.should be_a FunctionLiteral
+      expr = expr.as(FunctionLiteral)
+
+      expr.parameters.size.should eq 2
+      expr.parameters[0].should be_a Identifier
+      expr.parameters[1].should be_a Identifier
+      expr.body.statements.should be_empty
+    end
+  end
 end
