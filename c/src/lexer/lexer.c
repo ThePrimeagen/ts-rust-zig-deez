@@ -13,6 +13,7 @@ struct SLexer {
 };
 
 static void _lexerReadChar(Lexer *lexer);
+static char _lexerPeek(Lexer *lexer);
 static void _lexerSkipWhitespace(Lexer *lexer);
 static const char *_lexerReadIdent(Lexer *lexer, size_t *len);
 static const char *_lexerReadInt(Lexer *lexer, size_t *len);
@@ -41,6 +42,7 @@ Lexer *lexerCreate(const char *input) {
   return lexer;
 }
 
+#include <stdio.h>
 Token *lexerNext(Lexer *lexer) {
   Token *tok = NULL;
 
@@ -68,8 +70,36 @@ Token *lexerNext(Lexer *lexer) {
   case '+':
     tok = tokenCreate(TokenTypePlus, NULL);
     break;
+  case '-':
+    tok = tokenCreate(TokenTypeMinus, NULL);
+    break;
   case '=':
-    tok = tokenCreate(TokenTypeEqual, NULL);
+    if (_lexerPeek(lexer) == '=') {
+      _lexerReadChar(lexer);
+      tok = tokenCreate(TokenTypeEqual, NULL);
+    } else {
+      tok = tokenCreate(TokenTypeAssign, NULL);
+    }
+    break;
+  case '!':
+    if (_lexerPeek(lexer) == '=') {
+      _lexerReadChar(lexer);
+      tok = tokenCreate(TokenTypeNotEqual, NULL);
+    } else {
+      tok = tokenCreate(TokenTypeBang, NULL);
+    }
+    break;
+  case '/':
+    tok = tokenCreate(TokenTypeSlash, NULL);
+    break;
+  case '*':
+    tok = tokenCreate(TokenTypeAsterisk, NULL);
+    break;
+  case '>':
+    tok = tokenCreate(TokenTypeGT, NULL);
+    break;
+  case '<':
+    tok = tokenCreate(TokenTypeLT, NULL);
     break;
   case '\0':
     tok = tokenCreate(TokenTypeEof, NULL);
@@ -153,6 +183,14 @@ static void _lexerReadChar(Lexer *lexer) {
   lexer->readPosition++;
 }
 
+static char _lexerPeek(Lexer *lexer) {
+  if (lexer->readPosition >= lexer->inputLength) {
+    return '\0';
+  } else {
+    return lexer->input[lexer->readPosition];
+  }
+}
+
 static void _lexerSkipWhitespace(Lexer *lexer) {
   while (lexer->ch == ' ' || lexer->ch == '\t' || lexer->ch == '\n' ||
          lexer->ch == '\r') {
@@ -201,6 +239,16 @@ static TokenType _getTokenTypeFromLiteral(const char *literal, size_t len) {
     return TokenTypeLet;
   } else if (strncmp(literal, "fn", len) == 0) {
     return TokenTypeFunction;
+  } else if (strncmp(literal, "true", len) == 0) {
+    return TokenTypeTrue;
+  } else if (strncmp(literal, "false", len) == 0) {
+    return TokenTypeFalse;
+  } else if (strncmp(literal, "if", len) == 0) {
+    return TokenTypeIf;
+  } else if (strncmp(literal, "else", len) == 0) {
+    return TokenTypeElse;
+  } else if (strncmp(literal, "return", len) == 0) {
+    return TokenTypeReturn;
   }
 
   return TokenTypeIdent;
