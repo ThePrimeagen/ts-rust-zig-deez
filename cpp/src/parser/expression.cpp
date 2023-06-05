@@ -416,7 +416,7 @@ Value FunctionExpression::call(
 			const auto& argument= *(argumentIter++);
 			argumentValue = argument->eval(callerEnv);
 		}
-		locals->set(parameterName, argumentValue);
+		locals->set(parameterName, std::move(argumentValue));
 	}
 
 	try {

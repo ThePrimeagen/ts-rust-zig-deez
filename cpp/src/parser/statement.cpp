@@ -35,9 +35,8 @@ StatementP LetStatement::parse(Lexer& lexer)
 
 Value LetStatement::eval(EnvironmentP env) const
 {
-	auto evaluatedValue = value->eval(env);
-	env->set(name, evaluatedValue);
-	return evaluatedValue;
+	env->set(name, value->eval(env));
+	return nil;
 }
 
 void LetStatement::print(std::ostream& os) const

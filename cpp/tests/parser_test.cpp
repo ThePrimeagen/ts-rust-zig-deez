@@ -7,7 +7,7 @@
 #include "program.hpp"
 
 
-auto testEval(std::string str, Value expected)
+auto testEval(std::string str, const Value& expected)
 {
 	try {
 		Lexer lexer{str};
