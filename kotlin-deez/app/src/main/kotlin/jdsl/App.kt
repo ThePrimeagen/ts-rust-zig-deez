@@ -1,5 +1,8 @@
 package jdsl
 
 fun main() {
-    println("DEEZ JDSL")
+    val username = System.getProperty("user.name")
+    println("Hello $username! This is the Monkey programming language!")
+    println("Feel free to type in commands")
+    Repl().start()
 }

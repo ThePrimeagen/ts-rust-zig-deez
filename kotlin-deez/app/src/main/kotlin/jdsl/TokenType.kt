@@ -8,8 +8,19 @@ enum class TokenType {
     COMMA,
     SEMICOLON,
     PLUS,
-    EQUAL,
+    MINUS,
+    SLASH,
+    STAR,
+    ASSIGN,
     IDENTIFIER,
+    BANG,
+    LESS,
+    GREATER,
+
+    NOT_EQ,
+    EQ,
+    LE,
+    GE,
 
     STRING,
     NUMBER,
@@ -19,6 +30,8 @@ enum class TokenType {
     FUNCTION,
     IF,
     RETURN,
+    TRUE,
+    FALSE,
 
     EOF,
     ILLEGAL
