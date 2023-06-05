@@ -1,5 +1,5 @@
 interface Eval
-    exposes [eval, evalWithEnv, newEnv, printValue]
+    exposes [eval, evalWithEnvs, newEnv, printValue]
     imports [Lexer, Parser.{ Program, Node }]
 
 Value : [
@@ -90,15 +90,15 @@ wrapAndSetEnv = \{ envs }, i ->
     nextEnvs = List.append envs { inner: Dict.empty {}, outer: Ok i }
     { envs: nextEnvs, currentEnv: newIndex }
 
-eval : Program -> (Env, Value)
+eval : Program -> (List Env, Value)
 eval = \program ->
-    evalWithEnv program (newEnv {})
+    evalWithEnvs program [newEnv {}]
 
-evalWithEnv : Program, Env -> (Env, Value)
-evalWithEnv = \program, env ->
-    e0 = { envs: [env], currentEnv: 0 }
+evalWithEnvs : Program, List Env -> (List Env, Value)
+evalWithEnvs = \program, envs ->
+    e0 = { envs, currentEnv: 0 }
     ({ envs: outEnvs }, outVal) = evalProgram e0 program
-    (okOrUnreachable (List.get outEnvs 0) "failed to load root env", outVal)
+    (outEnvs, outVal)
 
 evalProgram : Evaluator, List Node -> (Evaluator, Value)
 evalProgram = \e0, statements ->
@@ -500,8 +500,7 @@ expect
         "let identity = fn(x) { return x; 12; }; identity(5);",
         "let double = fn(x) { 2 * x;  }; double(5);",
         "fn(x) {x} (5)",
-        # TODO: why does this cause freeing a a pointer that wasn't allocated?
-        # "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
     ]
     out = List.map inputs runFromSource
 
@@ -510,7 +509,7 @@ expect
         Int 5,
         Int 10,
         Int 5,
-        # Int 20,
+        Int 20,
     ]
     out == expected
 
