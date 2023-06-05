@@ -44,7 +44,7 @@ public class Lexer {
             case '\0' -> TokenType.EOF.token();
 
             case Character c when isLetter(c) -> {
-                var ident = this.indent();
+                var ident = this.indent(currentChar);
                 yield switch (ident) {
                     case "fn" -> TokenType.FUNC.token();
                     case "let" -> TokenType.LET.token();
@@ -56,7 +56,7 @@ public class Lexer {
                     default -> TokenType.IDENT.createToken(ident);
                 };
             }
-            case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number());
+            case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number(currentChar));
             default -> TokenType.ILLEGAL.createToken(String.valueOf(currentChar));
         };
     }
@@ -90,20 +90,20 @@ public class Lexer {
         return Character.isLetter(c) || c == '_';
     }
 
-    private String number() {
-        int pos = this.pos - 1;
+    private String number(char firstChar) {
+        int pos = this.pos;
         while (Character.isDigit(this.getCc())) {
             this.advance();
         }
-        return this.input.substring(pos, this.pos);
+        return firstChar + this.input.substring(pos, this.pos);
     }
 
-    private String indent() {
-        int pos = this.pos - 1;
+    private String indent(char firstChar) {
+        int pos = this.pos;
         while (this.isLetter(this.getCc())) {
             this.advance();
         }
-        return this.input.substring(pos, this.pos);
+        return firstChar + this.input.substring(pos, this.pos);
     }
 
     private void skipWhitespace() {
