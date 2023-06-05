@@ -100,7 +100,7 @@ class Lexer
                 _ => new(TokenType.Assign),
             },
             '\0' => new(TokenType.Eof),
-            _ => throw new NotImplementedException("yep"),
+            _ => new(TokenType.Illegal)
         };
 
         if (token.Type is TokenType.Equal or TokenType.NotEqual)

@@ -10,7 +10,7 @@ help:
 ready: fmt lint test
 
 docker-build:
-	docker build . -t deez_$(notdir $(shell pwd))
+	docker build --no-cache . -t deez_$(notdir $(shell pwd))
 
 docker-ready: docker-build
 	docker run -v $(shell pwd):/deez -t deez_$(notdir $(shell pwd))
