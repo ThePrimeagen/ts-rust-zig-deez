@@ -59,7 +59,7 @@ describe Parser do
       expr.should be_a Call
       expr = expr.as(Call)
 
-      expr.function.should be_a Identifier
+      expr.function.should eq Identifier.new("print")
       expr.arguments.should be_empty
     end
 
@@ -70,7 +70,7 @@ describe Parser do
       expr.should be_a Call
       expr = expr.as(Call)
 
-      expr.function.should be_a Identifier
+      expr.function.should eq Identifier.new("print")
       expr.arguments.size.should eq 1
       expr.arguments[0].should be_a IntegerLiteral
       expr.arguments[0].as(IntegerLiteral).value.should eq 123
@@ -83,7 +83,7 @@ describe Parser do
       expr.should be_a Call
       expr = expr.as(Call)
 
-      expr.function.should be_a Identifier
+      expr.function.should eq Identifier.new("print")
       expr.arguments.size.should eq 3
       expr.arguments[0].should be_a IntegerLiteral
       expr.arguments[0].as(IntegerLiteral).value.should eq 123
@@ -112,7 +112,7 @@ describe Parser do
       statements[0].should be_a Let
       let = statements[0].as(Let)
 
-      let.name.should be_a Identifier # pointless check, should check for value instead
+      let.name.should eq Identifier.new("noop")
       let.value.should be_a ExpressionStatement
 
       expr = let.value.as(ExpressionStatement).expression
@@ -158,8 +158,8 @@ describe Parser do
       expr = expr.as(FunctionLiteral)
 
       expr.parameters.size.should eq 2
-      expr.parameters[0].should be_a Identifier
-      expr.parameters[1].should be_a Identifier
+      expr.parameters[0].should eq Identifier.new("x")
+      expr.parameters[1].should eq Identifier.new("y")
       expr.body.statements.should be_empty
     end
   end

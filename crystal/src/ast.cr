@@ -21,11 +21,10 @@ class Program < Node
   end
 end
 
-class Nop < Expression
-end
-
 class Identifier < Expression
   property value : String
+
+  def_equals @value
 
   def initialize(@value)
   end
