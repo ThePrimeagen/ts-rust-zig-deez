@@ -12,7 +12,7 @@
 /chezscheme/    @bjornkihlberg
 /cobol/         @kkard2
 /common-lisp/   @lh2
-/cpp/           @nicdgonzalez
+/cpp/           @nicdgonzalez @Spongman
 /crystal/       @devnote-dev
 /csharp/        @MarioGK @TomasDurica
 /csharp2/       @leo-costa @redducks100
