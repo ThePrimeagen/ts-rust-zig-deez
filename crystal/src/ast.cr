@@ -61,9 +61,24 @@ class Call < Expression
 end
 
 class Prefix < Expression
+  enum Operator
+    Negative
+    Not
+    Unknown
+
+    def self.from(type : Token::Type)
+      case type
+      when .minus? then Operator::Negative
+      when .bang?  then Operator::Not
+      else              Operator::Unknown
+      end
+    end
+  end
+
+  property operator : Operator
   property right : Expression
 
-  def initialize(@right)
+  def initialize(@operator, @right)
   end
 end
 
@@ -71,10 +86,10 @@ class Infix < Expression
   enum Operator
     Equal
     NotEqual
-    Plus
-    Minus
-    Asterisk
-    Slash
+    Add
+    Subtract
+    Multiply
+    Divide
     LessThan
     GreaterThan
     Unknown
@@ -83,10 +98,10 @@ class Infix < Expression
       case type
       when .equal?        then Operator::Equal
       when .not_equal?    then Operator::NotEqual
-      when .plus?         then Operator::Plus
-      when .minus?        then Operator::Minus
-      when .asterisk?     then Operator::Asterisk
-      when .slash?        then Operator::Slash
+      when .plus?         then Operator::Add
+      when .minus?        then Operator::Subtract
+      when .asterisk?     then Operator::Multiply
+      when .slash?        then Operator::Divide
       when .less_than?    then Operator::LessThan
       when .greater_than? then Operator::GreaterThan
       else                     Operator::Unknown

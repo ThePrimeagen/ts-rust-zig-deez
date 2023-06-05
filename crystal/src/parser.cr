@@ -115,10 +115,11 @@ class Parser
   end
 
   private def parse_prefix_expression : Expression
+    op = Prefix::Operator.from current_token.type
     next_token
     right = parse_expression :prefix
 
-    Prefix.new right
+    Prefix.new op, right
   end
 
   private def parse_infix_expression(left : Expression) : Expression
