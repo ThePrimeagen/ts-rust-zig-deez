@@ -5,6 +5,7 @@
 #include "lexer.hh"
 #include "expression.hpp"
 #include "statement.hpp"
+#include "builtins.hpp"
 
 // Expression
 
@@ -86,7 +87,7 @@ ExpressionP Expression::parseSum(Lexer& lexer)
 
 ExpressionP Expression::parseProduct(Lexer& lexer)
 {
-	auto left = parsePrefix(lexer);
+	auto left = parseArrayIndex(lexer);
 
 	while(true) {
 		auto tokenType = lexer.type();
@@ -97,9 +98,34 @@ ExpressionP Expression::parseProduct(Lexer& lexer)
 				left = std::make_unique<BinaryExpression>(
 					tokenType,
 					std::move(left),
-					parsePrefix(lexer)
+					parseArrayIndex(lexer)
 				);
 				break;
+			default:
+				return left;
+		}
+	}
+}
+
+ExpressionP Expression::parseArrayIndex(Lexer& lexer)
+{
+	auto left = parsePrefix(lexer);
+
+	while(true) {
+		auto tokenType = lexer.type();
+		switch (tokenType) {
+			case TokenType::Lbracket:
+			{
+				lexer.next();
+				auto right = Expression::parse(lexer);
+				lexer.fetch(TokenType::Rbracket);
+
+				left = std::make_unique<ArrayIndexExpression>(
+					std::move(left),
+					std::move(right)
+				);
+				break;
+			}
 			default:
 				return left;
 		}
@@ -110,6 +136,8 @@ ExpressionP Expression::parsePrefix(Lexer& lexer)
 {
 	auto tokenType = lexer.type();
 	switch (tokenType) {
+		case TokenType::Lbracket:
+			return ArrayLiteralExpression::parse(lexer);
 		case TokenType::Minus:
 		case TokenType::Bang:
 			lexer.next();
@@ -125,19 +153,14 @@ ExpressionP Expression::parsePrefix(Lexer& lexer)
 ExpressionP Expression::parseCall(Lexer& lexer)
 {
 	auto prefix = Expression::parseGrouped(lexer);
-	if (!prefix)
-		return {};
-
-	if (!lexer.get(TokenType::Lparen))
+	if (!prefix || !lexer.get(TokenType::Lparen))
 		return prefix;
 
 	std::vector<ExpressionP> args;
-	while (lexer.type() != TokenType::Rparen) {
+	while (!lexer.get(TokenType::Rparen)) {
 		args.push_back(Expression::parse(lexer));
 		lexer.get(TokenType::Comma);
 	}
-
-	lexer.fetch(TokenType::Rparen);
 
 	return std::make_unique<CallExpression>(
 		std::move(prefix),
@@ -213,35 +236,35 @@ Value BinaryExpression::eval(EnvironmentP env) const
 	return std::visit(overloaded{
 			[this](int64_t left, int64_t right) -> Value {
 				switch(op) {
-					case TokenType::Asterisk: return left * right;
-					case TokenType::Slash:    return left / right;
-					case TokenType::Plus:     return left + right;
-					case TokenType::Minus:    return left - right;
-					case TokenType::Lt:       return left < right;
-					case TokenType::Gt:       return left > right;
-					case TokenType::Le:       return left <=right;
-					case TokenType::Ge:       return left >=right;
-					case TokenType::Eq:       return left == right;
-					case TokenType::Not_eq:   return left != right;
+					case TokenType::Asterisk: return Value{left * right};
+					case TokenType::Slash:    return Value{left / right};
+					case TokenType::Plus:     return Value{left + right};
+					case TokenType::Minus:    return Value{left - right};
+					case TokenType::Lt:       return Value{left < right};
+					case TokenType::Gt:       return Value{left > right};
+					case TokenType::Le:       return Value{left <=right};
+					case TokenType::Ge:       return Value{left >=right};
+					case TokenType::Eq:       return Value{left == right};
+					case TokenType::Not_eq:   return Value{left != right};
 				}
 				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
 			},
 			[this](bool left, bool right) -> Value{
 				switch(op) {
-					case TokenType::Eq:       return left == right;
-					case TokenType::Not_eq:   return left != right;
+					case TokenType::Eq:       return Value{left == right};
+					case TokenType::Not_eq:   return Value{left != right};
 				}
 				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
 			},
-			[this](const std::string& left, const std::string& right) -> Value {
+			[this](const String& left, const String& right) -> Value {
 				switch(op) {
-					case TokenType::Plus:     return left + right;
-					case TokenType::Lt:       return left < right;
-					case TokenType::Gt:       return left > right;
-					case TokenType::Le:       return left <=right;
-					case TokenType::Ge:       return left >=right;
-					case TokenType::Eq:       return left == right;
-					case TokenType::Not_eq:   return left != right;
+					case TokenType::Plus:     return {left + right};
+					case TokenType::Lt:       return {left < right};
+					case TokenType::Gt:       return {left > right};
+					case TokenType::Le:       return {left <=right};
+					case TokenType::Ge:       return {left >=right};
+					case TokenType::Eq:       return {left == right};
+					case TokenType::Not_eq:   return {left != right};
 				}
 				throw std::runtime_error("invalid infix operation " + left + " " + std::to_string(op) + " " + right);
 			},
@@ -249,8 +272,8 @@ Value BinaryExpression::eval(EnvironmentP env) const
 				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
 			},
 		},
-		evaluatedLeft,
-		evaluatedRight
+		evaluatedLeft.data,
+		evaluatedRight.data
 	);
 }
 
@@ -267,11 +290,11 @@ Value UnaryExpression::eval(EnvironmentP env) const
 	auto evaluatedValue = value->eval(env);
 	switch(op) {
 		case TokenType::Minus:
-			return -std::get<int64_t>(evaluatedValue);
+			return Value{-std::get<int64_t>(evaluatedValue.data)};
 		case TokenType::Bang:
-			if (!std::holds_alternative<bool>(evaluatedValue))
-				return false;
-			return !std::get<bool>(evaluatedValue);
+			if (!std::holds_alternative<bool>(evaluatedValue.data))
+				return Value{false};
+			return Value{!std::get<bool>(evaluatedValue.data)};
 	}
 	throw std::runtime_error("invalid unary operation: " + std::to_string(op));
 }
@@ -286,7 +309,7 @@ void UnaryExpression::print(std::ostream& os) const
 
 Value CallExpression::eval(EnvironmentP env) const
 {
-	auto [fn, closureEnv] = std::get<BoundFunction>(function->eval(env));
+	auto [fn, closureEnv] = std::get<BoundFunction>(function->eval(env).data);
 	return fn->call(closureEnv, env, arguments);
 }
 
@@ -314,7 +337,7 @@ AbstractFunctionExpression::AbstractFunctionExpression(std::vector<std::string>&
 Value AbstractFunctionExpression::eval(EnvironmentP env) const
 {
 	//auto f = shared_from_this();
-	return std::make_pair(this, env);
+	return Value{std::make_pair(this, env)};
 }
 
 void AbstractFunctionExpression::print(std::ostream& os) const
@@ -349,13 +372,11 @@ ExpressionP FunctionExpression::parse(Lexer& lexer)
 	lexer.fetch(TokenType::Lparen);
 
 	std::vector<std::string> parameters;
-	while (lexer.type() != TokenType::Rparen) {
+	while (!lexer.get(TokenType::Rparen)) {
 		auto token = lexer.fetch(TokenType::Identifier);
 		parameters.push_back(std::string{token.literal});
 		lexer.get(TokenType::Comma);
 	}
-
-	lexer.fetch(TokenType::Rparen);
 
 	return std::make_unique<FunctionExpression>(
 		std::move(parameters),
@@ -376,10 +397,7 @@ Value FunctionExpression::call(
 	for (const auto& parameterName : parameters) {
 
 		Value argumentValue;
-		if (argumentIter == arguments.end()) {
-			argumentValue = nil;
-		}
-		else {
+		if (argumentIter != arguments.end()) {
 			const auto& argument= *(argumentIter++);
 			argumentValue = argument->eval(callerEnv);
 		}
@@ -394,37 +412,30 @@ Value FunctionExpression::call(
 	}
 }
 
+// BuiltinFunctionExpression
 
-// LenFunctionExpression
-Value LenFunctionExpression::call(
+Value BuiltinFunctionExpression::call(
 	EnvironmentP closureEnv,
 	EnvironmentP callerEnv,
 	const std::vector<ExpressionP>& arguments
 ) const
 {
-	if (arguments.size() != 1)
-		throw std::runtime_error("wrong number of arguments to len(): " + std::to_string(arguments.size()));
-
-	auto value = arguments[0]->eval(closureEnv);
-	return std::visit(overloaded{
-		[](const std::string& str) { return static_cast<int64_t>(str.length()); },
-		[](const auto& value) -> int64_t {
-			throw std::runtime_error("invalid argument to len(): " + std::to_string(value));
-		}
-	}, value);
+	std::vector<Value> argumentValues;
+	std::transform(
+		arguments.cbegin(), arguments.cend(),
+		std::back_inserter(argumentValues), [&callerEnv](const ExpressionP& element) { return element->eval(callerEnv); }
+	);
+	return body(std::move(argumentValues));
 }
 
-
 // IdentifierExpression
-
-LenFunctionExpression LenFunctionExpression::singleton;
 
 Value IdentifierExpression::eval(EnvironmentP env) const
 {
 	auto value = env->get(identifier);
 	if (value == nil) {
-		if (identifier == "len") {
-			return std::make_pair(&LenFunctionExpression::singleton, EnvironmentP{});
+		if (const auto iter = builtins.find(identifier); iter != builtins.end()) {
+			return Value{std::make_pair(&(iter->second), EnvironmentP{})};
 		}
 	}
 	return value;
@@ -440,7 +451,7 @@ void IdentifierExpression::print(std::ostream& os) const
 
 Value IntegerLiteralExpression::eval(EnvironmentP env) const
 {
-	return value;
+	return Value{value};
 }
 
 void IntegerLiteralExpression::print(std::ostream& os) const
@@ -453,7 +464,7 @@ void IntegerLiteralExpression::print(std::ostream& os) const
 
 Value BooleanLiteralExpression::eval(EnvironmentP env) const
 {
-	return value;
+	return Value{value};
 }
 
 void BooleanLiteralExpression::print(std::ostream& os) const
@@ -466,11 +477,73 @@ void BooleanLiteralExpression::print(std::ostream& os) const
 
 Value StringLiteralExpression::eval(EnvironmentP env) const
 {
-	return value;
+	return Value{value};
 }
 
 void StringLiteralExpression::print(std::ostream& os) const
 {
 	os << value;
+}
+
+
+// ArrayLiteralExpression
+
+ExpressionP ArrayLiteralExpression::parse(Lexer& lexer)
+{
+	lexer.fetch(TokenType::Lbracket);
+
+	std::vector<ExpressionP> elements;
+	while (!lexer.get(TokenType::Rbracket)) {
+		elements.push_back(Expression::parse(lexer));
+		lexer.get(TokenType::Comma);
+	}
+
+	return std::make_unique<ArrayLiteralExpression>(std::move(elements));
+}
+
+Value ArrayLiteralExpression::eval(EnvironmentP env) const
+{
+	std::vector<Value> value;
+	std::transform(
+		elements.cbegin(), elements.cend(),
+		std::back_inserter(value), [&env](const ExpressionP& element) { return element->eval(env); }
+	);
+	return Value{value};
+}
+
+void ArrayLiteralExpression::print(std::ostream& os) const
+{
+	os << "[";
+	auto first = true;
+	for (const auto& element : elements) {
+		if (first)
+			first = false;
+		else
+			os << ",";
+		os << *element;
+	}
+	os << "]";
+}
+
+
+// ArrayIndexExpression
+
+Value ArrayIndexExpression::eval(EnvironmentP env) const
+{
+	const auto& evluatedArray = array->eval(env).data;
+	const auto& evaluatedIndex = index->eval(env).data;
+
+	const auto& arrayValue = std::get<std::vector<Value>>(evluatedArray);
+	const auto indexValue = std::get<int64_t>(evaluatedIndex);
+
+	if (indexValue < 0 || indexValue >= static_cast<int64_t>(arrayValue.size()))
+		return nil;
+
+	return arrayValue[indexValue];
+}
+
+void ArrayIndexExpression::print(std::ostream& os) const
+{
+	os << array << "[" << index << "]";
 }
 

@@ -163,7 +163,7 @@ Value IfStatement::eval(EnvironmentP env) const
 			throw std::runtime_error("invalid condition: " + std::to_string(val));
 			return false;
 		}
-	}, value);
+	}, value.data);
 
 	if (truthyValue)
 		return consequence->eval(env);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <string_view>
 
 enum class TokenType
 {
@@ -41,6 +42,8 @@ enum class TokenType
 	Not_eq,
 
 	String,
+	Lbracket,
+	Rbracket,
 };
 
 using Identifier = std::string_view;

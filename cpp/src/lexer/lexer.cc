@@ -76,6 +76,8 @@ Token Lexer::nextToken() noexcept
 		case ')': return { TokenType::Rparen    };
 		case '{': return { TokenType::Lsquirly  };
 		case '}': return { TokenType::Rsquirly  };
+		case '[': return { TokenType::Lbracket  };
+		case ']': return { TokenType::Rbracket  };
 
 		case '+': return { TokenType::Plus      };
 		case '-': return { TokenType::Minus     };

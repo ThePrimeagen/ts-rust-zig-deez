@@ -17,6 +17,8 @@ std::string std::to_string(TokenType tokenType)
 		case TokenType::Rparen:         return ")";
 		case TokenType::Lsquirly:       return "{";
 		case TokenType::Rsquirly:       return "}";
+		case TokenType::Lbracket:       return "[";
+		case TokenType::Rbracket:       return "]";
 
 		// OpTokenType::erator:         return "";
 		case TokenType::Assign:         return "=";

@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <iosfwd>
+#include <functional>
 
 #include "token.hpp"
 #include "value.hpp"
@@ -25,6 +26,7 @@ struct Expression
 	static ExpressionP parseCompare(Lexer& lexer);
 	static ExpressionP parseSum(Lexer& lexer);
 	static ExpressionP parseProduct(Lexer& lexer);
+	static ExpressionP parseArrayIndex(Lexer& lexer);
 	static ExpressionP parsePrefix(Lexer& lexer);
 	static ExpressionP parseCall(Lexer& lexer);
 	static ExpressionP parseUnary(Lexer& lexer);
@@ -96,10 +98,15 @@ protected:
 	std::vector<std::string> parameters;
 };
 
-struct LenFunctionExpression : public AbstractFunctionExpression
+struct BuiltinFunctionExpression : public AbstractFunctionExpression
 {
-	LenFunctionExpression()
-	: AbstractFunctionExpression{{"str"}}
+	BuiltinFunctionExpression(
+		std::string&& name,
+		std::vector<std::string>&& parameters,
+		std::function<Value(const std::vector<Value>& arguments)>&& body)
+	: AbstractFunctionExpression{std::move(parameters)}
+	, name{std::move(name)}
+	, body{std::move(body)}
 	{}
 
 	Value call(
@@ -108,7 +115,9 @@ struct LenFunctionExpression : public AbstractFunctionExpression
 		const std::vector<ExpressionP>& arguments
 	) const override;
 
-	static LenFunctionExpression singleton;
+private:
+	const std::string name;
+	const std::function<Value(const std::vector<Value>& arguments)> body;
 };
 
 struct FunctionExpression : public AbstractFunctionExpression
@@ -130,7 +139,6 @@ private:
 	EnvironmentP parentEnv;
 	StatementP body;
 };
-
 
 struct IdentifierExpression : public Expression
 {
@@ -178,6 +186,35 @@ struct StringLiteralExpression : public Expression
 
 private:
 	const std::string value;
+};
+
+struct ArrayLiteralExpression : public Expression
+{
+	ArrayLiteralExpression(std::vector<ExpressionP>&& elements)
+	: elements{std::move(elements)} {}
+	static ExpressionP parse(Lexer& lexer);
+
+	void print(std::ostream& str) const override;
+	Value eval(EnvironmentP env) const override;
+
+private:
+	std::vector<ExpressionP> elements;
+};
+
+struct ArrayIndexExpression : public Expression
+{
+	ArrayIndexExpression(ExpressionP&& array, ExpressionP&& index)
+	: array{std::move(array)}
+	, index{std::move(index)}
+	{
+	}
+
+	void print(std::ostream& str) const override;
+	Value eval(EnvironmentP env) const override;
+
+private:
+	const ExpressionP array;
+	const ExpressionP index;
 };
 
 

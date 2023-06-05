@@ -111,6 +111,14 @@ TEST(TestLexer, TestNextToken2) {
 		{ TokenType::String,     "foobar" },
 		{ TokenType::String,     "foo bar"},
 		{ TokenType::String,     "\r\n\"" },
+
+		{ TokenType::Lbracket,            },
+		{ TokenType::Integer,    "1"      },
+		{ TokenType::Comma,               },
+		{ TokenType::Integer,    "2"      },
+		{ TokenType::Rbracket,            },
+		{ TokenType::Semicolon,           },
+
 		{ TokenType::Eof                  },
 	};
 
@@ -136,6 +144,7 @@ TEST(TestLexer, TestNextToken2) {
 		"foobar"
 		"foo bar"
 		"\r\n\""
+		[1, 2];
 	)XXX"};
 
 	for (const auto& testToken : testTokens) {

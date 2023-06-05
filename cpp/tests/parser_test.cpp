@@ -14,8 +14,7 @@ auto testEval(std::string str, Value expected)
 		auto program = Program::parse(lexer);
 		auto val = program->run();
 
-		ASSERT_EQ(val.index(), expected.index()) << str;
-		ASSERT_EQ(val, expected) << str;
+		ASSERT_EQ(val.data, expected.data) << str;
 	} catch (const std::exception& ex) {
 		FAIL() << ex.what() << " : " << str;
 		throw;
@@ -47,21 +46,21 @@ TEST(TestLexer, TestLetStatements) {
 TEST(TestLexer, TestEvalIntegerExpression) {
 
 	runTests({
-		{"5", 5},
-		{"10", 10},
-		{"-5", -5},
-		{"-10", -10},
-		{"5 + 5 + 5 + 5 - 10", 10},
-		{"2 * 2 * 2 * 2 * 2", 32},
-		{"-50 + 100 + -50", 0},
-		{"5 * 2 + 10", 20},
-		{"5 + 2 * 10", 25},
-		{"20 + 2 * -10", 0},
-		{"50 / 2 * 2 + 10", 60},
-		{"2 * (5 + 10)", 30},
-		{"3 * 3 * 3 + 10", 37},
-		{"3 * (3 * 3) + 10", 37},
-		{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+		{"5", Value{5}},
+		{"10", Value{10}},
+		{"-5", Value{-5}},
+		{"-10", Value{-10}},
+		{"5 + 5 + 5 + 5 - 10", Value{10}},
+		{"2 * 2 * 2 * 2 * 2", Value{32}},
+		{"-50 + 100 + -50", Value{0}},
+		{"5 * 2 + 10", Value{20}},
+		{"5 + 2 * 10", Value{25}},
+		{"20 + 2 * -10", Value{0}},
+		{"50 / 2 * 2 + 10", Value{60}},
+		{"2 * (5 + 10)", Value{30}},
+		{"3 * 3 * 3 + 10", Value{37}},
+		{"3 * (3 * 3) + 10", Value{37}},
+		{"(5 + 10 * 2 + 15 / 3) * 2 + -10", Value{50}},
 	});
 }
 
@@ -69,38 +68,38 @@ TEST(TestLexer, TestEvalIntegerExpression) {
 TEST(TestLexer, TestEvalBooleanExpression) {
 
 	runTests({
-		{"true", true},
-		{"false", false},
-		{"1 < 2", true},
-		{"1 > 2", false},
-		{"1 < 1", false},
-		{"1 > 1", false},
-		{"1 == 1", true},
-		{"1 != 1", false},
-		{"1 == 2", false},
-		{"1 != 2", true},
+		{"true", Value{true}},
+		{"false", Value{false}},
+		{"1 < 2", Value{true}},
+		{"1 > 2", Value{false}},
+		{"1 < 1", Value{false}},
+		{"1 > 1", Value{false}},
+		{"1 == 1", Value{true}},
+		{"1 != 1", Value{false}},
+		{"1 == 2", Value{false}},
+		{"1 != 2", Value{true}},
 
-		{"true == true", true},
-		{"false == false", true},
-		{"true == false", false},
-		{"true != false", true},
-		{"false != true", true},
-		{"(1 < 2) == true", true},
-		{"(1 < 2) == false", false},
-		{"(1 > 2) == true", false},
-		{"(1 > 2) == false", true},
+		{"true == true", Value{true}},
+		{"false == false", Value{true}},
+		{"true == false", Value{false}},
+		{"true != false", Value{true}},
+		{"false != true", Value{true}},
+		{"(1 < 2) == true", Value{true}},
+		{"(1 < 2) == false", Value{false}},
+		{"(1 > 2) == true", Value{false}},
+		{"(1 > 2) == false", Value{true}},
 	});
 }
 
 TEST(TestLexer, TestBangOperator) {
 
 	runTests({
-		{"!true", false},
-		{"!false", true},
-		{"!5", false},
-		{"!!true", true},
-		{"!!false", false},
-		{"!!5", true},
+		{"!true", Value{false}},
+		{"!false", Value{true}},
+		{"!5", Value{false}},
+		{"!!true", Value{true}},
+		{"!!false", Value{false}},
+		{"!!5", Value{true}},
 	});
 }
 
@@ -108,13 +107,13 @@ TEST(TestLexer, TestBangOperator) {
 TEST(TestLexer, TestIfElseExpressions) {
 
 	runTests({
-		{"if (true) { 10 }", 10},
-		{"if (false) { 10 }", nil},
-		{"if (1) { 10 }", 10},
-		{"if (1 < 2) { 10 }", 10},
-		{"if (1 > 2) { 10 }", nil},
-		{"if (1 > 2) { 10 } else { 20 }", 20},
-		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"if (true) { 10 }", Value{10}},
+		{"if (false) { 10 }", Value{nil}},
+		{"if (1) { 10 }", Value{10}},
+		{"if (1 < 2) { 10 }", Value{10}},
+		{"if (1 > 2) { 10 }", Value{nil}},
+		{"if (1 > 2) { 10 } else { 20 }", Value{20}},
+		{"if (1 < 2) { 10 } else { 20 }", Value{10}},
 	});
 }
 
@@ -122,10 +121,10 @@ TEST(TestLexer, TestIfElseExpressions) {
 TEST(TestLexer, TestReturnStatements) {
 
 	runTests({
-		{"return 10;", 10},
-		{"return 10; 9;", 10},
-		{"return 2 * 5; 9;", 10},
-		{"9; return 2 * 5; 9;", 10},
+		{"return 10;", Value{10}},
+		{"return 10; 9;", Value{10}},
+		{"return 2 * 5; 9;", Value{10}},
+		{"9; return 2 * 5; 9;", Value{10}},
 		{R"XXX(
 			if (10 > 1) {
 				if (10 > 1) {
@@ -133,7 +132,7 @@ TEST(TestLexer, TestReturnStatements) {
 				}
 				return 1;
 			}
-			)XXX", 10,},
+			)XXX", Value{10}},
 	});
 }
 
@@ -141,10 +140,10 @@ TEST(TestLexer, TestReturnStatements) {
 TEST(TestLexer, TestLetStatements2) {
 
 	runTests({
-		{"let a = 5; a;", 5},
-		{"let a = 5 * 5; a;", 25},
-		{"let a = 5; let b = a; b;", 5},
-		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+		{"let a = 5; a;",Value{ 5}},
+		{"let a = 5 * 5; a;", Value{25}},
+		{"let a = 5; let b = a; b;",Value{ 5}},
+		{"let a = 5; let b = a; let c = a + b + 5; c;", Value{15}},
 	});
 }
 
@@ -152,12 +151,12 @@ TEST(TestLexer, TestLetStatements2) {
 TEST(TestLexer, TestFunctionApplication) {
 
 	runTests({
-		{"let identity = fn(x) { x; }; identity(5);", 5},
-		{"let identity = fn(x) { return x; }; identity(5);", 5},
-		{"let double = fn(x) { x * 2; }; double(5);", 10},
-		{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
-		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
-		{"fn(x) { x; }(5)", 5},
+		{"let identity = fn(x) { x; }; identity(5);", Value{5}},
+		{"let identity = fn(x) { return x; }; identity(5);", Value{5}},
+		{"let double = fn(x) { x * 2; }; double(5);", Value{10}},
+		{"let add = fn(x, y) { x + y; }; add(5, 5);", Value{10}},
+		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", Value{20}},
+		{"fn(x) { x; }(5)", Value{5}},
 	});
 }
 
@@ -171,7 +170,7 @@ TEST(TestLexer, TestClosures) {
 			};
 			let addTwo = newAdder(2);
 			addTwo(2);
-			)XXX", 4},
+			)XXX", Value{4}},
 	});
 }
 
@@ -179,23 +178,58 @@ TEST(TestLexer, TestClosures) {
 TEST(TestLexer, TestStringLiteralExpression) {
 
 	runTests({
-		{R"XXX( "hello world" )XXX", "hello world" },
+		{R"XXX( "hello world" )XXX", Value{"hello world"} },
 	});
 }
 
 TEST(TestLexer, TestStringConcatenation) {
 	runTests({
-		{R"XXX( "Hello" + " " + "World!" )XXX", "Hello World!" },
+		{R"XXX( "Hello" + " " + "World!" )XXX", Value{"Hello World!"} },
 		//{R"XXX( "Hello" - "World!" )XXX", "unknown operator: STRING - STRING" },
 	});
 }
 
 TEST(TestLexer, TestBuiltinFunctions) {
 	runTests({
-		{R"XXX( len("") )XXX", 0},
-		{R"XXX( len("four") )XXX", 4},
-		{R"XXX( len("hello world") )XXX", 11},
+		{R"XXX( len("") )XXX", Value{0}},
+		{R"XXX( len("four") )XXX", Value{4}},
+		{R"XXX( len("hello world") )XXX", Value{11}},
 		//{R"XXX( len(1) )XXX", "argument to `len` not supported, got INTEGER"},
 		//{R"XXX( len("one", "two") )XXX", "wrong number of arguments. got=2, want=1"},
+	});
+}
+
+TEST(TestLexer, TestParsingArrayLiterals) {
+	runTests({
+		{"[1, 2 * 2, 3 + 3]", Value{ std::vector<Value>{ Value{1}, Value{4}, Value{6} } }},
+	});
+}
+
+TEST(TestLexer, TestArrayIndexExpressions) {
+	runTests({
+		{ "[1, 2, 3][0]", Value{1} },
+		{ "[1, 2, 3][1]", Value{2} },
+		{ "[1, 2, 3][2]", Value{3} },
+		{ "let i = 0; [1][i];", Value{1} },
+		{ "[1, 2, 3][1 + 1];", Value{3} },
+		{ "let myArray = [1, 2, 3]; myArray[2];", Value{3} },
+		{ "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", Value{6} },
+		{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value{2} },
+		{ "[1, 2, 3][3]", nil },
+		{ "[1, 2, 3][-1]", nil },
+	});
+}
+
+
+TEST(TestLexer, TestArrayBuiltinFunction) {
+	runTests({
+		{ "len([])", Value{0} },
+		{ "len([1, 2, 3])", Value{3} },
+		{ "first([])", nil },
+		{ "first([1, 2, 3])", Value{1} },
+		{ "last([])", nil },
+		{ "last([1, 2, 3])", Value{3} },
+		{ "rest([])", nil },
+		{ "rest([1, 2, 3])", Value{ Array{ Value{2}, Value{3} } } },
 	});
 }
