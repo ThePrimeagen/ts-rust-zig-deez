@@ -73,6 +73,14 @@ class Prefix < Expression
       else              Operator::Unknown
       end
     end
+
+    def to_s : String
+      case self
+      when .negative? then "-"
+      when .not?      then "!"
+      else                 "unknown"
+      end
+    end
   end
 
   property operator : Operator
@@ -105,6 +113,20 @@ class Infix < Expression
       when .less_than?    then Operator::LessThan
       when .greater_than? then Operator::GreaterThan
       else                     Operator::Unknown
+      end
+    end
+
+    def to_s : String
+      case self
+      when .equal?        then "=="
+      when .not_equal?    then "!="
+      when .add?          then "+"
+      when .subtract?     then "-"
+      when .multiply?     then "*"
+      when .divide?       then "/"
+      when .less_than?    then "<"
+      when .greater_than? then ">"
+      else                     "unknown"
       end
     end
   end
