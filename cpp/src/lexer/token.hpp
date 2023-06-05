@@ -54,12 +54,12 @@ enum class TokenType
 	Return,
 };
 
-using Identifier = std::string_view;
+using Identifier = std::string;
 
 struct Token final
 {
 	TokenType type;
-	Identifier literal = {};
+	std::string_view literal = {};
 };
 
 

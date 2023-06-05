@@ -49,7 +49,7 @@ Token Lexer::fetch(TokenType tokenType)
 {
 	Token token = peek();
 	if (token.type != tokenType)
-		throw std::runtime_error("unexpected token '" + std::to_string(token.type) + "' is not '" + std::to_string(tokenType) + "'");
+		error("unexpected token '" + std::to_string(token.type) + "' is not '" + std::to_string(tokenType) + "'");
 	next();
 	return token;
 }
@@ -98,11 +98,11 @@ Token Lexer::nextToken() noexcept
 		case '"':
 		{
 			std::string str;
-			char strch;
+			char strch = '\0';
 			while (position_ < input_.end() && (strch = *position_++) != '"') {
 				if (strch == '\\') {
 					if (position_ == input_.end())
-						throw std::runtime_error("unterminated string");
+						error("unterminated string");
 
 					auto escaped = *position_++;
 					switch (escaped) {
@@ -117,7 +117,7 @@ Token Lexer::nextToken() noexcept
 						case '\'': escaped = '\''; break;
 						case '\"': escaped = '\"'; break;
 						default:
-							throw std::runtime_error(std::string{"illegal escape: '\\"} + escaped + "'");
+							error(std::string{"illegal escape: '\\"} + escaped + "'");
 					}
 					str += escaped;
 				}
@@ -126,7 +126,7 @@ Token Lexer::nextToken() noexcept
 				}
 			}
 			if (strch != '\"')
-				throw std::runtime_error("unterminated string");
+				error("unterminated string");
 			auto iter = stringPool_.insert(stringPool_.end(), std::move(str));
 			return { TokenType::String, *iter };
 		}
@@ -158,4 +158,20 @@ Token Lexer::nextToken() noexcept
 	}
 
 	return { TokenType::Illegal, { start_position, start_position + 1} };
+}
+
+
+void Lexer::error(const std::string& error)
+{
+	auto isNewline = [](const char ch) { return ch == '\n'; };
+	auto line = 1 + std::count_if(input_.begin(), position_, isNewline);
+	const auto rpos = std::make_reverse_iterator(position_);
+	auto previousLine = std::find_if(
+		rpos,
+		std::make_reverse_iterator(input_.begin()),
+		isNewline
+	);
+	auto column = 1 + std::distance(rpos, previousLine);
+
+	throw std::runtime_error("Error at line " + std::to_string(line) + ", col " + std::to_string(column) + ": " + error);
 }

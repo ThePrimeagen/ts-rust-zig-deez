@@ -231,6 +231,11 @@ TEST(TestLexer, TestArrayIndexExpressions) {
 		{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value{2} },
 		{ "[1, 2, 3][3]", nil },
 		{ "[1, 2, 3][-1]", nil },
+
+		{ "[] + [1]", Value{ Array{ Value{1} } } },
+		{ "[1] + [2]", Value{ Array{ Value{1}, Value{2} } } },
+		{ "[1] + []", Value{ Array{ Value{1} } } },
+		{ "[1] + [2] + [3]", Value{ Array{ Value{1}, Value{2}, Value{3} } } },
 	});
 }
 

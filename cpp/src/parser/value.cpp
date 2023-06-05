@@ -4,7 +4,7 @@
 #include "value.hpp"
 #include "expression.hpp"
 
-std::string std::to_string(const Value::variant_type& data)
+std::string std::to_string(const ValueType& data)
 {
 	return std::visit(overloaded{
 		[](const NullValue& value) -> std::string {
@@ -13,7 +13,7 @@ std::string std::to_string(const Value::variant_type& data)
 		[](const bool value) -> std::string {
 			return value ? "true" : "false";
 		},
-		[](const int64_t value) -> std::string {
+		[](const Integer value) -> std::string {
 			return std::to_string(value);
 		},
 		[](const String& value) -> std::string {
@@ -53,4 +53,19 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
 {
 	os << std::to_string(value.data);
 	return os;
+}
+
+
+std::string Value::typeName() const
+{
+	return std::visit(overloaded{
+		[](const NullValue& value) { return "nil"; },
+		[](const bool value)       { return "bool"; },
+		[](const Integer value)    { return "Integer"; },
+		[](const String& value)    { return "String"; },
+		[](const BoundFunction&    value) { return "fn"; },
+		[](const Array& value)     { return "Array"; },
+		[](const auto& _)          { return "unknown"; }
+	},
+	data);
 }

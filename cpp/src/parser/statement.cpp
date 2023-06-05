@@ -28,7 +28,7 @@ StatementP LetStatement::parse(Lexer& lexer)
 	lexer.fetch(TokenType::Assign);
 
 	return std::make_unique<LetStatement>(
-		identifierToken.literal,
+		Identifier{identifierToken.literal},
 		Expression::parse(lexer)
 	);
 }
@@ -158,7 +158,7 @@ Value IfStatement::eval(EnvironmentP env) const
 	auto value = condition->eval(env);
 	auto truthyValue = std::visit(overloaded{
 		[](bool val)                 { return val; },
-		[](int64_t val)              { return val != 0; },
+		[](Integer val)              { return val != 0; },
 		[](const auto& val) {
 			throw std::runtime_error("invalid condition: " + std::to_string(val));
 			return false;

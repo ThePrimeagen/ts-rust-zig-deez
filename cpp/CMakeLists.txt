@@ -45,3 +45,15 @@ add_executable(${This} src/main.cpp)
 target_link_libraries(${This}
   ${This}_lib
 )
+
+
+install(
+  TARGETS ${This}
+  RUNTIME DESTINATION bin
+)
+
+install(
+  FILES prelude
+  DESTINATION .
+)
+

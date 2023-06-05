@@ -20,6 +20,8 @@ class Lexer final
 		bool peekIs(TokenType tokenType) const noexcept { return type() == tokenType; }
 		bool eof() const noexcept { return peekIs(TokenType::Eof); }
 
+		void error(const std::string& error);
+
 	private:
 		Token nextToken() noexcept;
 		bool swallow(char ch) noexcept;
