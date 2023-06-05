@@ -21,28 +21,28 @@ docker-ready: docker-build
 
 clean:
 	@echo "===> Cleaning"
-	cabal clean
+	rm -f src/🐵🤘🏼
 
 fmt:
 	@echo "===> Formatting"
-	fourmolu --mode inplace .
+	roc format src/*
 
 lint:
 	@echo "===> Linting"
-	hlint .
+	roc check src/main.roc
 
 test:
 	@echo "===> Testing EVERYTHING"
-	cabal test
+	roc test src/main.roc
 
 test-lexer:
 	@echo "===> Testing lexer"
-	# TODO: replace this line with your lexer testing commands
-
-test-ast:
-	@echo "===> Testing AST"
-	# TODO: replace this line with your AST testing commands
+	roc test src/Lexer.roc
 
 test-parser:
 	@echo "===> Testing parser"
-	# TODO: replace this line with your parser testing commands
+	roc test src/Parser.roc
+
+test-eval:
+	@echo "===> Testing parser"
+	roc test src/Eval.roc

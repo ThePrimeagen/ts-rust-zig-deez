@@ -1,22 +1,13 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS base
-WORKDIR /app
-EXPOSE 80
+﻿# Latest Ubuntu image
+FROM ubuntu:latest
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS restore
-WORKDIR /src
-COPY ["lexer/lexer.csproj", "lexer/"]
-COPY ["lexer.tests/lexer.tests.csproj", "lexer.tests/"]
-RUN dotnet restore --ucr "lexer/lexer.csproj" && \
-    dotnet restore --ucr "lexer.tests/lexer.tests.csproj"
+# Make a working directory, as it would be binded with the current language one
+WORKDIR /deez
 
-FROM restore AS publish
-COPY . .
-RUN dotnet publish -c release --no-restore "lexer/lexer.csproj" \
-    -p:publishtrimmed=true --ucr -o /app/publish && \
-    dotnet publish -c release --no-restore "lexer.tests/lexer.tests.csproj" \
-    --ucr -o /app/tests
+# Basic system-level dependencies
+RUN apt-get update && apt install -y make git curl && \
+    apt install dotnet-sdk-7.0 -y
 
-FROM base as final
-COPY --from=publish /app/publish ./lexer
-COPY --from=publish /app/tests ./tests
-ENTRYPOINT ["./lexer/lexer"]
+# Commands for docker run
+CMD make clean && \
+    make ready

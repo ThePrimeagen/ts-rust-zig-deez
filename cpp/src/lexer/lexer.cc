@@ -2,6 +2,7 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 #include "lexer.hh"
 
@@ -15,6 +16,11 @@ Lexer::Lexer(std::string_view input)
 inline bool isWhitespace(char ch)
 {
 	return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
+}
+
+inline bool isIdentifier(char ch)
+{
+	return isalnum(ch) || ch == '_';
 }
 
 bool Lexer::swallow(char ch) noexcept
@@ -70,27 +76,72 @@ Token Lexer::nextToken() noexcept
 		case ')': return { TokenType::Rparen    };
 		case '{': return { TokenType::Lsquirly  };
 		case '}': return { TokenType::Rsquirly  };
+		case '[': return { TokenType::Lbracket  };
+		case ']': return { TokenType::Rbracket  };
 
 		case '+': return { TokenType::Plus      };
 		case '-': return { TokenType::Minus     };
 		case '*': return { TokenType::Asterisk  };
 		case '/': return { TokenType::Slash     };
+		case '%': return { TokenType::Percent   };
 
-		case '<': return { swallow('=') ? TokenType::Le : TokenType::Lt };
-		case '>': return { swallow('=') ? TokenType::Ge : TokenType::Gt };
-		case '=': return { swallow('=') ? TokenType::Eq : TokenType::Assign };
+		case '~': return { TokenType::Tilde     };
+		case '^': return { TokenType::BitEor    };
+		case '&': return { swallow('&') ? TokenType::And : TokenType::BitAnd };
+		case '|': return { swallow('|') ? TokenType::Or  : TokenType::BitOr };
+
+		case '<': return { swallow('=') ? TokenType::Le  : TokenType::Lt };
+		case '>': return { swallow('=') ? TokenType::Ge  : TokenType::Gt };
+		case '=': return { swallow('=') ? TokenType::Eq  : TokenType::Assign };
 		case '!': return { swallow('=') ? TokenType::Not_eq : TokenType::Bang };
+
+		case '"':
+		{
+			std::string str;
+			char strch;
+			while (position_ < input_.end() && (strch = *position_++) != '"') {
+				if (strch == '\\') {
+					if (position_ == input_.end())
+						throw std::runtime_error("unterminated string");
+
+					auto escaped = *position_++;
+					switch (escaped) {
+						case 'a':  escaped = '\a'; break;
+						case 'b':  escaped = '\b'; break;
+						case 'f':  escaped = '\f'; break;
+						case 'n':  escaped = '\n'; break;
+						case 'r':  escaped = '\r'; break;
+						case 't':  escaped = '\t'; break;
+						case 'v':  escaped = '\v'; break;
+						case '\\': escaped = '\\'; break;
+						case '\'': escaped = '\''; break;
+						case '\"': escaped = '\"'; break;
+						default:
+							throw std::runtime_error(std::string{"illegal escape: '\\"} + escaped + "'");
+					}
+					str += escaped;
+				}
+				else {
+					str += strch;
+				}
+			}
+			if (strch != '\"')
+				throw std::runtime_error("unterminated string");
+			auto iter = stringPool_.insert(stringPool_.end(), std::move(str));
+			return { TokenType::String, *iter };
+		}
 	}
 
 	// parse integer
 	if (isdigit(ch)) {
 		position_ = std::find_if_not(position_, input_.end(), isdigit);
+		// TODO: ASSERT(position_ >= input_.end() || !isIdentifier(*position_));	// identifiers can't start with digits, eg. '123a'
 		return { TokenType::Integer, { start_position, position_ } };
 	}
 
 	// parse word
-	if (isalpha(ch)) {
-		position_ = std::find_if_not(position_, input_.end(), isalnum);
+	if (isIdentifier(ch)) {
+		position_ = std::find_if_not(position_, input_.end(), isIdentifier);
 		std::string_view literal{ start_position, position_ };
 
 		// check for keywords

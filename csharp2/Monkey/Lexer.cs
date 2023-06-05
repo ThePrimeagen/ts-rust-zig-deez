@@ -1,4 +1,4 @@
-﻿namespace lexer;
+﻿namespace Monkey;
 
 enum TokenType
 {
@@ -9,6 +9,7 @@ enum TokenType
     Eof,
     Assign,
 
+    // Separators
     Bang,
     Dash,
     ForwardSlash,
@@ -18,6 +19,7 @@ enum TokenType
     LessThan,
     GreaterThan,
 
+    // Operators
     Plus,
     Comma,
     Semicolon,
@@ -26,9 +28,9 @@ enum TokenType
     LSquirly,
     RSquirly,
 
+    // Keywords
     Function,
     Let,
-
     If,
     Else,
     Return,
@@ -98,7 +100,7 @@ class Lexer
                 _ => new(TokenType.Assign),
             },
             '\0' => new(TokenType.Eof),
-            _ => throw new NotImplementedException("yep"),
+            _ => new(TokenType.Illegal)
         };
 
         if (token.Type is TokenType.Equal or TokenType.NotEqual)

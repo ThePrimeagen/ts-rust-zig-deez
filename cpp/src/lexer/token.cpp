@@ -17,6 +17,8 @@ std::string std::to_string(TokenType tokenType)
 		case TokenType::Rparen:         return ")";
 		case TokenType::Lsquirly:       return "{";
 		case TokenType::Rsquirly:       return "}";
+		case TokenType::Lbracket:       return "[";
+		case TokenType::Rbracket:       return "]";
 
 		// OpTokenType::erator:         return "";
 		case TokenType::Assign:         return "=";
@@ -25,6 +27,14 @@ std::string std::to_string(TokenType tokenType)
 		case TokenType::Bang:           return "!";
 		case TokenType::Asterisk:       return "*";
 		case TokenType::Slash:          return "/";
+		case TokenType::Percent:        return "%";
+		case TokenType::Tilde:          return "~";
+		case TokenType::BitAnd:         return "&";
+		case TokenType::BitOr:          return "|";
+		case TokenType::BitEor:         return "^";
+		case TokenType::And:            return "&&";
+		case TokenType::Or:             return "||";
+
 		case TokenType::Lt:             return "<";
 		case TokenType::Gt:             return ">";
 		case TokenType::Le:             return "<=";
@@ -41,6 +51,8 @@ std::string std::to_string(TokenType tokenType)
 
 		case TokenType::Eq:             return "==";
 		case TokenType::Not_eq:         return "!=";
+
+		case TokenType::String:         return "(String)";
 	}
 	return std::string{"(unhandled "} + std::to_string((int) tokenType) + ")";
 }
@@ -57,6 +69,7 @@ std::ostream& operator<<(std::ostream& os, const Token& token)
 	switch (token.type) {
 		case TokenType::Identifier: os << token.literal; break;
 		case TokenType::Integer:    os << token.literal; break;
+		case TokenType::String:     os << "\"" << token.literal << "\""; break;
 		default:                    os << token.type;    break;
 	}
 	return os;

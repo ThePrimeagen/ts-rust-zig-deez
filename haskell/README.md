@@ -799,7 +799,7 @@ nextToken = do
             p <- peek                                  -- peek the lookahead character
             if p == '='
                 then NotEqual <$ advance <* advance    -- if it is `=` we return `NotEqual` and advance twice (same reason as before)
-                else Bang <$ advance                   -- otherwise we reurn `Bang` and advance once
+                else Bang <$ advance                   -- otherwise we return `Bang` and advance once
 
         c | isIdentChar c -> identToken <$> readIdent  -- if we have an identifier character we read the string ident
                                                        -- and then convert it to Token using the mapping
@@ -810,7 +810,7 @@ nextToken = do
 
 this is much easier to read and maintain.
 
-To implement the tokenize function let's look again at he `go` function
+To implement the tokenize function let's look again at the `go` function
 
 ```haskell
 go :: LexerT [Token]
@@ -819,7 +819,7 @@ go = do
     case token of
         Eof -> pure [Eof]      -- if the token is `Eof` then we just create a LexerT that returns `[Eof]` when executed
 
-        _ -> (token :) <$> go  -- otherwise we need prepend the current token to the result of calling `go` again
+        _ -> (token :) <$> go  -- otherwise we need to prepend the current token to the result of calling `go` again
                                -- but since go returns a `LexerT [Token]`, which is a functor, we have to inject the
                                -- `(token :)` that we used in the Book implementation with `fmap` into the LexerT
 ```
@@ -842,7 +842,7 @@ tokenize =
 ### Lexer.State [Control.Monad.State](https://hackage.haskell.org/package/mtl-2.3.1/docs/Control-Monad-State-Class.html)
 
 Instead of implementing the instances of Functors and Monads manually, we can
-actually use a package [mtl](https://hackage.haskell.org/package/mtl). This
+actually use the package [mtl](https://hackage.haskell.org/package/mtl). This
 includes monad classes that would be useful to us.
 
 For example the `State` monad, which is what we implemented with `LexerT`.
