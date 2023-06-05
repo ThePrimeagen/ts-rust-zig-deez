@@ -9,6 +9,7 @@ enum class TokenType
 	Eof,
 	Identifier,
 	Integer,
+	String,
 
 	Comma,
 	Semicolon,
@@ -16,14 +17,28 @@ enum class TokenType
 	Rparen,
 	Lsquirly,
 	Rsquirly,
+	Lbracket,
+	Rbracket,
 
 	// Operators
 	Assign,
 	Plus,
 	Minus,
-	Bang,
 	Asterisk,
 	Slash,
+	Percent,
+
+	Bang,
+	Tilde,
+
+	BitAnd,
+	BitOr,
+	BitEor,
+	And,
+	Or,
+
+	Eq,
+	Not_eq,
 	Lt,
 	Gt,
 	Le,
@@ -37,13 +52,6 @@ enum class TokenType
 	If,
 	Else,
 	Return,
-
-	Eq,
-	Not_eq,
-
-	String,
-	Lbracket,
-	Rbracket,
 };
 
 using Identifier = std::string_view;

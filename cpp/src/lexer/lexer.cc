@@ -83,10 +83,16 @@ Token Lexer::nextToken() noexcept
 		case '-': return { TokenType::Minus     };
 		case '*': return { TokenType::Asterisk  };
 		case '/': return { TokenType::Slash     };
+		case '%': return { TokenType::Percent   };
 
-		case '<': return { swallow('=') ? TokenType::Le : TokenType::Lt };
-		case '>': return { swallow('=') ? TokenType::Ge : TokenType::Gt };
-		case '=': return { swallow('=') ? TokenType::Eq : TokenType::Assign };
+		case '~': return { TokenType::Tilde     };
+		case '^': return { TokenType::BitEor    };
+		case '&': return { swallow('&') ? TokenType::And : TokenType::BitAnd };
+		case '|': return { swallow('|') ? TokenType::Or  : TokenType::BitOr };
+
+		case '<': return { swallow('=') ? TokenType::Le  : TokenType::Lt };
+		case '>': return { swallow('=') ? TokenType::Ge  : TokenType::Gt };
+		case '=': return { swallow('=') ? TokenType::Eq  : TokenType::Assign };
 		case '!': return { swallow('=') ? TokenType::Not_eq : TokenType::Bang };
 
 		case '"':

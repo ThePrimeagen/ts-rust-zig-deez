@@ -27,6 +27,14 @@ std::string std::to_string(TokenType tokenType)
 		case TokenType::Bang:           return "!";
 		case TokenType::Asterisk:       return "*";
 		case TokenType::Slash:          return "/";
+		case TokenType::Percent:        return "%";
+		case TokenType::Tilde:          return "~";
+		case TokenType::BitAnd:         return "&";
+		case TokenType::BitOr:          return "|";
+		case TokenType::BitEor:         return "^";
+		case TokenType::And:            return "&&";
+		case TokenType::Or:             return "||";
+
 		case TokenType::Lt:             return "<";
 		case TokenType::Gt:             return ">";
 		case TokenType::Le:             return "<=";

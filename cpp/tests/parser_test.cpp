@@ -61,6 +61,13 @@ TEST(TestLexer, TestEvalIntegerExpression) {
 		{"3 * 3 * 3 + 10", Value{37}},
 		{"3 * (3 * 3) + 10", Value{37}},
 		{"(5 + 10 * 2 + 15 / 3) * 2 + -10", Value{50}},
+		{"10 / 5", Value{2}},
+		{"7 % 3", Value{1}},
+
+		{"127 | 128", Value{255}},
+		{"11 & 6", Value{2}},
+		{"11 & ~6", Value{9}},
+		{"13 ^ 15", Value{2}},
 	});
 }
 
@@ -88,6 +95,13 @@ TEST(TestLexer, TestEvalBooleanExpression) {
 		{"(1 < 2) == false", Value{false}},
 		{"(1 > 2) == true", Value{false}},
 		{"(1 > 2) == false", Value{true}},
+
+		{"true && true", Value{true}},
+		{"true && false", Value{false}},
+		{"false && false", Value{false}},
+		{"true || true", Value{true}},
+		{"true || false", Value{true}},
+		{"false || false", Value{false}},
 	});
 }
 

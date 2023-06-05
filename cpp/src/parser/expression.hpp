@@ -22,8 +22,15 @@ struct Expression
 
 	static ExpressionP parse(Lexer& lexer);
 
+	static ExpressionP parseOr(Lexer& lexer);
+	static ExpressionP parseAnd(Lexer& lexer);
+	static ExpressionP parseBitOr(Lexer& lexer);
+	static ExpressionP parseBitXor(Lexer& lexer);
+	static ExpressionP parseBitAnd(Lexer& lexer);
+
 	static ExpressionP parseEquality(Lexer& lexer);
-	static ExpressionP parseCompare(Lexer& lexer);
+	static ExpressionP parseRelational(Lexer& lexer);
+	static ExpressionP parseShift(Lexer& lexer);
 	static ExpressionP parseSum(Lexer& lexer);
 	static ExpressionP parseProduct(Lexer& lexer);
 	static ExpressionP parseArrayIndex(Lexer& lexer);

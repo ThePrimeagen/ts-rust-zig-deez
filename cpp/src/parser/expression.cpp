@@ -17,119 +17,113 @@ ExpressionP Expression::parse(Lexer& lexer)
 			return IfStatement::parse(lexer);
 	}
 
-	return parseEquality(lexer);
+	return parseOr(lexer);
+}
+
+ExpressionP Expression::parseOr(Lexer& lexer)
+{
+	auto left = parseAnd(lexer);
+	while (lexer.peekIs(TokenType::Or)) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(TokenType::Or, std::move(left), parseAnd(lexer));
+	}
+	return left;
+}
+
+ExpressionP Expression::parseAnd(Lexer& lexer)
+{
+	auto left = parseBitOr(lexer);
+	while (lexer.peekIs(TokenType::And)) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(TokenType::And, std::move(left), parseBitOr(lexer));
+	}
+	return left;
+}
+
+ExpressionP Expression::parseBitOr(Lexer& lexer)
+{
+	auto left = parseBitXor(lexer);
+	while (lexer.peekIs(TokenType::BitOr)) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(TokenType::BitOr, std::move(left), parseBitXor(lexer));
+	}
+	return left;
+}
+
+ExpressionP Expression::parseBitXor(Lexer& lexer)
+{
+	auto left = parseBitAnd(lexer);
+	while (lexer.peekIs(TokenType::BitEor)) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(TokenType::BitEor, std::move(left), parseBitAnd(lexer));
+	}
+	return left;
+}
+
+ExpressionP Expression::parseBitAnd(Lexer& lexer)
+{
+	auto left = parseEquality(lexer);
+	while (lexer.peekIs(TokenType::BitAnd)) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(TokenType::BitAnd, std::move(left), parseEquality(lexer));
+	}
+	return left;
 }
 
 ExpressionP Expression::parseEquality(Lexer& lexer)
 {
-	auto left = parseCompare(lexer);
-
-	while (true) {
-		auto tokenType = lexer.type();
-		switch (tokenType) {
-			case TokenType::Eq:
-			case TokenType::Not_eq:
-				lexer.next();
-				left = std::make_unique<BinaryExpression>(
-					tokenType,
-					std::move(left),
-					parseCompare(lexer)
-				);
-				break;
-			default:
-				return left;
-		}
+	auto left = parseRelational(lexer);
+	for (auto tokenType = lexer.type(); tokenType == TokenType::Eq || tokenType == TokenType::Not_eq; tokenType = lexer.type()) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseRelational(lexer) );
 	}
+	return left;
 }
 
-ExpressionP Expression::parseCompare(Lexer& lexer)
+ExpressionP Expression::parseRelational(Lexer& lexer)
 {
 	auto left = parseSum(lexer);
-
-	auto tokenType = lexer.type();
-	switch (tokenType) {
-		case TokenType::Lt:
-		case TokenType::Gt:
-		case TokenType::Le:
-		case TokenType::Ge:
-			lexer.next();
-			return std::make_unique<BinaryExpression>(
-				tokenType,
-				std::move(left),
-				parseSum(lexer)
-			);
+	for (auto tokenType = lexer.type(); tokenType == TokenType::Lt || tokenType == TokenType::Gt || tokenType == TokenType::Le || tokenType == TokenType::Ge; tokenType = lexer.type()) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseSum(lexer) );
 	}
-
 	return left;
 }
 
 ExpressionP Expression::parseSum(Lexer& lexer)
 {
 	auto left = parseProduct(lexer);
-
-	while(true) {
-		auto tokenType = lexer.type();
-		switch (tokenType) {
-			case TokenType::Plus:
-			case TokenType::Minus:
-				lexer.next();
-				left = std::make_unique<BinaryExpression>(
-					tokenType,
-					std::move(left),
-					parseProduct(lexer)
-				);
-				break;
-			default:
-				return left;
-		}
+	for (auto tokenType = lexer.type(); tokenType == TokenType::Plus || tokenType == TokenType::Minus; tokenType = lexer.type()) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseProduct(lexer) );
 	}
+	return left;
 }
 
 ExpressionP Expression::parseProduct(Lexer& lexer)
 {
 	auto left = parseArrayIndex(lexer);
-
-	while(true) {
-		auto tokenType = lexer.type();
-		switch (tokenType) {
-			case TokenType::Asterisk:
-			case TokenType::Slash:
-				lexer.next();
-				left = std::make_unique<BinaryExpression>(
-					tokenType,
-					std::move(left),
-					parseArrayIndex(lexer)
-				);
-				break;
-			default:
-				return left;
-		}
+	for (auto tokenType = lexer.type(); tokenType == TokenType::Asterisk || tokenType == TokenType::Slash || tokenType == TokenType::Percent; tokenType = lexer.type()) {
+		lexer.next();
+		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseArrayIndex(lexer) );
 	}
+	return left;
 }
 
 ExpressionP Expression::parseArrayIndex(Lexer& lexer)
 {
 	auto left = parsePrefix(lexer);
+	for (auto tokenType = lexer.type(); tokenType == TokenType::Lbracket; tokenType = lexer.type()) {
+		lexer.next();
+		auto right = Expression::parse(lexer);
+		lexer.fetch(TokenType::Rbracket);
 
-	while(true) {
-		auto tokenType = lexer.type();
-		switch (tokenType) {
-			case TokenType::Lbracket:
-			{
-				lexer.next();
-				auto right = Expression::parse(lexer);
-				lexer.fetch(TokenType::Rbracket);
-
-				left = std::make_unique<ArrayIndexExpression>(
-					std::move(left),
-					std::move(right)
-				);
-				break;
-			}
-			default:
-				return left;
-		}
+		left = std::make_unique<ArrayIndexExpression>(
+			std::move(left),
+			std::move(right)
+		);
 	}
+	return left;
 }
 
 ExpressionP Expression::parsePrefix(Lexer& lexer)
@@ -140,6 +134,7 @@ ExpressionP Expression::parsePrefix(Lexer& lexer)
 			return ArrayLiteralExpression::parse(lexer);
 		case TokenType::Minus:
 		case TokenType::Bang:
+		case TokenType::Tilde:
 			lexer.next();
 			return std::make_unique<UnaryExpression>(
 				tokenType,
@@ -238,8 +233,12 @@ Value BinaryExpression::eval(EnvironmentP env) const
 				switch(op) {
 					case TokenType::Asterisk: return Value{left * right};
 					case TokenType::Slash:    return Value{left / right};
+					case TokenType::Percent:  return Value{left % right};
 					case TokenType::Plus:     return Value{left + right};
 					case TokenType::Minus:    return Value{left - right};
+					case TokenType::BitAnd:   return Value{left & right};
+					case TokenType::BitOr:    return Value{left | right};
+					case TokenType::BitEor:   return Value{left ^ right};
 					case TokenType::Lt:       return Value{left < right};
 					case TokenType::Gt:       return Value{left > right};
 					case TokenType::Le:       return Value{left <=right};
@@ -251,6 +250,8 @@ Value BinaryExpression::eval(EnvironmentP env) const
 			},
 			[this](bool left, bool right) -> Value{
 				switch(op) {
+					case TokenType::And:      return Value{left && right};
+					case TokenType::Or:       return Value{left || right};
 					case TokenType::Eq:       return Value{left == right};
 					case TokenType::Not_eq:   return Value{left != right};
 				}
@@ -295,6 +296,8 @@ Value UnaryExpression::eval(EnvironmentP env) const
 			if (!std::holds_alternative<bool>(evaluatedValue.data))
 				return Value{false};
 			return Value{!std::get<bool>(evaluatedValue.data)};
+		case TokenType::Tilde:
+			return Value{~std::get<int64_t>(evaluatedValue.data)};
 	}
 	throw std::runtime_error("invalid unary operation: " + std::to_string(op));
 }
