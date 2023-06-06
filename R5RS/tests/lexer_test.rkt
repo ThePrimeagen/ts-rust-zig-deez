@@ -77,10 +77,24 @@
                 (cons EQ "==")
                 (cons INT "10")
                 (cons SEMICOLON ";")
+                (cons MONKEY_STRING "foobar ")
                 (cons INT "10")
                 (cons NOT_EQ "!=")
                 (cons INT "9")
                 (cons SEMICOLON ";")
+                (cons MONKEY_STRING "foo \" bar")
+                (cons SEMICOLON ";")
+                (cons LBRACKET "[")
+                (cons INT "1")
+                (cons COMMA ",")
+                (cons INT "2")
+                (cons RBRACKET "]")
+                (cons SEMICOLON ";")
+                (cons LBRACE "{")
+                (cons MONKEY_STRING "foo")
+                (cons COLON ":")
+                (cons MONKEY_STRING "bar")
+                (cons RBRACE "}")
                 (cons EOF "")
             ))
   (define l (new-lexer "let five = 5;
@@ -97,7 +111,11 @@ let ten = 10;
    } else {
        return false;}
 10 == 10;
+\"foobar \"
 10 != 9;
+\"foo \\\" bar\";
+[1, 2];
+{\"foo\": \"bar\"}
 "))
 
   
@@ -111,7 +129,7 @@ let ten = 10;
                      )
                     (
                      (not (or (char-eq? (token-literal t) (cdr token)) (string=? (token-literal t) (cdr token))))
-                     (error (format "tests[" index "] - literal wrong. expected " (cdr token) " got " (token-literal t)))
+                     (error (format "tests[" index "] - literal wrong. expected '" (cdr token) "' got '" (token-literal t) "'"))
                      ))
               (set! index (+ index 1))) tests))
 
