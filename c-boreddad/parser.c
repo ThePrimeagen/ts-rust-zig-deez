@@ -1,9 +1,12 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "token.h"
 #include "lexer.h"
 #include "ast.h"
 #include "parser.h"
+
+void parser_peek_error(Parser* p, TokenT type);
 
 static void parser_next_token(Parser* p)
 {
@@ -11,33 +14,39 @@ static void parser_next_token(Parser* p)
     p->peek = lexer_next_token(p->l);
 }
 
-Parser* parser_new(Lexer* l)
+static ParserErorrs* init_errors(size_t initial_cap)
 {
-    Parser* p;
-    p = calloc(1, sizeof *p);
-    if (p == NULL)
+    ParserErorrs* errors;
+
+    errors = calloc(1, sizeof *errors);
+    if (errors == NULL)
     {
         return NULL;
     }
-    p->l = l;
 
-    parser_next_token(p);
-    parser_next_token(p);
-    return p;
+    errors->values = calloc(initial_cap, sizeof(char*));
+    if (errors->values == NULL)
+    {
+        free(errors);
+        return NULL;
+    }
+
+    errors->cap = initial_cap;
+
+    return errors;
 }
 
 static Statements* create_statemets(size_t initial_cap)
 {
     Statements* ss;
-    ss = calloc(1, sizeof *ss);
 
+    ss = calloc(1, sizeof *ss);
     if (ss == NULL)
     {
         return NULL;
     }
 
     ss->values = calloc(initial_cap, sizeof(void*));
-
     if (ss->values == NULL)
     {
         free(ss);
@@ -52,6 +61,7 @@ static Statements* create_statemets(size_t initial_cap)
 static Identifier* identifier_new(Token* tok)
 {
     Identifier* ident;
+
     ident = calloc(1, sizeof *ident);
     if (ident == NULL)
     {
@@ -81,12 +91,69 @@ static uint8_t parser_expect_peek(Parser* p, TokenT type)
         parser_next_token(p);
         return 1;
     }
+    parser_peek_error(p, type);
     return 0;
+}
+
+static char* format_error_str(Parser* p, TokenT type)
+{
+    char* error_str;
+    char *exp_token_type_str, *peek_token_type_str;
+    size_t size, exp_token_type_str_size, peek_token_type_str_size;
+
+    exp_token_type_str = get_token_type_str(type);
+    peek_token_type_str = get_token_type_str(p->peek->type);
+
+    exp_token_type_str_size = strlen(exp_token_type_str);
+    peek_token_type_str_size = strlen(peek_token_type_str);
+
+    size = 41 + exp_token_type_str_size + peek_token_type_str_size + 1;
+
+    error_str = calloc(size, sizeof *error_str);
+
+    if (error_str == NULL)
+    {
+        return NULL;
+    }
+
+    strncpy(error_str, "expected next token to be ", 27);
+    strncat(error_str, exp_token_type_str, exp_token_type_str_size);
+    strncat(error_str, "s, got ", 8);
+    strncat(error_str, peek_token_type_str, peek_token_type_str_size);
+    strncat(error_str, " instead", 9);
+
+    return error_str;
+}
+
+void append_errors(ParserErorrs* pe, char* e)
+{
+    if (pe->len == pe->cap)
+    {
+        pe->cap += pe->cap;
+        pe->values = realloc(pe->values, sizeof(char*) * pe->cap);
+        memset(pe->values + pe->len, 0, pe->cap - pe->len);
+    }
+
+    pe->values[pe->len] = e;
+    pe->len++;
+}
+
+void parser_peek_error(Parser* p, TokenT type)
+{
+    char* error_str;
+
+    error_str = format_error_str(p, type);
+    if (error_str == NULL)
+    {
+        return;
+    }
+    append_errors(p->errors, error_str);
 }
 
 static LetStatement* parser_parse_let_statement(Parser* p)
 {
     LetStatement* stmt;
+
     stmt = calloc(1, sizeof *stmt);
     if (stmt == NULL)
     {
@@ -127,6 +194,7 @@ static LetStatement* parser_parse_let_statement(Parser* p)
 static Statement* parser_parse_statement(Parser* p)
 {
     Statement* s;
+
     s = calloc(1, sizeof *s);
     if (s == NULL)
     {
@@ -163,9 +231,34 @@ static void append_statements(Statements* ss, Statement* s)
     ss->len++;
 }
 
+Parser* parser_new(Lexer* l)
+{
+    Parser* p;
+
+    p = calloc(1, sizeof *p);
+    if (p == NULL)
+    {
+        return NULL;
+    }
+
+    p->errors = init_errors(32);
+    if (p->errors == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+
+    p->l = l;
+
+    parser_next_token(p);
+    parser_next_token(p);
+    return p;
+}
+
 Program* parse_program(Parser* p)
 {
     Program* program;
+
     program = calloc(1, sizeof *program);
     if (program == NULL)
     {
@@ -201,4 +294,14 @@ size_t program_statements_len(Program* p)
         return 0;
     }
     return p->statements->len;
+}
+
+char** parser_errors(Parser* p)
+{
+    return p->errors->values;
+}
+
+size_t parser_errors_length(Parser* p)
+{
+    return p->errors->len;
 }
