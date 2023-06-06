@@ -16,14 +16,27 @@ const (
 	tokenInt
 	tokenAssign
 	tokenPlus
+	tokenMinus
+	tokenBang
+	tokenAsterisk
+	tokenSlash
+	tokenLessThan
+	tokenGreaterThan
+	tokenEqual
+	tokenNotEqual
 	tokenComma
 	tokenSemicolon
 	tokenLParen
 	tokenRParen
-	tokenLBrace
-	tokenRBrace
+	tokenLSquirly
+	tokenRSquirly
 	tokenFunction
 	tokenLet
+	tokenTrue
+	tokenFalse
+	tokenIf
+	tokenElse
+	tokenReturn
 )
 
 type token struct {
@@ -45,8 +58,13 @@ func (t token) String() string {
 }
 
 var keywords = map[string]tokenType{
-	"fn":  tokenFunction,
-	"let": tokenLet,
+	"fn":     tokenFunction,
+	"let":    tokenLet,
+	"true":   tokenTrue,
+	"false":  tokenFalse,
+	"if":     tokenIf,
+	"else":   tokenElse,
+	"return": tokenReturn,
 }
 
 const eof = -1
@@ -87,21 +105,43 @@ func lex(l *Lexer) stateFn {
 		case isSpace(r):
 			l.ignore()
 		case r == '=':
-			l.emit(tokenAssign)
+			if l.peek() == '=' {
+				l.next()
+				l.emit(tokenEqual)
+			} else {
+				l.emit(tokenAssign)
+			}
+		case r == '+':
+			l.emit(tokenPlus)
+		case r == '-':
+			l.emit(tokenMinus)
+		case r == '!':
+			if l.peek() == '=' {
+				l.next()
+				l.emit(tokenNotEqual)
+			} else {
+				l.emit(tokenBang)
+			}
+		case r == '/':
+			l.emit(tokenSlash)
+		case r == '*':
+			l.emit(tokenAsterisk)
+		case r == '<':
+			l.emit(tokenLessThan)
+		case r == '>':
+			l.emit(tokenGreaterThan)
 		case r == ';':
 			l.emit(tokenSemicolon)
+		case r == ',':
+			l.emit(tokenComma)
 		case r == '(':
 			l.emit(tokenLParen)
 		case r == ')':
 			l.emit(tokenRParen)
-		case r == ',':
-			l.emit(tokenComma)
-		case r == '+':
-			l.emit(tokenPlus)
 		case r == '{':
-			l.emit(tokenLBrace)
+			l.emit(tokenLSquirly)
 		case r == '}':
-			l.emit(tokenRBrace)
+			l.emit(tokenRSquirly)
 		case '0' <= r && r <= '9':
 			l.backup()
 			return lexNumber
