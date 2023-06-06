@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        description: Forces to replace line ending by the UNIX 'lf' character.
+  - repo: local
+    hooks:
+      - id: flake8
+        name: Check flake8 syntax
+        entry: flake8  python/deez_py python/tests
+        pass_filenames: false
+        language: system
+        types: [python3]
+      - id: isort
+        name: Sort imports alphabetically
+        entry: isort  python/deez_py tests --check-only --diff
+        pass_filenames: false
+        language: system
+        types: [python]
+      - id: black
+        name: Run black code formatter
+        entry: black python/deez_py --check
+        pass_filenames: false
+        language: system
+        types: [python]
+      - id: rstcheck
+        name: RChecks syntax of reStructuredText
+        entry: rstcheck python/README.rst
+        pass_filenames: false
+        language: system
+        types: [python]

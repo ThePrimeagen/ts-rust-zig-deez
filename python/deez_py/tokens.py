@@ -1,14 +1,35 @@
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass,
+)
 
-from monkey.token_types import *
+from .token_types import *
 
 
 @dataclass
 class Token:
+    """
+    Represents a token with its type and corresponding literal value.
+
+    Args:
+        type (TokenType): The type of the token.
+        literal (str): The literal value of the token.
+
+    Attributes:
+        type (TokenType): The type of the token.
+        literal (str): The literal value of the token.
+
+    Examples:
+        >>> token = Token(TokenType.Integer, "42")
+        >>> token.type
+        <TokenType.Integer: 'INTEGER'>
+        >>> token.literal
+        '42'
+    """
+
     type: TokenType
     literal: str
 
-    def __init__(self, token_type: TokenType, literal):
+    def __init__(self, token_type: TokenType, literal: str):
         self.type = token_type
         self.literal = literal
 
