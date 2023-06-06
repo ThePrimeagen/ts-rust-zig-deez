@@ -6,11 +6,16 @@
 #include "lexer/lexer.hh"
 #include "parser/program.hpp"
 #include "parser/environment.hpp"
-
+#include "parser/builtins.hpp"
 
 int main(int argc, char *const argv[])
 {
 	const auto global = std::make_shared<Environment>();
+	for (const auto& builtin : BuiltinFunctionExpression::builtins)
+		global->set(builtin.name, Value{BoundFunction{&builtin, {}}});
+	for (const auto& [token, builtin] : BuiltinBinaryFunctionExpression::builtins)
+		global->set(builtin->name, Value{BoundFunction{builtin, {}}});
+
 	std::vector<StatementP> statements;
 	std::vector<Lexer> lexers;
 

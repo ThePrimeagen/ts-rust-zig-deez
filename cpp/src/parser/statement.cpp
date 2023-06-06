@@ -70,15 +70,29 @@ Value ReturnStatement::eval(EnvironmentP env) const
 
 // ReturnStatement
 
-BlockStatement::BlockStatement(std::vector<StatementP>&& statements)
-: statements{std::move(statements)}
-{
-}
-
 void ReturnStatement::print(std::ostream& os) const
 {
 	os << "return " << *value << ";";
 }
+
+
+// StatementList
+
+Value StatementList::eval(EnvironmentP env) const
+{
+	Value value;
+	for (const auto& statement : statements) {
+		value = statement->eval(env);
+	}
+	return value;
+}
+
+void StatementList::print(std::ostream& os) const
+{
+	for (const auto& statement : statements)
+		os << *statement << ";\n";
+}
+
 
 
 // BlockStatement
@@ -104,23 +118,12 @@ ExpressionP BlockStatement::parse(Lexer& lexer)
 	);
 }
 
-Value BlockStatement::eval(EnvironmentP env) const
-{
-	Value value;
-	for (const auto& statement : statements) {
-		value = statement->eval(env);
-	}
-	return value;
-}
-
 void BlockStatement::print(std::ostream& os) const
 {
-	os << "{\n";
-	for (const auto& statement : statements)
-		os << *statement << ";\n";
+os << "{\n";
+	StatementList::print(os);
 	os << "}\n";
 }
-
 
 
 // IfStatement

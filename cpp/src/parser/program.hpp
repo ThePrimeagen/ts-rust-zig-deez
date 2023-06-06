@@ -10,6 +10,7 @@ using ProgramP = std::unique_ptr<Program>;
 class Lexer;
 struct Program : Expression
 {
+	Program();
 	static ProgramP parse(Lexer& lexer);
 	void add(Lexer& lexer);
 
@@ -19,6 +20,7 @@ struct Program : Expression
 	void print(std::ostream& str) const override;
 
 	std::vector<StatementP> statements;
+	std::shared_ptr<Environment> global;
 };
 
 std::ostream& operator<<(std::ostream& os, const Program& program);

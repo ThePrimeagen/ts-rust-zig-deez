@@ -63,7 +63,7 @@ std::string Value::typeName() const
 		[](const bool value)       { return "bool"; },
 		[](const Integer value)    { return "Integer"; },
 		[](const String& value)    { return "String"; },
-		[](const BoundFunction&    value) { return "fn"; },
+		[](const BoundFunction& value) { return "fn"; },
 		[](const Array& value)     { return "Array"; },
 		[](const auto& _)          { return "unknown"; }
 	},

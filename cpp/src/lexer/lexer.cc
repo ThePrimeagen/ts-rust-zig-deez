@@ -72,6 +72,8 @@ Token Lexer::nextToken() noexcept
 	switch (ch) {
 		case ',': return { TokenType::Comma     };
 		case ';': return { TokenType::Semicolon };
+		case '$': return { TokenType::Dollar    };
+
 		case '(': return { TokenType::Lparen    };
 		case ')': return { TokenType::Rparen    };
 		case '{': return { TokenType::Lsquirly  };

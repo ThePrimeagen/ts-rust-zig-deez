@@ -3,9 +3,9 @@ let abs = fn(x)
 	if (x < 0) -x
 	else x
 
-let and = fn(xs) foldr(fn(a, b) { a && b }, true, xs)
+let and = fn(xs) foldr($&&, true, xs)
 
-let concat = fn(xs) foldr(fn(a, b) { a + b }, [], xs)
+let concat = fn(xs) foldr($+, [], xs)
 
 let const = fn(a, b) a
 
@@ -75,7 +75,7 @@ let max2 = fn(a, b)
 	if (a >= b) a
 	else b
 
-let member = fn(xs, a) map(fn(b) { a == b }, xs)
+let member = fn(xs, a) map($==, xs)
 
 let merge = fn(as, bs)
 	if (len(as) == 0) bs
@@ -95,11 +95,11 @@ let min = fn(xs) foldl1(min2, xs)
 
 let neg = fn(a) -a
 
-let or = fn(xs) foldr(fn(a,b) { a || b }, false)
+let or = fn(xs) foldr($||, false)
 
 let postfix = fn(a, xs) xs + [a]
 
-let product = fn(xs) foldl1(fn(a, b) { a * b }, xs)
+let product = fn(xs) foldl1($*, xs)
 
 let rep = fn(c, x)
 	if (c <= 0) []
@@ -122,7 +122,7 @@ let spaces = fn(c)
 
 let subtract = fn(x, y) y - x
 
-let sum = fn(xs) foldl(fn(a, b) { a + b }, 0)
+let sum = fn(xs) foldl($+, 0, xs)
 
 let take = fn(n, xs)
 	if (n <= 0 || (len(xs) == 0)) []

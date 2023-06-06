@@ -25,7 +25,7 @@ ExpressionP Expression::parseOr(Lexer& lexer)
 	auto left = parseAnd(lexer);
 	while (lexer.peekIs(TokenType::Or)) {
 		lexer.next();
-		left = std::make_unique<BinaryExpression>(TokenType::Or, std::move(left), parseAnd(lexer));
+		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::or_, std::move(left), parseAnd(lexer));
 	}
 	return left;
 }
@@ -35,7 +35,7 @@ ExpressionP Expression::parseAnd(Lexer& lexer)
 	auto left = parseBitOr(lexer);
 	while (lexer.peekIs(TokenType::And)) {
 		lexer.next();
-		left = std::make_unique<BinaryExpression>(TokenType::And, std::move(left), parseBitOr(lexer));
+		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::and_, std::move(left), parseBitOr(lexer));
 	}
 	return left;
 }
@@ -45,7 +45,7 @@ ExpressionP Expression::parseBitOr(Lexer& lexer)
 	auto left = parseBitXor(lexer);
 	while (lexer.peekIs(TokenType::BitOr)) {
 		lexer.next();
-		left = std::make_unique<BinaryExpression>(TokenType::BitOr, std::move(left), parseBitXor(lexer));
+		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::bitOr, std::move(left), parseBitXor(lexer));
 	}
 	return left;
 }
@@ -55,7 +55,7 @@ ExpressionP Expression::parseBitXor(Lexer& lexer)
 	auto left = parseBitAnd(lexer);
 	while (lexer.peekIs(TokenType::BitEor)) {
 		lexer.next();
-		left = std::make_unique<BinaryExpression>(TokenType::BitEor, std::move(left), parseBitAnd(lexer));
+		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::bitEor, std::move(left), parseBitAnd(lexer));
 	}
 	return left;
 }
@@ -65,7 +65,7 @@ ExpressionP Expression::parseBitAnd(Lexer& lexer)
 	auto left = parseEquality(lexer);
 	while (lexer.peekIs(TokenType::BitAnd)) {
 		lexer.next();
-		left = std::make_unique<BinaryExpression>(TokenType::BitAnd, std::move(left), parseEquality(lexer));
+		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::bitAnd, std::move(left), parseEquality(lexer));
 	}
 	return left;
 }
@@ -73,41 +73,89 @@ ExpressionP Expression::parseBitAnd(Lexer& lexer)
 ExpressionP Expression::parseEquality(Lexer& lexer)
 {
 	auto left = parseRelational(lexer);
-	for (auto tokenType = lexer.type(); tokenType == TokenType::Eq || tokenType == TokenType::Not_eq; tokenType = lexer.type()) {
-		lexer.next();
-		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseRelational(lexer) );
+	for (auto tokenType = lexer.type(); ; tokenType = lexer.type()) {
+		switch (tokenType) {
+			case TokenType::Eq:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::eq, std::move(left), parseRelational(lexer));
+				break;
+			case TokenType::Not_eq:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::neq, std::move(left), parseRelational(lexer));
+				break;
+			default:
+				return left;
+		}
 	}
-	return left;
 }
 
 ExpressionP Expression::parseRelational(Lexer& lexer)
 {
 	auto left = parseSum(lexer);
-	for (auto tokenType = lexer.type(); tokenType == TokenType::Lt || tokenType == TokenType::Gt || tokenType == TokenType::Le || tokenType == TokenType::Ge; tokenType = lexer.type()) {
-		lexer.next();
-		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseSum(lexer) );
+	for (auto tokenType = lexer.type(); ; tokenType = lexer.type()) {
+		switch (tokenType) {
+			case TokenType::Lt:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::lt, std::move(left), parseSum(lexer));
+				break;
+			case TokenType::Gt:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::gt, std::move(left), parseSum(lexer));
+				break;
+			case TokenType::Le:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::le, std::move(left), parseSum(lexer));
+				break;
+			case TokenType::Ge:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::ge, std::move(left), parseSum(lexer));
+				break;
+			default:
+				return left;
+		}
 	}
-	return left;
 }
 
 ExpressionP Expression::parseSum(Lexer& lexer)
 {
 	auto left = parseProduct(lexer);
-	for (auto tokenType = lexer.type(); tokenType == TokenType::Plus || tokenType == TokenType::Minus; tokenType = lexer.type()) {
-		lexer.next();
-		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseProduct(lexer) );
+	for (auto tokenType = lexer.type(); ; tokenType = lexer.type()) {
+		switch (tokenType) {
+			case TokenType::Plus:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::plus, std::move(left), parseProduct(lexer));
+				break;
+			case TokenType::Minus:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::minus, std::move(left), parseProduct(lexer));
+				break;
+			default:
+				return left;
+		}
 	}
-	return left;
 }
 
 ExpressionP Expression::parseProduct(Lexer& lexer)
 {
 	auto left = parseArrayIndex(lexer);
-	for (auto tokenType = lexer.type(); tokenType == TokenType::Asterisk || tokenType == TokenType::Slash || tokenType == TokenType::Percent; tokenType = lexer.type()) {
-		lexer.next();
-		left = std::make_unique<BinaryExpression>(tokenType, std::move(left), parseArrayIndex(lexer) );
+	for (auto tokenType = lexer.type(); ; tokenType = lexer.type()) {
+		switch (tokenType) {
+			case TokenType::Asterisk:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::asterisk, std::move(left), parseArrayIndex(lexer));
+				break;
+			case TokenType::Slash:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::slash, std::move(left), parseArrayIndex(lexer));
+				break;
+			case TokenType::Percent:
+				lexer.next();
+				left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::percent, std::move(left), parseArrayIndex(lexer));
+				break;
+			default:
+				return left;
+		}
 	}
-	return left;
 }
 
 ExpressionP Expression::parseArrayIndex(Lexer& lexer)
@@ -210,6 +258,33 @@ ExpressionP Expression::parseValue(Lexer& lexer)
 		case TokenType::False:
 			lexer.next();
 			return std::make_unique<BooleanLiteralExpression>(tokenType == TokenType::True);
+
+		case TokenType::Dollar:
+			lexer.next();
+			const auto& binaryToken = lexer.peek();
+			const auto binaryTokenType = binaryToken.type;
+			switch (binaryTokenType) {
+				case TokenType::Asterisk:
+				case TokenType::Slash:
+				case TokenType::Percent:
+				case TokenType::Plus:
+				case TokenType::Minus:
+				case TokenType::BitAnd:
+				case TokenType::BitOr:
+				case TokenType::BitEor:
+				case TokenType::Lt:
+				case TokenType::Gt:
+				case TokenType::Le:
+				case TokenType::Ge:
+				case TokenType::Eq:
+				case TokenType::Not_eq:
+				case TokenType::And:
+				case TokenType::Or:
+					lexer.next();
+					return std::make_unique<IdentifierExpression>(std::to_string(binaryTokenType));
+				default:
+					throw std::runtime_error("unexpected infix operator: " + std::to_string(binaryToken));
+			}
 	}
 	throw std::runtime_error("unexpected value token: '" + std::to_string(tokenType) + "'");
 }
@@ -225,74 +300,12 @@ std::ostream& operator<<(std::ostream& os, const Expression& expression)
 
 Value BinaryExpression::eval(EnvironmentP env) const
 {
-	auto evaluatedLeft = left->eval(env);
-	auto evaluatedRight = right->eval(env);
-
-	return std::visit(overloaded{
-			[this](Integer left, Integer right) -> Value {
-				switch(op) {
-					case TokenType::Asterisk: return Value{left * right};
-					case TokenType::Slash:    return Value{left / right};
-					case TokenType::Percent:  return Value{left % right};
-					case TokenType::Plus:     return Value{left + right};
-					case TokenType::Minus:    return Value{left - right};
-					case TokenType::BitAnd:   return Value{left & right};
-					case TokenType::BitOr:    return Value{left | right};
-					case TokenType::BitEor:   return Value{left ^ right};
-					case TokenType::Lt:       return Value{left < right};
-					case TokenType::Gt:       return Value{left > right};
-					case TokenType::Le:       return Value{left <=right};
-					case TokenType::Ge:       return Value{left >=right};
-					case TokenType::Eq:       return Value{left == right};
-					case TokenType::Not_eq:   return Value{left != right};
-				}
-				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
-			},
-			[this](bool left, bool right) -> Value{
-				switch(op) {
-					case TokenType::And:      return Value{left && right};
-					case TokenType::Or:       return Value{left || right};
-					case TokenType::Eq:       return Value{left == right};
-					case TokenType::Not_eq:   return Value{left != right};
-				}
-				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
-			},
-			[this](const String& left, const String& right) -> Value {
-				switch(op) {
-					case TokenType::Plus:     return {left + right};
-					case TokenType::Lt:       return {left < right};
-					case TokenType::Gt:       return {left > right};
-					case TokenType::Le:       return {left <=right};
-					case TokenType::Ge:       return {left >=right};
-					case TokenType::Eq:       return {left == right};
-					case TokenType::Not_eq:   return {left != right};
-				}
-				throw std::runtime_error("invalid infix operation " + left + " " + std::to_string(op) + " " + right);
-			},
-			[this](const Array& left, const Array& right) -> Value {
-				switch(op) {
-					case TokenType::Plus:
-					{
-						Array result;
-						std::copy(left.cbegin(), left.cend(), std::back_inserter(result));
-						std::copy(right.cbegin(), right.cend(), std::back_inserter(result));
-						return Value{result};
-					}
-				}
-				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
-			},
-			[this](const auto& left, const auto& right) -> Value {
-				throw std::runtime_error("invalid infix operation " + std::to_string(left) + " " + std::to_string(op) + " " + std::to_string(right));
-			},
-		},
-		evaluatedLeft.data,
-		evaluatedRight.data
-	);
+	return fn.call(left->eval(env), right->eval(env));
 }
 
 void BinaryExpression::print(std::ostream& os) const
 {
-	os << *left << op << *right;
+	os << *left << fn.name << *right;
 }
 
 
@@ -448,14 +461,10 @@ Value BuiltinFunctionExpression::call(
 Value IdentifierExpression::eval(EnvironmentP env) const
 {
 	auto value = env->get(identifier);
-	if (value != nil)
-		return value;
-
-	if (const auto iter = builtins.find(identifier); iter != builtins.end())
-		return Value{std::make_pair(&(iter->second), EnvironmentP{})};
-
-	std::cout << "WARNING: identifier '" + identifier + "' not found\n";
-	return nil;
+	if (value == nil) {
+		std::cout << "WARNING: identifier '" + identifier + "' not found\n";
+	}
+	return value;
 }
 
 void IdentifierExpression::print(std::ostream& os) const

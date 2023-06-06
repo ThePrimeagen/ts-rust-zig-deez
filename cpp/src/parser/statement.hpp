@@ -51,14 +51,22 @@ private:
 	const StatementP alternative;
 };
 
-struct BlockStatement : public Statement
+struct StatementList : public Statement
 {
-	BlockStatement(std::vector<StatementP>&& statements);
+	StatementList(std::vector<StatementP>&& statements)
+	: statements{std::move(statements)} {}
 
-	static StatementP parse(Lexer& lexer);
 	void print(std::ostream& str) const override;
 	virtual Value eval(EnvironmentP env) const;
 
-private:
+protected:
 	std::vector<StatementP> statements;
+};
+
+struct BlockStatement : public StatementList
+{
+	using StatementList::StatementList;
+
+	static StatementP parse(Lexer& lexer);
+	void print(std::ostream& str) const override;
 };
