@@ -1,6 +1,6 @@
-package dev.hermannm.monkeylang.jvm
+package jvm
 
-import dev.hermannm.monkeylang.Lexer
+import Lexer
 
 fun main() {
     while (true) {

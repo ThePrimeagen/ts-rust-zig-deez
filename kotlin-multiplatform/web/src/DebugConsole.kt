@@ -1,4 +1,4 @@
-﻿package dev.hermannm.monkeylang.web
+﻿package web
 
 import androidx.compose.runtime.* // ktlint-disable no-wildcard-imports
 import org.jetbrains.compose.web.dom.* // ktlint-disable no-wildcard-imports

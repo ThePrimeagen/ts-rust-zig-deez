@@ -1,4 +1,4 @@
-package dev.hermannm.monkeylang.web
+package web
 
 import org.jetbrains.compose.web.css.Style
 import org.jetbrains.compose.web.renderComposable

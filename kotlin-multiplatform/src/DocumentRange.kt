@@ -1,5 +1,3 @@
-package dev.hermannm.monkeylang
-
 data class DocumentPosition(val line: Int, val column: Int) : Comparable<DocumentPosition> {
     init {
         require(line >= 1) { "DocumentPosition line must be >= 1" }

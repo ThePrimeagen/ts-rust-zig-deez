@@ -1,6 +1,4 @@
-﻿package dev.hermannm.monkeylang
-
-import kotlin.test.Test
+﻿import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class LexerTest {

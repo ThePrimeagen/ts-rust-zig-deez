@@ -3,7 +3,6 @@ plugins {
     id("org.jmailen.kotlinter") version "3.15.0"
 }
 
-group = "dev.hermannm"
 version = "0.1.0"
 
 repositories {
