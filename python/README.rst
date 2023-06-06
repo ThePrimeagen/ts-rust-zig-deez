@@ -55,7 +55,7 @@ To manage the Python 3.10.1 virtualenv, we recommend using `poetry`_.
    # install poetry
    curl -sSL https://install.python-poetry.org | python3 -
    poetry --version
-   Poetry (version 1.5.1)
+   Poetry \(version 1.5.1\)
 
    # Having the python executable in your PATH, you can use it:
    poetry env use 3.10.1
@@ -97,7 +97,7 @@ With :code:`pip`:
    >>> lex = Lexer('=+(){},;')
    >>> for _ in range(9):
    >>>     print(lex.get_next_token())
-   ... 
+   ...
    Token(type=<TokenType.Equal: '='>, literal='=')
    Token(type=<TokenType.Plus: '+'>, literal='+')
    Token(type=<TokenType.LParen: '('>, literal='(')
@@ -110,7 +110,7 @@ With :code:`pip`:
 
 
 👨‍💻 Development
---------------
+------------------
 
 For local development, you can install all dependencies by running:
 
@@ -120,7 +120,7 @@ For local development, you can install all dependencies by running:
 
 
 🧪 Testing
-----------
+------------------
 
 .. code-block:: bash
 
@@ -130,7 +130,7 @@ For local development, you can install all dependencies by running:
 
 
 💡 Tips
--------
+------------------
 
 To run a subset of tests:
 
@@ -142,7 +142,7 @@ To run a subset of tests:
 
 
 🚀 Deploying
-------------
+------------------
 
 A reminder for maintainers on how to deploy. Run the following commands in order:
 
