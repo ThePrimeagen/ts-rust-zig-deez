@@ -1,22 +1,12 @@
 public class Main {
 
-    private final static String placeholder = """
-            let five = 5;
-            let ten = 10;
-            let add = fn(x, y) {
-                 x + y;
-            };
-            let result = add(five, ten);""";
-
     public static void main(String[] args) {
-        var lexer = new Lexer(placeholder);
+        String username = System.getProperty("user.name");
 
-        var t = lexer.nextToken();
-        while (t.type() != TokenType.EOF) {
-            System.out.println(t);
-            t = lexer.nextToken();
-        }
+        System.out.printf("Hello %s! This is the Monkey programming language!%n", username);
+        System.out.println("Feel free to type in commands!");
 
-        System.out.println(t);
+        REPL repl = new REPL();
+        repl.start(System.in, System.out);
     }
 }
