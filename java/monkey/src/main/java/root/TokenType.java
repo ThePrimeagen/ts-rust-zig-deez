@@ -1,3 +1,5 @@
+package root;
+
 import java.util.Optional;
 
 public enum TokenType {
@@ -49,7 +51,7 @@ public enum TokenType {
 
     public Token token() {
         return token.orElseThrow(() -> new IllegalArgumentException(
-                "TokenType %s doesn't have a default Token. Create one using 'createToken'".formatted(this.name())
+                "degens.TokenType %s doesn't have a default degens.Token. Create one using 'createToken'".formatted(this.name())
         ));
     }
 }

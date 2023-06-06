@@ -1,3 +1,5 @@
+package root;
+
 public class Lexer {
 
     private final String input;
