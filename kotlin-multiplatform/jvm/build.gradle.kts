@@ -40,7 +40,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("jvm.ReplKt")
+    mainClass.set("monkeylang.jvm.ReplKt")
 }
 
 // From https://slack-chats.kotlinlang.org/t/522898/how-should-i-correctly-replace-application-mainclass-set-com

@@ -1,9 +1,9 @@
-package web
+package monkeylang.web
 
-import Lexer
-import Token
-import TokenType
 import androidx.compose.runtime.Composable
+import monkeylang.Lexer
+import monkeylang.Token
+import monkeylang.TokenType
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text

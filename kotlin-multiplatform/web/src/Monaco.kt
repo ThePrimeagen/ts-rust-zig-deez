@@ -1,4 +1,4 @@
-package web
+package monkeylang.web
 
 import androidx.compose.runtime.NoLiveLiterals
 import org.w3c.dom.HTMLElement

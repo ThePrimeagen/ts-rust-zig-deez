@@ -1,4 +1,6 @@
-﻿import kotlin.text.isWhitespace
+﻿package monkeylang
+
+import kotlin.text.isWhitespace
 
 class Lexer(private val input: String) : Iterator<Token> {
     private var currentIndex: Int = 0

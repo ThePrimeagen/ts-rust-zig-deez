@@ -1,4 +1,6 @@
-﻿import kotlin.test.Test
+﻿package monkeylang
+
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class LexerTest {

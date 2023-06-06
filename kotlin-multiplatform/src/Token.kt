@@ -1,4 +1,6 @@
-﻿enum class TokenType {
+﻿package monkeylang
+
+enum class TokenType {
     Illegal,
     EndOfFile,
 

@@ -1,4 +1,4 @@
-package web
+package monkeylang.web
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
