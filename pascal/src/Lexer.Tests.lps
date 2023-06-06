@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="Lexer.Tests.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="1"/>
+        <CursorPos X="62" Y="21"/>
+        <UsageCount Value="25"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="lexertestcases.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LexerTestCases"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="88"/>
+        <CursorPos Y="108"/>
+        <UsageCount Value="25"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="lexerunit.pas"/>
+        <UnitName Value="LexerUnit"/>
+        <TopLine Value="90"/>
+        <CursorPos X="47" Y="118"/>
+        <UsageCount Value="13"/>
+        <Loaded Value="True"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="29">
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Column="34"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="73" Column="37" TopLine="46"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="108" Column="39" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="109" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="101" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="103" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="105" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="106" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="107" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="108" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="109" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="101" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="103" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="108" Column="35" TopLine="89"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="11" Column="99"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="11" Column="30"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="118" Column="45" TopLine="90"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="170" Column="28" TopLine="142"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="11" Column="30"/>
+      </Position>
+      <Position>
+        <Filename Value="lexerunit.pas"/>
+        <Caret Line="118" Column="47" TopLine="90"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="113" Column="58" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="108" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="109" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="101" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="103" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="105" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="106" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="lexertestcases.pas"/>
+        <Caret Line="101" Column="49" TopLine="88"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode="default">
+        <Mode Name="default">
+          <local>
+            <CommandLineParams Value="-a"/>
+          </local>
+        </Mode>
+      </Modes>
+    </RunParams>
+    <HistoryLists>
+      <List Name="WorkingDirectory" Type="File" Count="1"/>
+      <List Name="LaunchingApplication" Type="File" Count="1">
+        <Item1 Value="C:\Windows\system32\cmd.exe /C ${TargetCmdLine}"/>
+      </List>
+      <List Name="CommandLineParameters" Count="2">
+        <Item1 Value="-a "/>
+      </List>
+    </HistoryLists>
+  </ProjectSession>
+  <Debugging>
+    <Watches>
+      <Item>
+        <Expression Value="currentToken"/>
+      </Item>
+      <Item>
+        <Expression Value="ctokenType"/>
+      </Item>
+      <Item>
+        <Expression Value="cliteral"/>
+      </Item>
+      <Item>
+        <Expression Value="index"/>
+      </Item>
+    </Watches>
+  </Debugging>
+</CONFIG>

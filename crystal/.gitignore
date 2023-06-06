@@ -1,0 +1,7 @@
+/docs/
+/lib/
+/bin/
+/test/
+/.shards/
+
+/shard.lock

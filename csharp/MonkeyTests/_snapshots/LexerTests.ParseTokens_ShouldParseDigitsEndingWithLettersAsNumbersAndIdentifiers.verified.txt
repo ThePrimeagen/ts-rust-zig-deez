@@ -1,0 +1,3 @@
+﻿IntegerToken { Integer = 123456 }
+IdentifierToken { Identifier = abc }
+EoFToken { }

@@ -1,0 +1,20 @@
+very_good create dart_cli monkeydart --description "Thorsten Ball monkey interpreter written in Dart" --publishable --executable-name mkay
+
+dart pub add equatable meta
+
+git init
+git add . && git commit -m "Empty starter project"
+
+git remote add origin git@github.com:Fa-C-Shus/monkey-lang-in-dart
+git push -u origin main
+
+dart pub global activate pana
+
+dart pub global run pana
+
+dart format .
+
+dart pub publish --dry-run
+
+read this about auto publishing to pub.dev
+https://dart.dev/tools/pub/automated-publishing#:~:text=Configuring%20automated%20publishing%20from%20GitHub%20Actions%20allows%20anyone%20who%20can,tag%20protection%20rules%20on%20GitHub.

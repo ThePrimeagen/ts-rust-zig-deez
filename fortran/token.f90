@@ -2,74 +2,48 @@ module token
     implicit none
 
     enum, bind(c)
-        enumerator :: token_eof = 0
-        enumerator :: token_illegal = 1
-
-        ! Identifiers + literals
-        enumerator :: token_ident = 2
-        enumerator :: token_int = 3
+        enumerator :: token_eof = 0, token_illegal
+        enumerator :: token_ident, token_int
 
         ! Operators
-        enumerator :: token_assign = 4
-        enumerator :: token_plus = 5
-        enumerator :: token_minus = 6
-        enumerator :: token_bang = 7
-        enumerator :: token_asterisk = 8
-        enumerator :: token_slash = 9
-
-        enumerator :: token_lt = 10
-        enumerator :: token_gt = 11
-
-        enumerator :: token_eq = 12
-        enumerator :: token_not_eq = 13
+        enumerator :: token_assign, token_plus, token_minus, token_bang, token_asterisk, token_slash
+        enumerator :: token_lt, token_gt
+        enumerator :: token_eq, token_not_eq
 
         ! Delimiters
-        enumerator :: token_comma = 14
-        enumerator :: token_semicolon = 15
-
-        enumerator :: token_lparen = 16
-        enumerator :: token_rparen = 17
-        enumerator :: token_lbrace = 18
-        enumerator :: token_rbrace = 19
+        enumerator :: token_comma, token_semicolon
+        enumerator :: token_lparen, token_rparen, token_lbrace, token_rbrace
 
         ! Keywords
-        enumerator :: token_function = 20
-        enumerator :: token_let = 21
-        enumerator :: token_true = 22
-        enumerator :: token_false = 23
-        enumerator :: token_if = 24
-        enumerator :: token_else = 25
-        enumerator :: token_return = 26
+        enumerator :: token_function, token_let, token_true, token_false, token_if, token_else, token_return
     end enum
 
     type :: token_t
         integer :: type
-        character(len=256) :: literal
+        character(:), allocatable :: literal
     end type
-
-    type(token_t), dimension(7) :: keywords = [ &
-        token_t(token_function, "fn"), &
-        token_t(token_let, "let"), &
-        token_t(token_true, "true"), &
-        token_t(token_false, "false"), &
-        token_t(token_if, "if"), &
-        token_t(token_else, "else"), &
-        token_t(token_return, "return") &
-    ]
 contains
-    pure function ident_lookup(ident) result(tok)
+    function ident_lookup(ident) result(tok)
         character(:), allocatable, intent(in) :: ident
         type(token_t) :: tok
-        integer :: i
 
-        tok = token_t(token_ident, ident)
-
-        do i = 1, size(keywords)
-            if (keywords(i)%literal .eq. ident) then
-                tok = keywords(i)
-                exit
-            end if
-        end do
+        if (ident == "fn") then
+            tok = token_t(token_function, ident)
+        else if (ident == "let") then
+            tok = token_t(token_let, ident)
+        else if (ident == "true") then
+            tok = token_t(token_true, ident)
+        else if (ident == "false") then
+            tok = token_t(token_false, ident)
+        else if (ident == "if") then
+            tok = token_t(token_if, ident)
+        else if (ident == "else") then
+            tok = token_t(token_else, ident)
+        else if (ident == "return") then
+            tok = token_t(token_return, ident)
+        else
+            tok = token_t(token_ident, ident)
+        end if
     end function ident_lookup
 
     pure function token_name(token_type) result(name)

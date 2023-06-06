@@ -1,0 +1,20 @@
+{
+  "name": "rescript-project-template",
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    },
+    {
+      "dir": "test",
+      "subdirs": true,
+      "type": "dev"
+    }
+  ],
+  "package-specs": {
+    "module": "commonjs",
+    "in-source": false
+  },
+  "suffix": ".bs.js",
+  "bs-dev-dependencies": ["rescript-test"]
+}
