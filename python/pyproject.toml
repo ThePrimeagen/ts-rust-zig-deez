@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deez_py"
-version = "0.1.5"
+version = "0.1.6"
 description = "A Python implementation of a lexical analyzer that provides comprehensive scanning, and lookahead capabilities. It also implements a parser that comes with awesome functionalities."
 authors = [
     "Mahmoud Harmouch <business@wiseai.dev>",

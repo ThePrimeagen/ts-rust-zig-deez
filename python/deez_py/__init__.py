@@ -1,4 +1,4 @@
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 import deez_py.deez_ast as deez_ast
 from deez_py.lexer import (

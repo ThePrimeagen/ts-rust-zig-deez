@@ -9,7 +9,7 @@ from deez_py import (
 
 
 def test_version():
-    assert __version__ == "0.1.5"
+    assert __version__ == "0.1.6"
 
 
 def test_get_next_token_single_character_tokens():
