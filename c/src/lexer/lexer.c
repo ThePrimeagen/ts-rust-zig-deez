@@ -9,13 +9,14 @@ struct SLexer {
   size_t inputLength;
   size_t position;
   size_t readPosition;
-  char character;
+  char ch;
 };
 
-static void _lexerReadChar(Lexer lexer);
-static void _lexerSkipWhitespace(Lexer lexer);
-static const char *_lexerReadIdent(Lexer lexer, size_t *pLen);
-static const char *_lexerReadInt(Lexer lexer, size_t *pLen);
+static void _lexerReadChar(Lexer *lexer);
+static char _lexerPeek(Lexer *lexer);
+static void _lexerSkipWhitespace(Lexer *lexer);
+static const char *_lexerReadIdent(Lexer *lexer, size_t *len);
+static const char *_lexerReadInt(Lexer *lexer, size_t *len);
 
 static uint8_t _isLetter(char ch);
 static uint8_t _isNumber(char ch);
@@ -26,9 +27,9 @@ static TokenType _getTokenTypeFromLiteral(const char *literal, size_t len);
                               PUBLIC FUNCTIONS                                *
 *******************************************************************************/
 
-Lexer lexerCreate(const char *input) {
-  size_t len = sizeof(struct SLexer);
-  Lexer lexer = malloc(len);
+Lexer *lexerCreate(const char *input) {
+  size_t len = sizeof(Lexer);
+  Lexer *lexer = malloc(len);
   memset(lexer, 0, len);
 
   lexer->input = input;
@@ -41,12 +42,13 @@ Lexer lexerCreate(const char *input) {
   return lexer;
 }
 
-Token lexerNext(Lexer lexer) {
-  Token tok = NULL;
+#include <stdio.h>
+Token *lexerNext(Lexer *lexer) {
+  Token *tok = NULL;
 
   _lexerSkipWhitespace(lexer);
 
-  switch (lexer->character) {
+  switch (lexer->ch) {
   case '{':
     tok = tokenCreate(TokenTypeLSquirly, NULL);
     break;
@@ -68,15 +70,43 @@ Token lexerNext(Lexer lexer) {
   case '+':
     tok = tokenCreate(TokenTypePlus, NULL);
     break;
+  case '-':
+    tok = tokenCreate(TokenTypeMinus, NULL);
+    break;
   case '=':
-    tok = tokenCreate(TokenTypeEqual, NULL);
+    if (_lexerPeek(lexer) == '=') {
+      _lexerReadChar(lexer);
+      tok = tokenCreate(TokenTypeEqual, NULL);
+    } else {
+      tok = tokenCreate(TokenTypeAssign, NULL);
+    }
+    break;
+  case '!':
+    if (_lexerPeek(lexer) == '=') {
+      _lexerReadChar(lexer);
+      tok = tokenCreate(TokenTypeNotEqual, NULL);
+    } else {
+      tok = tokenCreate(TokenTypeBang, NULL);
+    }
+    break;
+  case '/':
+    tok = tokenCreate(TokenTypeSlash, NULL);
+    break;
+  case '*':
+    tok = tokenCreate(TokenTypeAsterisk, NULL);
+    break;
+  case '>':
+    tok = tokenCreate(TokenTypeGT, NULL);
+    break;
+  case '<':
+    tok = tokenCreate(TokenTypeLT, NULL);
     break;
   case '\0':
     tok = tokenCreate(TokenTypeEof, NULL);
     break;
   }
 
-  if (_isLetter(lexer->character)) {
+  if (_isLetter(lexer->ch)) {
     size_t len = 0;
     char *literal = NULL;
     const char *ident = _lexerReadIdent(lexer, &len);
@@ -88,7 +118,7 @@ Token lexerNext(Lexer lexer) {
 
     tok = tokenCreate(type, literal);
     return tok;
-  } else if (_isNumber(lexer->character)) {
+  } else if (_isNumber(lexer->ch)) {
     size_t len = 0;
     char *literal = NULL;
     const char *ident = _lexerReadInt(lexer, &len);
@@ -107,14 +137,17 @@ Token lexerNext(Lexer lexer) {
   return tok;
 }
 
-void lexerCleanup(Lexer *pLexer) {
-  free(*pLexer);
-  *pLexer = NULL;
+void lexerCleanup(Lexer **lexer) {
+  if (*lexer) {
+    free(*lexer);
+  }
+
+  *lexer = NULL;
 }
 
-Token tokenCreate(TokenType type, char *literal) {
-  size_t len = sizeof(struct SToken);
-  Token token = malloc(len);
+Token *tokenCreate(TokenType type, char *literal) {
+  size_t len = sizeof(Token);
+  Token *token = malloc(len);
   memset(token, 0, len);
 
   token->literal = literal;
@@ -123,62 +156,73 @@ Token tokenCreate(TokenType type, char *literal) {
   return token;
 }
 
-void tokenCleanup(Token *pToken) {
-  if (*pToken && (*pToken)->literal) {
-    free((*pToken)->literal);
+void tokenCleanup(Token **token) {
+  if (*token && (*token)->literal) {
+    free((*token)->literal);
   }
 
-  free(*pToken);
-  *pToken = NULL;
+  if (*token) {
+    free(*token);
+  }
+
+  *token = NULL;
 }
 
 /******************************************************************************
                               PRIVATE FUNCTIONS                               *
 *******************************************************************************/
 
-static void _lexerReadChar(Lexer lexer) {
+static void _lexerReadChar(Lexer *lexer) {
   if (lexer->readPosition >= lexer->inputLength) {
-    lexer->character = '\0';
+    lexer->ch = '\0';
   } else {
-    lexer->character = lexer->input[lexer->readPosition];
+    lexer->ch = lexer->input[lexer->readPosition];
   }
 
   lexer->position = lexer->readPosition;
   lexer->readPosition++;
 }
 
-static void _lexerSkipWhitespace(Lexer lexer) {
-  while (lexer->character == ' ' || lexer->character == '\t' ||
-         lexer->character == '\n' || lexer->character == '\r') {
+static char _lexerPeek(Lexer *lexer) {
+  if (lexer->readPosition >= lexer->inputLength) {
+    return '\0';
+  } else {
+    return lexer->input[lexer->readPosition];
+  }
+}
+
+static void _lexerSkipWhitespace(Lexer *lexer) {
+  while (lexer->ch == ' ' || lexer->ch == '\t' || lexer->ch == '\n' ||
+         lexer->ch == '\r') {
     _lexerReadChar(lexer);
   }
 }
 
-static const char *_lexerReadIdent(Lexer lexer, size_t *pLen) {
+static const char *_lexerReadIdent(Lexer *lexer, size_t *len) {
   char *result = NULL;
   size_t position = lexer->position;
 
-  while (_isLetter(lexer->character)) {
+  while (_isLetter(lexer->ch)) {
     _lexerReadChar(lexer);
   }
 
-  if (pLen) {
-    *pLen = lexer->position - position;
+  if (len) {
+    *len = lexer->position - position;
   }
 
   return lexer->input + position;
 }
 
-static const char *_lexerReadInt(Lexer lexer, size_t *pLen) {
+static const char *_lexerReadInt(Lexer *lexer, size_t *len) {
   char *result = NULL;
   size_t position = lexer->position;
 
-  while (_isNumber(lexer->character)) {
+  while (_isNumber(lexer->ch)) {
     _lexerReadChar(lexer);
   }
 
-  if (pLen) {
-    *pLen = lexer->position - position;
+  if (len) {
+    *len = lexer->position - position;
   }
 
   return lexer->input + position;
@@ -195,6 +239,16 @@ static TokenType _getTokenTypeFromLiteral(const char *literal, size_t len) {
     return TokenTypeLet;
   } else if (strncmp(literal, "fn", len) == 0) {
     return TokenTypeFunction;
+  } else if (strncmp(literal, "true", len) == 0) {
+    return TokenTypeTrue;
+  } else if (strncmp(literal, "false", len) == 0) {
+    return TokenTypeFalse;
+  } else if (strncmp(literal, "if", len) == 0) {
+    return TokenTypeIf;
+  } else if (strncmp(literal, "else", len) == 0) {
+    return TokenTypeElse;
+  } else if (strncmp(literal, "return", len) == 0) {
+    return TokenTypeReturn;
   }
 
   return TokenTypeIdent;

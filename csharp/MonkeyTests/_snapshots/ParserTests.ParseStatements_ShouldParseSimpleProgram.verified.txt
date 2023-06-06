@@ -1,0 +1,3 @@
+﻿let x = 69;
+let y = 42;
+return ((x + y) * (x - y));

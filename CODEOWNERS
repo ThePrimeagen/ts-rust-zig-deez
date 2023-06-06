@@ -2,32 +2,70 @@
 @ThePrimeagen
 
 # Degenerate language maintainers.
+/R5RS/          @Fesaa
+/bash/          @aretrosen
+/bash-twce/     @ThenWhenceComethEvil
+/bf/            @sno2
 /c/             @zivlakmilos
 /c-boreddad/    @boreddad
 /chatgpt/       @unconv
+/chezscheme/    @bjornkihlberg
+/cobol/         @kkard2
+/common-lisp/   @lh2
 /cpp/           @nicdgonzalez
+/cpp-spongman/  @Spongman
 /crystal/       @devnote-dev
-/csharp/        @MarioGK
+/csharp/        @MarioGK @TomasDurica
+/csharp2/       @leo-costa @redducks100
+/clj/           @Vikasg7
 /d/             @ToraKuma42
 /dart/          @shreyassanthu77
+/dart-funk/     @Fa-C-Shus
 /elixir/        @ryanwinchester
 /erlang/        @mikimaine
+/factor/        @TriedAngle
 /fortran/       @greuben92
 /fsharp/        @meenzen
+/gdscript/      @Abdera7mane
+/groovyc/       @knudtty
+/go/            @GiorgosAthanasopoulos
+/go-concurrent/ @amis-shokoohi
+/groovy/        @trvswgnr
+/gsheets/       @aliyss
+/haskell-newmaidumosa/      @newmaidumosa
 /haskell/       @alexjercan
-/java/          @xNaCly
+/haxe/          @koteelok
+/java/          @xNaCly @Crain-32
+/jjdsl/         @Crain-32
+/javascript/    @trvswgnr
+/nasm/          @onehunga @iamevie
+/nim/           @Echriser
 /pascal/        @attilakapostyak
 /ocaml/         @tjdevries
 /jai/           @marvhus
-/kotlin2/       @hermannm
+/kotlin-multiplatform/      @hermannm @ekgame @LizAinslie
+/kotlin-deez/   @sergushka
 /lua/           @aretrosen
-/bash/          @aretrosen
+/luajit/        @Okanoa
 /odin/          @jon-lipstate
 /php/           @wartab
+/prolog/        @Kaixi26
+/prolog2/       @luizcoro2
+/purescript/    @yornaath
 /python/        @BatikanHyt
+/reason/        @lessp
+/rescript/      @dylf
 /roc/           @bhansconnect
+/ruby/          @ayatofrench
 /rust/          @ThePrimeagen
+/rust_xiu/      @xiuxiu62
+/scratch/       @aliyss
 /typescript/    @ThePrimeagen
+/unison/        @cobaltburn
+/vlang/         @FalconEthics
+/x64_nasm/      @Sirraide
 /zig/           @ThePrimeagen
-/swift/         @marcusziade
+/swift/         @marcusziade @MatsMoll
+/holyc/         @xslendix
+/scala/         @alextsc
 /visual-cobol-micro-focus/ @LTR-Travis

@@ -18,6 +18,7 @@ Lexer* lexer_new(char* input)
     }
 
     l->input = input;
+    l->input_len = strlen(input);
 
     lexer_read_char(l);
     return l;
@@ -82,7 +83,7 @@ char* read_number(Lexer* l)
 void lexer_read_char(Lexer* l)
 {
     size_t len;
-    len = strlen(l->input);
+    len = l->input_len;
     if (l->read_position >= len)
     {
         l->ch = 0;
@@ -106,11 +107,45 @@ void skip_white_space(Lexer* l)
 
 char peek_char(Lexer* l)
 {
-    if (l->read_position >= strlen(l->input))
+    if (l->read_position >= l->input_len)
     {
         return 0;
     }
     return l->input[l->position];
+}
+
+char* get_token_type_str(TokenT t)
+{
+    switch (t) {
+        case ILLEGAL: return "ILLEGAL";
+        case EOFT: return "EOFT";
+        case IDENT: return "IDENT";
+        case INT: return "INT";
+        case ASSIGN: return "ASSIGN";
+        case PLUS: return "PLUS";
+        case MINUS: return "MINUS";
+        case BANG: return "BANG";
+        case ASTERIK: return "ASTERIK";
+        case SLASH: return "SLASH";
+        case LT: return "LT";
+        case GT: return "GT";
+        case COMMA: return "COMMA";
+        case SEMICOLON: return "SEMICOLON";
+        case LPAREN: return "LPAREN";
+        case RPAREN: return "RPAREN";
+        case LSQUIRLY: return "LSQUIRLY";
+        case RSQUIRLY: return "RSQUIRLY";
+        case FUNCTION: return "FUNCTION";
+        case LET: return "LET";
+        case TRUE: return "TRUE";
+        case FALSE: return "FALSE";
+        case IF: return "IF";
+        case ELSE: return "ELSE";
+        case RETURN: return "RETURN";
+        case EQ: return "EQ";
+        case NOT_EQ: return "NOT_EQ";
+    }
+    return "";
 }
 
 Token* lexer_next_token(Lexer* l)
@@ -234,7 +269,7 @@ Token* lexer_next_token(Lexer* l)
         lexer_read_char(l);
         return tok;
     }
-    if ((l->ch == 0) || (l->position > (strlen(l->input))))
+    if ((l->ch == 0) || (l->position > l->input_len))
     {
         tok->literal = "";
         tok->type = EOFT;

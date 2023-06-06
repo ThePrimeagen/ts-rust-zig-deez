@@ -1,0 +1,66 @@
+test/example2.monkey at (0:3): let
+test/example2.monkey at (4:4): <ident> five
+test/example2.monkey at (9:1): =
+test/example2.monkey at (11:1): <int> 5
+test/example2.monkey at (12:1): ;
+test/example2.monkey at (14:3): let
+test/example2.monkey at (18:3): <ident> ten
+test/example2.monkey at (22:1): =
+test/example2.monkey at (24:2): <int> 10
+test/example2.monkey at (26:1): ;
+test/example2.monkey at (29:3): let
+test/example2.monkey at (33:3): <ident> add
+test/example2.monkey at (37:1): =
+test/example2.monkey at (39:2): fn
+test/example2.monkey at (41:1): (
+test/example2.monkey at (42:1): <ident> x
+test/example2.monkey at (43:1): ,
+test/example2.monkey at (45:1): <ident> y
+test/example2.monkey at (46:1): )
+test/example2.monkey at (48:1): {
+test/example2.monkey at (51:1): <ident> x
+test/example2.monkey at (53:1): +
+test/example2.monkey at (55:1): <ident> y
+test/example2.monkey at (56:1): ;
+test/example2.monkey at (58:1): }
+test/example2.monkey at (59:1): ;
+test/example2.monkey at (62:3): let
+test/example2.monkey at (66:6): <ident> result
+test/example2.monkey at (73:1): =
+test/example2.monkey at (75:3): <ident> add
+test/example2.monkey at (78:1): (
+test/example2.monkey at (79:4): <ident> five
+test/example2.monkey at (83:1): ,
+test/example2.monkey at (85:3): <ident> ten
+test/example2.monkey at (88:1): )
+test/example2.monkey at (89:1): ;
+test/example2.monkey at (91:1): !
+test/example2.monkey at (92:1): -
+test/example2.monkey at (93:1): /
+test/example2.monkey at (94:1): *
+test/example2.monkey at (95:1): <int> 5
+test/example2.monkey at (96:1): ;
+test/example2.monkey at (98:1): <int> 5
+test/example2.monkey at (100:1): <
+test/example2.monkey at (102:2): <int> 10
+test/example2.monkey at (105:1): >
+test/example2.monkey at (107:1): <int> 5
+test/example2.monkey at (108:1): ;
+test/example2.monkey at (111:2): if
+test/example2.monkey at (114:1): (
+test/example2.monkey at (115:1): <int> 5
+test/example2.monkey at (117:1): <
+test/example2.monkey at (119:2): <int> 10
+test/example2.monkey at (121:1): )
+test/example2.monkey at (123:1): {
+test/example2.monkey at (126:6): return
+test/example2.monkey at (133:4): true
+test/example2.monkey at (137:1): ;
+test/example2.monkey at (139:1): }
+test/example2.monkey at (141:4): else
+test/example2.monkey at (146:1): {
+test/example2.monkey at (149:6): return
+test/example2.monkey at (156:5): false
+test/example2.monkey at (161:1): ;
+test/example2.monkey at (163:1): }
+test/example2.monkey at (165:0): <eof>
