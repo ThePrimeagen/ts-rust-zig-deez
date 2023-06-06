@@ -1,4 +1,6 @@
-from deez_py import Lexer
+from deez_py import (
+    Lexer,
+)
 
 input_str = "=+(){},;"
 lex = Lexer(input_str)

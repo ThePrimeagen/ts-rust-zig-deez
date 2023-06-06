@@ -1,12 +1,13 @@
-__author__ = """Mahmoud Harmouch"""
-__email__ = "business@wiseai.dev"
-__version__ = "0.1.3"
+__version__ = "0.1.5"
 
+import deez_py.deez_ast as deez_ast
 from deez_py.lexer import (
-    Lexer
+    Lexer,
 )
+from deez_py.parser import (
+    Parser,
+)
+import deez_py.token_types as TokenType
 from deez_py.tokens import (
     Token,
-    TokenType,
-    char_to_token_type
 )

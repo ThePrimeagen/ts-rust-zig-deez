@@ -1,12 +1,14 @@
-from dataclasses import dataclass
-from typing import Dict
+from dataclasses import (
+    dataclass,
+)
 
-from .tokens import Token, TokenType, char_to_token_type
+import deez_py.token_types as TokenType
 
-keywords: Dict[str, Token] = {
-    "fn": Token(TokenType.Function, "fn"),
-    "let": Token(TokenType.Let, "let"),
-}
+from .tokens import (
+    FIXED_TOKENS,
+    RESERVED_KEYWORDS,
+    Token,
+)
 
 
 @dataclass
@@ -31,16 +33,16 @@ class Lexer:
         >>> lex = Lexer('=+(){},;')
         >>> for _ in range(9):
         >>>     print(lex.get_next_token())
-        ... 
-        Token(type=<TokenType.Equal: '='>, literal='=')
-        Token(type=<TokenType.Plus: '+'>, literal='+')
-        Token(type=<TokenType.LParen: '('>, literal='(')
-        Token(type=<TokenType.RParen: ')'>, literal=')')
-        Token(type=<TokenType.LSquirly: '{'>, literal='{')
-        Token(type=<TokenType.RSquirly: '}'>, literal='}')
-        Token(type=<TokenType.Comma: ','>, literal=',')
-        Token(type=<TokenType.Semicolon: ';'>, literal=';')
-        Token(type=<TokenType.Eof: 'EOF'>, literal='EOF')
+        ...
+        Token(type='=', literal='=')
+        Token(type='+', literal='+')
+        Token(type='(', literal='(')
+        Token(type=')', literal=')')
+        Token(type='{', literal='{')
+        Token(type='}', literal='}')
+        Token(type=',', literal=',')
+        Token(type=';', literal=';')
+        Token(type='EOF', literal='EOF')
     """
 
     input: str
@@ -76,13 +78,38 @@ class Lexer:
             >>> lex.ch
             'c'
         """
-        if self.read_position >= self.input_length:
-            self.ch = "\0"
-        else:
-            self.ch = self.input[self.read_position]
-
+        self.ch = self.peek_char()
         self.position = self.read_position
         self.read_position += 1
+
+    def peek_char(self) -> str:
+        """
+        Returns the next character in the input string without advancing the lexer's position.
+
+        If the lexer's read position (`self.read_position`) is greater than or equal to the length
+        of the input string, the null character ("\0") is returned. Otherwise, the character at the
+        current read position is returned.
+
+        Returns:
+            str: The next character in the input string.
+
+        Examples:
+            >>> lex = Lexer("abc")
+            >>> lex.peek_char()
+            'a'
+            >>> lex.read_position = 1
+            >>> lex.peek_char()
+            'b'
+            >>> lex.read_position = 2
+            >>> lex.peek_char()
+            'c'
+            >>> lex.read_position = 3
+            >>> lex.peek_char()
+            '\\0'
+        """
+        if self.read_position >= self.input_length:
+            return "\0"
+        return self.input[self.read_position]
 
     def reset(self) -> None:
         """Resets the lexer's position to the beginning.
@@ -156,7 +183,9 @@ class Lexer:
             >>> lexer.ch
             '4'
         """
-        while self.ch != "\x00" and self.get_next_token().type not in token_names:
+        while (
+            self.ch != "\x00" and self.get_next_token().type not in token_names
+        ):
             ...
 
     def get_next_token(self) -> Token:
@@ -173,20 +202,33 @@ class Lexer:
         """
         self.skip_whitespace()
 
-        tok_type = char_to_token_type.get(self.ch, None)
-        if tok_type is not None:
-            tok = Token(tok_type, tok_type.value)
-            self.read_char()
-            return tok
+        # I dont wanna write if else for each character
+        tok = None
+        if self.ch in FIXED_TOKENS:
+            tok = FIXED_TOKENS[self.ch]
+        match tok:
+            case Token(TokenType.ASSING):
+                # PEEK
+                if self.peek_char() == "=":
+                    self.read_char()
+                    tok = FIXED_TOKENS["=="]
+            case Token(TokenType.BANG):
+                # PEEK
+                if self.peek_char() == "=":
+                    self.read_char()
+                    tok = FIXED_TOKENS["!="]
+            case None:
+                if self.is_letter(self.ch):
+                    ident = self.read_ident()
+                    if ident in RESERVED_KEYWORDS:
+                        return RESERVED_KEYWORDS[ident]
+                    return Token(TokenType.IDENT, ident)
+                elif self.ch.isdigit():
+                    return Token(TokenType.INT, self.read_int())
+                tok = Token(TokenType.ILLEGAL, TokenType.ILLEGAL)
 
-        if self.is_letter(self.ch):
-            indent = self.read_ident()
-            return keywords.get(indent, Token(TokenType.Ident, indent))
-
-        if self.ch.isdigit():
-            return Token(TokenType.Int, self.read_int())
-
-        return Token(TokenType.Illegal, self.ch)
+        self.read_char()
+        return tok
 
     def read_int(self) -> str:
         """
@@ -262,6 +304,5 @@ class Lexer:
         """
         return ch.isalpha() or ch == "_"
 
-__all__ = [
-    "Lexer"
-]
+
+__all__ = ["Lexer"]
