@@ -13,6 +13,8 @@ enum class TokenType
 
 	Comma,
 	Semicolon,
+	Dollar,
+
 	Lparen,
 	Rparen,
 	Lsquirly,
@@ -54,12 +56,12 @@ enum class TokenType
 	Return,
 };
 
-using Identifier = std::string_view;
+using Identifier = std::string;
 
 struct Token final
 {
 	TokenType type;
-	Identifier literal = {};
+	std::string_view literal = {};
 };
 
 
@@ -69,4 +71,5 @@ std::ostream& operator<<(std::ostream& os, const Token& token);
 namespace std
 {
 	std::string to_string(TokenType type);
+	std::string to_string(const Token& type);
 }

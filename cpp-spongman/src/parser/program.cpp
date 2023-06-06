@@ -2,7 +2,16 @@
 
 #include "lexer.hh"
 #include "statement.hpp"
+#include "builtins.hpp"
 
+Program::Program()
+: global{std::make_shared<Environment>()}
+{
+	for (const auto& builtin : BuiltinFunctionExpression::builtins)
+		global->set(builtin.name, Value{BoundFunction{&builtin, {}}});
+	for (const auto& [token, builtin] : BuiltinBinaryFunctionExpression::builtins)
+		global->set(builtin->name, Value{BoundFunction{builtin, {}}});
+}
 
 ProgramP Program::parse(Lexer& lexer)
 {
@@ -24,7 +33,6 @@ void Program::add(Lexer& lexer)
 
 Value Program::run()
 {
-	const auto global = std::make_shared<Environment>();
 	return eval(global);
 }
 

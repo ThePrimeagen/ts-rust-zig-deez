@@ -7,7 +7,7 @@
 #include "program.hpp"
 
 
-auto testEval(std::string str, Value expected)
+auto testEval(std::string str, const Value& expected)
 {
 	try {
 		Lexer lexer{str};
@@ -231,6 +231,11 @@ TEST(TestLexer, TestArrayIndexExpressions) {
 		{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value{2} },
 		{ "[1, 2, 3][3]", nil },
 		{ "[1, 2, 3][-1]", nil },
+
+		{ "[] + [1]", Value{ Array{ Value{1} } } },
+		{ "[1] + [2]", Value{ Array{ Value{1}, Value{2} } } },
+		{ "[1] + []", Value{ Array{ Value{1} } } },
+		{ "[1] + [2] + [3]", Value{ Array{ Value{1}, Value{2}, Value{3} } } },
 	});
 }
 
@@ -245,5 +250,22 @@ TEST(TestLexer, TestArrayBuiltinFunction) {
 		{ "last([1, 2, 3])", Value{3} },
 		{ "rest([])", nil },
 		{ "rest([1, 2, 3])", Value{ Array{ Value{2}, Value{3} } } },
+	});
+}
+
+
+TEST(TestLexer, TestFibonacciFunction) {
+	runTests({
+		{R"XXX( 
+			let fibonacci = fn(x) {
+				if (x == 0) 0
+				else {
+					if (x == 1) 1
+					else fibonacci(x - 1) + fibonacci(x - 2);
+				}
+			}
+			fibonacci(26);
+
+		)XXX", Value{121393}},
 	});
 }

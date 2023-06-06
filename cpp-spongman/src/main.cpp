@@ -6,12 +6,18 @@
 #include "lexer/lexer.hh"
 #include "parser/program.hpp"
 #include "parser/environment.hpp"
-
+#include "parser/builtins.hpp"
 
 int main(int argc, char *const argv[])
 {
 	const auto global = std::make_shared<Environment>();
+	for (const auto& builtin : BuiltinFunctionExpression::builtins)
+		global->set(builtin.name, Value{BoundFunction{&builtin, {}}});
+	for (const auto& [token, builtin] : BuiltinBinaryFunctionExpression::builtins)
+		global->set(builtin->name, Value{BoundFunction{builtin, {}}});
+
 	std::vector<StatementP> statements;
+	std::vector<Lexer> lexers;
 
 	for(;;)
 	{
@@ -20,6 +26,10 @@ int main(int argc, char *const argv[])
 			case 'f':
 			{
 				std::ifstream ifs(optarg);
+				if (!ifs) {
+					std::cerr << "could not find file: " << optarg << "\n";
+					exit(1);
+				}
 				std::string content{(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
 
 				Lexer lexer{content};
@@ -33,6 +43,7 @@ int main(int argc, char *const argv[])
 						lexer.get(TokenType::Semicolon);
 					}
 				}
+				lexers.push_back(std::move(lexer));
 				continue;
 			}
 
@@ -65,6 +76,8 @@ int main(int argc, char *const argv[])
 				lexer.get(TokenType::Semicolon);
 			}
 		}
+
+		lexers.push_back(std::move(lexer));
 
 		std::cout << value << "\n";
 	}

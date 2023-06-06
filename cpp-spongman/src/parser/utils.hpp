@@ -1,7 +1,7 @@
 #pragma once
 
-#include "expression.hpp"
-
+#include <string_view>
+#include <unordered_map>
 
 // allow string_view lookup in string-keyed map:
 
@@ -25,6 +25,3 @@ namespace detail
 template <typename Value>
 using unordered_string_map = std::unordered_map<std::string, Value, detail::string_hash, detail::string_equal>;
 //using unordered_string_set = std::unordered_set<std::string, detail::string_hash, detail::string_equal>;
-
-
-extern unordered_string_map<BuiltinFunctionExpression> builtins;

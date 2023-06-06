@@ -46,20 +46,6 @@ struct Expression
 	virtual Value eval(EnvironmentP env) const = 0;
 };
 
-struct BinaryExpression : public Expression
-{
-	BinaryExpression(TokenType op, ExpressionP&& left, ExpressionP&& right)
-	: op{op}, left{std::move(left)}, right{std::move(right)} {}
-
-	void print(std::ostream& str) const override;
-	Value eval(EnvironmentP env) const override;
-
-private:
-	TokenType op;
-	ExpressionP left;
-	ExpressionP right;
-};
-
 struct UnaryExpression : public Expression
 {
 	UnaryExpression(TokenType op, ExpressionP&& value)
@@ -105,27 +91,8 @@ protected:
 	std::vector<std::string> parameters;
 };
 
-struct BuiltinFunctionExpression : public AbstractFunctionExpression
-{
-	BuiltinFunctionExpression(
-		std::string&& name,
-		std::vector<std::string>&& parameters,
-		std::function<Value(const std::vector<Value>& arguments)>&& body)
-	: AbstractFunctionExpression{std::move(parameters)}
-	, name{std::move(name)}
-	, body{std::move(body)}
-	{}
 
-	Value call(
-		EnvironmentP closureEnv,
-		EnvironmentP callerEnv,
-		const std::vector<ExpressionP>& arguments
-	) const override;
-
-private:
-	const std::string name;
-	const std::function<Value(const std::vector<Value>& arguments)> body;
-};
+struct BuiltinBinaryFunctionExpression;
 
 struct FunctionExpression : public AbstractFunctionExpression
 {
@@ -147,6 +114,20 @@ private:
 	StatementP body;
 };
 
+struct BinaryExpression : public Expression
+{
+	BinaryExpression(const BuiltinBinaryFunctionExpression& fn, ExpressionP&& left, ExpressionP&& right)
+	: fn{fn}, left{std::move(left)}, right{std::move(right)} {}
+
+	void print(std::ostream& str) const override;
+	Value eval(EnvironmentP env) const override;
+
+private:
+	const BuiltinBinaryFunctionExpression& fn;
+	const ExpressionP left;
+	const ExpressionP right;
+};
+
 struct IdentifierExpression : public Expression
 {
 	IdentifierExpression(Identifier identifier)
@@ -161,14 +142,14 @@ private:
 
 struct IntegerLiteralExpression : public Expression
 {
-	IntegerLiteralExpression(const int64_t value)
+	IntegerLiteralExpression(const Integer value)
 	: value{value} {}
 
 	void print(std::ostream& str) const override;
 	Value eval(EnvironmentP env) const override;
 
 private:
-	const int64_t value;
+	const Integer value;
 };
 
 struct BooleanLiteralExpression : public Expression

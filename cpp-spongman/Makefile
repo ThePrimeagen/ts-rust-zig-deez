@@ -8,10 +8,13 @@ help:
 ready: fmt lint test
 
 docker-build:
-	docker build --no-cache . -t deez_$(notdir $(shell pwd))
+	docker build . -t deez_$(notdir $(shell pwd))
 
 docker-ready: docker-build
 	docker run -v $(shell pwd):/deez -t deez_$(notdir $(shell pwd))
+
+docker-repl: docker-build
+	docker run -v $(shell pwd):/deez -i -t deez_$(notdir $(shell pwd)) rlwrap ./bin/TsRustZigDeez -f prelude
 
 ##
 # Update those:
@@ -32,12 +35,19 @@ lint:
 build:
 	@echo "===> Building"
 	@mkdir -p build
-	@cmake -S . -B $(BUILD) -G Ninja
+	@cmake -S . -B $(BUILD) -G Ninja -DCMAKE_INSTALL_PREFIX=./dist
 	@cmake --build $(BUILD)
+
+install: build
+	@cmake --install $(BUILD)
 
 test: build
 	@echo "===> Testing"
 	$(BUILD)/tests/tests
+
+repl: build
+	@echo "===> Testing"
+	$(BUILD)/TsRustZigDeez -f prelude
 
 clean:
 	@echo "===> Clean"

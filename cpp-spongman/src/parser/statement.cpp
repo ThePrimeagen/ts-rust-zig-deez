@@ -28,16 +28,15 @@ StatementP LetStatement::parse(Lexer& lexer)
 	lexer.fetch(TokenType::Assign);
 
 	return std::make_unique<LetStatement>(
-		identifierToken.literal,
+		Identifier{identifierToken.literal},
 		Expression::parse(lexer)
 	);
 }
 
 Value LetStatement::eval(EnvironmentP env) const
 {
-	auto evaluatedValue = value->eval(env);
-	env->set(name, evaluatedValue);
-	return evaluatedValue;
+	env->set(name, value->eval(env));
+	return nil;
 }
 
 void LetStatement::print(std::ostream& os) const
@@ -71,15 +70,29 @@ Value ReturnStatement::eval(EnvironmentP env) const
 
 // ReturnStatement
 
-BlockStatement::BlockStatement(std::vector<StatementP>&& statements)
-: statements{std::move(statements)}
-{
-}
-
 void ReturnStatement::print(std::ostream& os) const
 {
 	os << "return " << *value << ";";
 }
+
+
+// StatementList
+
+Value StatementList::eval(EnvironmentP env) const
+{
+	Value value;
+	for (const auto& statement : statements) {
+		value = statement->eval(env);
+	}
+	return value;
+}
+
+void StatementList::print(std::ostream& os) const
+{
+	for (const auto& statement : statements)
+		os << *statement << ";\n";
+}
+
 
 
 // BlockStatement
@@ -105,23 +118,12 @@ ExpressionP BlockStatement::parse(Lexer& lexer)
 	);
 }
 
-Value BlockStatement::eval(EnvironmentP env) const
-{
-	Value value;
-	for (const auto& statement : statements) {
-		value = statement->eval(env);
-	}
-	return value;
-}
-
 void BlockStatement::print(std::ostream& os) const
 {
-	os << "{\n";
-	for (const auto& statement : statements)
-		os << *statement << ";\n";
+os << "{\n";
+	StatementList::print(os);
 	os << "}\n";
 }
-
 
 
 // IfStatement
@@ -158,7 +160,7 @@ Value IfStatement::eval(EnvironmentP env) const
 	auto value = condition->eval(env);
 	auto truthyValue = std::visit(overloaded{
 		[](bool val)                 { return val; },
-		[](int64_t val)              { return val != 0; },
+		[](Integer val)              { return val != 0; },
 		[](const auto& val) {
 			throw std::runtime_error("invalid condition: " + std::to_string(val));
 			return false;
