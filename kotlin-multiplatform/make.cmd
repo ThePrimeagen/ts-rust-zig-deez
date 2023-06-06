@@ -54,7 +54,7 @@ endlocal
 
 :"test-lexer"
 	echo ^=^=^=^> Testing lexer
-	call .\gradlew.bat test --tests dev.hermannm.monkeylang.LexerTest
+	call .\gradlew.bat test --tests monkeylang.LexerTest
 	if %test_all%=="yes" goto "test-ast" else goto exit
 
 :"test-ast"

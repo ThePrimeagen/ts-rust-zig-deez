@@ -4,7 +4,6 @@
     application
 }
 
-group = "dev.hermannm"
 version = "0.1.0"
 
 repositories {
@@ -41,7 +40,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("dev.hermannm.monkeylang.jvm.ReplKt")
+    mainClass.set("monkeylang.jvm.ReplKt")
 }
 
 // From https://slack-chats.kotlinlang.org/t/522898/how-should-i-correctly-replace-application-mainclass-set-com

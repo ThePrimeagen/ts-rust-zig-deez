@@ -1,4 +1,4 @@
-﻿package dev.hermannm.monkeylang
+﻿package monkeylang
 
 enum class TokenType {
     Illegal,

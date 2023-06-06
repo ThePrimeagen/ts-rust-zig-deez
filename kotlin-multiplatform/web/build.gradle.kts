@@ -4,7 +4,6 @@
     id("org.jetbrains.compose").version("1.4.0")
 }
 
-group = "dev.hermannm"
 version = "0.1.0"
 
 repositories {

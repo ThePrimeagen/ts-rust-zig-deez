@@ -1,4 +1,4 @@
-﻿package dev.hermannm.monkeylang
+﻿package monkeylang
 
 import kotlin.text.isWhitespace
 

@@ -1,4 +1,4 @@
-package dev.hermannm.monkeylang
+package monkeylang
 
 data class DocumentPosition(val line: Int, val column: Int) : Comparable<DocumentPosition> {
     init {

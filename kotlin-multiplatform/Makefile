@@ -28,7 +28,7 @@ test: test-lexer test-ast test-parser
 
 test-lexer:
 	@echo "===> Testing lexer"
-	./gradlew test --tests dev.hermannm.monkeylang.LexerTest
+	./gradlew test --tests monkeylang.LexerTest
 
 test-ast:
 	@echo "===> Testing AST"
