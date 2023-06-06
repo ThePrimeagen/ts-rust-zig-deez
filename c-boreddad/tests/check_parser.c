@@ -30,6 +30,7 @@ let foobar = 838383\
     ck_assert_ptr_nonnull(program);
     len = program_statements_len(program);
     ck_assert_uint_eq(len, 3);
+
     for (i = 0; i < 3; i++)
     {
         LetStatement* stmt;
@@ -48,6 +49,39 @@ let foobar = 838383\
 }
 END_TEST
 
+START_TEST(test_errors)
+{
+    char* input = "\
+let x = 5;\n\
+let = 10\n\
+let foobar = 838383\
+";
+    Lexer* l;
+    Parser* p;
+    Program* program;
+    ParserErorrs* errs;
+    size_t i, len;
+
+    l = lexer_new(input);
+    ck_assert_ptr_nonnull(l);
+    p = parser_new(l);
+    ck_assert_ptr_nonnull(p);
+
+    program = parse_program(p);
+    ck_assert_ptr_nonnull(program);
+
+    errs = p->errors;
+    len = parser_errors_length(p);
+
+    for (i = 0; i < len; i++)
+    {
+        printf("%s\n", errs->values[i]);
+    }
+
+    ck_assert_uint_eq(1, 1);
+}
+END_TEST
+
 Suite* ht_suite()
 {
     Suite* s;
@@ -55,6 +89,7 @@ Suite* ht_suite()
     s = suite_create("lexer");
     tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_it_works);
+    tcase_add_test(tc_core, test_errors);
     suite_add_tcase(s, tc_core);
     return s;
 }
