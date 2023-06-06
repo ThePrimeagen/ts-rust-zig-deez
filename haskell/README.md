@@ -1010,29 +1010,47 @@ newLexer i = Lexer
     }
 ```
 
-The `peek`, `current` and `advance` functions will look like the following
+Since our `LexerT` is an instance of `MonadState` we can use the combinators
+and operators provided by the `lens` library.
+One of these operators is `use :: MonadState s m => Lens s a -> m a` which
+simply gets the current state and returns the focused field.
+Therefore the `peek` and `current` functions will look like the following
 
 ```haskell
 peek :: LexerT Char
 peek = do
-    lexer <- get
-    pure $ fromMaybe '\0' ((lexer ^. input) BS.!? (lexer ^. readPosition))
+    readPos <- use readPosition
+    buffer <- use input
+    pure $ fromMaybe '\0' (buffer BS.!? readPos)
 
 current :: LexerT Char
-current = do
-    lexer <- get
-    pure $ lexer ^. ch
-
-advance :: LexerT ()
-advance = modify $ \lexer ->
-    lexer
-    & ch .~ fromMaybe '\0' ((lexer ^. input) BS.!? (lexer ^. readPosition))
-    & position .~ lexer ^. readPosition
-    & readPosition +~ 1
+current = use ch
 ```
 
-and this represents the only major change. I guess it is more of a prefernce,
-which one you like more.
+The `(.=) :: MonadState s m => Lens s a -> a -> m ()` operators allows us
+to set the field, focused by the lens on the lhs, of the current state
+to the value of the rhs.
+There are also operators for modifying `%=`, adding `+=`, etc..
+By prepending `<` to the operator it will return the new value
+of the focused field and prepending `<<` will return the old value.
+Thus we can write the `advance` function like this
+
+```haskell
+advance :: LexerT ()
+advance = do
+    readPos <- readPosition <<+= 1 -- Increment and return the old value.
+    buffer <- use input
+    ch .= fromMaybe '\0' (buffer BS.!? readPos)
+    position .= readPos
+```
+
+Notice that `<<+=` and `.=` are user defined operators,
+while `<-` is the language syntax for monadic bind.
+
+The lens library also provides `Prism`s and `Traversal`s as a very powerfull
+way to work with sum types and containers.
+However I think for a simple program like this lenses are overkill but
+I guess it is more of a prefernce, which one you like more.
 
 Personally I prefer to use `{-# LANGUAGE RecordWildCards #-}`, rather than
 lens, which allows you to do the following
