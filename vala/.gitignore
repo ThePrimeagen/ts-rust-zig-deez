@@ -4,7 +4,8 @@
 
 /*.h
 /src/*.c
-/monkey
+/monkey-repl
+/monkey-test
 
 # User-specific files
 *.rsuser
