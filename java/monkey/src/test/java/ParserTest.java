@@ -2,10 +2,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import root.Lexer;
 import root.Parser;
+import root.Token;
 import root.TokenType;
-import root.ast.LetStatement;
-import root.ast.ReturnStatement;
-import root.ast.Statement;
+import root.ast.*;
 
 import java.util.List;
 
@@ -55,6 +54,24 @@ public class ParserTest {
             Assertions.assertTrue(statement instanceof ReturnStatement);
             Assertions.assertEquals(TokenType.RETURN.token().literal(), statement.tokenLiteral());
         }
+    }
+
+    @Test
+    void testString() {
+        var program = new Program() {
+            {
+                statements.add(
+                        new LetStatement(TokenType.LET.token()) {
+                            {
+                                name = new Identifier(TokenType.IDENT.createToken("myVar"), "myVar");
+                                value = new Identifier(TokenType.IDENT.createToken("anotherVar"), "anotherVar");
+                            }
+                        }
+                );
+            }
+        };
+
+        Assertions.assertEquals("let myVar = anotherVar;", program.toString());
     }
 
     private void testStatement(Statement statement, String name) {
