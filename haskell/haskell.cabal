@@ -98,7 +98,7 @@ executable haskell
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:    Options
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -106,6 +106,7 @@ executable haskell
     -- Other library packages from which modules are imported.
     build-depends:
         base ^>=4.17.1.0,
+        optparse-applicative ^>= 0.18.0.0,
         haskell
 
     -- Directories containing source files.
@@ -139,5 +140,5 @@ test-suite haskell-test
     -- Test dependencies.
     build-depends:
         base ^>=4.17.1.0,
-        HUnit,
+        HUnit ^>= 1.6.2.0,
         haskell
