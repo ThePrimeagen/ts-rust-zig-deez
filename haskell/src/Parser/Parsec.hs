@@ -5,7 +5,7 @@ module Parser.Parsec where
 import AST
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, between, choice, optional, parse, satisfy, sepBy, sepEndBy, try, (<|>))
+import Text.Megaparsec (Parsec, anySingle, between, choice, manyTill, notFollowedBy, optional, parse, satisfy, sepBy, sepEndBy, try, withRecovery, (<|>))
 import Token
 
 type Parser = Parsec Void [Token]
@@ -16,7 +16,12 @@ ast s = case parse programP "" s of
     Right a -> Right a
 
 programP :: Parser Program
-programP = Program <$> (statementP `sepEndBy` tokenP Semicolon) <* tokenP Eof
+programP = Program <$> manyTill statementP' (tokenP Eof)
+
+statementP' :: Parser Statement
+statementP' = withRecovery recover (statementP <* tokenP Semicolon)
+  where
+    recover = const $ IllegalStatement <$ manyTill anySingle (notFollowedBy $ tokenP Semicolon)
 
 statementP :: Parser Statement
 statementP =

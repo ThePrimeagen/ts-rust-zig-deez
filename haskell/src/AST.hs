@@ -12,6 +12,7 @@ data Statement
     | ReturnStatement Expression
     | ExpressionStatement Expression
     | BlockStatement Block
+    | IllegalStatement
     deriving (Show, Eq)
 
 data Expression
