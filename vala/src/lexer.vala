@@ -1,4 +1,4 @@
-public class Monkey.Lexer {
+internal class Monkey.Lexer {
   string input = "";
   int position = 0;
   int read_position = 0;

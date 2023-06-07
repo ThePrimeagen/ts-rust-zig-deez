@@ -1,4 +1,4 @@
-public enum Monkey.TokenType {
+internal enum Monkey.TokenType {
   ILLEGAL,
   EOF,
 
@@ -36,7 +36,7 @@ public enum Monkey.TokenType {
   RETURN,
 }
 
-public struct Monkey.Token {
+internal struct Monkey.Token {
   TokenType type;
   string literal;
 
