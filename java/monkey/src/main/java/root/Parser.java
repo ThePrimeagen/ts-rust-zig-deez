@@ -1,9 +1,6 @@
 package root;
 
-import root.ast.Identifier;
-import root.ast.LetStatement;
-import root.ast.Program;
-import root.ast.Statement;
+import root.ast.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +46,22 @@ public class Parser {
     private Optional<Statement> parseStatement() {
         return switch (this.currentToken.type()) {
             case LET -> this.parseLetStatement();
+            case RETURN -> this.parseReturnStatement();
             default -> Optional.empty();
         };
+    }
+
+    private Optional<Statement> parseReturnStatement() {
+        ReturnStatement returnStatement = new ReturnStatement(this.currentToken);
+
+        this.nextToken();
+
+        // TODO: We're skipping the expressions until we encounter a semicolon
+        while (!this.curTokenIs(TokenType.SEMI)) {
+            this.nextToken();
+        }
+
+        return Optional.of(returnStatement);
     }
 
     private Optional<Statement> parseLetStatement() {

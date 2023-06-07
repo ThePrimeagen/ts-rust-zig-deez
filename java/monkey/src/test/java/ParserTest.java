@@ -4,6 +4,7 @@ import root.Lexer;
 import root.Parser;
 import root.TokenType;
 import root.ast.LetStatement;
+import root.ast.ReturnStatement;
 import root.ast.Statement;
 
 import java.util.List;
@@ -31,6 +32,28 @@ public class ParserTest {
         var index = 0;
         for (var statement : program.statements) {
             testStatement(statement, expectedIdentifiers.get(index++));
+        }
+    }
+
+    @Test
+    void testReturnStatements() {
+        var input = """
+                return 5;
+                return 10;
+                return 993322;""";
+
+        var l = new Lexer(input);
+        var p = new Parser(l);
+
+        var program = p.parseProgram();
+
+        Assertions.assertNotNull(program);
+        checkParseErrors(p);
+        Assertions.assertEquals(3, program.statements.size());
+
+        for (var statement : program.statements) {
+            Assertions.assertTrue(statement instanceof ReturnStatement);
+            Assertions.assertEquals(TokenType.RETURN.token().literal(), statement.tokenLiteral());
         }
     }
 
