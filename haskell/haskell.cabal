@@ -66,6 +66,8 @@ library
                       Lexer.State,
                       Lexer.Parsec,
                       Lexer.Lens,
+                      AST,
+                      Parser.Parsec,
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -77,6 +79,7 @@ library
     build-depends:    base ^>=4.17.1.0,
                       bytestring ^>= 0.11.0.0,
                       mtl ^>= 2.3.1,
+                      parser-combinators ^>= 1.3.0,
                       megaparsec ^>= 9.3.1,
                       text ^>= 2.0.2,
                       lens ^>= 5.2.2
@@ -119,7 +122,7 @@ test-suite haskell-test
     default-language: GHC2021
 
     -- Modules included in this executable, other than Main.
-    other-modules: LexerTest
+    other-modules: LexerTest, ParserTest
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
