@@ -4,16 +4,37 @@ import Token
 
 type Ast = [Token] -> Either String Program
 
-data Program = Program [Statement]
-  deriving (Show, Eq)
+newtype Program = Program [Statement]
+    deriving (Show, Eq)
 
 data Statement
     = LetStatement Identifier Expression
+    | ReturnStatement Expression
+    | ExpressionStatement Expression
+    | BlockStatement Block
     deriving (Show, Eq)
 
 data Expression
     = IdentExpr Identifier
+    | IntLiteral Integer
+    | BoolLiteral Bool
+    | NegExpr Expression
+    | NotExpr Expression
+    | AddExpr Expression Expression
+    | SubExpr Expression Expression
+    | MulExpr Expression Expression
+    | DivExpr Expression Expression
+    | EqExpr Expression Expression
+    | NeExpr Expression Expression
+    | LtExpr Expression Expression
+    | GtExpr Expression Expression
+    | IfExpr Expression Block (Maybe Block)
+    | FunctionExpr [Identifier] Block
+    | CallExpr Expression [Expression]
     deriving (Show, Eq)
 
-data Identifier = Identifier String
-  deriving (Show, Eq)
+newtype Identifier = Identifier String
+    deriving (Show, Eq)
+
+newtype Block = Block [Statement]
+    deriving (Show, Eq)
