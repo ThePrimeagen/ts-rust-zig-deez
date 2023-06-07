@@ -2,22 +2,38 @@ enum TokenType {
   ILLEGAL,
   EOF,
 
+  // Identifiers and literals
   IDENT,
   INT,
 
+  // Operators
   ASSIGN,
   PLUS,
+  MINUS,
+  BANG,
+  ASTERISK,
+  SLASH,
+  LT,
+  GT,
+  EQ,
+  NOT_EQ,
 
+  // Delimiters
   COMMA,
   SEMICOLON,
-
   LPAREN,
   RPAREN,
   LBRACE,
   RBRACE,
 
+  // Keywords
   FUNCTION,
   LET,
+  TRUE,
+  FALSE,
+  IF,
+  ELSE,
+  RETURN,
 }
 
 struct Token {
@@ -51,8 +67,57 @@ class Lexer {
     read_position += 1;
   }
 
+  static bool is_letter(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+  }
+
+  static bool is_whitespace(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+  }
+
+  static bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+  }
+
+  string read_identifier() {
+    var pos = position;
+    while (is_letter(ch)) {
+      read_char();
+    }
+    return input[pos:position];
+  }
+
+  string read_number() {
+    var pos = position;
+    while (is_digit(ch)) {
+      read_char();
+    }
+    return input[pos:position];
+  }
+
+  static HashTable<string, TokenType?> keywords;
+
+  static construct {
+    keywords = new HashTable<string, TokenType?>(str_hash, str_equal);
+    keywords.insert("fn", TokenType.FUNCTION);
+    keywords.insert("let", TokenType.LET);
+  }
+
+  static TokenType lookup_ident(string ident) {
+    var type = keywords.lookup(ident);
+    return type != null ? type : TokenType.IDENT;
+  }
+
+  void skip_whitespace() {
+    while (is_whitespace(ch)) {
+      read_char();
+    }
+  }
+
   public Token next_token() {
     Token tok;
+
+    skip_whitespace();
 
     switch (ch) {
       case '=': tok = Token(TokenType.ASSIGN, @"$ch"); break;
@@ -66,13 +131,25 @@ class Lexer {
       case '\0': tok = Token(TokenType.EOF); break;
       default:
         tok = Token(TokenType.ILLEGAL);
-        warn_if_reached();
+        if (is_letter(ch)) {
+          tok.literal = read_identifier();
+          tok.type = lookup_ident(tok.literal);
+          return tok;
+        } else if (is_digit(ch)) {
+          tok.literal = read_number();
+          tok.type = TokenType.INT;
+          return tok;
+        } else {
+          tok = Token(TokenType.ILLEGAL);
+          warn_if_reached();
+        }
         break;
     }
 
     read_char();
     return tok;
   }
+
 }
 
 struct Test {
@@ -81,16 +158,50 @@ struct Test {
 }
 
 static int main(string[] args) {
-  const string input = "=+(){},;";
+  const string input = """let five = 5;
+let ten = 10;
+let add = fn(x, y) {
+x + y;
+};
+let result = add(five, ten);
+""";
 
-  Test[] tests = {
+  const Test[] tests = {
+    { TokenType.LET, "let" },
+    { TokenType.IDENT, "five" },
     { TokenType.ASSIGN, "=" },
-    { TokenType.PLUS, "+" },
+    { TokenType.INT, "5" },
+    { TokenType.SEMICOLON, ";" },
+    { TokenType.LET, "let" },
+    { TokenType.IDENT, "ten" },
+    { TokenType.ASSIGN, "=" },
+    { TokenType.INT, "10" },
+    { TokenType.SEMICOLON, ";" },
+    { TokenType.LET, "let" },
+    { TokenType.IDENT, "add" },
+    { TokenType.ASSIGN, "=" },
+    { TokenType.FUNCTION, "fn" },
     { TokenType.LPAREN, "(" },
+    { TokenType.IDENT, "x" },
+    { TokenType.COMMA, "," },
+    { TokenType.IDENT, "y" },
     { TokenType.RPAREN, ")" },
     { TokenType.LBRACE, "{" },
+    { TokenType.IDENT, "x" },
+    { TokenType.PLUS, "+" },
+    { TokenType.IDENT, "y" },
+    { TokenType.SEMICOLON, ";" },
     { TokenType.RBRACE, "}" },
+    { TokenType.SEMICOLON, ";" },
+    { TokenType.LET, "let" },
+    { TokenType.IDENT, "result" },
+    { TokenType.ASSIGN, "=" },
+    { TokenType.IDENT, "add" },
+    { TokenType.LPAREN, "(" },
+    { TokenType.IDENT, "five" },
     { TokenType.COMMA, "," },
+    { TokenType.IDENT, "ten" },
+    { TokenType.RPAREN, ")" },
     { TokenType.SEMICOLON, ";" },
     { TokenType.EOF, "" },
   };
