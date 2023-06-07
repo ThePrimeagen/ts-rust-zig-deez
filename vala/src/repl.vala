@@ -2,8 +2,8 @@ namespace Monkey {
 
   static void repl() {
     string? line = null;
-
     do {
+      print(">> ");
       line = stdin.read_line();
       if (line == null) {
         break;
@@ -14,8 +14,6 @@ namespace Monkey {
         print(@"{ type=$(tok.type), literal=$(tok.literal) }\n");
       }
     } while (true);
-
-    print("line=%s", line);
   }
 
 }
