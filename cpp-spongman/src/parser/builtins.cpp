@@ -1,9 +1,9 @@
 #include <unordered_map>
 #include <string_view>
+#include <iostream>
 
 #include "token.hpp"
 #include "builtins.hpp"
-
 
 
 // BuiltinFunctionExpression
@@ -11,14 +11,14 @@
 std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 
 	{ "len", {"val"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to len(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return Value{std::visit(overloaded{
 				[](const String& str) { return static_cast<Integer>(str.length()); },
-				[](const std::vector<Value>& array) { return static_cast<Integer>(array.size()); },
+				[](const Array& array) { return static_cast<Integer>(array.size()); },
 				[](const auto& value) -> Integer {
 					throw std::runtime_error("invalid argument to len(): " + std::to_string(value));
 				}
@@ -26,13 +26,14 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 		}
 	},
 	{ "first", {"arr"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to first(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const std::vector<Value>& array) { return array.empty() ? nil : array.front(); },
+				[](const String& str) { return str.empty() ? nil : Value{std::string{str.front()}}; },
+				[](const Array& array) { return array.empty() ? nil : array.front(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to first(): " + std::to_string(value));
 				}
@@ -40,13 +41,14 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 		}
 	},
 	{ "last", {"arr"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to last(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const std::vector<Value>& array) { return array.empty() ? nil : array.back(); },
+				[](const String& str) { return str.empty() ? nil : Value{std::string{str.back()}}; },
+				[](const Array& array) { return array.empty() ? nil : array.back(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to last(): " + std::to_string(value));
 				}
@@ -54,13 +56,14 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 		}
 	},
 	{ "rest", {"arr"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to rest(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const std::vector<Value>& array) {
+				[](const String& str) { return str.empty() ? nil : Value{str.substr(1)}; },
+				[](const Array& array) {
 					if (array.empty())
 						return nil;
 					Array rest;
@@ -71,6 +74,27 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 					throw std::runtime_error("invalid argument to rest(): " + std::to_string(value));
 				}
 			}, value.data);
+		}
+	},
+	{ "puts", {"str"},
+		[](const Array& arguments) {
+			bool first = true;
+			for (const auto& argument : arguments) {
+				if (!first)
+					std::cout << " ";
+				first = false;
+
+				std::visit(overloaded{
+					[](const String& str) {
+						std::cout << str;
+					},
+					[](const auto& value) {
+						std::cout << std::to_string(value);
+					}
+				}, argument.data);
+			}
+			std::cout << "\n";
+			return nil;
 		}
 	},
 };

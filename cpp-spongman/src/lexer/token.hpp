@@ -14,6 +14,7 @@ enum class TokenType
 	Comma,
 	Semicolon,
 	Dollar,
+	Colon,
 
 	Lparen,
 	Rparen,

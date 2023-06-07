@@ -11,7 +11,7 @@ struct BuiltinFunctionExpression : public AbstractFunctionExpression
 	BuiltinFunctionExpression(
 		std::string&& name,
 		std::vector<std::string>&& parameters,
-		std::function<Value(const std::vector<Value>& arguments)>&& body)
+		std::function<Value(const Array& arguments)>&& body)
 	: AbstractFunctionExpression{std::move(parameters)}
 	, name{std::move(name)}
 	, body{std::move(body)}
@@ -28,7 +28,7 @@ struct BuiltinFunctionExpression : public AbstractFunctionExpression
 	static std::vector<BuiltinFunctionExpression> builtins;
 
 private:
-	const std::function<Value(const std::vector<Value>& arguments)> body;
+	const std::function<Value(const Array& arguments)> body;
 };
 
 struct BuiltinBinaryFunctionExpression : public AbstractFunctionExpression

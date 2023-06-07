@@ -5,6 +5,7 @@
 #include <memory>
 #include <iosfwd>
 #include <vector>
+#include <unordered_map>
 
 struct AbstractFunctionExpression;
 
@@ -17,22 +18,28 @@ template<class... Ts>
 struct overloaded : Ts... { using Ts::operator()...; };
 
 
-struct NullValue {
+struct NullValue
+{
 	bool operator==(const NullValue&) const { return true; }
 };
+
+struct Value;
+struct ValueHash { size_t operator()(const Value& value) const; };
 
 using String = std::string;
 using Integer = int64_t;
 using BoundFunction = std::pair<const AbstractFunctionExpression*, EnvironmentP>;
+using Array = std::vector<Value>;
+using Hash = std::unordered_map<Value, Value, ValueHash>;
 
-struct Value;
 using ValueType = std::variant<
 	NullValue,
 	bool,
 	Integer,
 	String,
 	BoundFunction,
-	std::vector<Value>
+	Array,
+	Hash
 >;
 
 namespace std
@@ -55,7 +62,29 @@ struct Value
 };
 const Value nil;
 
-using Array = std::vector<Value>;	// recursively defined
+inline size_t ValueHash::operator()(const Value& value) const
+{
+	return std::visit(overloaded{
+		[](const NullValue& v1, const NullValue& v2) { return size_t{0}; },
+		[](const bool val) { return std::hash<bool>{}(val); },
+		[](const Integer val) { return std::hash<int64_t>{}(val); },
+		[](const String& val) { return std::hash<std::string>{}(val); },
+		[](const BoundFunction& val) { return size_t{0}; },	// TODO: ?
+		[](const Array& val) {
+			size_t h = 0;
+			for (const auto& value : val)
+				h ^= ValueHash{}(value);
+			return h;
+		},
+		[](const Hash& val) { 
+			size_t h = 0;
+			for (const auto& [key, value] : val)
+				h ^= ValueHash{}(key) ^ ValueHash{}(value);
+			return h;
+		},
+		[](const auto& val) { return size_t{0}; }
+	}, value.data);
+}
 
 
 inline constexpr bool operator==(const Value& v1, const Value& v2)
@@ -69,10 +98,12 @@ inline constexpr bool operator==(const Value& v1, const Value& v2)
 		[](const Array& v1, const Array& v2) {
 			return v1.size() == v2.size() && std::equal(v1.begin(), v1.end(), v2.begin());
 		},
+		[](const Hash& v1, const Hash& v2) {
+			return v1.size() == v2.size() && std::equal(v1.begin(), v1.end(), v2.begin());
+		},
 		[](const auto& v1, const auto& v2) { return false; }
 	}, v1.data, v2.data);
 }
-
 
 
 std::ostream& operator<<(std::ostream& os, const Value& value);
