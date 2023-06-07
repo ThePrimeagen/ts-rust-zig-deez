@@ -6,7 +6,6 @@
 #include "builtins.hpp"
 
 
-
 // BuiltinFunctionExpression
 
 std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
@@ -33,6 +32,7 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
+				[](const String& str) { return str.empty() ? nil : Value{std::string{str.front()}}; },
 				[](const Array& array) { return array.empty() ? nil : array.front(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to first(): " + std::to_string(value));
@@ -47,6 +47,7 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
+				[](const String& str) { return str.empty() ? nil : Value{std::string{str.back()}}; },
 				[](const Array& array) { return array.empty() ? nil : array.back(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to last(): " + std::to_string(value));
@@ -61,6 +62,7 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
+				[](const String& str) { return str.empty() ? nil : Value{str.substr(1)}; },
 				[](const Array& array) {
 					if (array.empty())
 						return nil;
