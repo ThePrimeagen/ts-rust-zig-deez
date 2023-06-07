@@ -10,13 +10,4 @@ public class ReturnStatement extends Statement {
     public ReturnStatement(Token token) {
         this.token = token;
     }
-
-    @Override
-    public String tokenLiteral() {
-        return token.literal();
-    }
-
-    @Override
-    public void statementNode() {
-    }
 }

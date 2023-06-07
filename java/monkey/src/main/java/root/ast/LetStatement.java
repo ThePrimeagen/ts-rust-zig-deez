@@ -11,13 +11,4 @@ public class LetStatement extends Statement {
     public LetStatement(Token token) {
         this.token = token;
     }
-
-    @Override
-    public String tokenLiteral() {
-        return token.literal();
-    }
-
-    @Override
-    public void statementNode() {
-    }
 }

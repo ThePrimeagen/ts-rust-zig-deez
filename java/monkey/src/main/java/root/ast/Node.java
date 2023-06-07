@@ -1,5 +1,12 @@
 package root.ast;
 
-public interface Node {
-    String tokenLiteral();
+import root.Token;
+
+public abstract class Node {
+
+    public Token token;
+
+    public String tokenLiteral() {
+        return token.literal();
+    }
 }
