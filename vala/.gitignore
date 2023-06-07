@@ -2,6 +2,10 @@
 # .gitignore for most used editors
 ##
 
+/*.h
+/src/*.c
+/monkey
+
 # User-specific files
 *.rsuser
 *.suo
@@ -664,4 +668,3 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
-
