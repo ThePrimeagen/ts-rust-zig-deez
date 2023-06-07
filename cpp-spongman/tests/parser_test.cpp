@@ -23,9 +23,8 @@ auto testEval(std::string str, const Value& expected)
 
 void runTests(const std::vector<std::pair<std::string, Value>>& tests)
 {
-	for (const auto& [program, expected] : tests) {
+	for (const auto& [program, expected] : tests)
 		testEval(program, expected);
-	}
 }
 
 TEST(TestLexer, TestLetStatements) {
@@ -203,6 +202,17 @@ TEST(TestLexer, TestStringConcatenation) {
 	});
 }
 
+TEST(TestLexer, TestStringIndexExpressions) {
+	runTests({
+		{R"XXX( "Hello"[0] )XXX", Value{"H"} },
+		{R"XXX( "Hello"[4] )XXX", Value{"o"} },
+		{R"XXX( "Hello"[-1] )XXX", nil },
+		{R"XXX( "Hello"[5] )XXX", nil },
+		{R"XXX( ""[0] )XXX", nil },
+	});
+}
+
+
 TEST(TestLexer, TestBuiltinFunctions) {
 	runTests({
 		{R"XXX( len("") )XXX", Value{0}},
@@ -213,9 +223,10 @@ TEST(TestLexer, TestBuiltinFunctions) {
 	});
 }
 
+
 TEST(TestLexer, TestParsingArrayLiterals) {
 	runTests({
-		{"[1, 2 * 2, 3 + 3]", Value{ std::vector<Value>{ Value{1}, Value{4}, Value{6} } }},
+		{"[1, 2 * 2, 3 + 3]", Value{ Array{ Value{1}, Value{4}, Value{6} } }},
 	});
 }
 
@@ -231,7 +242,12 @@ TEST(TestLexer, TestArrayIndexExpressions) {
 		{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value{2} },
 		{ "[1, 2, 3][3]", nil },
 		{ "[1, 2, 3][-1]", nil },
+	});
+}
 
+
+TEST(TestLexer, TestArrayConcatExpressions) {
+	runTests({
 		{ "[] + [1]", Value{ Array{ Value{1} } } },
 		{ "[1] + [2]", Value{ Array{ Value{1}, Value{2} } } },
 		{ "[1] + []", Value{ Array{ Value{1} } } },
@@ -253,6 +269,41 @@ TEST(TestLexer, TestArrayBuiltinFunction) {
 	});
 }
 
+TEST(TestLexer, TestHashLiterals) {
+	runTests({
+		{R"XXX( 
+			let two = "two";
+			{
+				"one": 10 - 9,
+				two: 1 + 1,
+				"thr" + "ee": 6 / 2,
+				4: 4,
+				true: 5,
+				false: 6
+			}
+		)XXX", Value{Hash{
+			{ Value{"one"},   Value{1} },
+			{ Value{"two"},   Value{2} },
+			{ Value{"three"}, Value{3} },
+			{ Value{4},       Value{4} },
+			{ Value{true},    Value{5} },
+			{ Value{false},   Value{6} },
+		}}},
+	});
+}
+
+TEST(TestLexer, TestHashIndexExpressions) {
+	runTests({
+		{R"XXX( {"foo": 5}["foo"] )XXX",                Value{5} },
+		{R"XXX( {"foo": 5}["bar"] )XXX",                nil },
+		{R"XXX( let key = "foo"; {"foo": 5}[key] )XXX", Value{5} },
+		{R"XXX( {}["foo"] )XXX",                        nil },
+		{R"XXX( {5: 5}[5] )XXX",                        Value{5} },
+		{R"XXX( {true: 5}[true] )XXX",                  Value{5} },
+		{R"XXX( {false: 5}[false] )XXX",                Value{5} },
+	});
+}
+
 
 TEST(TestLexer, TestFibonacciFunction) {
 	runTests({
@@ -269,3 +320,5 @@ TEST(TestLexer, TestFibonacciFunction) {
 		)XXX", Value{121393}},
 	});
 }
+
+

@@ -1,5 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
-project(TsRustZigDeez)
+project(TsRustZigDeez CXX)
+
+
+if(CMAKE_CXX_COMPILER_ID  STREQUAL "GNU")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+    message(FATAL_ERROR "GCC version must be at least 12.0!")
+  endif()
+elseif (CMAKE_CXX_COMPILER_ID  STREQUAL "Clang")
+  message(FATAL_ERROR "Clang not supported!")
+else()
+  message(WARNING "You are using an unsupported compiler! ${CMAKE_CXX_COMPILER_ID} Compilation has only been tested with GCC >= 12.")
+endif()
+
+
 
 set(This TsRustZigDeez)
 

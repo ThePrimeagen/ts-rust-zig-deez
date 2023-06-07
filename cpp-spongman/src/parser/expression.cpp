@@ -23,50 +23,40 @@ ExpressionP Expression::parse(Lexer& lexer)
 ExpressionP Expression::parseOr(Lexer& lexer)
 {
 	auto left = parseAnd(lexer);
-	while (lexer.peekIs(TokenType::Or)) {
-		lexer.next();
+	while (lexer.get(TokenType::Or))
 		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::or_, std::move(left), parseAnd(lexer));
-	}
 	return left;
 }
 
 ExpressionP Expression::parseAnd(Lexer& lexer)
 {
 	auto left = parseBitOr(lexer);
-	while (lexer.peekIs(TokenType::And)) {
-		lexer.next();
+	while (lexer.get(TokenType::And))
 		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::and_, std::move(left), parseBitOr(lexer));
-	}
 	return left;
 }
 
 ExpressionP Expression::parseBitOr(Lexer& lexer)
 {
 	auto left = parseBitXor(lexer);
-	while (lexer.peekIs(TokenType::BitOr)) {
-		lexer.next();
+	while (lexer.get(TokenType::BitOr))
 		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::bitOr, std::move(left), parseBitXor(lexer));
-	}
 	return left;
 }
 
 ExpressionP Expression::parseBitXor(Lexer& lexer)
 {
 	auto left = parseBitAnd(lexer);
-	while (lexer.peekIs(TokenType::BitEor)) {
-		lexer.next();
+	while (lexer.get(TokenType::BitEor))
 		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::bitEor, std::move(left), parseBitAnd(lexer));
-	}
 	return left;
 }
 
 ExpressionP Expression::parseBitAnd(Lexer& lexer)
 {
 	auto left = parseEquality(lexer);
-	while (lexer.peekIs(TokenType::BitAnd)) {
-		lexer.next();
+	while (lexer.get(TokenType::BitAnd))
 		left = std::make_unique<BinaryExpression>(BuiltinBinaryFunctionExpression::bitAnd, std::move(left), parseEquality(lexer));
-	}
 	return left;
 }
 
@@ -166,7 +156,7 @@ ExpressionP Expression::parseArrayIndex(Lexer& lexer)
 		auto right = Expression::parse(lexer);
 		lexer.fetch(TokenType::Rbracket);
 
-		left = std::make_unique<ArrayIndexExpression>(
+		left = std::make_unique<IndexExpression>(
 			std::move(left),
 			std::move(right)
 		);
@@ -188,6 +178,41 @@ ExpressionP Expression::parsePrefix(Lexer& lexer)
 				tokenType,
 				parsePrefix(lexer)
 			);
+		case TokenType::Lsquirly:
+			lexer.next();
+
+			// empty hash
+			if (lexer.get(TokenType::Rsquirly)) {
+				return std::make_unique<HashLiteralExpression>();
+			}
+
+			auto firstExpression = Expression::parseStatement(lexer);
+			if (lexer.get(TokenType::Colon)) {
+				// hash
+
+				std::vector<std::pair<ExpressionP, ExpressionP>> elements;
+				elements.push_back({ std::move(firstExpression), Expression::parse(lexer)});
+
+				while (lexer.get(TokenType::Comma), !lexer.get(TokenType::Rsquirly)) {
+					auto key = Expression::parse(lexer);
+					lexer.fetch(TokenType::Colon);
+					auto value = Expression::parse(lexer);
+					elements.push_back({std::move(key), std::move(value)});
+				}
+				return std::make_unique<HashLiteralExpression>(std::move(elements));
+			}
+			else {
+				std::vector<ExpressionP> statements;
+				statements.push_back(std::move(firstExpression));
+				while (lexer.get(TokenType::Semicolon), !lexer.get(TokenType::Rsquirly))
+					statements.push_back(Expression::parseStatement(lexer));
+
+				return (statements.size() == 1)
+					? std::move(statements[0])
+					: std::make_unique<BlockStatement>(std::move(statements));
+			}
+
+			break;
 	}
 
 	return parseCall(lexer);
@@ -200,10 +225,8 @@ ExpressionP Expression::parseCall(Lexer& lexer)
 		return prefix;
 
 	std::vector<ExpressionP> args;
-	while (!lexer.get(TokenType::Rparen)) {
+	while (lexer.get(TokenType::Comma), !lexer.get(TokenType::Rparen))
 		args.push_back(Expression::parse(lexer));
-		lexer.get(TokenType::Comma);
-	}
 
 	return std::make_unique<CallExpression>(
 		std::move(prefix),
@@ -343,13 +366,12 @@ Value CallExpression::eval(EnvironmentP env) const
 
 void CallExpression::print(std::ostream& os) const
 {
-	os << "call " << *function << "(";
+	os << *function << "(";
 	auto first = true;
 	for (const auto& arg : arguments) {
-		if (first)
-			first = false;
-		else
+		if (!first)
 			os << ", ";
+		first = false;
 		os << *arg;
 	}
 	os << ")";
@@ -378,7 +400,6 @@ void AbstractFunctionExpression::print(std::ostream& os) const
 		first = false;
 		os << parameter;
 	}
-	//os << ") " << *body << ";";
 	os << ")";
 }
 
@@ -400,15 +421,14 @@ ExpressionP FunctionExpression::parse(Lexer& lexer)
 	lexer.fetch(TokenType::Lparen);
 
 	std::vector<std::string> parameters;
-	while (!lexer.get(TokenType::Rparen)) {
+	while (lexer.get(TokenType::Comma), !lexer.get(TokenType::Rparen)) {
 		auto token = lexer.fetch(TokenType::Identifier);
 		parameters.push_back(std::string{token.literal});
-		lexer.get(TokenType::Comma);
 	}
 
 	return std::make_unique<FunctionExpression>(
 		std::move(parameters),
-		Statement::parseStatement(lexer)
+		BlockStatement::parse(lexer)
 	);
 }
 
@@ -423,7 +443,6 @@ Value FunctionExpression::call(
 
 	auto argumentIter = arguments.begin();
 	for (const auto& parameterName : parameters) {
-
 		Value argumentValue;
 		if (argumentIter != arguments.end()) {
 			const auto& argument= *(argumentIter++);
@@ -440,6 +459,12 @@ Value FunctionExpression::call(
 	}
 }
 
+void FunctionExpression::print(std::ostream& os) const
+{
+	AbstractFunctionExpression::print(os);
+	os << *body;
+}
+
 // BuiltinFunctionExpression
 
 Value BuiltinFunctionExpression::call(
@@ -448,7 +473,7 @@ Value BuiltinFunctionExpression::call(
 	const std::vector<ExpressionP>& arguments
 ) const
 {
-	std::vector<Value> argumentValues;
+	Array argumentValues;
 	std::transform(
 		arguments.cbegin(), arguments.cend(),
 		std::back_inserter(argumentValues), [&callerEnv](const ExpressionP& element) { return element->eval(callerEnv); }
@@ -519,17 +544,15 @@ ExpressionP ArrayLiteralExpression::parse(Lexer& lexer)
 	lexer.fetch(TokenType::Lbracket);
 
 	std::vector<ExpressionP> elements;
-	while (!lexer.get(TokenType::Rbracket)) {
+	while (lexer.get(TokenType::Comma), !lexer.get(TokenType::Rbracket))
 		elements.push_back(Expression::parse(lexer));
-		lexer.get(TokenType::Comma);
-	}
 
 	return std::make_unique<ArrayLiteralExpression>(std::move(elements));
 }
 
 Value ArrayLiteralExpression::eval(EnvironmentP env) const
 {
-	std::vector<Value> value;
+	Array value;
 	std::transform(
 		elements.cbegin(), elements.cend(),
 		std::back_inserter(value), [&env](const ExpressionP& element) { return element->eval(env); }
@@ -542,44 +565,77 @@ void ArrayLiteralExpression::print(std::ostream& os) const
 	os << "[";
 	auto first = true;
 	for (const auto& element : elements) {
-		if (first)
-			first = false;
-		else
+		if (!first)
 			os << ",";
+		first = false;
 		os << *element;
 	}
 	os << "]";
 }
 
 
-// ArrayIndexExpression
+// IndexExpression
 
-Value ArrayIndexExpression::eval(EnvironmentP env) const
+Value IndexExpression::eval(EnvironmentP env) const
 {
 	const auto& evluatedArray = array->eval(env);
 	const auto& evaluatedIndex = index->eval(env);
 
-	const auto indexValue = evaluatedIndex.get<Integer>();
-
 	return std::visit(overloaded{
-		[indexValue](const Array& value) -> Value {
+		[](const Array& value, const Integer indexValue) -> Value {
 			if (indexValue < 0 || indexValue >= static_cast<Integer>(value.size()))
 				return nil;
 			return value[indexValue];
 		},
-		[indexValue](const String& value) -> Value {
+		[](const String& value, const Integer indexValue) -> Value {
 			if (indexValue < 0 || indexValue >= static_cast<Integer>(value.length()))
 				return nil;
 			return Value{value.substr(indexValue, 1)};	// TODO: 'char' type?
 		},
-		[](auto& value) -> Value {
+		[&evaluatedIndex](const Hash& value, const auto& indexValue) -> Value {
+			if (const auto iter = value.find(evaluatedIndex); iter != value.end())
+				return iter->second;
+			return nil;
+		},
+		[](const auto& value, auto& indexValue) -> Value {
 			throw std::runtime_error("Error: can't index into ");// + std::to_string(value));
 		}
-	}, evluatedArray.data);
+	}, evluatedArray.data, evaluatedIndex.data);
 }
 
-void ArrayIndexExpression::print(std::ostream& os) const
+void IndexExpression::print(std::ostream& os) const
 {
 	os << array << "[" << index << "]";
 }
+
+
+// HashLiteralExpression
+
+Value HashLiteralExpression::eval(EnvironmentP env) const
+{
+	Hash hash{};
+
+	for (const auto& [key, value] : elements) {
+		auto keyValue = key->eval(env);
+		auto valueValue = value->eval(env);
+		hash.emplace(std::move(keyValue), std::move(valueValue));
+	}
+
+	return Value{std::move(hash)};
+}
+
+void HashLiteralExpression::print(std::ostream& os) const
+{
+	os << "{";
+	bool first = true;
+	for (const auto& [key, value] : elements) {
+		if (!first)
+			os << ",";
+		first = false;
+		os << key << "," << value;
+	}
+	os << "}";
+	//os << value;
+}
+
 

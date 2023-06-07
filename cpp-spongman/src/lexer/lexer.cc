@@ -73,6 +73,7 @@ Token Lexer::nextToken() noexcept
 		case ',': return { TokenType::Comma     };
 		case ';': return { TokenType::Semicolon };
 		case '$': return { TokenType::Dollar    };
+		case ':': return { TokenType::Colon     };
 
 		case '(': return { TokenType::Lparen    };
 		case ')': return { TokenType::Rparen    };

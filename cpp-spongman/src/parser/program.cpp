@@ -40,9 +40,8 @@ Value Program::eval(EnvironmentP env) const
 {
 	try {
 		Value value;
-		for (const auto& statement : statements) {
+		for (const auto& statement : statements)
 			value = statement->eval(env);
-		}
 		return value;
 	}
 	catch (const Value& value) {

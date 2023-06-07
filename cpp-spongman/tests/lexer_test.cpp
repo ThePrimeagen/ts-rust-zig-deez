@@ -119,7 +119,13 @@ TEST(TestLexer, TestNextToken2) {
 		{ TokenType::Rbracket,            },
 		{ TokenType::Semicolon,           },
 
-		{ TokenType::Eof                  },
+		{ TokenType::Lsquirly,            },
+		{ TokenType::String,     "foo"    },
+		{ TokenType::Colon,               },
+		{ TokenType::String,     "bar"    },
+		{ TokenType::Rsquirly,            },
+
+ 		{ TokenType::Eof                  },
 	};
 
 	Lexer lexer {R"XXX(
@@ -145,6 +151,7 @@ TEST(TestLexer, TestNextToken2) {
 		"foo bar"
 		"\r\n\""
 		[1, 2];
+		{"foo": "bar"}
 	)XXX"};
 
 	for (const auto& testToken : testTokens) {

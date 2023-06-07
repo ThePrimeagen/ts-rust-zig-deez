@@ -99,6 +99,7 @@ struct FunctionExpression : public AbstractFunctionExpression
 	FunctionExpression(std::vector<std::string>&& parameters, StatementP&& body);
 
 	static ExpressionP parse(Lexer& lexer);
+	void print(std::ostream& str) const override;
 	Value call(
 		EnvironmentP closureEnv,
 		EnvironmentP callerEnv,
@@ -166,8 +167,8 @@ private:
 
 struct StringLiteralExpression : public Expression
 {
-	StringLiteralExpression(const std::string value)
-	: value{value} {}
+	StringLiteralExpression(std::string& value)
+	: value{std::move(value)} {}
 
 	void print(std::ostream& str) const override;
 	Value eval(EnvironmentP env) const override;
@@ -189,9 +190,9 @@ private:
 	std::vector<ExpressionP> elements;
 };
 
-struct ArrayIndexExpression : public Expression
+struct IndexExpression : public Expression
 {
-	ArrayIndexExpression(ExpressionP&& array, ExpressionP&& index)
+	IndexExpression(ExpressionP&& array, ExpressionP&& index)
 	: array{std::move(array)}
 	, index{std::move(index)}
 	{
@@ -203,6 +204,20 @@ struct ArrayIndexExpression : public Expression
 private:
 	const ExpressionP array;
 	const ExpressionP index;
+};
+
+
+struct HashLiteralExpression : public Expression
+{
+	HashLiteralExpression() = default;
+	HashLiteralExpression(std::vector<std::pair<ExpressionP, ExpressionP>>&& elements)
+	: elements{std::move(elements)} {}
+
+	void print(std::ostream& str) const override;
+	Value eval(EnvironmentP env) const override;
+
+private:
+	const std::vector<std::pair<ExpressionP, ExpressionP>> elements;
 };
 
 

@@ -11,14 +11,14 @@
 std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 
 	{ "len", {"val"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to len(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return Value{std::visit(overloaded{
 				[](const String& str) { return static_cast<Integer>(str.length()); },
-				[](const std::vector<Value>& array) { return static_cast<Integer>(array.size()); },
+				[](const Array& array) { return static_cast<Integer>(array.size()); },
 				[](const auto& value) -> Integer {
 					throw std::runtime_error("invalid argument to len(): " + std::to_string(value));
 				}
@@ -26,13 +26,13 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 		}
 	},
 	{ "first", {"arr"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to first(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const std::vector<Value>& array) { return array.empty() ? nil : array.front(); },
+				[](const Array& array) { return array.empty() ? nil : array.front(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to first(): " + std::to_string(value));
 				}
@@ -40,13 +40,13 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 		}
 	},
 	{ "last", {"arr"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to last(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const std::vector<Value>& array) { return array.empty() ? nil : array.back(); },
+				[](const Array& array) { return array.empty() ? nil : array.back(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to last(): " + std::to_string(value));
 				}
@@ -54,13 +54,13 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 		}
 	},
 	{ "rest", {"arr"},
-		[](const std::vector<Value>& arguments) {
+		[](const Array& arguments) {
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to rest(): " + std::to_string(arguments.size()));
 
 			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const std::vector<Value>& array) {
+				[](const Array& array) {
 					if (array.empty())
 						return nil;
 					Array rest;

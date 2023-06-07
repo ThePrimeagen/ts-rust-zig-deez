@@ -31,7 +31,7 @@ std::string std::to_string(const ValueType& data)
 			}
 			return str + ")";
 		},
-		[](const std::vector<Value>& value) -> std::string {
+		[](const Array& value) -> std::string {
 			std::string str = "[";
 			bool first = true;
 			for (const auto& element : value) {
@@ -41,6 +41,19 @@ std::string std::to_string(const ValueType& data)
 				str += std::to_string(element.data);
 			}
 			return str + "]";
+		},
+		[](const Hash& hash) -> std::string {
+			std::string str = "{";
+			bool first = true;
+			for (const auto& [key, value] : hash) {
+				if (!first)
+					str += ",";
+				first = false;
+				str += std::to_string(key.data);
+				str += ":";
+				str += std::to_string(value.data);
+			}
+			return str + "}";
 		},
 		[](const auto& _) -> std::string {
 			return "unknown value";
@@ -54,7 +67,6 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
 	os << std::to_string(value.data);
 	return os;
 }
-
 
 std::string Value::typeName() const
 {

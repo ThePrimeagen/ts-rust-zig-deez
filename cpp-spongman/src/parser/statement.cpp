@@ -8,7 +8,7 @@ StatementP Statement::parseStatement(Lexer& lexer)
 	switch (lexer.type()) {
 		case TokenType::Let:      return LetStatement::parse(lexer);
 		case TokenType::Return:   return ReturnStatement::parse(lexer);
-		case TokenType::Lsquirly: return BlockStatement::parse(lexer);
+		//case TokenType::Lsquirly: return BlockStatement::parse(lexer);
 	}
 	return Expression::parse(lexer);
 }
@@ -99,28 +99,21 @@ void StatementList::print(std::ostream& os) const
 
 ExpressionP BlockStatement::parse(Lexer& lexer)
 {
-	lexer.fetch(TokenType::Lsquirly);
+	if (!lexer.get(TokenType::Lsquirly))
+		return Expression::parseStatement(lexer);
 
 	std::vector<ExpressionP> expressions;
-	do {
-		if (lexer.peekIs(TokenType::Rsquirly))
-			break;
+	while(lexer.get(TokenType::Semicolon), !lexer.get(TokenType::Rsquirly))
 		expressions.push_back(Expression::parseStatement(lexer));
-		lexer.get(TokenType::Semicolon);
-	}
-	while(!lexer.get(TokenType::Rsquirly));
 
-	if (expressions.size() == 1)
-		return std::move(expressions[0]);
-
-	return std::make_unique<BlockStatement>(
-		std::move(expressions)
-	);
+	return (expressions.size() == 1)
+		? std::move(expressions[0])
+		: std::make_unique<BlockStatement>(std::move(expressions));
 }
 
 void BlockStatement::print(std::ostream& os) const
 {
-os << "{\n";
+	os << "{\n";
 	StatementList::print(os);
 	os << "}\n";
 }
@@ -140,12 +133,12 @@ StatementP IfStatement::parse(Lexer& lexer)
 	auto condition = Expression::parse(lexer);
 	lexer.fetch(TokenType::Rparen);
 
-	auto consequence = Statement::parseStatement(lexer);
+	auto consequence = BlockStatement::parse(lexer);
 	StatementP alternative;
 
 	if (lexer.type() == TokenType::Else) {
 		lexer.next();
-		alternative = Statement::parseStatement(lexer);
+		alternative = BlockStatement::parse(lexer);
 	}
 
 	return std::make_unique<IfStatement>(

@@ -51,7 +51,7 @@ let index = fn(xs) {
 	let index2 = fn(c, xs) {
 		if (len(xs) == 0) []
 		else [c] + index2(c + 1, rest(xs));
-	}
+	};
 	index2(0, xs);
 }
 
@@ -136,7 +136,7 @@ let takewhile = fn(f, xs)
 let tl = fn(xs) rest(xs)
 
 let transpose = fn(xs) {
-	let xp = takewhile(fn(ys) { len(ts) > 0 }, xs)
+	let xp = takewhile(fn(ys) { len(ts) > 0 }, xs);
 	if (len(xp) == 0) []
 	else map(first, [xp] + transpose(map(tl, xp)))
 }

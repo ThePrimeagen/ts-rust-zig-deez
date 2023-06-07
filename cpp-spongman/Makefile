@@ -3,7 +3,7 @@
 ##
 
 help:
-	@sed -r -e "s#^(\w+):.*#\1#p;d" < Makefile | sort
+	@sed -r -e "s#^((\w|-)+):.*#\1#p;d" < Makefile | sort
 
 ready: fmt lint test
 

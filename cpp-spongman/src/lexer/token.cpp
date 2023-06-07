@@ -15,6 +15,7 @@ std::ostream& operator<<(std::ostream& os, const TokenType& tokenType)
 		case TokenType::Comma:          os << ","; break;
 		case TokenType::Semicolon:      os << ";"; break;
 		case TokenType::Dollar:         os << "$"; break;
+		case TokenType::Colon:          os << ":"; break;
 		
 		case TokenType::Lparen:         os << "("; break;
 		case TokenType::Rparen:         os << ")"; break;
