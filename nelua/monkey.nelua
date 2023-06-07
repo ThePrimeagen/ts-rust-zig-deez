@@ -1,0 +1,227 @@
+require('string')
+
+-- _u8 gets the char code
+local function IsWhiteSpace(char: uint8): boolean
+	return char == ' '_u8
+			or char == '\t'_u8
+			or char == '\n'_u8
+			or char == '\v'_u8
+			or char == '\f'_u8
+			or char == '\r'_u8
+end
+
+local function IsDigit(char: uint8): boolean
+	return char >= '0'_u8 and char <= '9'_u8
+end
+
+local function IsAlpha(char: uint8): boolean
+	return (char >= 'A'_u8 and char <= 'z'_u8) or (char >= 'a'_u8 and char <= 'z'_u8)
+end
+
+local TokenType = @enum{
+	Ident = 0,
+	Int,
+
+	Illegal,
+	Eof,
+	Assign,
+
+	-- Separators
+	Bang,
+	Dash,
+	ForwardSlash,
+	Asterisk,
+	Equal,
+	NotEqual,
+	LessThan,
+	GreaterThan,
+
+	-- Operators
+	Plus,
+	Comma,
+	Semicolon,
+	Lparen,
+	Rparen,
+	LSquirly,
+	RSquirly,
+
+	-- Keywords
+	Function,
+	Let,
+	If,
+	Else,
+	Return,
+	True,
+	False,
+}
+
+local Token = @record{
+	Type: TokenType,
+	Literal: string
+}
+
+local Lexer = @record{
+	Input: string,
+	Position: integer,
+	ReadPosition: integer,
+	Char: uint8
+}
+
+function Lexer:ReadChar(): void
+	-- the virgin [[likely]] vs the chad unlikely()
+	if unlikely(self.ReadPosition >= #self.Input) then
+		self.Char = '\0'_u8
+	else
+		self.Char = self.Input[self.ReadPosition]
+	end
+
+	self.Position = self.ReadPosition
+	self.ReadPosition = self.ReadPosition + 1
+end
+
+function Lexer:Peek(): uint8
+	if unlikely(self.ReadPosition >= #self.Input) then
+		return '\0'_u8
+	end
+
+	return self.Input[self.ReadPosition]
+end
+
+function Lexer:SkipWhiteSpace(): void
+	while IsWhiteSpace(self.Char) do
+		self:ReadChar()
+	end
+end
+
+function Lexer:ReadInt(): string
+	local pos = self.Position
+
+	while IsDigit(self.Char) do
+		self:ReadChar()
+	end
+
+	return self.Input:sub(pos, self.Position - 1 )
+end
+
+function Lexer:ReadIdent()
+	local pos = self.Position
+
+	while IsAlpha(self.Char) or self.Char == '_'_u8 do
+		self:ReadChar()
+	end
+
+	-- seems like there is no inclusive ranges [..]
+	return self.Input:sub(pos, self.Position - 1 )
+end
+
+-- TODO(LucasTA): make something better than ifs
+-- switch statement uses only comp time integral numbers ;-;
+-- something else like a table would be better anyway
+function Lexer:NextToken(): Token
+	self:SkipWhiteSpace()
+
+	if IsDigit(self.Char) then
+		return Token{TokenType.Int, self:ReadInt()}
+	end
+
+	if IsAlpha(self.Char) or self.Char == '_'_u8 then
+		local ident = self:ReadIdent()
+
+		if ident == "fn" then
+			return Token{TokenType.Function, "fn"}
+		elseif ident == "let" then
+			return Token{TokenType.Let, "let"}
+		elseif ident == "if" then
+			return Token{TokenType.If, "if"}
+		elseif ident == "false" then
+			return Token{TokenType.False, "false"}
+		elseif ident == "true" then
+			return Token{TokenType.True, "true"}
+		elseif ident == "return" then
+			return Token{TokenType.Return, "return"}
+		elseif ident == "else" then
+			return Token{TokenType.Else, "else"}
+		else
+			return Token{TokenType.Ident, ident}
+		end
+	end
+
+	local token: Token
+	local char = string.char(self.Char)
+
+	if char == '{' then
+		token = Token{TokenType.LSquirly, "{"}
+	elseif char == '}' then
+		token = Token{TokenType.RSquirly, "}"}
+	elseif char == '(' then
+		token = Token{TokenType.Lparen, "("}
+	elseif char == ')' then
+		token = Token{TokenType.Rparen, ")"}
+	elseif char == ',' then
+		token = Token{TokenType.Comma, ","}
+	elseif char == ';' then
+		token = Token{TokenType.Semicolon, ";"}
+	elseif char == '+' then
+		token = Token{TokenType.Plus, "+"}
+	elseif char == '-' then
+		token = Token{TokenType.Dash, "-"}
+	elseif char == '!' then
+		if self:Peek() == '='_u8 then
+			self:ReadChar()
+			token = Token{TokenType.NotEqual, "!="}
+		else
+			token = Token{TokenType.Bang, "!"}
+		end
+	elseif char == '>' then
+		token = Token{TokenType.GreaterThan, ">"}
+	elseif char == '<' then
+		token = Token{TokenType.LessThan, "<"}
+	elseif char == '*' then
+		token = Token{TokenType.Asterisk, "*"}
+	elseif char == '/' then
+		token = Token{TokenType.ForwardSlash, "/"}
+	elseif char == '=' then
+		if self:Peek() == '='_u8 then
+			self:ReadChar()
+			token = Token{TokenType.Equal, "=="}
+		else
+			token = Token{TokenType.Assign, "="}
+		end
+	elseif unlikely(char == '\0') then
+		token = Token{TokenType.Eof, "Eof"}
+	else
+		token = Token{TokenType.Illegal, "Illegal"}
+	end
+
+	self:ReadChar()
+	return token
+end
+
+local lexer = Lexer{"\
+let five = 5;\
+let ten = 10;\
+let add = fn(x, y) {\
+    x + y;\
+};\
+let result = add(five, ten);\
+!-/*5;\
+5 < 10 > 5;\
+if (5 < 10) {\
+    return true;\
+} else {\
+    return false;\
+}\
+\
+10 == 10;\
+10 != 9;", 1, 1, 0}
+
+lexer:ReadChar()
+
+local token = lexer:NextToken()
+
+while token.Type ~= TokenType.Eof do
+	print(token.Literal)
+	token = lexer:NextToken()
+end
+
+print(token.Literal)
