@@ -1,13 +1,7 @@
-FROM alpine:3.18.0
-
-RUN apk add cmake make g++ git
-
+FROM gcc:latest
+RUN apt-get update
+RUN apt-get install -y cmake make
 COPY . /src
-
-RUN mkdir /src/cbuild
-
-WORKDIR /src/cbuild
-
-RUN cmake ../ && make
-
-CMD ["./tests/lexer_test"]
+RUN cmake -S /src -B /build -D CMAKE_BUILD_TYPE=Release
+RUN cmake --build /build
+CMD ["/build/lexer"]

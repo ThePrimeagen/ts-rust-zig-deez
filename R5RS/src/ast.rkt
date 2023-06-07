@@ -106,6 +106,21 @@
   (cadr (cdddr node)))
 
 
+; INDEX NODE
+; (token left index)
+(define (new-index-node token left index)
+  (list 'index-node token left index))
+
+(define (index-node? node)
+  (tagged-list? node 'index-node))
+
+(define (index-left node)
+  (caddr node))
+
+(define (index-index node)
+  (car (cdddr node)))
+
+
 ; INTEGER LITERAL
 ; (token value)
 (define (new-integeral-literal token value)
@@ -116,9 +131,6 @@
 
 (define (int-value literal)
   (caddr literal))
-
-(define (int-token s)
-  (cadr s))
 
 
 ; BOOLEAN
@@ -132,8 +144,46 @@
 (define (bool-value literal)
   (caddr literal))
 
-(define (bool-token s)
-  (cadr s))
+
+; STRING LITERAL
+; (token value)
+(define (new-string token value)
+  (list 'string token value))
+
+(define (string-literal? s)
+  (tagged-list? s 'string))
+
+(define (string-value literal)
+  (caddr literal))
+
+
+; ARRAY LITERAL
+; (token (expression))
+(define (new-array token exps)
+  (list 'array token exps))
+
+(define (array? s)
+  (tagged-list? s 'array))
+
+(define (array-exps array)
+  (caddr array))
+
+; HASH LITERAL
+; (token hash)
+(define (new-hash-literal token)
+  (list 'hash token (make-hash)))
+
+(define (hash-literal? s)
+  (tagged-list? s 'hash))
+
+(define (hash-literal-hash hash)
+  (caddr hash))
+
+(define (hash-literal-set! h key value)
+  (hash-set! (hash-literal-hash h) key value))
+
+(define (hash-literal-ref h key)
+  (hash-ref (hash-literal-hash h) key '()))
 
 
 ; IF NODE

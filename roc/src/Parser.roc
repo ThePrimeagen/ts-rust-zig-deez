@@ -65,14 +65,14 @@ parse = \tokens ->
 
 parseProgram : Parser, Program -> Result Program Errors
 parseProgram = \p0, program ->
-    when List.first p0.remainingTokens is
-        Ok Eof | Err _ ->
+    when p0.remainingTokens is
+        [Eof, ..] | [] ->
             if List.isEmpty p0.errors then
                 Ok program
             else
                 Err p0.errors
 
-        Ok token ->
+        [token, ..] ->
             when parseStatement p0 token is
                 Ok (p1, statement) ->
                     parseProgram p1 (List.append program statement)
@@ -140,49 +140,49 @@ parseExpression = \p0, basePrec ->
 
 parsePrefix : Parser -> Result (Parser, Node) Parser
 parsePrefix = \p0 ->
-    when List.first p0.remainingTokens is
-        Ok (Ident ident) ->
+    when p0.remainingTokens is
+        [Ident ident, ..] ->
             Ok (advanceTokens p0 1, Ident ident)
 
-        Ok (Int int) ->
+        [Int int, ..] ->
             Ok (advanceTokens p0 1, Int int)
 
-        Ok Bang ->
+        [Bang, ..] ->
             (p1, expr) <- parseExpression (advanceTokens p0 1) precPrefix |> Result.map
             (p1, Not expr)
 
-        Ok Minus ->
+        [Minus, ..] ->
             (p1, expr) <- parseExpression (advanceTokens p0 1) precPrefix |> Result.map
             (p1, Negate expr)
 
-        Ok LParen ->
+        [LParen, ..] ->
             (p1, expr) <- parseExpression (advanceTokens p0 1) precLowest |> Result.try
-            when List.first p1.remainingTokens is
-                Ok RParen ->
+            when p1.remainingTokens is
+                [RParen, ..] ->
                     Ok (advanceTokens p1 1, expr)
 
-                Ok token ->
+                [token, ..] ->
                     p1
                     |> advanceTokens 1
                     |> tokenMismatch "RParen" token
                     |> Err
 
-                Err _ ->
+                [] ->
                     Err (unexpectedEof p1)
 
-        Ok True ->
+        [True, ..] ->
             Ok (advanceTokens p0 1, True)
 
-        Ok False ->
+        [False, ..] ->
             Ok (advanceTokens p0 1, False)
 
-        Ok If ->
+        [If, ..] ->
             parseIfExpression (advanceTokens p0 1)
 
-        Ok Function ->
+        [Function, ..] ->
             parseFnExpression (advanceTokens p0 1)
 
-        Ok token ->
+        [token, ..] ->
             debugStr = Lexer.debugPrintToken token
 
             p0
@@ -190,7 +190,7 @@ parsePrefix = \p0 ->
             |> addError "no prefix parse function for \(debugStr) found"
             |> Err
 
-        Err _ ->
+        [] ->
             Err (unexpectedEof p0)
 
 parseInfix : Parser, Node, Precedence -> Result (Parser, Node) Parser
@@ -199,12 +199,12 @@ parseInfix = \p0, lhs, basePrec ->
     if basePrec >= nextPrec then
         Ok (p0, lhs)
     else
-        when List.first p0.remainingTokens is
-            Ok LParen ->
+        when p0.remainingTokens is
+            [LParen, ..] ->
                 (p1, args) <- parseCallArgs (advanceTokens p0 1) |> Result.try
                 parseInfix p1 (Call { fn: lhs, args }) basePrec
 
-            Ok token ->
+            [token, ..] ->
                 # parse standard infix
                 binOpRes =
                     when token is
@@ -226,78 +226,78 @@ parseInfix = \p0, lhs, basePrec ->
                     Err NotInfix ->
                         Ok (p0, lhs)
 
-            Err _ ->
+            [] ->
                 Err (unexpectedEof p0)
 
 peekPrecedence : Parser -> Precedence
 peekPrecedence = \p0 ->
-    when List.first p0.remainingTokens is
-        Ok Eq -> precEquals
-        Ok NotEq -> precEquals
-        Ok Gt -> precLessGreater
-        Ok Lt -> precLessGreater
-        Ok Plus -> precSum
-        Ok Minus -> precSum
-        Ok Asterisk -> precProduct
-        Ok Slash -> precProduct
-        Ok LParen -> precCall
+    when p0.remainingTokens is
+        [Eq, ..] -> precEquals
+        [NotEq, ..] -> precEquals
+        [Gt, ..] -> precLessGreater
+        [Lt, ..] -> precLessGreater
+        [Plus, ..] -> precSum
+        [Minus, ..] -> precSum
+        [Asterisk, ..] -> precProduct
+        [Slash, ..] -> precProduct
+        [LParen, ..] -> precCall
         _ -> precLowest
 
 parseCallArgs : Parser -> Result (Parser, List Node) Parser
 parseCallArgs = \p0 ->
-    when List.first p0.remainingTokens is
-        Ok RParen ->
+    when p0.remainingTokens is
+        [RParen, ..] ->
             Ok (p0, [])
 
-        Ok _ ->
+        [_, ..] ->
             (p1, arg) <- parseExpression p0 precLowest |> Result.try
             parseCallArgsHelper p1 [arg]
 
-        Err _ ->
+        [] ->
             Err (unexpectedEof p0)
 
 parseCallArgsHelper : Parser, List Node -> Result (Parser, List Node) Parser
 parseCallArgsHelper = \p0, args ->
-    when List.first p0.remainingTokens is
-        Ok RParen ->
+    when p0.remainingTokens is
+        [RParen, ..] ->
             Ok (advanceTokens p0 1, args)
 
-        Ok Comma ->
+        [Comma, ..] ->
             (p1, arg) <- parseExpression (advanceTokens p0 1) precLowest |> Result.try
             parseCallArgsHelper p1 (List.append args arg)
 
-        Ok token ->
+        [token, ..] ->
             p0
             |> tokenMismatch "RParen or Comma" token
             |> Err
 
-        Err _ ->
+        [] ->
             Err (unexpectedEof p0)
 
 parseFnExpression : Parser -> Result (Parser, Node) Parser
 parseFnExpression = \p0 ->
-    when List.first p0.remainingTokens is
-        Ok LParen ->
+    when p0.remainingTokens is
+        [LParen, ..] ->
             (p1, params) <- parseFnParams (advanceTokens p0 1) [] |> Result.try
-            when List.first p1.remainingTokens is
-                Ok LBrace ->
+            when p1.remainingTokens is
+                [LBrace, ..] ->
                     (p2, body) <- parseBlock (advanceTokens p1 1) [] |> Result.map
                     (p2, Fn { params, body })
 
-                Ok token ->
+                [token, ..] ->
                     p0
                     |> tokenMismatch "LBrace" token
                     |> Err
 
-                Err _ ->
+                [] ->
                     Err (unexpectedEof p1)
 
-        Ok token ->
+        [token, ..] ->
             p0
             |> tokenMismatch "LParen" token
             |> Err
 
-        Err _ ->
+        [] ->
             Err (unexpectedEof p0)
 
 parseFnParams : Parser, List Str -> Result (Parser, List Str) Parser
@@ -322,8 +322,8 @@ parseFnParams = \p0, params ->
 
 parseIfExpression : Parser -> Result (Parser, Node) Parser
 parseIfExpression = \p0 ->
-    when List.first p0.remainingTokens is
-        Ok LParen ->
+    when p0.remainingTokens is
+        [LParen, ..] ->
             (p1, cond) <- parseExpression (advanceTokens p0 1) precLowest |> Result.try
             when p1.remainingTokens is
                 [RParen, LBrace, ..] ->
@@ -353,21 +353,21 @@ parseIfExpression = \p0 ->
                 [] ->
                     Err (unexpectedEof p1)
 
-        Ok token ->
+        [token, ..] ->
             p0
             |> tokenMismatch "LParen" token
             |> Err
 
-        Err _ ->
+        [] ->
             Err (unexpectedEof p0)
 
 parseBlock : Parser, List Node -> Result (Parser, Node) Parser
 parseBlock = \p0, statements ->
-    when List.first p0.remainingTokens is
-        Ok RBrace ->
+    when p0.remainingTokens is
+        [RBrace, ..] ->
             Ok (advanceTokens p0 1, Block statements)
 
-        Ok token ->
+        [token, ..] ->
             when parseStatement p0 token is
                 Ok (p1, statement) ->
                     parseBlock p1 (List.append statements statement)
@@ -376,13 +376,13 @@ parseBlock = \p0, statements ->
                     # Even on error, continue parsing
                     parseBlock p1 statements
 
-        Err _ ->
+        [] ->
             Err (unexpectedEof p0)
 
 consumeOptionalSemicolon : Parser -> Parser
 consumeOptionalSemicolon = \p0 ->
-    when List.first p0.remainingTokens is
-        Ok Semicolon ->
+    when p0.remainingTokens is
+        [Semicolon, ..] ->
             advanceTokens p0 1
 
         _ ->

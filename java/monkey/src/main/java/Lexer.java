@@ -1,5 +1,3 @@
-
-
 public class Lexer {
 
     private final String input;
@@ -12,7 +10,9 @@ public class Lexer {
     public Token nextToken() {
         this.skipWhitespace();
 
-        var token = switch (this.getCc()) {
+        var currentChar = this.readCc();
+
+        return switch ((Character) currentChar) {
             case '{' -> TokenType.LSQIRLY.token();
             case '}' -> TokenType.RSQIRLY.token();
             case '(' -> TokenType.LPAREN.token();
@@ -20,34 +20,45 @@ public class Lexer {
             case ',' -> TokenType.COMMA.token();
             case ';' -> TokenType.SEMI.token();
             case '+' -> TokenType.PLUS.token();
-            case '=' -> TokenType.EQUAL.token();
+            case '=' -> {
+                if (this.getCc() == '=') {
+                    this.advance();
+                    yield TokenType.EQUAL.token();
+                }
+
+                yield TokenType.ASSIGN.token();
+            }
+            case '-' -> TokenType.MINUS.token();
+            case '!' -> {
+                if (this.getCc() == '=') {
+                    this.advance();
+                    yield TokenType.NOT_EQUAL.token();
+                }
+
+                yield TokenType.BANG.token();
+            }
+            case '*' -> TokenType.ASTERISK.token();
+            case '/' -> TokenType.SLASH.token();
+            case '>' -> TokenType.GT.token();
+            case '<' -> TokenType.LT.token();
             case '\0' -> TokenType.EOF.token();
-            default -> TokenType.ILLEGAL.createToken(String.valueOf(this.getCc()));
-        };
 
-
-        if (token.type() != TokenType.ILLEGAL) {
-            this.advance();
-            return token;
-        }
-       switch ((Character)this.getCc()){
             case Character c when isLetter(c) -> {
-                var ident = this.indent();
-                return switch (ident) {
-                    case "fn" ->  TokenType.FUNC.token();
-                    case "let" ->  TokenType.LET.token();
-                    default ->  TokenType.IDENT.createToken(ident);
+                var ident = this.indent(currentChar);
+                yield switch (ident) {
+                    case "fn" -> TokenType.FUNC.token();
+                    case "let" -> TokenType.LET.token();
+                    case "true" -> TokenType.TRUE.token();
+                    case "false" -> TokenType.FALSE.token();
+                    case "if" -> TokenType.IF.token();
+                    case "else" -> TokenType.ELSE.token();
+                    case "return" -> TokenType.RETURN.token();
+                    default -> TokenType.IDENT.createToken(ident);
                 };
             }
-            case Character c when Character.isDigit(c) -> {
-                return TokenType.INT.createToken(this.number());
-            }
-           default -> {
-               this.advance();
-               return token;
-           }
-       }
-
+            case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number(currentChar));
+            default -> TokenType.ILLEGAL.createToken(String.valueOf(currentChar));
+        };
     }
 
     private void advance() {
@@ -59,30 +70,40 @@ public class Lexer {
     }
 
     private char getCc() {
-        if (this.pos >= this.input.length() || this.pos < 0) {
+        return this.peek(this.pos);
+    }
+
+    private char readCc() {
+        var currentChar = this.getCc();
+        this.advance();
+        return currentChar;
+    }
+
+    private char peek(int pos) {
+        if (pos >= this.input.length() || pos < 0) {
             return '\0';
         }
-        return this.input.charAt(this.pos);
+        return this.input.charAt(pos);
     }
 
     private boolean isLetter(char c) {
         return Character.isLetter(c) || c == '_';
     }
 
-    private String number() {
+    private String number(char firstChar) {
         int pos = this.pos;
         while (Character.isDigit(this.getCc())) {
             this.advance();
         }
-        return this.input.substring(pos, this.pos);
+        return firstChar + this.input.substring(pos, this.pos);
     }
 
-    private String indent() {
+    private String indent(char firstChar) {
         int pos = this.pos;
         while (this.isLetter(this.getCc())) {
             this.advance();
         }
-        return this.input.substring(pos, this.pos);
+        return firstChar + this.input.substring(pos, this.pos);
     }
 
     private void skipWhitespace() {

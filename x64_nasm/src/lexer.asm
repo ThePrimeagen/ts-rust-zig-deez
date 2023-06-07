@@ -1,3 +1,4 @@
+%line 1 "lexer.asm"
 ;; =============================================================================
 ;;  Lexer tables.
 ;; =============================================================================
@@ -149,10 +150,10 @@ section .text
 ;; Initialise the lexer.
 ;;
 lexer_init:
-    mov rbp, [file_contents]
+    mov rbp, [gs:context.file_contents]
     xor r12, r12
     mov r13, rbp
-    mov r14, [file_size]
+    mov r14, [gs:context.file_size]
     add r14, r13
     mov r15, ' '
     ret
@@ -162,7 +163,6 @@ lexer_init:
 ;;
 next_token:
     ;; Init token.
-    mov ebx, TK_INVALID
     mov r12, r13
     sub r12, rbp
     sub r12, 1
@@ -200,7 +200,6 @@ align CACHE_LINE_SIZE
     ;; Return eof.
     mov ebx, TK_EOF
     ret
-
 
 ;;
 ;; Lex an identifier.
@@ -350,10 +349,12 @@ lexer_jump_target_punctuation_two_chars:
 lexer_jump_target_invalid:
     endbr64
 
+    mov ebx, TK_INVALID
+
     push r15
     next_char
     add r12, 1
-    mov byte [has_error], 1
+    mov byte [gs:context.has_error], 1
 
     call print_location
 
@@ -374,9 +375,7 @@ print_token:
     call print_location
 
     ;; Print token type.
-    %if TOKEN_STRING_LENGTH != 8
-        %error LEA below doesn’t work anymore
-    %endif
+    static_assert TOKEN_STRING_LENGTH == 8, "LEA below doesn’t work anymore"
     lea esi, [ebx * 8 + table_token_names]
     lea rdi, [string_format_string]
     xor eax, eax
@@ -419,7 +418,7 @@ print_token:
 ;;
 print_location:
     lea rdi, [string_format_location]
-    mov rsi, qword [filename]
+    mov rsi, qword [gs:context.filename]
     mov rdx, r12
     shr rdx, 32
     mov rcx, r12
@@ -456,7 +455,7 @@ stoi:
     sub rsp, 8
     call print_location
     mov rdi, error_integer_overflow
-    mov byte [has_error], 1
+    mov byte [gs:context.has_error], 1
     call puts
     add rsp, 8
     stc
