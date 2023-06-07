@@ -1,4 +1,4 @@
-class Lexer {
+public class Monkey.Lexer {
   string input = "";
   int position = 0;
   int read_position = 0;
@@ -55,22 +55,22 @@ class Lexer {
     return input[pos:position];
   }
 
-  static HashTable<string, TokenType?> keywords;
+  static HashTable<string, Monkey.TokenType?> keywords;
 
   static construct {
-    keywords = new HashTable<string, TokenType?>(str_hash, str_equal);
-    keywords.insert("fn", TokenType.FUNCTION);
-    keywords.insert("let", TokenType.LET);
-    keywords.insert("true", TokenType.TRUE);
-    keywords.insert("false", TokenType.FALSE);
-    keywords.insert("if", TokenType.IF);
-    keywords.insert("else", TokenType.ELSE);
-    keywords.insert("return", TokenType.RETURN);
+    keywords = new HashTable<string, Monkey.TokenType?>(str_hash, str_equal);
+    keywords.insert("fn", Monkey.TokenType.FUNCTION);
+    keywords.insert("let", Monkey.TokenType.LET);
+    keywords.insert("true", Monkey.TokenType.TRUE);
+    keywords.insert("false", Monkey.TokenType.FALSE);
+    keywords.insert("if", Monkey.TokenType.IF);
+    keywords.insert("else", Monkey.TokenType.ELSE);
+    keywords.insert("return", Monkey.TokenType.RETURN);
   }
 
-  static TokenType lookup_ident(string ident) {
+  static Monkey.TokenType lookup_ident(string ident) {
     var type = keywords.lookup(ident);
-    return type != null ? type : TokenType.IDENT;
+    return type != null ? type : Monkey.TokenType.IDENT;
   }
 
   void skip_whitespace() {
@@ -88,57 +88,57 @@ class Lexer {
       case '=':
         if (peek_char() == '=') {
           read_char();
-          tok = Token(TokenType.EQ, "==");
+          tok = Token(Monkey.TokenType.EQ, "==");
         } else {
-          tok = Token(TokenType.ASSIGN, "=");
+          tok = Token(Monkey.TokenType.ASSIGN, "=");
         }
         break;
       case '+':
-        tok = Token(TokenType.PLUS, "+");
+        tok = Token(Monkey.TokenType.PLUS, "+");
         break;
       case '-':
-        tok = Token(TokenType.MINUS, "-");
+        tok = Token(Monkey.TokenType.MINUS, "-");
         break;
       case '!':
         if (peek_char() == '=') {
           read_char();
-          tok = Token(TokenType.NOT_EQ, "!=");
+          tok = Token(Monkey.TokenType.NOT_EQ, "!=");
         } else {
-          tok = Token(TokenType.BANG, "!");
+          tok = Token(Monkey.TokenType.BANG, "!");
         }
         break;
       case '/':
-        tok = Token(TokenType.SLASH, "/");
+        tok = Token(Monkey.TokenType.SLASH, "/");
         break;
       case '*':
-        tok = Token(TokenType.ASTERISK, "*");
+        tok = Token(Monkey.TokenType.ASTERISK, "*");
         break;
       case '<':
-        tok = Token(TokenType.LT, "<");
+        tok = Token(Monkey.TokenType.LT, "<");
         break;
       case '>':
-        tok = Token(TokenType.GT, ">");
+        tok = Token(Monkey.TokenType.GT, ">");
         break;
       case ';':
-        tok = Token(TokenType.SEMICOLON, ";");
+        tok = Token(Monkey.TokenType.SEMICOLON, ";");
         break;
       case ',':
-        tok = Token(TokenType.COMMA, ",");
+        tok = Token(Monkey.TokenType.COMMA, ",");
         break;
       case '(':
-        tok = Token(TokenType.LPAREN, "(");
+        tok = Token(Monkey.TokenType.LPAREN, "(");
         break;
       case ')':
-        tok = Token(TokenType.RPAREN, ")");
+        tok = Token(Monkey.TokenType.RPAREN, ")");
         break;
       case '{':
-        tok = Token(TokenType.LBRACE, "{");
+        tok = Token(Monkey.TokenType.LBRACE, "{");
         break;
       case '}':
-        tok = Token(TokenType.RBRACE, "}");
+        tok = Token(Monkey.TokenType.RBRACE, "}");
         break;
       case '\0':
-        tok = Token(TokenType.EOF);
+        tok = Token(Monkey.TokenType.EOF);
         break;
       default:
         tok = Token();
@@ -148,7 +148,7 @@ class Lexer {
           return tok;
         } else if (is_digit(ch)) {
           tok.literal = read_number();
-          tok.type = TokenType.INT;
+          tok.type = Monkey.TokenType.INT;
           return tok;
         } else {
           warn_if_reached();
