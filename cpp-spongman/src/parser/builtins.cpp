@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <string_view>
+#include <iostream>
 
 #include "token.hpp"
 #include "builtins.hpp"
@@ -71,6 +72,27 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 					throw std::runtime_error("invalid argument to rest(): " + std::to_string(value));
 				}
 			}, value.data);
+		}
+	},
+	{ "puts", {"str"},
+		[](const Array& arguments) {
+			bool first = true;
+			for (const auto& argument : arguments) {
+				if (!first)
+					std::cout << " ";
+				first = false;
+
+				std::visit(overloaded{
+					[](const String& str) {
+						std::cout << str;
+					},
+					[](const auto& value) {
+						std::cout << std::to_string(value);
+					}
+				}, argument.data);
+			}
+			std::cout << "\n";
+			return nil;
 		}
 	},
 };

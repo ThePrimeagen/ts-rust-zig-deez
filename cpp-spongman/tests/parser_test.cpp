@@ -269,6 +269,20 @@ TEST(TestLexer, TestArrayBuiltinFunction) {
 	});
 }
 
+
+TEST(TestLexer, TestStringBuiltinFunction) {
+	runTests({
+		{ R"XXX( len("")      )XXX", Value{0} },
+		{ R"XXX( len("123")   )XXX", Value{3} },
+		{ R"XXX( first("")    )XXX", nil },
+		{ R"XXX( first("123") )XXX", Value{"1"}},
+		{ R"XXX( last("")     )XXX", nil },
+		{ R"XXX( last("123")  )XXX", Value{"3"}},
+		{ R"XXX( rest("")     )XXX", nil },
+		{ R"XXX( rest("123")  )XXX", Value{"23"}},
+	});
+}
+
 TEST(TestLexer, TestHashLiterals) {
 	runTests({
 		{R"XXX( 
