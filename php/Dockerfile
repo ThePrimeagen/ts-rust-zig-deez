@@ -1,4 +1,6 @@
-FROM php:8.2-cli
-COPY . /usr/src/tokenizer
-WORKDIR /usr/src/tokenizer
-CMD [ "php", "./test.php" ]
+FROM composer:2.5.7 as test
+
+COPY . .
+RUN composer install --no-interaction
+
+CMD [ "composer", "test", "tests" ]
