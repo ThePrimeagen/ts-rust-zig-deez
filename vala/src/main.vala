@@ -40,7 +40,7 @@ struct Token {
   TokenType type;
   string literal;
 
-  Token(TokenType type, string literal = "") {
+  Token(TokenType type = TokenType.ILLEGAL, string literal = "") {
     this.type = type;
     this.literal = literal;
   }
@@ -65,6 +65,14 @@ class Lexer {
     }
     position = read_position;
     read_position += 1;
+  }
+
+  char peek_char() {
+    if (read_position >= input.length) {
+      return 0;
+    } else {
+      return input[read_position];
+    }
   }
 
   static bool is_letter(char c) {
@@ -101,6 +109,11 @@ class Lexer {
     keywords = new HashTable<string, TokenType?>(str_hash, str_equal);
     keywords.insert("fn", TokenType.FUNCTION);
     keywords.insert("let", TokenType.LET);
+    keywords.insert("true", TokenType.TRUE);
+    keywords.insert("false", TokenType.FALSE);
+    keywords.insert("if", TokenType.IF);
+    keywords.insert("else", TokenType.ELSE);
+    keywords.insert("return", TokenType.RETURN);
   }
 
   static TokenType lookup_ident(string ident) {
@@ -120,17 +133,63 @@ class Lexer {
     skip_whitespace();
 
     switch (ch) {
-      case '=': tok = Token(TokenType.ASSIGN, @"$ch"); break;
-      case ';': tok = Token(TokenType.SEMICOLON, @"$ch"); break;
-      case '(': tok = Token(TokenType.LPAREN, @"$ch"); break;
-      case ')': tok = Token(TokenType.RPAREN, @"$ch"); break;
-      case ',': tok = Token(TokenType.COMMA, @"$ch"); break;
-      case '+': tok = Token(TokenType.PLUS, @"$ch"); break;
-      case '{': tok = Token(TokenType.LBRACE, @"$ch"); break;
-      case '}': tok = Token(TokenType.RBRACE, @"$ch"); break;
-      case '\0': tok = Token(TokenType.EOF); break;
+      case '=':
+        if (peek_char() == '=') {
+          read_char();
+          tok = Token(TokenType.EQ, "==");
+        } else {
+          tok = Token(TokenType.ASSIGN, "=");
+        }
+        break;
+      case '+':
+        tok = Token(TokenType.PLUS, "+");
+        break;
+      case '-':
+        tok = Token(TokenType.MINUS, "-");
+        break;
+      case '!':
+        if (peek_char() == '=') {
+          read_char();
+          tok = Token(TokenType.NOT_EQ, "!=");
+        } else {
+          tok = Token(TokenType.BANG, "!");
+        }
+        break;
+      case '/':
+        tok = Token(TokenType.SLASH, "/");
+        break;
+      case '*':
+        tok = Token(TokenType.ASTERISK, "*");
+        break;
+      case '<':
+        tok = Token(TokenType.LT, "<");
+        break;
+      case '>':
+        tok = Token(TokenType.GT, ">");
+        break;
+      case ';':
+        tok = Token(TokenType.SEMICOLON, ";");
+        break;
+      case ',':
+        tok = Token(TokenType.COMMA, ",");
+        break;
+      case '(':
+        tok = Token(TokenType.LPAREN, "(");
+        break;
+      case ')':
+        tok = Token(TokenType.RPAREN, ")");
+        break;
+      case '{':
+        tok = Token(TokenType.LBRACE, "{");
+        break;
+      case '}':
+        tok = Token(TokenType.RBRACE, "}");
+        break;
+      case '\0':
+        tok = Token(TokenType.EOF);
+        break;
       default:
-        tok = Token(TokenType.ILLEGAL);
+        tok = Token();
         if (is_letter(ch)) {
           tok.literal = read_identifier();
           tok.type = lookup_ident(tok.literal);
@@ -140,7 +199,6 @@ class Lexer {
           tok.type = TokenType.INT;
           return tok;
         } else {
-          tok = Token(TokenType.ILLEGAL);
           warn_if_reached();
         }
         break;
@@ -158,52 +216,99 @@ struct Test {
 }
 
 static int main(string[] args) {
-  const string input = """let five = 5;
+  const string input = """
+let five = 5;
 let ten = 10;
 let add = fn(x, y) {
-x + y;
+  x + y;
 };
 let result = add(five, ten);
+!-/*5;
+5 < 10 > 5;
+if (5 < 10) {
+  return true;
+} else {
+  return false;
+}
+10 == 10;
+10 != 9;
 """;
 
   const Test[] tests = {
-    { TokenType.LET, "let" },
-    { TokenType.IDENT, "five" },
-    { TokenType.ASSIGN, "=" },
-    { TokenType.INT, "5" },
-    { TokenType.SEMICOLON, ";" },
-    { TokenType.LET, "let" },
-    { TokenType.IDENT, "ten" },
-    { TokenType.ASSIGN, "=" },
-    { TokenType.INT, "10" },
-    { TokenType.SEMICOLON, ";" },
-    { TokenType.LET, "let" },
-    { TokenType.IDENT, "add" },
-    { TokenType.ASSIGN, "=" },
-    { TokenType.FUNCTION, "fn" },
-    { TokenType.LPAREN, "(" },
-    { TokenType.IDENT, "x" },
-    { TokenType.COMMA, "," },
-    { TokenType.IDENT, "y" },
-    { TokenType.RPAREN, ")" },
-    { TokenType.LBRACE, "{" },
-    { TokenType.IDENT, "x" },
-    { TokenType.PLUS, "+" },
-    { TokenType.IDENT, "y" },
-    { TokenType.SEMICOLON, ";" },
-    { TokenType.RBRACE, "}" },
-    { TokenType.SEMICOLON, ";" },
-    { TokenType.LET, "let" },
-    { TokenType.IDENT, "result" },
-    { TokenType.ASSIGN, "=" },
-    { TokenType.IDENT, "add" },
-    { TokenType.LPAREN, "(" },
-    { TokenType.IDENT, "five" },
-    { TokenType.COMMA, "," },
-    { TokenType.IDENT, "ten" },
-    { TokenType.RPAREN, ")" },
-    { TokenType.SEMICOLON, ";" },
-    { TokenType.EOF, "" },
+		{TokenType.LET, "let"},
+		{TokenType.IDENT, "five"},
+		{TokenType.ASSIGN, "="},
+		{TokenType.INT, "5"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.LET, "let"},
+		{TokenType.IDENT, "ten"},
+		{TokenType.ASSIGN, "="},
+		{TokenType.INT, "10"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.LET, "let"},
+		{TokenType.IDENT, "add"},
+		{TokenType.ASSIGN, "="},
+		{TokenType.FUNCTION, "fn"},
+		{TokenType.LPAREN, "("},
+		{TokenType.IDENT, "x"},
+		{TokenType.COMMA, ","},
+		{TokenType.IDENT, "y"},
+		{TokenType.RPAREN, ")"},
+		{TokenType.LBRACE, "{"},
+		{TokenType.IDENT, "x"},
+		{TokenType.PLUS, "+"},
+		{TokenType.IDENT, "y"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.RBRACE, "}"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.LET, "let"},
+		{TokenType.IDENT, "result"},
+		{TokenType.ASSIGN, "="},
+		{TokenType.IDENT, "add"},
+		{TokenType.LPAREN, "("},
+		{TokenType.IDENT, "five"},
+		{TokenType.COMMA, ","},
+		{TokenType.IDENT, "ten"},
+		{TokenType.RPAREN, ")"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.BANG, "!"},
+		{TokenType.MINUS, "-"},
+		{TokenType.SLASH, "/"},
+		{TokenType.ASTERISK, "*"},
+		{TokenType.INT, "5"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.INT, "5"},
+		{TokenType.LT, "<"},
+		{TokenType.INT, "10"},
+		{TokenType.GT, ">"},
+		{TokenType.INT, "5"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.IF, "if"},
+		{TokenType.LPAREN, "("},
+		{TokenType.INT, "5"},
+		{TokenType.LT, "<"},
+		{TokenType.INT, "10"},
+		{TokenType.RPAREN, ")"},
+		{TokenType.LBRACE, "{"},
+		{TokenType.RETURN, "return"},
+		{TokenType.TRUE, "true"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.RBRACE, "}"},
+		{TokenType.ELSE, "else"},
+		{TokenType.LBRACE, "{"},
+		{TokenType.RETURN, "return"},
+		{TokenType.FALSE, "false"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.RBRACE, "}"},
+		{TokenType.INT, "10"},
+		{TokenType.EQ, "=="},
+		{TokenType.INT, "10"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.INT, "10"},
+		{TokenType.NOT_EQ, "!="},
+		{TokenType.INT, "9"},
+		{TokenType.SEMICOLON, ";"},
+		{TokenType.EOF, ""},
   };
 
   var l = new Lexer(input);
