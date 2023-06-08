@@ -1,4 +1,6 @@
 
+unique type Precedence = LOWEST | EQUALS | LESSGREATER | SUM | PRODUCT | PREFIX | CALL
+
 Parser.parseProgram : [Token] -> {Exception}[Statement]
 Parser.parseProgram tks = 
     loop tks stm = let
@@ -16,7 +18,7 @@ Parser.parseStatement tk tks =
     match tk with
         Let -> parseLet tks
         Return -> parseReturn tks
-        _ -> handleError tk tks
+        _ -> parseExpression tk tks
 
 
 
@@ -30,25 +32,35 @@ Parser.parseLet tokens =
     match assign with 
         Token.Error _ _  -> handleError name remain2
         _ -> let
-    (expression, remain3) = expLoop [] remain2
-    semicolonCheck Let expression remain3
+    (expression, remain3) = parseLoop remain2
+    match List.uncons remain3 with
+        Some (h, tail)
+            | h === Semicolon -> (LetStatement name expression, tail)
+            | otherwise  -> (ErrorStatement expression Return, remain3)
+        None -> Exception.raise (Failure (typeLink Generic) "parseLet: let statement incorret format" (Any Return))    
 
 Parser.parseReturn : [Token] -> {Exception}(Statement, [Token])
 Parser.parseReturn tokens = 
-    (expression, remain) = expLoop [] tokens
-    semicolonCheck Return expression remain
+    (expression, remain) = parseLoop tokens
+    match List.uncons remain with
+        Some (h, tail)
+            | h === Semicolon -> (ReturnStatement expression, tail)
+            | otherwise  -> (ErrorStatement expression Return, remain)
+        None -> Exception.raise (Failure (typeLink Generic) "parseReturn: let statement incorret format" (Any Return))    
 
-Parser.expLoop: [Token] -> [Token] -> {Exception}([Token], [Token])
-Parser.expLoop exp tks =
-    match List.uncons tks with
-        Some(tk, rem) ->
-            match tk with
-                Eof -> (exp, tks)
-                Semicolon -> (exp, tks)
-                Let -> (exp, tks)
-                Return -> (exp, tks)
-                _ -> expLoop (exp :+ tk) rem
-        None -> Exception.raise (Failure (typeLink Generic) "expLoop: let statement incorret format" (Any(take 1 tks)))    
+Parser.parseLoop: [Token] -> {Exception}([Token], [Token])
+Parser.parseLoop tks =
+    loop exp tks = 
+        match List.uncons tks with
+            Some(tk, rem) ->
+                match tk with
+                    Eof -> (exp, tks)
+                    Semicolon -> (exp, tks)
+                    Let -> (exp, tks)
+                    Return -> (exp, tks)
+                    _ -> loop (exp :+ tk) rem
+            None -> Exception.raise (Failure (typeLink Generic) "parseLoop: let statement incorret format" (Any(take 1 tks)))    
+    loop [] tks
 
 --TODO move parsing funtions to here once done
 
@@ -89,14 +101,6 @@ Parser.handleError tk tks =
             None -> Exception.raise (Failure (typeLink Generic) "handleError: let statement incorret format" (Any(take 1 tks)))
     loop tks []
 
-Parser.semicolonCheck : Token -> [Token] -> [Token] -> {Exception}(Statement, [Token])
-Parser.semicolonCheck tp expression remain =
-    match List.uncons remain with
-        Some (h, tail)
-            | h === Semicolon -> (ReturnStatement expression, tail)
-            | otherwise  -> (ErrorStatement expression tp, remain)
-        None -> Exception.raise (Failure (typeLink Generic) "semicolonCheck: let statement incorret format" (Any tp))    
-    
 
 Test.testParser : '{IO, Exception}[Statement]
 Test.testParser = do
@@ -105,8 +109,12 @@ Test.testParser = do
     program = tokens :+ Eof
     parseProgram program
 
+Test.testTokens : '{IO, Exception}[Token]
+Test.testTokens = do
+    path = FilePath "parTest.txt"
+    tokens = lexer << getText <| open path Read
+    tokens :+ Eof
 
----
 
 Parser.prefixParse : [Token] -> [Token]
 Parser.prefixParse tks =
@@ -116,6 +124,20 @@ Parser.infixParse : [Token] -> [Token]
 Parser.infixParse tks =
     tks
 
-Parser.parseExpression : [Token] -> {Exception}(Statement, [Token])
-Parser.parseExpression tks = 
-    (ExpressionStatement [], [])
+Parser.infixFunc : Token -> Optional Statement
+Parser.infixFunc = cases
+    _ -> None
+
+Parser.prefixFunc : Token -> Optional Statement
+Parser.prefixFunc = cases
+    _ -> None
+
+Parser.parseExpression : Token -> [Token] -> {Exception}(Statement, [Token]) -- todo might have to return a statement
+Parser.parseExpression token tokens = 
+    (expression, remain) = parseLoop tokens 
+    match List.uncons tokens with
+        None -> Exception.raise (Failure (typeLink Generic) "parseExpression: let statement incorret format" (Any token))
+        Some (tk, rem) -> let
+    match prefixFunc tk with
+        None -> (ExpressionStatement [], rem)
+        Some x -> (ExpressionStatement [], rem)

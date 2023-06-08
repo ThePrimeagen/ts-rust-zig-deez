@@ -47,6 +47,6 @@ Test.test = do
 
 Test.testFile : '{IO, Exception} [Token]
 Test.testFile = do
-    path = FilePath !readLine
+    path = FilePath "test.txt"
     tokens = lexer << getText <| open path Read
     tokens :+ Eof

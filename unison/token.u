@@ -1,5 +1,5 @@
 
-structural type Token = Illegal Text | Ident Text | Int Text 
+unique type Token = Illegal Text | Ident Text | Int Text 
     | Error Text Token | Eof
     | Assign | Plus | Comma 
     | Semicolon | Lparen | Rparen 

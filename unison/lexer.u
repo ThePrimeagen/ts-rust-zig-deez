@@ -1,5 +1,4 @@
 
-
 Lexer.nextToken : Char -> Token
 Lexer.nextToken ch =
     c = fromCharList [ch]    
