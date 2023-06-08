@@ -19,9 +19,12 @@ docker-ready: docker-build
 # Update those:
 ##
 
+# compile = nelua -r -M -s repl.nelua -o bin/monkey-repl
+src = repl.nelua lexerTest.nelua lexer.nelua
+
 clean:
 	@echo "===> Cleaning"
-	# TODO: replace this line with your cleaning commands
+	rm -r bin
 
 fmt:
 	@echo "===> Formatting"
@@ -29,7 +32,7 @@ fmt:
 
 lint:
 	@echo "===> Linting"
-	# TODO: replace this line with your linting commands
+	nelua -a $(src)
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
@@ -37,9 +40,9 @@ test: test-lexer test-ast test-parser
 
 test-lexer:
 	@echo "===> Testing lexer"
-	bash -c 'diff <(nelua monkey.nelua) <(cat expect.txt)' \
-		|| echo "Tests Failed! seem the differences in expect.txt and the output of monkey.nelua ^" \
-		&& return 1 # Grants that the shell will receive error after the echo
+	bash -c "diff <(nelua lexerTest.nelua) <(cat expect.txt)" || \
+		echo "Tests Failed! look at the differences in expected output and the output of the lexer ^" && \
+		return 1 # Grants that the shell will receive error after the echo
 
 test-ast:
 	@echo "===> Testing AST"
