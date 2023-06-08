@@ -1,12 +1,7 @@
-FROM alpine:3.18.0
-
-RUN apk add cmake g++ git samurai
-
+FROM gcc:latest
+RUN apt-get update
+RUN apt-get install -y cmake make
 COPY . /src
-WORKDIR /src
-
-RUN mkdir -p build
-RUN cmake -S . -B build -G Ninja
-RUN cmake --build build
-
-CMD ["./build/tests/tests"]
+RUN cmake -S /src -B /build -D CMAKE_BUILD_TYPE=Release
+RUN cmake --build /build
+CMD ["/build/lexer"]

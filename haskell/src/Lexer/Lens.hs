@@ -4,8 +4,9 @@
 module Lexer.Lens where
 
 import Control.Lens (makeLenses)
-import Control.Lens.Operators ((&), (+~), (.~), (^.))
-import Control.Monad.State (State, evalState, get, modify)
+import Control.Lens.Combinators (use)
+import Control.Lens.Operators ((.=), (<<+=))
+import Control.Monad.State (State, evalState)
 import Data.ByteString.Char8 (ByteString)
 import Data.ByteString.Char8 qualified as BS
 import Data.Char (isDigit, isLetter, isSpace)
@@ -74,20 +75,21 @@ nextToken = do
 
 peek :: LexerT Char
 peek = do
-    lexer <- get
-    pure $ fromMaybe '\0' ((lexer ^. input) BS.!? (lexer ^. readPosition))
+    readPos <- use readPosition
+    buffer <- use input
+    pure $ fromMaybe '\0' (buffer BS.!? readPos)
 
 current :: LexerT Char
-current = do
-    lexer <- get
-    pure $ lexer ^. ch
+current = use ch
 
 advance :: LexerT ()
-advance = modify $ \lexer ->
-    lexer
-        & ch .~ fromMaybe '\0' ((lexer ^. input) BS.!? (lexer ^. readPosition))
-        & position .~ lexer ^. readPosition
-        & readPosition +~ 1
+advance = do
+    -- Increment `readPosition` by 1 and return the old value
+    -- readPosition++
+    readPos <- readPosition <<+= 1
+    buffer <- use input
+    ch .= fromMaybe '\0' (buffer BS.!? readPos)
+    position .= readPos
 
 skipWhitespace :: LexerT ()
 skipWhitespace = skipWhile isSpace

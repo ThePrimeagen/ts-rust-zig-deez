@@ -4,9 +4,9 @@ RUN apk add cmake make g++ git
 
 COPY . /src
 
-RUN mkdir /src/cbuild
+RUN mkdir /src/build
 
-WORKDIR /src/cbuild
+WORKDIR /src/build
 
 RUN cmake ../ && make
 

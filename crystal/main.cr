@@ -1,3 +1,3 @@
-require "./lexer"
+require "./src/*"
 
 puts "Hello, world!"

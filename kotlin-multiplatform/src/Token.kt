@@ -1,52 +1,60 @@
-﻿package dev.hermannm.monkeylang
+﻿package monkeylang
 
-sealed class Token {
-    // Tokens with data
-    data class Identifier(val name: String) : Token() {
-        override fun toString(): String = "Identifier($name)"
-    }
-    data class Integer(val value: Int) : Token() {
-        override fun toString(): String = "Integer($value)"
-    }
-    data class StringLiteral(val value: String) : Token() {
-        override fun toString(): String = "StringLiteral(\"$value\")"
-    }
-    data class Illegal(val source: String) : Token() {
-        override fun toString(): String = "Illegal($source)"
-    }
+enum class TokenType {
+    Illegal,
+    EndOfFile,
+
+    // Identifiers + literals
+    Identifier,
+    Integer,
+    StringLiteral,
+
+    // Operators
+    Assign,
+    Plus,
+    Minus,
+    Slash,
+    Asterisk,
+
+    // Comparison
+    Equals,
+    NotEquals,
+    Bang,
+    LessThan,
+    GreaterThan,
 
     // Keywords
-    object Function : Token()
-    object Let : Token()
-    object If : Token()
-    object Else : Token()
-    object Return : Token()
-    object True : Token()
-    object False : Token()
+    Function,
+    Let,
+    If,
+    Else,
+    Return,
+    True,
+    False,
 
-    // Single-character tokens
-    object Assign : Token()
-    object Plus : Token()
-    object Minus : Token()
-    object Slash : Token()
-    object Asterisk : Token()
-    object Bang : Token()
-    object LessThan : Token()
-    object GreaterThan : Token()
-    object Comma : Token()
-    object Semicolon : Token()
-    object Colon : Token()
-    object LeftParen : Token()
-    object RightParen : Token()
-    object LeftSquirly : Token()
-    object RightSquirly : Token()
-    object LeftBracket : Token()
-    object RightBracket : Token()
+    // Delimiters
+    Semicolon,
+    Colon,
+    Comma,
+    LeftParen,
+    RightParen,
+    LeftSquirly,
+    RightSquirly,
+    LeftBracket,
+    RightBracket,
+}
 
-    // Double-character tokens
-    object Equals : Token()
-    object NotEquals : Token()
-    object EndOfFile : Token()
+data class Token(val type: TokenType, val literal: String, val range: DocumentRange)
 
-    override fun toString(): String = this::class.simpleName ?: "UnknownToken"
+fun lookupIdentifier(identifier: String): TokenType {
+    return when (identifier) {
+        "fn" -> TokenType.Function
+        "let" -> TokenType.Let
+        "if" -> TokenType.If
+        "else" -> TokenType.Else
+        "return" -> TokenType.Return
+        "true" -> TokenType.True
+        "false" -> TokenType.False
+        else -> TokenType.Identifier
+    }
 }

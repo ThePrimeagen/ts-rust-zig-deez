@@ -1,116 +1,131 @@
-﻿package dev.hermannm.monkeylang
+﻿package monkeylang
 
 import kotlin.text.isWhitespace
 
 class Lexer(private val input: String) : Iterator<Token> {
     private var currentIndex: Int = 0
+    private var line = 1
+    private var column = 0
+    private var isFinished = false
 
     override fun next(): Token {
         skipWhitespace()
-
-        val token = when (val character = getCurrentCharacter()) {
-            '+' -> Token.Plus
-            '-' -> Token.Minus
-            '/' -> Token.Slash
-            '*' -> Token.Asterisk
-            '<' -> Token.LessThan
-            '>' -> Token.GreaterThan
-            ',' -> Token.Comma
-            ';' -> Token.Semicolon
-            ':' -> Token.Colon
-            '(' -> Token.LeftParen
-            ')' -> Token.RightParen
-            '{' -> Token.LeftSquirly
-            '}' -> Token.RightSquirly
-            '[' -> Token.LeftBracket
-            ']' -> Token.RightBracket
-            '=' -> if (consumeNextIfMatching('=')) Token.Equals else Token.Assign
-            '!' -> if (consumeNextIfMatching('=')) Token.NotEquals else Token.Bang
-            in 'a'..'z', in 'A'..'Z', '_' -> return readKeywordOrIdentifier()
-            in '0'..'9' -> return readInteger()
-            '"' -> return readString()
-            null -> Token.EndOfFile
-            else -> Token.Illegal(character.toString())
-        }
-
-        currentIndex++
-        return token
-    }
-
-    override fun hasNext(): Boolean {
-        // <= instead of <, to include final Token.EndOfFile
-        return currentIndex <= input.length
-    }
-
-    private fun getCurrentCharacter(): Char? = input.getOrNull(currentIndex)
-
-    private fun consumeNextIfMatching(characterToMatch: Char): Boolean {
-        val matching = input.getOrNull(currentIndex + 1) == characterToMatch
-        if (matching) {
-            currentIndex++
-        }
-        return matching
-    }
-
-    private fun readKeywordOrIdentifier(): Token {
-        val startIndex = currentIndex
-
-        while (true) {
-            when (getCurrentCharacter()) {
-                in 'a'..'z', in 'A'..'Z', '_' -> { currentIndex++ }
-                else -> break
+        return when (peek()) {
+            '+' -> consumeToken(TokenType.Plus)
+            '-' -> consumeToken(TokenType.Minus)
+            '/' -> consumeToken(TokenType.Slash)
+            '*' -> consumeToken(TokenType.Asterisk)
+            '<' -> consumeToken(TokenType.LessThan)
+            '>' -> consumeToken(TokenType.GreaterThan)
+            ',' -> consumeToken(TokenType.Comma)
+            ';' -> consumeToken(TokenType.Semicolon)
+            ':' -> consumeToken(TokenType.Colon)
+            '(' -> consumeToken(TokenType.LeftParen)
+            ')' -> consumeToken(TokenType.RightParen)
+            '{' -> consumeToken(TokenType.LeftSquirly)
+            '}' -> consumeToken(TokenType.RightSquirly)
+            '[' -> consumeToken(TokenType.LeftBracket)
+            ']' -> consumeToken(TokenType.RightBracket)
+            '=' -> when (peek(1)) {
+                '=' -> consumeToken(TokenType.Equals, 2)
+                else -> consumeToken(TokenType.Assign)
             }
-        }
-
-        return when (val word = input.substring(startIndex, currentIndex)) {
-            "fn" -> Token.Function
-            "let" -> Token.Let
-            "if" -> Token.If
-            "else" -> Token.Else
-            "return" -> Token.Return
-            "true" -> Token.True
-            "false" -> Token.False
-            else -> Token.Identifier(word)
+            '!' -> when (peek(1)) {
+                '=' -> consumeToken(TokenType.NotEquals, 2)
+                else -> consumeToken(TokenType.Bang)
+            }
+            in 'a'..'z', in 'A'..'Z', '_' -> consumeKeywordOrIdentifier()
+            in '0'..'9' -> consumeInteger()
+            '"' -> return consumeStringLiteral()
+            null -> {
+                isFinished = true
+                Token(TokenType.EndOfFile, "", capturePositionAsRange())
+            }
+            else -> consumeToken(TokenType.Illegal)
         }
     }
 
-    private fun readInteger(): Token {
-        val startIndex = currentIndex
-        while (getCurrentCharacter() in '0'..'9') {
-            currentIndex++
+    override fun hasNext(): Boolean = !isFinished
+
+    private fun capturePosition(): DocumentPosition = DocumentPosition(line, column)
+
+    private fun capturePositionAsRange(): DocumentRange {
+        val position = capturePosition()
+        return position..position
+    }
+
+    private fun captureRange(block: () -> String): Pair<String, DocumentRange> {
+        val startPosition = capturePosition()
+        val result = block()
+        val endPosition = capturePosition()
+        return result to DocumentRange(startPosition, endPosition)
+    }
+
+    private fun consume(amount: Int = 1): String = buildString {
+        repeat(amount) {
+            if (currentIndex >= input.length) {
+                error("Tried to consume past the end of input.")
+            }
+            val char = input[currentIndex++]
+            column++
+            if (char == '\n') {
+                line++
+                column = 0
+            }
+            append(char)
         }
+    }
 
-        val string = input.substring(startIndex, currentIndex)
+    private fun consumeWhile(predicate: (char: Char?) -> Boolean) = buildString {
+        while (predicate(peek())) {
+            append(consume())
+        }
+    }
 
+    private fun consumeToken(type: TokenType, amount: Int = 1): Token {
+        val literal = captureRange {
+            consume(amount)
+        }
+        return Token(type, literal.first, literal.second)
+    }
+
+    private fun peek(forward: Int = 0): Char? = input.getOrNull(currentIndex + forward)
+
+    private fun consumeKeywordOrIdentifier(): Token {
+        fun isIdentifier(char: Char) = char.isLetterOrDigit() || char == '_'
+        val identifier = captureRange {
+            consumeWhile { char -> char != null && isIdentifier(char) }
+        }
+        val type = lookupIdentifier(identifier.first)
+        return Token(type, identifier.first, identifier.second)
+    }
+
+    private fun consumeInteger(): Token {
+        val literal = captureRange {
+            consumeWhile { char -> char != null && char.isDigit() }
+        }
+        return Token(TokenType.Integer, literal.first, literal.second)
+    }
+
+    private fun consumeStringLiteral(): Token {
+        val startPosition = capturePosition()
+        var stringLiteral = buildString {
+            append(consume()) // consume the initial quote
+            append(consumeWhile { char -> char != null && char != '"' })
+        }
         return try {
-            Token.Integer(string.toInt())
-        } catch (_: NumberFormatException) {
-            Token.Illegal(string)
+            stringLiteral += consume() // consume the closing quote
+            val endPosition = capturePosition()
+            Token(TokenType.StringLiteral, stringLiteral, startPosition..endPosition)
+        } catch (e: Exception) {
+            val endPosition = capturePosition()
+            Token(TokenType.Illegal, stringLiteral, startPosition..endPosition)
         }
-    }
-
-    private fun readString(): Token {
-        val startIndex = currentIndex + 1
-
-        while (true) {
-            currentIndex++
-            when (getCurrentCharacter()) {
-                '"' -> break
-                null -> return Token.Illegal(input.substring(startIndex - 1, currentIndex))
-            }
-        }
-
-        val string = input.substring(startIndex, currentIndex)
-
-        // Skip closing quote
-        currentIndex++
-
-        return Token.StringLiteral(string)
     }
 
     private fun skipWhitespace() {
-        while (getCurrentCharacter()?.isWhitespace() == true) {
-            currentIndex++
+        while (peek()?.isWhitespace() == true) {
+            consume()
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿package dev.hermannm.monkeylang
+﻿package monkeylang
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,15 +9,15 @@ class LexerTest {
         input = "=+(){},;",
 
         expectedTokens = listOf(
-            Token.Assign,
-            Token.Plus,
-            Token.LeftParen,
-            Token.RightParen,
-            Token.LeftSquirly,
-            Token.RightSquirly,
-            Token.Comma,
-            Token.Semicolon,
-            Token.EndOfFile,
+            TestToken(TokenType.Assign, "="),
+            TestToken(TokenType.Plus, "+"),
+            TestToken(TokenType.LeftParen, "("),
+            TestToken(TokenType.RightParen, ")"),
+            TestToken(TokenType.LeftSquirly, "{"),
+            TestToken(TokenType.RightSquirly, "}"),
+            TestToken(TokenType.Comma, ","),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
@@ -35,43 +35,43 @@ class LexerTest {
         """.trimIndent(),
 
         expectedTokens = listOf(
-            Token.Let,
-            Token.Identifier("five"),
-            Token.Assign,
-            Token.Integer(5),
-            Token.Semicolon,
-            Token.Let,
-            Token.Identifier("ten"),
-            Token.Assign,
-            Token.Integer(10),
-            Token.Semicolon,
-            Token.Let,
-            Token.Identifier("add"),
-            Token.Assign,
-            Token.Function,
-            Token.LeftParen,
-            Token.Identifier("x"),
-            Token.Comma,
-            Token.Identifier("y"),
-            Token.RightParen,
-            Token.LeftSquirly,
-            Token.Identifier("x"),
-            Token.Plus,
-            Token.Identifier("y"),
-            Token.Semicolon,
-            Token.RightSquirly,
-            Token.Semicolon,
-            Token.Let,
-            Token.Identifier("result"),
-            Token.Assign,
-            Token.Identifier("add"),
-            Token.LeftParen,
-            Token.Identifier("five"),
-            Token.Comma,
-            Token.Identifier("ten"),
-            Token.RightParen,
-            Token.Semicolon,
-            Token.EndOfFile,
+            TestToken(TokenType.Let, "let"),
+            TestToken(TokenType.Identifier, "five"),
+            TestToken(TokenType.Assign, "="),
+            TestToken(TokenType.Integer, "5"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.Let, "let"),
+            TestToken(TokenType.Identifier, "ten"),
+            TestToken(TokenType.Assign, "="),
+            TestToken(TokenType.Integer, "10"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.Let, "let"),
+            TestToken(TokenType.Identifier, "add"),
+            TestToken(TokenType.Assign, "="),
+            TestToken(TokenType.Function, "fn"),
+            TestToken(TokenType.LeftParen, "("),
+            TestToken(TokenType.Identifier, "x"),
+            TestToken(TokenType.Comma, ","),
+            TestToken(TokenType.Identifier, "y"),
+            TestToken(TokenType.RightParen, ")"),
+            TestToken(TokenType.LeftSquirly, "{"),
+            TestToken(TokenType.Identifier, "x"),
+            TestToken(TokenType.Plus, "+"),
+            TestToken(TokenType.Identifier, "y"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.RightSquirly, "}"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.Let, "let"),
+            TestToken(TokenType.Identifier, "result"),
+            TestToken(TokenType.Assign, "="),
+            TestToken(TokenType.Identifier, "add"),
+            TestToken(TokenType.LeftParen, "("),
+            TestToken(TokenType.Identifier, "five"),
+            TestToken(TokenType.Comma, ","),
+            TestToken(TokenType.Identifier, "ten"),
+            TestToken(TokenType.RightParen, ")"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
@@ -85,27 +85,27 @@ class LexerTest {
         """.trimIndent(),
 
         expectedTokens = listOf(
-            Token.Bang,
-            Token.Minus,
-            Token.Slash,
-            Token.Asterisk,
-            Token.Integer(5),
-            Token.Semicolon,
-            Token.Integer(5),
-            Token.LessThan,
-            Token.Integer(10),
-            Token.GreaterThan,
-            Token.Integer(5),
-            Token.Semicolon,
-            Token.Integer(10),
-            Token.Equals,
-            Token.Integer(10),
-            Token.Semicolon,
-            Token.Integer(10),
-            Token.NotEquals,
-            Token.Integer(9),
-            Token.Semicolon,
-            Token.EndOfFile,
+            TestToken(TokenType.Bang, "!"),
+            TestToken(TokenType.Minus, "-"),
+            TestToken(TokenType.Slash, "/"),
+            TestToken(TokenType.Asterisk, "*"),
+            TestToken(TokenType.Integer, "5"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.Integer, "5"),
+            TestToken(TokenType.LessThan, "<"),
+            TestToken(TokenType.Integer, "10"),
+            TestToken(TokenType.GreaterThan, ">"),
+            TestToken(TokenType.Integer, "5"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.Integer, "10"),
+            TestToken(TokenType.Equals, "=="),
+            TestToken(TokenType.Integer, "10"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.Integer, "10"),
+            TestToken(TokenType.NotEquals, "!="),
+            TestToken(TokenType.Integer, "9"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
@@ -120,24 +120,24 @@ class LexerTest {
         """.trimIndent(),
 
         expectedTokens = listOf(
-            Token.If,
-            Token.LeftParen,
-            Token.Integer(5),
-            Token.LessThan,
-            Token.Integer(10),
-            Token.RightParen,
-            Token.LeftSquirly,
-            Token.Return,
-            Token.True,
-            Token.Semicolon,
-            Token.RightSquirly,
-            Token.Else,
-            Token.LeftSquirly,
-            Token.Return,
-            Token.False,
-            Token.Semicolon,
-            Token.RightSquirly,
-            Token.EndOfFile,
+            TestToken(TokenType.If, "if"),
+            TestToken(TokenType.LeftParen, "("),
+            TestToken(TokenType.Integer, "5"),
+            TestToken(TokenType.LessThan, "<"),
+            TestToken(TokenType.Integer, "10"),
+            TestToken(TokenType.RightParen, ")"),
+            TestToken(TokenType.LeftSquirly, "{"),
+            TestToken(TokenType.Return, "return"),
+            TestToken(TokenType.True, "true"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.RightSquirly, "}"),
+            TestToken(TokenType.Else, "else"),
+            TestToken(TokenType.LeftSquirly, "{"),
+            TestToken(TokenType.Return, "return"),
+            TestToken(TokenType.False, "false"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.RightSquirly, "}"),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
@@ -146,14 +146,14 @@ class LexerTest {
         input = """
             "foobar"
             "foo bar"
-            "foo bar baz
+            "foo bar baz"
         """.trimIndent(),
 
         expectedTokens = listOf(
-            Token.StringLiteral("foobar"),
-            Token.StringLiteral("foo bar"),
-            Token.Illegal("\"foo bar baz"),
-            Token.EndOfFile,
+            TestToken(TokenType.StringLiteral, "\"foobar\""),
+            TestToken(TokenType.StringLiteral, "\"foo bar\""),
+            TestToken(TokenType.StringLiteral, "\"foo bar baz\""),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
@@ -162,13 +162,13 @@ class LexerTest {
         input = "[1, 2];",
 
         expectedTokens = listOf(
-            Token.LeftBracket,
-            Token.Integer(1),
-            Token.Comma,
-            Token.Integer(2),
-            Token.RightBracket,
-            Token.Semicolon,
-            Token.EndOfFile,
+            TestToken(TokenType.LeftBracket, "["),
+            TestToken(TokenType.Integer, "1"),
+            TestToken(TokenType.Comma, ","),
+            TestToken(TokenType.Integer, "2"),
+            TestToken(TokenType.RightBracket, "]"),
+            TestToken(TokenType.Semicolon, ";"),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
@@ -179,21 +179,54 @@ class LexerTest {
         """.trimIndent(),
 
         expectedTokens = listOf(
-            Token.LeftSquirly,
-            Token.StringLiteral("foo"),
-            Token.Colon,
-            Token.StringLiteral("bar"),
-            Token.RightSquirly,
-            Token.EndOfFile,
+            TestToken(TokenType.LeftSquirly, "{"),
+            TestToken(TokenType.StringLiteral, "\"foo\""),
+            TestToken(TokenType.Colon, ":"),
+            TestToken(TokenType.StringLiteral, "\"bar\""),
+            TestToken(TokenType.RightSquirly, "}"),
+            TestToken(TokenType.EndOfFile, ""),
         ),
     )
 
-    private fun testExpectedTokensInInput(input: String, expectedTokens: List<Token>) {
-        val lexer = Lexer(input)
+    @Test
+    fun testPositions() {
+        val input = """
+            let a = "foobar"
+            let b = "foo
+            bar"
+            a == b
+        """.trimIndent()
 
+        val expectedTokens = listOf(
+            Token(TokenType.Let, "let", DocumentRange.fromPositions(1, 0, 1, 3)),
+            Token(TokenType.Identifier, "a", DocumentRange.fromPositions(1, 4, 1, 5)),
+            Token(TokenType.Assign, "=", DocumentRange.fromPositions(1, 6, 1, 7)),
+            Token(TokenType.StringLiteral, "\"foobar\"", DocumentRange.fromPositions(1, 8, 1, 16)),
+            Token(TokenType.Let, "let", DocumentRange.fromPositions(2, 0, 2, 3)),
+            Token(TokenType.Identifier, "b", DocumentRange.fromPositions(2, 4, 2, 5)),
+            Token(TokenType.Assign, "=", DocumentRange.fromPositions(2, 6, 2, 7)),
+            Token(TokenType.StringLiteral, "\"foo\nbar\"", DocumentRange.fromPositions(2, 8, 3, 4)),
+            Token(TokenType.Identifier, "a", DocumentRange.fromPositions(4, 0, 4, 1)),
+            Token(TokenType.Equals, "==", DocumentRange.fromPositions(4, 2, 4, 4)),
+            Token(TokenType.Identifier, "b", DocumentRange.fromPositions(4, 5, 4, 6)),
+            Token(TokenType.EndOfFile, "", DocumentRange.fromPositions(4, 6, 4, 6)),
+        )
+
+        val actualTokens = Lexer(input)
+        for (token in expectedTokens) {
+            val nextToken = actualTokens.next()
+            assertEquals(token.type, nextToken.type)
+            assertEquals(token.literal, nextToken.literal)
+            assertEquals(token.range, nextToken.range)
+        }
+    }
+
+    private fun testExpectedTokensInInput(input: String, expectedTokens: List<TestToken>) {
+        val lexer = Lexer(input)
         for (token in expectedTokens) {
             val nextToken = lexer.next()
-            assertEquals(token, nextToken)
+            assertEquals(token.type, nextToken.type)
+            assertEquals(token.literal, nextToken.literal)
         }
     }
 }

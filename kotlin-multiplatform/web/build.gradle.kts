@@ -4,7 +4,6 @@
     id("org.jetbrains.compose").version("1.4.0")
 }
 
-group = "dev.hermannm"
 version = "0.1.0"
 
 repositories {
@@ -15,6 +14,7 @@ repositories {
 
 kotlin {
     js(IR) {
+        useCommonJs()
         browser()
         binaries.executable()
     }
@@ -27,6 +27,9 @@ kotlin {
             dependencies {
                 implementation(project(":")) // Common root package
                 implementation(compose.html.core)
+                implementation(npm("monaco-editor", "0.38.0"))
+                implementation(npm("css-loader", "6.8.1"))
+                implementation(npm("style-loader", "3.3.3"))
             }
         }
         val jsTest by getting {

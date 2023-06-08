@@ -13,6 +13,7 @@
 /cobol/         @kkard2
 /common-lisp/   @lh2
 /cpp/           @nicdgonzalez
+/cpp-spongman/  @Spongman
 /crystal/       @devnote-dev
 /csharp/        @MarioGK @TomasDurica
 /csharp2/       @leo-costa @redducks100
@@ -25,6 +26,7 @@
 /factor/        @TriedAngle
 /fortran/       @greuben92
 /fsharp/        @meenzen
+/gdscript/      @Abdera7mane
 /groovyc/       @knudtty
 /go/            @GiorgosAthanasopoulos
 /go-concurrent/ @amis-shokoohi
@@ -38,10 +40,13 @@
 /javascript/    @trvswgnr
 /nasm/          @onehunga @iamevie
 /nim/           @Echriser
+/nelua/         @LucasTavaresA
 /pascal/        @attilakapostyak
 /ocaml/         @tjdevries
 /jai/           @marvhus
+/k/             @fluentpwn
 /kotlin-multiplatform/      @hermannm @ekgame @LizAinslie
+/kotlin-deez/   @sergushka
 /lua/           @aretrosen
 /luajit/        @Okanoa
 /odin/          @jon-lipstate
@@ -65,3 +70,4 @@
 /swift/         @marcusziade @MatsMoll
 /holyc/         @xslendix
 /scala/         @alextsc
+/visual-cobol-micro-focus/ @LTR-Travis

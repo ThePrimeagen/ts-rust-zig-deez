@@ -350,6 +350,77 @@ return 993322;
               (test-let-stmt let-stmt (cadr t))
               (test-literal-expression (let-value let-stmt) (caddr t))) tests))
 
+(define (test-string-literal)
+  (define p (parse-programme (new-parser (new-lexer "\"hello world\";"))))
+  (check-parse-errors p)
+
+  (define s (exp-value (car (parser-stmts p))))
+  (if (not (string-literal? s))
+      (error (format "Statement is not a string literal. Is:" s)))
+
+  (if (not (string=? (string-value s) "hello world"))
+      (error (format "String value does not equal hello world. Got:" (string-value s)))))
+
+(define (test-parsing-arrays)
+  (define p (parse-programme (new-parser (new-lexer "[1, 2 * 2, 3 + 3]"))))
+  (check-parse-errors p)
+
+  (define array (exp-value (car (parser-stmts p))))
+  (if (not (array? array))
+      (error (format "Statement is not an array literal. Is:" array)))
+
+  (define el (array-exps array))
+  (if (not (= (length el) 3))
+      (error (format "Array should have 3 elements. Got:" (length el))))
+
+  (test-interger-literal (get-nth-element el 0) 1)
+  (test-infix-expression (get-nth-element el 1) 2 "*" 2)
+  (test-infix-expression (get-nth-element el 2) 3 "+" 3))
+
+(define (test-parsing-index-exp)
+  (define p (parse-programme (new-parser (new-lexer "myArray[1 + 1]"))))
+  (check-parse-errors p)
+
+  (define node (exp-value (car (parser-stmts p))))
+  (if (not (index-node? node))
+      (error (format "Exp is not an index exp. Is:" node)))
+
+  (test-identifier (index-left node) "myArray")
+  (test-infix-expression (index-index node) 1 "+" 1))
+
+(define (test-parsing-hash)
+  (define p (parse-programme (new-parser (new-lexer "{\"one\": 1, \"two\": 2, \"three\": 3}"))))
+  (check-parse-errors p)
+
+  (define node (exp-value (car (parser-stmts p))))
+  (if (not (hash-literal? node))
+      (error (format "Exp is not a hash. Is:"  node)))
+
+  (if (not (= (hash-count (hash-literal-hash node)) 3))
+      (error (format "Hash does not have 3 entries. Has:" (hash-count (hash-literal-hash node)))))
+
+  (define expected (make-hash))
+  (hash-set! expected "one" 1)
+  (hash-set! expected "two" 2)
+  (hash-set! expected "three" 3)
+
+  (hash-for-each (hash-literal-hash node) (lambda (key value)
+              (if (not (string-literal? key))
+                  (error (format "Key is a not string literal. Was:" key)))
+              (test-interger-literal value (hash-ref expected (string-value key))))))
+
+(define (test-parsing-empty-hash)
+  (define p (parse-programme (new-parser (new-lexer "{}"))))
+  (check-parse-errors p)
+
+  (define node (exp-value (car (parser-stmts p))))
+  (if (not (hash-literal? node))
+      (error (format "Exp is not a hash. Is:"  node)))
+
+  (if (not (= (hash-count (hash-literal-hash node)) 0))
+      (error (format "Hash does not have 0 entries. Has:" (hash-count (hash-literal-hash node))))))
+  
+
 (display-nl "Starting parser tests...")
 (test-parser-let)
 (test-parser-return)
@@ -363,4 +434,8 @@ return 993322;
 (test-functions-parameters)
 (test-call-expressions)
 (test-let-statements)
+(test-string-literal)
+(test-parsing-arrays)
+(test-parsing-index-exp)
+(test-parsing-hash)
 (display-nl "\tParser tests have passed without errros")

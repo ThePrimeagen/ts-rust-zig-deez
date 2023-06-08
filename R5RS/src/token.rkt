@@ -7,6 +7,7 @@
 
 (define IDENT "IDENT")
 (define INT "INT")
+(define MONKEY_STRING "STRING")
 
 (define ASSIGN "=")
 (define PLUS "+")
@@ -22,11 +23,14 @@
 
 (define COMMA ",")
 (define SEMICOLON ";")
+(define COLON ":")
 
 (define LPAREN "(")
 (define RPAREN ")")
 (define LBRACE "{")
 (define RBRACE "}")
+(define LBRACKET "[")
+(define RBRACKET "]")
 
 (define FUNCTION "FUNCTION")
 (define LET "LET")
@@ -114,14 +118,17 @@
          out)
     
     ((char-eq? ch SEMICOLON) (begin (lexer-read-char l) (to-token SEMICOLON ch)))
-    ((char-eq? ch LPAREN) (begin (lexer-read-char l) (to-token LPAREN ch)))
-    ((char-eq? ch RPAREN) (begin (lexer-read-char l) (to-token RPAREN ch)))
-    ((char-eq? ch LBRACE) (begin (lexer-read-char l) (to-token LBRACE ch)))
-    ((char-eq? ch RBRACE) (begin (lexer-read-char l) (to-token RBRACE ch)))
+    ((char-eq? ch LPAREN)    (begin (lexer-read-char l) (to-token LPAREN ch)))
+    ((char-eq? ch RPAREN)    (begin (lexer-read-char l) (to-token RPAREN ch)))
+    ((char-eq? ch LBRACE)    (begin (lexer-read-char l) (to-token LBRACE ch)))
+    ((char-eq? ch RBRACE)    (begin (lexer-read-char l) (to-token RBRACE ch)))
+    ((char-eq? ch LBRACKET)  (begin (lexer-read-char l) (to-token LBRACKET ch)))
+    ((char-eq? ch RBRACKET)  (begin (lexer-read-char l) (to-token RBRACKET ch)))
     
     ((char-eq? ch COMMA) (begin (lexer-read-char l) (to-token COMMA ch)))
     ((char-eq? ch PLUS) (begin (lexer-read-char l) (to-token PLUS ch)))
     ((char-eq? ch MINUS) (begin (lexer-read-char l) (to-token MINUS ch)))
+    ((char-eq? ch COLON) (begin (lexer-read-char l) (to-token COLON ch)))
     
     ((char-eq? ch BANG)
      (if (char-eq? (lexer-peak-char l) "=")
@@ -142,6 +149,7 @@
     
     ((letter? ch) (lookup-ident (lexer-read-identifier l)))
     ((digit? ch) (to-token INT (lexer-read-integer l)))
+    ((char-eq? ch "\"") (begin (set! out (to-token MONKEY_STRING (lexer-read-string l))) (lexer-read-char l) out))
 
     (else (begin (lexer-read-char l) (to-token ILLEGAL ch)))
     )

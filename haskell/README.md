@@ -799,7 +799,7 @@ nextToken = do
             p <- peek                                  -- peek the lookahead character
             if p == '='
                 then NotEqual <$ advance <* advance    -- if it is `=` we return `NotEqual` and advance twice (same reason as before)
-                else Bang <$ advance                   -- otherwise we reurn `Bang` and advance once
+                else Bang <$ advance                   -- otherwise we return `Bang` and advance once
 
         c | isIdentChar c -> identToken <$> readIdent  -- if we have an identifier character we read the string ident
                                                        -- and then convert it to Token using the mapping
@@ -810,7 +810,7 @@ nextToken = do
 
 this is much easier to read and maintain.
 
-To implement the tokenize function let's look again at he `go` function
+To implement the tokenize function let's look again at the `go` function
 
 ```haskell
 go :: LexerT [Token]
@@ -819,7 +819,7 @@ go = do
     case token of
         Eof -> pure [Eof]      -- if the token is `Eof` then we just create a LexerT that returns `[Eof]` when executed
 
-        _ -> (token :) <$> go  -- otherwise we need prepend the current token to the result of calling `go` again
+        _ -> (token :) <$> go  -- otherwise we need to prepend the current token to the result of calling `go` again
                                -- but since go returns a `LexerT [Token]`, which is a functor, we have to inject the
                                -- `(token :)` that we used in the Book implementation with `fmap` into the LexerT
 ```
@@ -842,7 +842,7 @@ tokenize =
 ### Lexer.State [Control.Monad.State](https://hackage.haskell.org/package/mtl-2.3.1/docs/Control-Monad-State-Class.html)
 
 Instead of implementing the instances of Functors and Monads manually, we can
-actually use a package [mtl](https://hackage.haskell.org/package/mtl). This
+actually use the package [mtl](https://hackage.haskell.org/package/mtl). This
 includes monad classes that would be useful to us.
 
 For example the `State` monad, which is what we implemented with `LexerT`.
@@ -1010,29 +1010,47 @@ newLexer i = Lexer
     }
 ```
 
-The `peek`, `current` and `advance` functions will look like the following
+Since our `LexerT` is an instance of `MonadState` we can use the combinators
+and operators provided by the `lens` library.
+One of these operators is `use :: MonadState s m => Lens s a -> m a` which
+simply gets the current state and returns the focused field.
+Therefore the `peek` and `current` functions will look like the following
 
 ```haskell
 peek :: LexerT Char
 peek = do
-    lexer <- get
-    pure $ fromMaybe '\0' ((lexer ^. input) BS.!? (lexer ^. readPosition))
+    readPos <- use readPosition
+    buffer <- use input
+    pure $ fromMaybe '\0' (buffer BS.!? readPos)
 
 current :: LexerT Char
-current = do
-    lexer <- get
-    pure $ lexer ^. ch
-
-advance :: LexerT ()
-advance = modify $ \lexer ->
-    lexer
-    & ch .~ fromMaybe '\0' ((lexer ^. input) BS.!? (lexer ^. readPosition))
-    & position .~ lexer ^. readPosition
-    & readPosition +~ 1
+current = use ch
 ```
 
-and this represents the only major change. I guess it is more of a prefernce,
-which one you like more.
+The `(.=) :: MonadState s m => Lens s a -> a -> m ()` operators allows us
+to set the field, focused by the lens on the lhs, of the current state
+to the value of the rhs.
+There are also operators for modifying `%=`, adding `+=`, etc..
+By prepending `<` to the operator it will return the new value
+of the focused field and prepending `<<` will return the old value.
+Thus we can write the `advance` function like this
+
+```haskell
+advance :: LexerT ()
+advance = do
+    readPos <- readPosition <<+= 1 -- Increment and return the old value.
+    buffer <- use input
+    ch .= fromMaybe '\0' (buffer BS.!? readPos)
+    position .= readPos
+```
+
+Notice that `<<+=` and `.=` are user defined operators,
+while `<-` is the language syntax for monadic bind.
+
+The lens library also provides `Prism`s and `Traversal`s as a very powerfull
+way to work with sum types and containers.
+However I think for a simple program like this lenses are overkill but
+I guess it is more of a prefernce, which one you like more.
 
 Personally I prefer to use `{-# LANGUAGE RecordWildCards #-}`, rather than
 lens, which allows you to do the following
