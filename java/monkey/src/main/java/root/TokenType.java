@@ -51,7 +51,7 @@ public enum TokenType {
 
     public Token token() {
         return token.orElseThrow(() -> new IllegalArgumentException(
-                "degens.TokenType %s doesn't have a default degens.Token. Create one using 'createToken'".formatted(this.name())
+                "TokenType %s doesn't have a default Token. Create one using 'createToken'".formatted(this.name())
         ));
     }
 }
