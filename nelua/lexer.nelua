@@ -140,7 +140,7 @@ function Lexer:NextToken()
     end
   end
 
-  local token: Token
+  local token: Token <noinit>
   local char = string.char(self.Char)
   local nextChar = string.char(self:Peek())
 
