@@ -99,7 +99,9 @@
                  (list "true + false" "unknown operator: BOOLEAN + BOOLEAN")
                  (list "5; true + false; 5" "unknown operator: BOOLEAN + BOOLEAN")
                  (list "if (10 > 1) { true + false; }" "unknown operator: BOOLEAN + BOOLEAN")
-                 (list "foobar" "identifier not found: foobar")))
+                 (list "foobar" "identifier not found: foobar")
+                 (list "\"hello\" - \"world\"" "unknown operator: STRING - STRING")
+                 (list "{\"name\": \"Monkey\"}[fn(x) { x }];" "unusable as hash key: FUNCTION")))
   (for-each (lambda (t)
               (define evaluated (test-eval (car t)))             
               (if (not (obj-error? evaluated)) (error (format "no error object returned, got: " evaluated)))
@@ -129,6 +131,102 @@
                  (list "fn(x) { x; }(5)" 5)))
   (for-each (lambda (t) (define evaluated (test-eval (car t))) (test-integer-obj evaluated (cadr t))) tests))
 
+(define (test-eval-string)
+  (define evaluated (test-eval "\"I'm Amelia <3\""))
+
+  (if (not (obj-string? evaluated)) (error (format "object is not String. got:" evaluated)))
+  (if (not (string=? (obj-value evaluated) "I'm Amelia <3")) (error (format "String has wrong value. got:" evaluted))))
+
+(define (test-string-concatenation)
+  (define evaluated (test-eval "\"I'm \" +  \"Amelia \" +  \"<3\""))
+
+  (if (not (obj-string? evaluated)) (error (format "object is not String. got:" evaluated)))
+  (if (not (string=? (obj-value evaluated) "I'm Amelia <3")) (error (format "String has wrong value. got:" evaluated))))
+
+(define (test-buildin-functions)
+  (define tests (list
+                 (list "len(\"\")" 0)
+                 (list "len(\"four\")" 4)
+                 (list "len(1)" "argument to 'len' not supported, got INTEGER")
+                 (list "len(\"one\",\"two\")" "wrong number of arguments. got=2, want=1")))
+  (for-each (lambda (t)
+              (define evaluated (test-eval (car t)))
+              (cond
+                ((number? (cadr t)) (test-integer-obj evaluated (cadr t)))
+                ((string? (cadr t)) (begin
+                                      (if (not (obj-error? evaluated)) (error (format "no error object returned, got: " evaluated)))
+                                      (if (not (string=? (obj-value evaluated) (cadr t)))
+                                          (error (format "wrong error message, expected='" (cadr t) "' but got='" (obj-value evaluated) "'"))))))) tests))
+
+(define (test-array-literals)
+  (define evaluated (test-eval "[1, 2 * 2, 3 + 3]"))
+  (if (not (obj-array? evaluated))
+      (error (format "Object is not an array. Got:" evaluated)))
+  (define el (obj-value evaluated))
+  (if (not (= (length el) 3))
+      (error (format "Array does not have 3 elements. Has:" (length el))))
+
+  (test-integer-obj (get-nth-element el 0) 1)
+  (test-integer-obj (get-nth-element el 1) 4)
+  (test-integer-obj (get-nth-element el 2) 6))
+
+(define (test-array-index-expressions)
+  (define tests (list
+                 (list "[1, 2, 3][0]" 1)
+                 (list "[1, 2, 3][1]" 2)
+                 (list "[1, 2, 3][2]" 3)
+                 (list "let i = 0;[1][0]" 1)
+                 (list "[1, 2, 3][1+1]" 3)
+                 (list "let myArray = [1, 2, 3]; myArray[2];" 3)
+                 (list "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];" 6)
+                 (list "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]" 2)
+                 (list "[1, 2, 3][3]" '())
+                 (list "[1, 2, 3][-1]" '())))
+  (for-each (lambda (t) (define evaluated (test-eval (car t))) (if (number? (cadr t)) (test-integer-obj evaluated (cadr t)) (test-null-obj evaluated))) tests))
+
+(define (test-hash-literal)
+  (define evaluated (test-eval "let two = \"two\";
+{
+           \"one\": 10 - 9,
+           two: 1 + 1,
+           \"thr\" + \"ee\": 6 / 2,
+           4: 4,
+           true: 5,
+           false: 6
+}"))
+
+  (if (not (obj-hash? evaluated))
+      (error (format "Eval didn't return Hash. Got:" evaluated)))
+
+  (define expected (list
+                    (list (make-hash-key (new-string-obj "one")) 1)
+                    (list (make-hash-key (new-string-obj "two")) 2)
+                    (list (make-hash-key (new-string-obj "three")) 3)
+                    (list (make-hash-key (new-int 4)) 4)
+                    (list (make-hash-key THE_TRUE) 5)
+                    (list (make-hash-key THE_FALSE) 6)))
+
+  (if (not (= (length expected) (hash-count (hash-obj-hash evaluated))))
+      (error (format "Hash has wrong num of pairs. Got:" (hash-count (hash-obj-hash evaluated)))))
+
+  (for-each (lambda (exp)
+              (define hash-pair (hash-obj-ref evaluated (car exp)))
+              (if (null? hash-pair)
+                  (error (format "No hash-pair for the given key:" (car exp))))
+              (test-integer-obj (hash-pair-value hash-pair) (cadr exp))) expected))
+
+(define (test-hash-index-exp)
+  (define tests (list
+                 (list "{\"foo\": 5}[\"foo\"]" 5)
+                 (list "{\"foo\": 5}[\"bar\"]" '())
+                 (list "let key = \"foo\"; {\"foo\": 5}[key]" 5)
+                 (list "{}[\"foo\"]" '())
+                 (list "{5: 5}[5]" 5)
+                 (list "{true: 5}[true]" 5)
+                 (list "{false: 5}[false]" 5)))
+  (for-each (lambda (t) (define evaluated (test-eval (car t))) (if (number? (cadr t)) (test-integer-obj evaluated (cadr t)) (test-null-obj evaluated))) tests))
+  
+
 (display-nl "Starting eval tests...")
 (test-eval-integer)
 (test-eval-bool)
@@ -139,4 +237,11 @@
 (test-let-statements)
 (test-function-object)
 (test-function-applications)
+(test-eval-string)
+(test-string-concatenation)
+(test-buildin-functions)
+(test-array-literals)
+(test-array-index-expressions)
+(test-hash-literal)
+(test-hash-index-exp)
 (display-nl "\tEval tests have passed without errros")

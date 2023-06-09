@@ -2,6 +2,7 @@
 
 
 #include <string>
+#include <string_view>
 #include <variant>
 
 #include <cstdint>
@@ -33,13 +34,13 @@ struct token final {
 
 class lexer final {
   private:
-    std::string input_;  // The user's input
+    std::string_view input_;  // The user's input
     size_t position_;  // Point to the current byte
     size_t read_position_;  // Peeks at the next byte
     char byte_;  // The byte to evaluate
 
   public:
-    lexer(const std::string);
+    lexer(std::string_view input);
     void read_char(void) noexcept;
     void next_token(token &) noexcept;
 };

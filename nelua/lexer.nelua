@@ -1,0 +1,160 @@
+require("string")
+local strchar: type = require 'detail.strchar'
+
+global TokenType = @enum{
+	Ident = 0,
+	Int,
+
+	Illegal,
+	Eof,
+	Assign,
+
+	-- Separators
+	Bang,
+	Dash,
+	ForwardSlash,
+	Asterisk,
+	Equal,
+	NotEqual,
+	LessThan,
+	GreaterThan,
+
+	-- Operators
+	Plus,
+	Comma,
+	Semicolon,
+	Lparen,
+	Rparen,
+	LSquirly,
+	RSquirly,
+
+	-- Keywords
+	Function,
+	Let,
+	If,
+	Else,
+	Return,
+	True,
+	False,
+}
+
+global Lexer = @record{
+	Input: string,
+	Position: integer,
+	ReadPosition: integer,
+	Char: uint8
+}
+
+local Token = @record{
+	Type: TokenType,
+	Literal: string
+}
+
+local Keywords: hashmap(string, Token)
+Keywords["fn"]     = Token{ TokenType.Function, "fn"     }
+Keywords["let"]    = Token{ TokenType.Let,      "let"    }
+Keywords["if"]     = Token{ TokenType.If,       "if"     }
+Keywords["else"]   = Token{ TokenType.Else,     "else"   }
+Keywords["return"] = Token{ TokenType.Return,   "return" }
+Keywords["true"]   = Token{ TokenType.True,     "true"   }
+Keywords["false"]  = Token{ TokenType.False,    "false"  }
+
+local Tokens: hashmap(string, Token)
+Tokens["\0"] = Token{ TokenType.Eof,          "\0" }
+Tokens["="]  = Token{ TokenType.Assign,       "="  }
+Tokens["!"]  = Token{ TokenType.Bang,         "!"  }
+Tokens["-"]  = Token{ TokenType.Dash,         "-"  }
+Tokens["/"]  = Token{ TokenType.ForwardSlash, "/"  }
+Tokens["*"]  = Token{ TokenType.Asterisk,     "*"  }
+Tokens["=="] = Token{ TokenType.Equal,        "==" }
+Tokens["!="] = Token{ TokenType.NotEqual,     "!=" }
+Tokens["<"]  = Token{ TokenType.LessThan,     "<"  }
+Tokens[">"]  = Token{ TokenType.GreaterThan,  ">"  }
+Tokens["+"]  = Token{ TokenType.Plus,         "+"  }
+Tokens[","]  = Token{ TokenType.Comma,        ","  }
+Tokens[";"]  = Token{ TokenType.Semicolon,    ";"  }
+Tokens["("]  = Token{ TokenType.Lparen,       "("  }
+Tokens[")"]  = Token{ TokenType.Rparen,       ")"  }
+Tokens["{"]  = Token{ TokenType.LSquirly,     "{"  }
+Tokens["}"]  = Token{ TokenType.RSquirly,     "}"  }
+
+function Lexer:ReadChar(): void
+	if unlikely(self.ReadPosition >= #self.Input) then
+		self.Char = '\0'_u8
+	else
+		self.Char = self.Input[self.ReadPosition]
+	end
+
+	self.Position = self.ReadPosition
+	self.ReadPosition = self.ReadPosition + 1
+end
+
+function Lexer:Peek(): uint8
+	if unlikely(self.ReadPosition >= #self.Input) then
+		return '\0'_u8
+	end
+
+	return self.Input[self.ReadPosition]
+end
+
+function Lexer:SkipWhiteSpace(): void
+  while strchar.isspace(self.Char) do
+    self:ReadChar()
+  end
+end
+
+function Lexer:ReadInt(): string
+	local pos = self.Position
+
+  while strchar.isdigit(self.Char) do
+    self:ReadChar()
+  end
+
+	return self.Input:sub(pos, self.Position - 1 )
+end
+
+function Lexer:ReadIdent()
+	local pos = self.Position
+
+  while strchar.isalpha(self.Char) or self.Char == "_"_u8 do
+    self:ReadChar()
+  end
+
+	return self.Input:sub(pos, self.Position - 1 )
+end
+
+function Lexer:NextToken(): Token
+  self:SkipWhiteSpace()
+
+  if strchar.isdigit(self.Char) then
+    return Token{TokenType.Int, self:ReadInt()}
+  end
+
+  if strchar.isalpha(self.Char) or self.Char == "_"_u8 then
+    local ident = self:ReadIdent()
+
+    if Keywords:has(ident) then
+      return Keywords[ident]
+    else
+      return Token{TokenType.Ident, ident}
+    end
+  end
+
+  local token: Token
+  local char = string.char(self.Char)
+  local nextChar = string.char(self:Peek())
+
+  if Tokens:has(char .. nextChar) then
+    self:ReadChar()
+    self:ReadChar()
+    return Tokens[char .. nextChar]
+  else
+    if Tokens:has(char) then
+      self:ReadChar()
+      return Tokens[char]
+    else
+      self:ReadChar()
+      return Token{TokenType.Illegal, "ILLEGAL"}
+    end
+  end
+end

@@ -96,7 +96,7 @@ class InfixExpression extends Expression {
     this.left,
     this.operator,
     this.right,
-    this.precedence,
+    this.precedence, //TODO: remove this
   );
   final Expression left;
   final String operator;

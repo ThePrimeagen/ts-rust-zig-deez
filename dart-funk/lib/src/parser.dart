@@ -1,15 +1,3 @@
-/*
- * Project: src
- * Created Date: Thursday June 8th 2023 2:50:18 pm
- * Author: Fa C Shus (paul@facshus.com)
- * -----
- * Last Modified: Thursday, 8th June 2023 2:50:18 pm
- * Modified By: Fa C Shus (paul@facshus.com)
- * -----
- * Copyright (c) 2021 - 2023 FaCShus Systems
- * License: MIT
- */
-
 import 'package:mason_logger/mason_logger.dart';
 import 'package:meta/meta.dart';
 import 'package:monkeydart/monkeydart.dart';
