@@ -70,7 +70,7 @@ module Evaluator
     return function if function.is_a? ErrorValue
 
     unless function.is_a? FunctionValue
-      return ErrorValue.new "cannot call #{function.type} as a function"
+      return ErrorValue.new "cannot call type #{function.type} as a function"
     end
 
     arguments = node.arguments.map do |argument|
@@ -121,7 +121,7 @@ module Evaluator
     return right if right.is_a? ErrorValue
 
     unless left.type == right.type
-      return ErrorValue.new "cannot compare type #{left.type} to type #{right.type}"
+      return ErrorValue.new "cannot compare types #{left.type} and #{right.type}"
     end
 
     evaluate_infix left, node.operator, right
@@ -177,7 +177,7 @@ module Evaluator
     in .greater_than?
       BooleanValue.new(left.value > right.value)
     in .unknown?
-      ErrorValue.new "unknown operator '#{operator}' for integer"
+      ErrorValue.new "unknown operator '#{operator}' for type integer"
     end
   end
 
@@ -185,7 +185,7 @@ module Evaluator
     if operator.add?
       StringValue.new(left.value + right.value)
     else
-      ErrorValue.new "unknown operator '#{operator}' for string"
+      ErrorValue.new "unknown operator '#{operator}' for type string"
     end
   end
 
@@ -205,6 +205,6 @@ module Evaluator
   end
 
   def evaluate_infix(left : BaseValue, operator : Infix::Operator, right : BaseValue) : BaseValue
-    ErrorValue.new "unknown operator '#{operator}' for #{left.type} and #{right.type}"
+    ErrorValue.new "unknown operator '#{operator}' for types #{left.type} and #{right.type}"
   end
 end
