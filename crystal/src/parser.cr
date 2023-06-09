@@ -59,6 +59,7 @@ class Parser
     name = parse_identifier expect_next(:ident)
     expect_next :assign
     value = parse_expression_statement next_token
+    expect_next :semicolon unless current_token.type.semicolon?
 
     Let.new name, value
   end
@@ -83,9 +84,12 @@ class Parser
     left = parse_prefix_proc current_token
     raise "cannot parse prefix for type #{current_token.type}" if left.nil?
 
-    while !peek_token.type.semicolon? && prec < Precedence.from(peek_token.type)
+    loop do
+      raise "unexpected End of File" if current_token.type.eof?
+      break if peek_token.type.semicolon? || prec >= Precedence.from(peek_token.type)
+
       infix = parse_infix_proc peek_token, left
-      return left if infix.nil?
+      break if infix.nil?
 
       next_token
       left = infix
