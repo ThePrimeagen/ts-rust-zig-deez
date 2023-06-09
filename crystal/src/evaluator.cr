@@ -169,7 +169,11 @@ module Evaluator
     end
   end
 
+  def evaluate_infix(left : ReturnValue, operator : Infix::Operator, right : ReturnValue) : BaseValue
+    evaluate_infix left.value, operator, right.value
+  end
+
   def evaluate_infix(left : BaseValue, operator : Infix::Operator, right : BaseValue) : BaseValue
-    ErrorValue.new "unknown operator for #{left.type}"
+    ErrorValue.new "unknown operator for #{left.type} and #{right.type}"
   end
 end
