@@ -46,6 +46,21 @@ module Evaluator
     BooleanValue.new node.value
   end
 
+  def evaluate(node : If, scope : Scope) : BaseValue
+    condition = evaluate node.condition, scope
+    return condition if condition.is_a? ErrorValue
+
+    if condition.is_a?(NullValue) || condition.as?(BooleanValue).try &.value
+      return evaluate node.consequence, scope
+    end
+
+    if alternative = node.alternative
+      return evaluate alternative, scope
+    end
+
+    NullValue.new
+  end
+
   def evaluate(node : FunctionLiteral, scope : Scope) : BaseValue
     FunctionValue.new node.parameters, node.body, scope
   end

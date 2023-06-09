@@ -148,6 +148,15 @@ class Infix < Expression
   end
 end
 
+class If < Expression
+  property condition : Expression
+  property consequence : Block
+  property alternative : Block?
+
+  def initialize(@condition, @consequence, @alternative)
+  end
+end
+
 class Let < Statement
   property name : Identifier
   property value : ExpressionStatement

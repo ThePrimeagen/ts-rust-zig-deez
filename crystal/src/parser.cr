@@ -104,6 +104,7 @@ class Parser
     when .string?        then parse_string token
     when .bang?, .minus? then parse_prefix_expression
     when .true?, .false? then parse_boolean token
+    when .if?            then parse_if token
     when .left_curly?    then parse_grouped_expression
     when .function?      then parse_function
     end
@@ -159,6 +160,25 @@ class Parser
 
   private def parse_boolean(token : Token) : Expression
     BooleanLiteral.new token.type.true?
+  end
+
+  private def parse_if(token : Token) : Expression
+    expect_next :left_curly
+    condition = parse_expression :lowest
+    expect_next :right_curly unless current_token.type.right_curly?
+    next_token if condition.is_a? Call # hande call edge-cases
+
+    expect_next :left_squirly
+    consequence = parse_block
+    alternative : Block? = nil
+
+    if peek_token.type.else?
+      next_token
+      expect_next :left_squirly
+      alternative = parse_block
+    end
+
+    If.new condition, consequence, alternative
   end
 
   private def parse_function : Expression
