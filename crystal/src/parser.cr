@@ -18,7 +18,7 @@ class Parser
         Precedence::Sum
       when .slash?, .asterisk?
         Precedence::Product
-      when .left_paren?
+      when .left_curly?
         Precedence::Call
       else
         Precedence::Lowest
@@ -104,7 +104,7 @@ class Parser
     when .integer?       then parse_integer token
     when .bang?, .minus? then parse_prefix_expression
     when .true?, .false? then parse_boolean token
-    when .left_paren?    then parse_grouped_expression
+    when .left_curly?    then parse_grouped_expression
     when .function?      then parse_function
     end
   end
@@ -113,7 +113,7 @@ class Parser
     case token.type
     when .plus?, .minus?, .slash?, .asterisk?, .equal?, .not_equal?, .less_than?, .greater_than?
       parse_infix_expression expr
-    when .left_paren?
+    when .left_curly?
       parse_call expr
     end
   end
@@ -140,7 +140,7 @@ class Parser
   private def parse_grouped_expression : Expression
     next_token
     expr = parse_expression :lowest
-    expect_next :right_paren unless current_token.type.right_paren?
+    expect_next :right_curly unless current_token.type.right_curly?
 
     expr
   end
@@ -158,11 +158,11 @@ class Parser
   end
 
   private def parse_function : Expression
-    expect_next :left_paren
+    expect_next :left_curly
 
     parameters = [] of Identifier
 
-    if peek_token.type.right_paren?
+    if peek_token.type.right_curly?
       next_token
     else
       token = expect_next :ident
@@ -174,7 +174,7 @@ class Parser
         parameters << parse_identifier current_token
       end
 
-      expect_next :right_paren
+      expect_next :right_curly
     end
 
     expect_next :left_squirly
@@ -187,7 +187,7 @@ class Parser
     arguments = [] of Expression
 
     next_token
-    if peek_token.type.right_paren?
+    if peek_token.type.right_curly?
       next_token
       return Call.new expr, arguments
     end
@@ -200,7 +200,7 @@ class Parser
       arguments << parse_expression :lowest
     end
 
-    expect_next :right_paren
+    expect_next :right_curly
 
     Call.new expr, arguments
   end

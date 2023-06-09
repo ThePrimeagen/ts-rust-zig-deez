@@ -72,10 +72,10 @@ class Lexer
       type = :semicolon
     when '('
       next_char
-      type = :left_paren
+      type = :left_curly
     when ')'
       next_char
-      type = :right_paren
+      type = :right_curly
     when '{'
       next_char
       type = :left_squirly

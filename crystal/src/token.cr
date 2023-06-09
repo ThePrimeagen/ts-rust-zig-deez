@@ -22,8 +22,8 @@ struct Token
     # delimiters
     Comma
     Semicolon
-    LeftParen
-    RightParen
+    LeftCurly
+    RightCurly
     LeftSquirly
     RightSquirly
 
