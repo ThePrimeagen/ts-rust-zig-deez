@@ -91,7 +91,6 @@ class Parser
       infix = parse_infix_proc peek_token, left
       break if infix.nil?
 
-      next_token
       left = infix
     end
 
