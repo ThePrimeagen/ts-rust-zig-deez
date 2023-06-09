@@ -36,6 +36,7 @@ class Lexer
       end
     when '='
       if next_char == '='
+        next_char
         type = :equal
       else
         type = :assign
