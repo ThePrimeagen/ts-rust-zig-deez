@@ -2,7 +2,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:meta/meta.dart';
 import 'package:monkeydart/monkeydart.dart';
 
-// final logger = Logger();
+final logger = Logger();
 
 final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.int: _parseIntegerLiteral,
@@ -346,10 +346,7 @@ Parser _eatNextSemicolon(Parser parser) {
   final precedence = currentPrecedence(parser);
   final advParser = advanceParser(parser);
   final (exprParser, right) = _parseExpression(advParser, precedence);
-  return (
-    exprParser,
-    InfixExpression(parser.currToken, left, operator, right, precedence)
-  );
+  return (exprParser, InfixExpression(parser.currToken, left, operator, right));
 }
 
 bool _peekTokenIs(Parser parser, TokenType type) {

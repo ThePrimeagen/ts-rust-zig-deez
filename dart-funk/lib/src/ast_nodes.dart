@@ -96,12 +96,10 @@ class InfixExpression extends Expression {
     this.left,
     this.operator,
     this.right,
-    this.precedence, //TODO: remove this
   );
   final Expression left;
   final String operator;
   final Expression right;
-  final Precedence precedence;
 
   @override
   String toString() {
@@ -132,7 +130,6 @@ class NullStatement extends Statement {
   }
 }
 
-// TODO:
 class NullExpression extends Expression {
   const NullExpression() : super(const Token.illegal());
 

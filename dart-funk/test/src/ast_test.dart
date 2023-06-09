@@ -163,7 +163,6 @@ void main() {
           const Expression(Token.ident('myVar')),
           '+',
           Identifier('anotherVar'),
-          Precedence.sum,
         );
         logger
           ..info('toString() $infixExpression')

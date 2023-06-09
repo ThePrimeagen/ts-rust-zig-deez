@@ -111,6 +111,7 @@ void main() {
       () async {
         // arrange
         final parser = Parser.fromSource(input);
+        logger.detail('parser: $parser');
 
         // act
         final copy = parser.copyWith();
@@ -281,7 +282,6 @@ void main() {
       'should return an Identifier Expression',
       () async {
         // arrange
-        const input = 'foobar;';
         final parser = Parser.fromSource(input);
 
         // act
@@ -352,7 +352,6 @@ void main() {
         // arrange - act - assert
         for (final (element as ({String input, String rator, String rand}))
             in input) {
-          // final record = element as ({String input, String rator, String rand});
           final parser = Parser.fromSource(element.input);
           final program = parse(parser);
           logger.info('Program: $program');
@@ -482,7 +481,8 @@ void main() {
         // '3 + 4; -5 * 5': '(3 + 4)((-5) * 5)',
         // '5 > 4 == 3 < 4': '((5 > 4) == (3 < 4))',
         // '5 < 4 != 3 > 4': '((5 < 4) != (3 > 4))',
-        // '3 + 4 * 5 == 3 * 1 + 4 * 5': '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
+        // '3 + 4 * 5 == 3 * 1 + 4 * 5':
+        // '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
         // 'true': 'true',
         // 'false': 'false',
         // '3 > 5 == false': '((3 > 5) == false)',
