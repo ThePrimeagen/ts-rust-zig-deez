@@ -47,6 +47,17 @@ class IntegerLiteral extends Expression {
   }
 }
 
+class Boolean extends Expression {
+  const Boolean({required this.value})
+      : super(value ? const Token.true_() : const Token.false_());
+  final bool value;
+
+  @override
+  String toString() {
+    return token.value;
+  }
+}
+
 class LetStatement extends Statement {
   const LetStatement(this.name, this.value) : super(const Token.let());
   final Identifier name;

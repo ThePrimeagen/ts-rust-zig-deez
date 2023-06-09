@@ -16,6 +16,14 @@ final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.ne: _parsePrefixExpression,
   TokenType.lt: _parsePrefixExpression,
   TokenType.gt: _parsePrefixExpression,
+  TokenType.lParen: _parseGroupedExpression,
+  // TokenType.if_: _parseIfExpression,
+  // TokenType.function: _parseFunctionLiteral,
+  // TokenType.string: _parseStringLiteral,
+  // TokenType.lSquirly: _parseArrayLiteral,
+  // TokenType.lBrace: _parseHashLiteral,
+  TokenType.true_: _parseBoolean,
+  TokenType.false_: _parseBoolean,
 };
 
 final _infixParseFns =
@@ -351,4 +359,38 @@ Parser _eatNextSemicolon(Parser parser) {
 
 bool _peekTokenIs(Parser parser, TokenType type) {
   return parser.peekToken.type == type;
+}
+
+bool _currTokenIs(Parser parser, TokenType type) {
+  return parser.currToken.type == type;
+}
+
+(Parser, Expression) _parseBoolean(Parser parser) {
+  return (parser, Boolean(value: _currTokenIs(parser, TokenType.true_)));
+}
+
+(Parser, Expression) _parseGroupedExpression(Parser parser) {
+  final advParser = advanceParser(parser);
+  final (exprParser, expression) =
+      _parseExpression(advParser, Precedence.lowest);
+  final (newParser, ok) = _expectPeek(exprParser, TokenType.rParen);
+  if (!ok) {
+    return (
+      newParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.rParen}, '
+            'got ${newParser.peekToken.type} instead',
+            newParser,
+            [],
+            // line: newParser.peekToken.line,
+            // column: newParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression()
+    );
+  }
+  return (newParser, expression);
+  // return (advanceParser(newParser), expression);
 }

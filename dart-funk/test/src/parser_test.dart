@@ -469,6 +469,7 @@ void main() {
     setUp(() {
       logger = Logger(level: Level.debug);
       input = {
+        '!true': '(!true)',
         '1 + 2 + 3;': '((1 + 2) + 3)',
         '-a * b;': '((-a) * b)',
         '!-a': '(!(-a))',
@@ -483,15 +484,16 @@ void main() {
         // '5 < 4 != 3 > 4': '((5 < 4) != (3 > 4))',
         // '3 + 4 * 5 == 3 * 1 + 4 * 5':
         // '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
-        // 'true': 'true',
-        // 'false': 'false',
-        // '3 > 5 == false': '((3 > 5) == false)',
-        // '3 < 5 == true': '((3 < 5) == true)',
-        // '1 + (2 + 3) + 4': '((1 + (2 + 3)) + 4)',
-        // '(5 + 5) * 2': '((5 + 5) * 2)',
-        // '2 / (5 + 5)': '(2 / (5 + 5))',
-        // '-(5 + 5)': '(-(5 + 5))',
-        // '!(true == true)': '(!(true == true))',
+        'true': 'true',
+        'false': 'false',
+        '3 > 5 == false': '((3 > 5) == false)',
+        '3 < 5 == true': '((3 < 5) == true)',
+        'true == true': '(true == true)',
+        '1 + (2 + 3) + 4': '((1 + (2 + 3)) + 4)',
+        '(5 + 5) * 2': '((5 + 5) * 2)',
+        '2 / (5 + 5)': '(2 / (5 + 5))',
+        '-(5 + 5)': '(-(5 + 5))',
+        '!(true == true)': '(!(true == true))',
         // 'a + add(b * c) + d': '((a + add((b * c))) + d)',
         // 'add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))':
         //     'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
@@ -521,4 +523,61 @@ void main() {
       },
     );
   });
+}
+
+bool testLiteralExpression(Expression exp, dynamic expected) {
+  if (expected is int) {
+    return testIntegerLiteral(exp, expected);
+  } else if (expected is String) {
+    return testIdentifier(exp, expected);
+  } else if (expected is bool) {
+    return testBooleanLiteral(exp, expected);
+  }
+  throw Exception('type of exp not handled. got=${exp.runtimeType}');
+}
+
+// ignore: avoid_positional_boolean_parameters
+bool testBooleanLiteral(Expression exp, bool expected) {
+  if (exp is! Boolean) {
+    throw Exception('exp not Boolean. got=${exp.runtimeType}');
+  }
+  if (exp.value != expected) {
+    throw Exception(
+        'exp.value not $expected. got=${exp.value} ${exp.runtimeType}');
+  }
+  if (exp.tokenLiteral() != '$expected') {
+    throw Exception(
+        'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}');
+  }
+  return true;
+}
+
+bool testIdentifier(Expression exp, String expected) {
+  if (exp is! Identifier) {
+    throw Exception('exp not Identifier. got=${exp.runtimeType}');
+  }
+  if (exp.value != expected) {
+    throw Exception(
+        'exp.value not $expected. got=${exp.value} ${exp.runtimeType}');
+  }
+  if (exp.tokenLiteral() != expected) {
+    throw Exception(
+        'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}');
+  }
+  return true;
+}
+
+bool testIntegerLiteral(Expression exp, int expected) {
+  if (exp is! IntegerLiteral) {
+    throw Exception('exp not IntegerLiteral. got=${exp.runtimeType}');
+  }
+  if (exp.value != expected) {
+    throw Exception(
+        'exp.value not $expected. got=${exp.value} ${exp.runtimeType}');
+  }
+  if (exp.tokenLiteral() != '$expected') {
+    throw Exception(
+        'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}');
+  }
+  return true;
 }
