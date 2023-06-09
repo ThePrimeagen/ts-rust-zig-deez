@@ -61,6 +61,31 @@ class LetStatement : StatementNode
     }
 }
 
+/// Node for return statements
+class ReturnStatement : StatementNode
+{
+    const ulong mainIdx; /// Main identifier index for return statement
+    const ExpressionNode value; /// Expression node reference
+
+    /**
+   * Constructs return statement.
+   * Params:
+   * mainIdx = the index of the statement start
+   * value = The expression describing the value
+   */
+    this(ulong mainIdx, ExpressionNode value)
+    {
+        this.mainIdx = mainIdx;
+        this.value = value;
+    }
+
+    /// Show the return statement's main identifier
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return lexer.tagRepr(mainIdx);
+    }
+}
+
 /// Identifier node for expressions
 class IdentifierNode : ExpressionNode
 {
@@ -336,9 +361,20 @@ public:
     }
 
     /// Parse return statements
-    StatementNode parseReturnStatement()
+    ReturnStatement parseReturnStatement()
     {
-        return null;
+        const auto start = this.position;
+        this.skipToken();
+
+        // Parse expression as part of let statement
+        auto value = this.parseExpression();
+
+        if (tokenTags[this.position] == TokenTag.Semicolon)
+        {
+            this.skipToken();
+        }
+
+        return new ReturnStatement(start, value);
     }
 
     /// Parse if statements
@@ -451,4 +487,21 @@ let 838383";
     assert(parser.program.statements[].empty, "Statement list must be empty for erroneous program");
     writefln("Got these errors -> %s", parser.errors[]);
     assert(parser.errors[].length == 3, "Error list must not be empty for erroneous program");
+}
+
+/// Multiple return statement test
+unittest
+{
+    const auto input = "return 5;
+return 10;
+return 993322;";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    assert(parser.program.statements[].length == 3, "Statement list must not be empty for program");
+    assert(parser.errors[].length == 0, "Error list must be empty for program");
 }
