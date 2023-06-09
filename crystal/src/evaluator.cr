@@ -158,7 +158,7 @@ module Evaluator
     in .greater_than?
       BooleanValue.new(left.value > right.value)
     in .unknown?
-      ErrorValue.new "unknown operator for integer"
+      ErrorValue.new "unknown operator '#{operator}' for integer"
     end
   end
 
@@ -166,7 +166,7 @@ module Evaluator
     if operator.add?
       StringValue.new(left.value + right.value)
     else
-      ErrorValue.new "unknown operator for string"
+      ErrorValue.new "unknown operator '#{operator}' for string"
     end
   end
 
@@ -177,7 +177,7 @@ module Evaluator
     when .not_equal?
       BooleanValue.new(left.value != right.value)
     else
-      ErrorValue.new "unknown operator for boolean"
+      ErrorValue.new "unknown operator '#{operator}' for boolean"
     end
   end
 
@@ -186,6 +186,6 @@ module Evaluator
   end
 
   def evaluate_infix(left : BaseValue, operator : Infix::Operator, right : BaseValue) : BaseValue
-    ErrorValue.new "unknown operator for #{left.type} and #{right.type}"
+    ErrorValue.new "unknown operator '#{operator}' for #{left.type} and #{right.type}"
   end
 end
