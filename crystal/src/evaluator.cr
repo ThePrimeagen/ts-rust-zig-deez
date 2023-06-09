@@ -1,0 +1,175 @@
+module Evaluator
+  extend self
+
+  def evaluate(node : Program, scope : Scope) : {BaseValue, Scope}
+    result = NullValue.new
+
+    node.statements.each do |statement|
+      result = evaluate statement, scope
+    end
+
+    {result, scope}
+  end
+
+  def evaluate(node : Node, scope : Scope) : BaseValue
+    evaluate node, scope
+  end
+
+  def evaluate(node : Statement, scope : Scope) : BaseValue
+    evaluate node, scope
+  end
+
+  def evaluate(node : Expression, scope : Scope) : BaseValue
+    evaluate node, scope
+  end
+
+  def evaluate(node : ExpressionStatement, scope : Scope) : BaseValue
+    evaluate node.expression, scope
+  end
+
+  def evaluate(node : Identifier, scope : Scope) : BaseValue
+    value = scope.get node.value
+    return ErrorValue.new "undefined variable '#{node.value}'" if value.nil?
+
+    value
+  end
+
+  def evaluate(node : IntegerLiteral, scope : Scope) : BaseValue
+    IntegerValue.new node.value
+  end
+
+  def evaluate(node : BooleanLiteral, scope : Scope) : BaseValue
+    BooleanValue.new node.value
+  end
+
+  def evaluate(node : FunctionLiteral, scope : Scope) : BaseValue
+    FunctionValue.new node.parameters, node.body, scope
+  end
+
+  def evaluate(node : Call, scope : Scope) : BaseValue
+    function = evaluate node.function, scope
+    return function if function.is_a? ErrorValue
+
+    unless function.is_a? FunctionValue
+      return ErrorValue.new "cannot call #{function.type} as a function"
+    end
+
+    arguments = node.arguments.map do |argument|
+      evaluate argument, scope
+    end
+
+    if arguments.size == 1 && arguments[0].is_a? ErrorValue
+      return arguments[0]
+    end
+
+    child = function.create_scope arguments
+    value = evaluate function.body, child
+
+    ReturnValue.new value
+  end
+
+  def evaluate(node : Prefix, scope : Scope) : BaseValue
+    right = evaluate node.right, scope
+    return right if right.is_a? ErrorValue
+
+    case node.operator
+    when .negative?
+      unless right.is_a? IntegerValue
+        ErrorValue.new "cannot get negative value of type #{right.type}"
+      end
+
+      IntegerValue.new -right.as(IntegerValue).value
+    when .not?
+      unless right.is_a? BooleanValue
+        ErrorValue.new "cannot inverse type #{right.type}"
+      end
+
+      BooleanValue.new !right.as(BooleanValue).value
+    else
+      ErrorValue.new "unknown prefix operator"
+    end
+  end
+
+  def evaluate(node : Infix, scope : Scope) : BaseValue
+    left = evaluate node.left, scope
+    return left if left.is_a? ErrorValue
+
+    right = evaluate node.right, scope
+    return right if right.is_a? ErrorValue
+
+    unless left.type == right.type
+      return ErrorValue.new "cannot compare type #{left.type} to type #{right.type}"
+    end
+
+    evaluate_infix left, node.operator, right
+  end
+
+  def evaluate(node : Let, scope : Scope) : BaseValue
+    value = evaluate node.value, scope
+    return value if value.is_a? ErrorValue
+
+    scope.set node.name.value, value
+
+    value
+  end
+
+  def evaluate(node : Return, scope : Scope) : BaseValue
+    if inner = node.value
+      value = evaluate inner, scope
+      return value if value.is_a? ErrorValue
+
+      ReturnValue.new value
+    else
+      ReturnValue.new NullValue.new
+    end
+  end
+
+  def evaluate(node : Block, scope : Scope) : BaseValue
+    result = NullValue.new
+
+    node.statements.each do |statement|
+      result = evaluate statement, scope
+      break if result.is_a?(ReturnValue | ErrorValue)
+    end
+
+    result
+  end
+
+  def evaluate_infix(left : IntegerValue, operator : Infix::Operator, right : IntegerValue) : BaseValue
+    case operator
+    in .equal?
+      BooleanValue.new(left.value == right.value)
+    in .not_equal?
+      BooleanValue.new(left.value != right.value)
+    in .add?
+      IntegerValue.new(left.value + right.value)
+    in .subtract?
+      IntegerValue.new(left.value - right.value)
+    in .multiply?
+      IntegerValue.new(left.value * right.value)
+    in .divide?
+      IntegerValue.new (left.value / right.value).to_i64
+    in .less_than?
+      BooleanValue.new(left.value < right.value)
+    in .greater_than?
+      BooleanValue.new(left.value > right.value)
+    in .unknown?
+      ErrorValue.new "unknown operator for integer"
+    end
+  end
+
+  def evaluate_infix(left : BooleanValue, operator : Infix::Operator, right : BooleanValue) : BaseValue
+    case operator
+    when .equal?
+      BooleanValue.new(left.value == right.value)
+    when .not_equal?
+      BooleanValue.new(left.value != right.value)
+    else
+      ErrorValue.new "unknown operator for boolean"
+    end
+  end
+
+  def evaluate_infix(left : BaseValue, operator : Infix::Operator, right : BaseValue) : BaseValue
+    ErrorValue.new "unknown operator for #{left.type}"
+  end
+end
