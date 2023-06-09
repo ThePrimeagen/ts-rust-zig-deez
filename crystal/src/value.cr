@@ -76,7 +76,7 @@ class FunctionValue < BaseValue
       child.set param.value, arguments[index]
     end
 
-    scope
+    child
   end
 end
 

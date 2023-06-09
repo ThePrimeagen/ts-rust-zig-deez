@@ -77,8 +77,12 @@ module Evaluator
       evaluate argument, scope
     end
 
-    if arguments.size == 1 && arguments[0].is_a? ErrorValue
-      return arguments[0]
+    if err = arguments.find &.is_a? ErrorValue
+      return err
+    end
+
+    unless arguments.size == function.parameters.size
+      return ErrorValue.new "expected #{function.parameters.size} arguments to function; got #{arguments.size}"
     end
 
     child = function.create_scope arguments
