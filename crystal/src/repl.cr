@@ -44,6 +44,10 @@ private def format(value : IntegerValue)
   value.value.colorize.blue
 end
 
+private def format(value : StringValue)
+  value.value.inspect.colorize.cyan
+end
+
 private def format(value : BooleanValue)
   value.value.colorize.blue
 end

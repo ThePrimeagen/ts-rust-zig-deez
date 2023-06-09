@@ -35,6 +35,17 @@ class IntegerValue < BaseValue
   end
 end
 
+class StringValue < BaseValue
+  getter value : String
+
+  def initialize(@value)
+  end
+
+  def type : String
+    "string"
+  end
+end
+
 class BooleanValue < BaseValue
   getter value : Bool
 

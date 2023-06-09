@@ -24,14 +24,23 @@ end
 class Identifier < Expression
   property value : String
 
-  def_equals @value
-
   def initialize(@value)
+  end
+
+  def ==(other : Identifier)
+    @value == other.value
   end
 end
 
 class IntegerLiteral < Expression
   property value : Int64
+
+  def initialize(@value)
+  end
+end
+
+class StringLiteral < Expression
+  property value : String
 
   def initialize(@value)
   end

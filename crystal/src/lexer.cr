@@ -83,6 +83,14 @@ class Lexer
     when '}'
       next_char
       type = :right_squirly
+    when '"'
+      if value = read_string_from(current_pos + 1)
+        next_char
+        type = :string
+      else
+        type = :illegal
+        value = "unterminated quote string"
+      end
     when 'f'
       start = current_pos
       case next_char
@@ -180,6 +188,29 @@ class Lexer
     start = current_pos
     while current_char.ascii_number?
       next_char
+    end
+
+    slice = Slice.new(@reader.string.to_unsafe + start, current_pos - start)
+    @pool.get slice
+  end
+
+  private def read_string_from(start : Int32) : String?
+    escaped = false
+
+    loop do
+      case next_char
+      when '\0'
+        return
+      when '\\'
+        escaped = !escaped
+      when '"'
+        if escaped
+          escaped = false
+          next
+        end
+
+        break
+      end
     end
 
     slice = Slice.new(@reader.string.to_unsafe + start, current_pos - start)

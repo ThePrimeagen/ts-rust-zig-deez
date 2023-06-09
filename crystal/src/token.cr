@@ -6,6 +6,7 @@ struct Token
     # identifiers
     Ident
     Integer
+    String
 
     # operators
     Assign

@@ -38,6 +38,10 @@ module Evaluator
     IntegerValue.new node.value
   end
 
+  def evaluate(node : StringLiteral, scope : Scope) : BaseValue
+    StringValue.new node.value
+  end
+
   def evaluate(node : BooleanLiteral, scope : Scope) : BaseValue
     BooleanValue.new node.value
   end
@@ -155,6 +159,14 @@ module Evaluator
       BooleanValue.new(left.value > right.value)
     in .unknown?
       ErrorValue.new "unknown operator for integer"
+    end
+  end
+
+  def evaluate_infix(left : StringValue, operator : Infix::Operator, right : StringValue) : BaseValue
+    if operator.add?
+      StringValue.new(left.value + right.value)
+    else
+      ErrorValue.new "unknown operator for string"
     end
   end
 

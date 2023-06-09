@@ -101,6 +101,7 @@ class Parser
     case token.type
     when .ident?         then parse_identifier token
     when .integer?       then parse_integer token
+    when .string?        then parse_string token
     when .bang?, .minus? then parse_prefix_expression
     when .true?, .false? then parse_boolean token
     when .left_curly?    then parse_grouped_expression
@@ -150,6 +151,10 @@ class Parser
 
   private def parse_integer(token : Token) : Expression
     IntegerLiteral.new token.value.to_i64
+  end
+
+  private def parse_string(token : Token) : Expression
+    StringLiteral.new token.value
   end
 
   private def parse_boolean(token : Token) : Expression
