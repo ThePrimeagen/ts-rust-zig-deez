@@ -7,8 +7,9 @@ import 'package:monkeydart/monkeydart.dart';
 sealed class Node {
   const Node(this.token);
   final Token token;
+
   String tokenLiteral() {
-    return token.value;
+    return literalToken(this);
   }
 
   @override
@@ -20,11 +21,6 @@ sealed class Node {
 /// Statements do not return values
 class Statement extends Node {
   const Statement(super.token);
-
-  @override
-  String toString() {
-    return token.value;
-  }
 }
 
 /// Expressions return values
@@ -42,6 +38,15 @@ class Identifier extends Expression {
   }
 }
 
+class IntegerLiteral extends Expression {
+  IntegerLiteral(this.value) : super(Token.int(value.toString()));
+  final int value;
+  @override
+  String toString() {
+    return token.value;
+  }
+}
+
 class LetStatement extends Statement {
   const LetStatement(this.name, this.value) : super(const Token.let());
   final Identifier name;
@@ -49,7 +54,7 @@ class LetStatement extends Statement {
 
   @override
   String toString() {
-    return '${token.type.name} ${name.value} = ${value.token.value};';
+    return '${token.value} ${name.value} = ${value.token.value};';
   }
 }
 
@@ -59,7 +64,7 @@ class ReturnStatement extends Statement {
 
   @override
   String toString() {
-    return '${token.type} ${returnValue.token.value};';
+    return '${token.value} ${returnValue.token.value};';
   }
 }
 
@@ -91,15 +96,12 @@ class InfixExpression extends Expression {
     this.left,
     this.operator,
     this.right,
+    this.precedence,
   );
   final Expression left;
   final String operator;
   final Expression right;
-
-  @override
-  String tokenLiteral() {
-    return token.value;
-  }
+  final Precedence precedence;
 
   @override
   String toString() {
@@ -108,19 +110,83 @@ class InfixExpression extends Expression {
 }
 
 class Program extends Node {
-  Program() : super(const Token.eof());
-  final List<Statement> statements = [];
+  const Program(this.statements, {this.errors = const []})
+      : super(const Token.eof());
 
-  @override
-  String tokenLiteral() {
-    if (statements.isNotEmpty) {
-      return statements.first.token.value;
-    }
-    return '';
-  }
+  final List<Statement> statements;
+  final List<ParserException> errors;
 
   @override
   String toString() {
-    return statements.join();
+    return 'Program:\n\t ${statements.join('\n\t')}'
+        '${errors.isEmpty ? "" : "\nErrors:\n\t ${errors.join('\n\t')}"}';
+  }
+}
+
+class NullStatement extends Statement {
+  const NullStatement() : super(const Token.illegal());
+
+  @override
+  String toString() {
+    return 'NullStatement';
+  }
+}
+
+// TODO:
+class NullExpression extends Expression {
+  const NullExpression() : super(const Token.illegal());
+
+  @override
+  String toString() {
+    return 'NullExpression';
+  }
+}
+
+class NullProgram extends Program {
+  const NullProgram() : super(const []);
+
+  @override
+  String toString() {
+    return 'NullProgram';
+  }
+}
+
+class NullIdentifier extends Identifier {
+  NullIdentifier() : super('');
+
+  @override
+  String toString() {
+    return 'NullIdentifier';
+  }
+}
+
+String literalToken(Node node) {
+  switch (node) {
+    case _ when node is Program:
+      return 'Program';
+    case _ when node is Statement:
+      return 'Statement ${node.token.value}';
+    case _ when node is Expression:
+      return 'Expression ${node.token.value}';
+    // case Identifier:
+    //   return 'Identifier';
+    // case IntegerLiteral:
+    //   return 'IntegerLiteral';
+    // case PrefixExpression:
+    //   return 'PrefixExpression';
+    // case InfixExpression:
+    //   return 'InfixExpression';
+    // case Boolean:
+    //   return 'Boolean';
+    // case IfExpression:
+    //   return 'IfExpression';
+    // case BlockStatement:
+    //   return 'BlockStatement';
+    // case FunctionLiteral:
+    //   return 'FunctionLiteral';
+    // case CallExpression:
+    //   return 'CallExpression';
+    default:
+      return 'Unknown';
   }
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_constructors_over_static_methods
+
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
@@ -112,7 +114,7 @@ class Token extends Equatable {
   }
 
   @override
-  String toString() => '<${type.name}> => $value';
+  String toString() => '(<${type.name}> => $value)';
 
   @override
   List<Object?> get props => [type, value];
