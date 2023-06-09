@@ -75,16 +75,16 @@ module Evaluator
     case node.operator
     when .negative?
       unless right.is_a? IntegerValue
-        ErrorValue.new "cannot get negative value of type #{right.type}"
+        return ErrorValue.new "cannot get negative value of type #{right.type}"
       end
 
-      IntegerValue.new -right.as(IntegerValue).value
+      IntegerValue.new -right.value
     when .not?
       unless right.is_a? BooleanValue
-        ErrorValue.new "cannot inverse type #{right.type}"
+        return ErrorValue.new "cannot inverse type #{right.type}"
       end
 
-      BooleanValue.new !right.as(BooleanValue).value
+      BooleanValue.new !right.value
     else
       ErrorValue.new "unknown prefix operator"
     end
