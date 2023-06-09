@@ -36,7 +36,7 @@ StatementP LetStatement::parse(Lexer& lexer)
 Value LetStatement::eval(EnvironmentP env) const
 {
 	env->set(name, value->eval(env));
-	return nil;
+	return {};
 }
 
 void LetStatement::print(std::ostream& os) const
@@ -64,7 +64,7 @@ StatementP ReturnStatement::parse(Lexer& lexer)
 Value ReturnStatement::eval(EnvironmentP env) const
 {
 	const auto evaluatedValue = value->eval(env);
-	throw evaluatedValue;
+	throw std::move(evaluatedValue);
 }
 
 
@@ -77,6 +77,17 @@ void ReturnStatement::print(std::ostream& os) const
 
 
 // StatementList
+
+ExpressionP StatementList::parse(Lexer& lexer)
+{
+	std::vector<ExpressionP> expressions;
+	while(lexer.get(TokenType::Semicolon), !lexer.eof() && !lexer.get(TokenType::Rsquirly))
+		expressions.push_back(Expression::parseStatement(lexer));
+
+	return (expressions.size() == 1)
+		? std::move(expressions[0])
+		: std::make_unique<StatementList>(std::move(expressions));
+}
 
 Value StatementList::eval(EnvironmentP env) const
 {
@@ -166,7 +177,7 @@ Value IfStatement::eval(EnvironmentP env) const
 	if (alternative)
 		return alternative->eval(env);
 
-	return nil;
+	return {};
 }
 
 

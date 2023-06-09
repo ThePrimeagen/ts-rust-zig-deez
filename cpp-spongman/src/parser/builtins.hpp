@@ -17,6 +17,7 @@ struct BuiltinFunctionExpression : public AbstractFunctionExpression
 	, body{std::move(body)}
 	{}
 
+	void print(std::ostream& os) const override;
 	Value call(
 		EnvironmentP closureEnv,
 		EnvironmentP callerEnv,
@@ -42,6 +43,7 @@ struct BuiltinBinaryFunctionExpression : public AbstractFunctionExpression
 	, body{std::move(body)}
 	{}
 
+	//void print(std::ostream& os) const override;
 	Value call(
 		EnvironmentP closureEnv,
 		EnvironmentP callerEnv,
