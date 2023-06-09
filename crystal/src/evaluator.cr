@@ -43,14 +43,14 @@ module Evaluator
   end
 
   def evaluate(node : BooleanLiteral, scope : Scope) : BaseValue
-    BooleanValue.new node.value
+    BooleanValue.new node.value?
   end
 
   def evaluate(node : If, scope : Scope) : BaseValue
     condition = evaluate node.condition, scope
     return condition if condition.is_a? ErrorValue
 
-    if condition.is_a?(NullValue) || condition.as?(BooleanValue).try &.value
+    if condition.is_a?(NullValue) || condition.as?(BooleanValue).try &.value?
       return evaluate node.consequence, scope
     end
 
@@ -103,7 +103,7 @@ module Evaluator
         return ErrorValue.new "cannot inverse type #{right.type}"
       end
 
-      BooleanValue.new !right.value
+      BooleanValue.new !right.value?
     else
       ErrorValue.new "unknown prefix operator"
     end
@@ -188,9 +188,9 @@ module Evaluator
   def evaluate_infix(left : BooleanValue, operator : Infix::Operator, right : BooleanValue) : BaseValue
     case operator
     when .equal?
-      BooleanValue.new(left.value == right.value)
+      BooleanValue.new(left.value? == right.value?)
     when .not_equal?
-      BooleanValue.new(left.value != right.value)
+      BooleanValue.new(left.value? != right.value?)
     else
       ErrorValue.new "unknown operator '#{operator}' for boolean"
     end

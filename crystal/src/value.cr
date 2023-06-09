@@ -47,7 +47,7 @@ class StringValue < BaseValue
 end
 
 class BooleanValue < BaseValue
-  getter value : Bool
+  getter? value : Bool
 
   def initialize(@value)
   end

@@ -29,7 +29,7 @@ fmt:
 
 lint:
 	@echo "===> Linting"
-	bin/ameba --all
+	bin/ameba
 
 test:
 	@echo "===> Testing EVERYTHING"

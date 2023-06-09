@@ -47,7 +47,7 @@ class StringLiteral < Expression
 end
 
 class BooleanLiteral < Expression
-  property value : Bool
+  property? value : Bool
 
   def initialize(@value)
   end

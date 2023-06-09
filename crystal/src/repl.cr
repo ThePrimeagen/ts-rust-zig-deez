@@ -49,7 +49,7 @@ private def format(value : StringValue)
 end
 
 private def format(value : BooleanValue)
-  value.value.colorize.blue
+  value.value?.colorize.blue
 end
 
 private def format(value : FunctionValue)

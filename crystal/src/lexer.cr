@@ -29,11 +29,8 @@ class Lexer
     when '\0'
       type = :eof
     when ' ', '\t', '\r', '\n'
-      if value = skip_whitespace
-        type = :illegal
-      else
-        return next_token
-      end
+      return next_token unless value = skip_whitespace
+      type = :illegal
     when '='
       if next_char == '='
         next_char
