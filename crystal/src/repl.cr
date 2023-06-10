@@ -41,15 +41,15 @@ def init_repl : Nil
 end
 
 private def format(value : IntegerValue)
-  value.value.colorize.blue
+  value.value.colorize.cyan
 end
 
 private def format(value : StringValue)
-  value.value.inspect.colorize.cyan
+  value.value.inspect.colorize.blue
 end
 
 private def format(value : BooleanValue)
-  value.value?.colorize.blue
+  value.value?.colorize.cyan
 end
 
 private def format(value : FunctionValue)
