@@ -5,15 +5,17 @@ module Parser.Parsec where
 import AST
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, between, choice, manyTill, optional, parse, satisfy, sepBy, sepEndBy, try, withRecovery, (<|>))
+import Text.Megaparsec (Parsec, anySingle, between, choice, manyTill, optional, parse, satisfy, sepBy, sepEndBy, withRecovery, (<|>))
 import Token
 
-type Parser = Parsec Void [Token]
+type Input = [Token]
+
+type Parser = Parsec Void Input
 
 ast :: Ast
 ast s = case parse programP "" s of
-    Left e -> Left $ show e
-    Right a -> Right a
+    Left err -> error ("parser should not fail" ++ show err)
+    Right p -> p
 
 programP :: Parser Program
 programP = Program <$> manyTill statementP' (tokenP Eof)
@@ -88,13 +90,19 @@ tokenP :: Token -> Parser Token
 tokenP t = satisfy (== t)
 
 identP :: Parser String
-identP = try $ do
-    anySingle >>= \case
+identP =
+    satisfy isIdent >>= \case
         (Ident t) -> return t
         _ -> fail "Expected identifier"
+  where
+    isIdent (Ident _) = True
+    isIdent _ = False
 
 numberP :: Parser String
-numberP = try $ do
-    anySingle >>= \case
+numberP =
+    satisfy isNumber >>= \case
         (Int t) -> return t
-        _ -> fail "Expected integer"
+        _ -> fail "Expected number"
+  where
+    isNumber (Int _) = True
+    isNumber _ = False

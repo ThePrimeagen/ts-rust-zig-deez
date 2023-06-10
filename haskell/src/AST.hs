@@ -2,7 +2,7 @@ module AST where
 
 import Token
 
-type Ast = [Token] -> Either String Program
+type Ast = [Token] -> Program
 
 newtype Program = Program [Statement]
     deriving (Show, Eq)
