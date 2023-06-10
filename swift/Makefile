@@ -21,7 +21,7 @@ docker-ready: docker-build
 
 clean:
 	@echo "===> Cleaning"
-	# TODO: replace this line with your cleaning commands
+	rm -rf .build
 
 fmt:
 	@echo "===> Formatting"
