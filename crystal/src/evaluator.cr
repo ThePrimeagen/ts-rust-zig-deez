@@ -69,7 +69,7 @@ module Evaluator
     function = evaluate node.function, scope
     return function if function.is_a? ErrorValue
 
-    unless function.is_a? FunctionValue
+    unless function.is_a?(FunctionValue | BuiltinValue)
       return ErrorValue.new "cannot call type #{function.type} as a function"
     end
 
@@ -86,7 +86,11 @@ module Evaluator
     end
 
     child = function.create_scope arguments
-    value = evaluate function.body, child
+    value = if function.is_a?(BuiltinValue)
+              function.call arguments
+            else
+              evaluate function.body, child
+            end
 
     ReturnValue.new value
   end

@@ -9,6 +9,15 @@ class Scope
 
   def initialize(@outer = nil)
     @store = {} of String => BaseValue
+
+    @store["len"] = BuiltinValue.new(%w[value], self) do |args|
+      arg = args[0]
+      unless arg.is_a? StringValue
+        next ErrorValue.new "cannot get length of type #{arg.type}"
+      end
+
+      IntegerValue.new arg.value.size
+    end
   end
 
   def get(key : String) : BaseValue?
@@ -77,6 +86,33 @@ class FunctionValue < BaseValue
     end
 
     child
+  end
+end
+
+class BuiltinValue < BaseValue
+  getter parameters : Array(String)
+  getter scope : Scope
+  @proc : Array(BaseValue) -> BaseValue
+
+  def initialize(@parameters, @scope, &@proc : Array(BaseValue) -> BaseValue)
+  end
+
+  def call(arguments : Array(BaseValue)) : BaseValue
+    @proc.call arguments
+  end
+
+  def create_scope(arguments : Array(BaseValue)) : Scope
+    child = Scope.new @scope
+
+    @parameters.each_with_index do |param, index|
+      child.set param, arguments[index]
+    end
+
+    child
+  end
+
+  def type : String
+    "builtin function"
   end
 end
 
