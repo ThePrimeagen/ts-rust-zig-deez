@@ -175,7 +175,14 @@ module Evaluator
     in .multiply?
       IntegerValue.new(left.value * right.value)
     in .divide?
-      IntegerValue.new (left.value / right.value).to_i64
+      case value = left.value / right.value
+      when Float64::NAN
+        ErrorValue.new "not a number"
+      when Float64::INFINITY
+        ErrorValue.new "infinity"
+      else
+        IntegerValue.new value.to_i64
+      end
     in .less_than?
       BooleanValue.new(left.value < right.value)
     in .greater_than?
@@ -183,6 +190,8 @@ module Evaluator
     in .unknown?
       ErrorValue.new "unknown operator '#{operator}' for type integer"
     end
+  rescue OverflowError
+    ErrorValue.new "arithmetic overflow"
   end
 
   def evaluate_infix(left : StringValue, operator : Infix::Operator, right : StringValue) : BaseValue
