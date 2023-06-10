@@ -32,7 +32,7 @@ def init_repl : Nil
     end
 
     program = Parser.new(tokens).parse
-    result, scope = Evaluator.evaluate program, scope
+    result = Evaluator.evaluate program, scope
     puts format result
   rescue ex
     STDERR.puts "#{"Error:".colorize.red} #{ex}"

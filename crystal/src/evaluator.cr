@@ -1,14 +1,14 @@
 module Evaluator
   extend self
 
-  def evaluate(node : Program, scope : Scope) : {BaseValue, Scope}
+  def evaluate(node : Program, scope : Scope) : BaseValue
     result = NullValue.new
 
     node.statements.each do |statement|
       result = evaluate statement, scope
     end
 
-    {result, scope}
+    result
   end
 
   def evaluate(node : Node, scope : Scope) : BaseValue
