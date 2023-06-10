@@ -111,7 +111,7 @@ class Lexer
         type = :let
       else
         type = :ident
-        value = read_ident_from start - 1
+        value = read_ident_from start
       end
     when 't'
       start = current_pos
