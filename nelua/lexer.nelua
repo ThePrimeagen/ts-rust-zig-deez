@@ -1,5 +1,5 @@
 require("string")
-local strchar: type = require 'detail.strchar'
+local strchar = require 'detail.strchar'
 
 global TokenType = @enum{
 	Ident = 0,
@@ -78,7 +78,7 @@ Tokens[")"]  = Token{ TokenType.Rparen,       ")"  }
 Tokens["{"]  = Token{ TokenType.LSquirly,     "{"  }
 Tokens["}"]  = Token{ TokenType.RSquirly,     "}"  }
 
-function Lexer:ReadChar(): void
+function Lexer:ReadChar()
 	if unlikely(self.ReadPosition >= #self.Input) then
 		self.Char = '\0'_u8
 	else
@@ -89,7 +89,7 @@ function Lexer:ReadChar(): void
 	self.ReadPosition = self.ReadPosition + 1
 end
 
-function Lexer:Peek(): uint8
+function Lexer:Peek()
 	if unlikely(self.ReadPosition >= #self.Input) then
 		return '\0'_u8
 	end
@@ -97,13 +97,13 @@ function Lexer:Peek(): uint8
 	return self.Input[self.ReadPosition]
 end
 
-function Lexer:SkipWhiteSpace(): void
+function Lexer:SkipWhiteSpace()
   while strchar.isspace(self.Char) do
     self:ReadChar()
   end
 end
 
-function Lexer:ReadInt(): string
+function Lexer:ReadInt()
 	local pos = self.Position
 
   while strchar.isdigit(self.Char) do
@@ -123,7 +123,7 @@ function Lexer:ReadIdent()
 	return self.Input:sub(pos, self.Position - 1 )
 end
 
-function Lexer:NextToken(): Token
+function Lexer:NextToken()
   self:SkipWhiteSpace()
 
   if strchar.isdigit(self.Char) then
