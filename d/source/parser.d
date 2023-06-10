@@ -18,90 +18,166 @@ import std.stdio : writefln;
 /// TODO: use emplace for custom class allocation
 class ParseNode
 {
+    const ulong mainIdx; /// First index of expression
+
     /**
-    * Interface to show the AST node.
-    * Params: lexer = the lexer context for token representation
-    * Returns: the string representation of the node
-    */
-    abstract string tokenLiteral(ref Lexer lexer);
+     * Constructs expression statement.
+     * Params:
+     * mainIdx = the starting index of the expression
+     * value = The expression creating the value
+     */
+    this(ulong mainIdx)
+    {
+        this.mainIdx = mainIdx;
+    }
+
+    /**
+     * Interface to show the main token in the node.
+     * Params: lexer = the lexer context for token representation
+     * Returns: the string representation of the main node token
+     */
+    string tokenLiteral(ref Lexer lexer)
+    {
+        return lexer.tagRepr(mainIdx);
+    }
 }
 
 /// Statement parse node
 class StatementNode : ParseNode
 {
+    /// Constructs generic statement
+    this(ulong mainIdx)
+    {
+        super(mainIdx);
+    }
+
+    /**
+     * Interface to show the AST node.
+     * Params: lexer = the lexer context for token representation
+     * Returns: the string representation of the node
+     */
+    abstract string show(ref Lexer lexer);
 }
 
 /// Expression parse node
 class ExpressionNode : ParseNode
 {
+    /// Constructs generic expression
+    this(ulong mainIdx)
+    {
+        super(mainIdx);
+    }
+
+    /**
+     * Interface to show the AST node.
+     * Params: lexer = the lexer context for token representation
+     * Returns: the string representation of the node
+     */
+    abstract string show(ref Lexer lexer);
+}
+
+/// Wrapper for ExpressionNodes
+class ExpressionStatement : StatementNode
+{
+    const ExpressionNode value; /// Expression node reference
+
+    /**
+     * Constructs expression statement.
+     * Params:
+     * mainIdx = the starting index of the expression
+     * value = The expression creating the value
+     */
+    this(ulong mainIdx, ExpressionNode value)
+    {
+        super(mainIdx);
+        this.value = value;
+    }
+
+    // TODO: implement and override
+    //string show(ref Lexer lexer)
 }
 
 /// Node for let statements
 class LetStatement : StatementNode
 {
-    const ulong mainIdx; /// Main identifier index for let statement
-    const ExpressionNode value; /// Expression node reference
+    ExpressionNode value; /// Expression node reference
 
     /**
-   * Constructs let statement.
-   * Params:
-   * mainIdx = the index of the variable initialized
-   * value = The expression initializing the variable
-   */
+     * Constructs let statement.
+     * Params:
+     * mainIdx = the index of the variable initialized
+     * value = The expression initializing the variable
+     */
     this(ulong mainIdx, ExpressionNode value)
     {
-        this.mainIdx = mainIdx;
+        super(mainIdx);
         this.value = value;
     }
 
     /// Show the let statement's main identifier
     override string tokenLiteral(ref Lexer lexer)
     {
-        return lexer.tagRepr(mainIdx);
+        return format("%s", TokenTag.Let);
+    }
+
+    /// Create statement string
+    override string show(ref Lexer lexer)
+    {
+        return format("let %s = %s;", super.tokenLiteral(lexer),
+                (this.value !is null) ? this.value.show(lexer) : "");
     }
 }
 
 /// Node for return statements
 class ReturnStatement : StatementNode
 {
-    const ulong mainIdx; /// Main identifier index for return statement
-    const ExpressionNode value; /// Expression node reference
+    ExpressionNode value; /// Expression node reference
 
     /**
-   * Constructs return statement.
-   * Params:
-   * mainIdx = the index of the statement start
-   * value = The expression describing the value
-   */
+     * Constructs return statement.
+     * Params:
+     * mainIdx = the index of the statement start
+     * value = The expression describing the value
+     */
     this(ulong mainIdx, ExpressionNode value)
     {
-        this.mainIdx = mainIdx;
+        super(mainIdx);
         this.value = value;
     }
 
     /// Show the return statement's main identifier
     override string tokenLiteral(ref Lexer lexer)
     {
-        return lexer.tagRepr(mainIdx);
+        return format("%s", TokenTag.Return);
+    }
+
+    /// Create statement string
+    override string show(ref Lexer lexer)
+    {
+        return format("return%s;", (this.value !is null) ? ' ' ~ this.value.show(lexer) : "");
     }
 }
 
 /// Identifier node for expressions
 class IdentifierNode : ExpressionNode
 {
-    const ulong mainIdx; /// Main identifier index
-
     /**
-   * Constructs identifier nodes.
-   * Params: mainIdx = the identifier token index
-   */
+     * Constructs identifier nodes.
+     * Params: mainIdx = the identifier token index
+     */
     this(ulong mainIdx)
     {
-        this.mainIdx = mainIdx;
+        super(mainIdx);
     }
 
     /// Show the main identifier
     override string tokenLiteral(ref Lexer lexer)
+    {
+        return format("%s", TokenTag.Ident);
+    }
+
+    /// Create id string
+    override string show(ref Lexer lexer)
     {
         return lexer.tagRepr(mainIdx);
     }
@@ -110,19 +186,23 @@ class IdentifierNode : ExpressionNode
 /// Integer node for expressions
 class IntNode : ExpressionNode
 {
-    const ulong mainIdx; /// Main integer index
-
     /**
-   * Constructs int nodes.
-   * Params: mainIdx = the int token index
-   */
+     * Constructs int nodes.
+     * Params: mainIdx = the int token index
+     */
     this(ulong mainIdx)
     {
-        this.mainIdx = mainIdx;
+        super(mainIdx);
     }
 
     /// Show the main integer
     override string tokenLiteral(ref Lexer lexer)
+    {
+        return format("%s", TokenTag.Int);
+    }
+
+    /// Create int string
+    override string show(ref Lexer lexer)
     {
         return lexer.tagRepr(mainIdx);
     }
@@ -131,33 +211,41 @@ class IntNode : ExpressionNode
 /// Unary or binary operator node for expressions
 class OperatorNode : ExpressionNode
 {
+    /**
+     * Constructs either unary or binary operator nodes.
+     * Params: mainIdx = the main token index
+     */
+    this(ulong mainIdx)
+    {
+        super(mainIdx);
+    }
 }
 
 /// Infix binary operator node for expressions
 class InfixNode : OperatorNode
 {
-    const ulong operatorIdx; /// Main operator index
     ExpressionNode lhs; /// lhs expression
     ExpressionNode rhs; /// rhs expression
 
     /**
-       * Constructs the unary/binary operator expression
-       * Params:
-       * operatorIdx = the index of the operator tag
-       * lhs = the left hand side expression
-       * rhs = the right hand side expression
-       */
-    this(ulong operator, ExpressionNode lhs, ExpressionNode rhs)
+     * Constructs the unary/binary operator expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * lhs = the left hand side expression
+     * rhs = the right hand side expression
+     */
+    this(ulong mainIdx, ExpressionNode lhs, ExpressionNode rhs)
     {
-        this.operatorIdx = operator;
+        super(mainIdx);
         this.lhs = lhs;
         this.rhs = rhs;
     }
 
-    /// Show the operator for the expression
-    override string tokenLiteral(ref Lexer lexer)
+    /// Create expression string
+    override string show(ref Lexer lexer)
     {
-        return lexer.tagRepr(operatorIdx);
+        return format("%s%s%s", (this.lhs !is null) ? lhs.show(lexer) ~ " " : "",
+                lexer.tagRepr(mainIdx), (this.rhs !is null) ? " " ~ rhs.show(lexer) : "");
     }
 }
 
@@ -197,6 +285,25 @@ struct Program
         {
             return "";
         }
+    }
+
+    /// Entire program representation for debugging purposes
+    string show(ref Lexer lexer)
+    {
+        auto reprBuilder = appender!string;
+        reprBuilder.reserve(128);
+        const auto newline_stop = this.statements[].length;
+
+        foreach (i, statement; this.statements[].enumerate(0))
+        {
+            auto repr = statement.show(lexer);
+            if (repr !is null && repr != "")
+            {
+                reprBuilder.put(repr ~ ((i + 1) < newline_stop ? "\n" : ""));
+            }
+        }
+
+        return reprBuilder.data;
     }
 }
 
@@ -241,11 +348,11 @@ public:
      */
     void skipTokens(ulong count)
     {
-        if (!count)
+        if (count < 1)
         {
             return;
         }
-        this.peekPosition += count;
+        this.peekPosition += count - 1;
         this.position = this.peekPosition;
         this.peekPosition++;
     }
@@ -450,8 +557,11 @@ unittest
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.program.statements[].length == 1, "Statement list must not be empty for program");
     assert(parser.errors[].length == 0, "Error list must be empty for empty string");
+
+    const auto programListing = parser.program.show(lexer);
+    assert(input == programListing,
+            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
 }
 
 /// Multiple let statement test
@@ -467,8 +577,11 @@ let foobar = y;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.program.statements[].length == 3, "Statement list must not be empty for program");
     assert(parser.errors[].length == 0, "Error list must be empty for program");
+
+    const auto programListing = parser.program.show(lexer);
+    assert(input == programListing,
+            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
 }
 
 /// Multiple let statement test
@@ -502,6 +615,9 @@ return 993322;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.program.statements[].length == 3, "Statement list must not be empty for program");
     assert(parser.errors[].length == 0, "Error list must be empty for program");
+
+    const auto programListing = parser.program.show(lexer);
+    assert(input == programListing,
+            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
 }
