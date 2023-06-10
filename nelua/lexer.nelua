@@ -39,7 +39,7 @@ global TokenType = @enum{
 }
 
 global Lexer = @record{
-	Input: string,
+	Input: span(uint8),
 	Position: integer,
 	ReadPosition: integer,
 	Char: uint8
@@ -110,7 +110,7 @@ function Lexer:ReadInt()
     self:ReadChar()
   end
 
-	return self.Input:sub(pos, self.Position - 1 )
+	return self.Input:sub(pos, self.Position)
 end
 
 function Lexer:ReadIdent()
@@ -120,7 +120,7 @@ function Lexer:ReadIdent()
     self:ReadChar()
   end
 
-	return self.Input:sub(pos, self.Position - 1 )
+	return tostring(self.Input:sub(pos, self.Position))
 end
 
 function Lexer:NextToken()
@@ -128,7 +128,7 @@ function Lexer:NextToken()
   self:SkipWhiteSpace()
 
   if strchar.isdigit(self.Char) then
-    return Token{TokenType.Int, self:ReadInt()}
+    return Token{TokenType.Int, tostring(self:ReadInt())}
   end
 
   if strchar.isalpha(self.Char) or self.Char == "_"_u8 then
@@ -157,6 +157,7 @@ function Lexer:NextToken()
       self:ReadChar()
       return token
     else
+      -- check is debug build only assert
       check(false, "Illegal token thrown! nothing is being done with those yet!")
       self:ReadChar()
       return Token{TokenType.Illegal, "ILLEGAL"}
