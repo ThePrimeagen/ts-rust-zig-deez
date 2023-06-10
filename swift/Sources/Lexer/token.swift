@@ -11,8 +11,8 @@ enum Token: Equatable {
     case bang
     case asterisk
     case slash
-    case equals
-    case notEquals
+    case equal
+    case notEqual
     case assign
     case `true`
     case `false`
@@ -46,8 +46,8 @@ enum Token: Equatable {
             case .bang: return "!"
             case .asterisk: return "*"
             case .slash: return "/"
-            case .equals: return "=="
-            case .notEquals: return "!="
+            case .equal: return "=="
+            case .notEqual: return "!="
             case .true: return "true"
             case .false: return "false"
             case .if: return "if"
