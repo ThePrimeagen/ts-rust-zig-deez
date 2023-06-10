@@ -21,29 +21,17 @@ docker-ready: docker-build
 
 clean:
 	@echo "===> Cleaning"
-	# TODO: replace this line with your cleaning commands
+	cargo clean
 
 fmt:
 	@echo "===> Formatting"
-	# TODO: replace this line with your formatting commands
+	cargo fmt
 
 lint:
 	@echo "===> Linting"
-	# TODO: replace this line with your linting commands
+	cargo clippy
 
-test: test-lexer test-ast test-parser
+test:
 	@echo "===> Testing EVERYTHING"
-	# TODO: replace this line with your testing commands
-
-test-lexer:
-	@echo "===> Testing lexer"
-	# TODO: replace this line with your lexer testing commands
-
-test-ast:
-	@echo "===> Testing AST"
-	# TODO: replace this line with your AST testing commands
-
-test-parser:
-	@echo "===> Testing parser"
-	# TODO: replace this line with your parser testing commands
+	cargo test
 

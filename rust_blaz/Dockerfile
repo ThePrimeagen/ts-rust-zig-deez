@@ -1,7 +1,5 @@
-# Latest Ubuntu image
 FROM ubuntu:latest
 
-# Make a working directory, as it would be binded with the current language one
 WORKDIR /deez
 
 # Basic system-level dependencies
@@ -12,6 +10,8 @@ RUN apt-get update && apt install -y make git curl && \
     apt-get install -y neovim
 
 # TODO: Add extra dependencies, if needed
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Commands for docker run
 CMD make clean && \

@@ -68,24 +68,24 @@ impl Display for Token {
     }
 }
 
-impl From<u8> for Token {
-    fn from(ch: u8) -> Self {
+impl From<char> for Token {
+    fn from(ch: char) -> Self {
         match ch {
-            b'=' => Self::Assign,
-            b';' => Self::Semicolon,
-            b'(' => Self::LParen,
-            b')' => Self::RParen,
-            b',' => Self::Comma,
-            b'+' => Self::Plus,
-            b'-' => Self::Minus,
-            b'!' => Self::Bang,
-            b'*' => Self::Asterisk,
-            b'/' => Self::Slash,
-            b'<' => Self::LessThan,
-            b'>' => Self::GreaterThan,
-            b'{' => Self::LBrace,
-            b'}' => Self::RBrace,
-            b'\0' => Self::Eof,
+            '=' => Self::Assign,
+            ';' => Self::Semicolon,
+            '(' => Self::LParen,
+            ')' => Self::RParen,
+            ',' => Self::Comma,
+            '+' => Self::Plus,
+            '-' => Self::Minus,
+            '!' => Self::Bang,
+            '*' => Self::Asterisk,
+            '/' => Self::Slash,
+            '<' => Self::LessThan,
+            '>' => Self::GreaterThan,
+            '{' => Self::LBrace,
+            '}' => Self::RBrace,
+            '\0' => Self::Eof,
             _ => Self::Illegal,
         }
     }
@@ -104,7 +104,7 @@ impl From<String> for Token {
             "else" => Self::Else,
             "return" => Self::Return,
             _ => {
-                if value.bytes().all(|b| b.is_ascii_digit()) {
+                if value.chars().all(|b| b.is_ascii_digit()) {
                     Self::Int(value)
                 } else {
                     Self::Ident(value)

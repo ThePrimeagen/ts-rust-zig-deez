@@ -1,23 +1,23 @@
-use std::{iter::Peekable, str::Bytes};
+use std::{iter::Peekable, str::Chars};
 
 use crate::token::Token;
 
 pub struct Lexer<'a> {
     /// Source code string
-    input: Peekable<Bytes<'a>>,
+    input: Peekable<Chars<'a>>,
     /// Current position in `input` (points to current char)
     // position: usize,
     /// Current reading position in `input` (after current char)
     // read_position: usize,
 
     /// Current char under examination
-    ch: u8,
+    ch: char,
 }
 
 impl Default for Lexer<'_> {
     fn default() -> Self {
         Self {
-            input: "".bytes().peekable(),
+            input: "".chars().peekable(),
             // position: Default::default(),
             // read_position: Default::default(),
             ch: Default::default(),
@@ -28,7 +28,7 @@ impl Default for Lexer<'_> {
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
         let mut lexer = Self {
-            input: input.bytes().peekable(),
+            input: input.chars().peekable(),
             ..Default::default()
         };
         lexer.read_char();
@@ -42,7 +42,7 @@ impl Lexer<'_> {
     fn read_char(&mut self) {
         self.ch = match self.input.peek() {
             Some(ch) => *ch,
-            None => b'\0',
+            None => '\0',
         };
 
         self.input.next();
@@ -50,17 +50,17 @@ impl Lexer<'_> {
 
     /// Yield the next character without advancing
     /// the position in the input string.
-    fn peek_char(&mut self) -> u8 {
+    fn peek_char(&mut self) -> char {
         match self.input.peek() {
             Some(ch) => *ch,
-            None => b'\0',
+            None => '\0',
         }
     }
 
     fn read_identifier(&mut self) -> String {
         let mut identifier = String::new();
-        while let b'a'..=b'z' | b'A'..=b'Z' | b'_' = self.ch {
-            identifier.push(self.ch as char);
+        while let 'a'..='z' | 'A'..='Z' | '_' = self.ch {
+            identifier.push(self.ch);
             self.read_char();
         }
         identifier
@@ -68,15 +68,15 @@ impl Lexer<'_> {
 
     fn read_number(&mut self) -> String {
         let mut number = String::new();
-        while let b'0'..=b'9' = self.ch {
-            number.push(self.ch as char);
+        while let '0'..='9' = self.ch {
+            number.push(self.ch);
             self.read_char();
         }
         number
     }
 
     fn skip_whitespace(&mut self) {
-        while let b' ' | b'\t' | b'\n' | b'\r' = self.ch {
+        while let ' ' | '\t' | '\n' | '\r' = self.ch {
             self.read_char();
         }
     }
@@ -84,17 +84,27 @@ impl Lexer<'_> {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         let token = match self.ch {
-            b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
+            'a'..='z' | 'A'..='Z' | '_' => {
                 // early return is necessary here so we don't call
                 // `self.read_char()` and advance past the last
                 // character of the current identifier
                 return Token::from(self.read_identifier());
             }
-            b'0'..=b'9' => {
+            '0'..='9' => {
                 // early return is necessary here so we don't call
                 // `self.read_char()` and advance past the last
                 // character of the current number
                 return Token::from(self.read_number());
+            }
+            '=' | '!' => {
+                if self.peek_char() == '=' {
+                    // Can assign primitive types without changing ownership
+                    let ch = self.ch;
+                    self.read_char();
+                    Token::from(format!("{ch}{}", self.ch))
+                } else {
+                    Token::from(self.ch)
+                }
             }
             _ => {
                 // TODO
