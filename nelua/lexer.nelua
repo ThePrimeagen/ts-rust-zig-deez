@@ -157,6 +157,7 @@ function Lexer:NextToken()
       self:ReadChar()
       return token
     else
+      check(false, "Illegal token thrown! nothing is being done with those yet!")
       self:ReadChar()
       return Token{TokenType.Illegal, "ILLEGAL"}
     end
