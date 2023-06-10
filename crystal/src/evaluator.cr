@@ -196,7 +196,7 @@ module Evaluator
     when .not_equal?
       BooleanValue.new(left.value? != right.value?)
     else
-      ErrorValue.new "unknown operator '#{operator}' for boolean"
+      ErrorValue.new "unknown operator '#{operator}' for type boolean"
     end
   end
 

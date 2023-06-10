@@ -61,6 +61,12 @@ class Parser
     value = parse_expression_statement next_token
     expect_next :semicolon unless current_token.type.semicolon?
 
+    if expr = value.expression.as?(If)
+      if expr.alternative.nil?
+        raise "if expressions in variables must have an alternative"
+      end
+    end
+
     Let.new name, value
   end
 
