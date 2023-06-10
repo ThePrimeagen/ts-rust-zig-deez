@@ -36,16 +36,15 @@ lint:
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
-	# TODO: replace this line with your testing commands
 
 test-lexer:
 	@echo "===> Testing lexer"
-	@dotnet test MonkeyTests -l:"console;verbosity=normal" --filter LexerTests
+	@dotnet test MonkeyTests --filter LexerTests
 
 test-ast:
 	@echo "===> Testing AST"
-	@dotnet test MonkeyTests -l:"console;verbosity=normal" --filter AstTests
+	@dotnet test MonkeyTests --filter AstTests
 
 test-parser:
 	@echo "===> Testing parser"
-	# TODO: replace this line with your parser testing commands
+	@dotnet test MonkeyTests --filter ParserTests

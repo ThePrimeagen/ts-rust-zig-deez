@@ -7,12 +7,12 @@ namespace MonkeyTests;
 public class AstTests
 {
     [Fact]
-    public void TestAst()
+    public void ProgramString_Matches_LiteralString()
     {
         // let somevar = anotherVar;
         var statements = new IStatement[]
         {
-            new LetStatement("somevar") { Value = new Identifier("anotherVar") },
+            new LetStatement("somevar") {  Value = new Identifier("anotherVar") },
         };
 
         var program = new Ast(statements);
