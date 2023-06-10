@@ -23,7 +23,12 @@ describe Parser do
       expr.as(IntegerLiteral).value.should eq 12345
     end
 
-    pending "parses string literals" do
+    it "parses string literals" do
+      statements = parse(%("foo bar baz"))
+
+      expr = statements[0].as(ExpressionStatement).expression
+      expr.should be_a StringLiteral
+      expr.as(StringLiteral).value.should eq "foo bar baz"
     end
 
     it "parses boolean literals" do
@@ -38,21 +43,6 @@ describe Parser do
       expr = statements[0].as(ExpressionStatement).expression
       expr.should be_a BooleanLiteral
       expr.as(BooleanLiteral).value?.should be_false
-    end
-
-    pending "parses function literals" do
-    end
-
-    pending "parses function calls" do
-    end
-
-    pending "parses prefix expressions" do
-    end
-
-    pending "parses infix expressions" do
-    end
-
-    pending "parses if expressions" do
     end
   end
 
@@ -138,9 +128,6 @@ describe Parser do
         ret.value.should be_a BooleanLiteral
         ret.value.as(BooleanLiteral).value?.should be_true
       end
-    end
-
-    pending Block do
     end
   end
 
@@ -234,9 +221,9 @@ describe Parser do
       expr = statements[0].as(ExpressionStatement).expression
       expr.should be_a Call
 
-      expr = expr.as(Call)
-      expr.function.should eq Identifier.new("print")
-      expr.arguments.should be_empty
+      call = expr.as(Call)
+      call.function.should eq Identifier.new("print")
+      call.arguments.should be_empty
     end
 
     it "parses single arguments" do
@@ -245,11 +232,11 @@ describe Parser do
       expr = statements[0].as(ExpressionStatement).expression
       expr.should be_a Call
 
-      expr = expr.as(Call)
-      expr.function.should eq Identifier.new("print")
-      expr.arguments.size.should eq 1
-      expr.arguments[0].should be_a IntegerLiteral
-      expr.arguments[0].as(IntegerLiteral).value.should eq 123
+      call = expr.as(Call)
+      call.function.should eq Identifier.new("print")
+      call.arguments.size.should eq 1
+      call.arguments[0].should be_a IntegerLiteral
+      call.arguments[0].as(IntegerLiteral).value.should eq 123
     end
 
     it "parses multiple arguments" do
@@ -258,15 +245,15 @@ describe Parser do
       expr = statements[0].as(ExpressionStatement).expression
       expr.should be_a Call
 
-      expr = expr.as(Call)
-      expr.function.should eq Identifier.new("print")
-      expr.arguments.size.should eq 3
-      expr.arguments[0].should be_a IntegerLiteral
-      expr.arguments[0].as(IntegerLiteral).value.should eq 123
-      expr.arguments[1].should be_a IntegerLiteral
-      expr.arguments[1].as(IntegerLiteral).value.should eq 456
-      expr.arguments[2].should be_a IntegerLiteral
-      expr.arguments[2].as(IntegerLiteral).value.should eq 789
+      call = expr.as(Call)
+      call.function.should eq Identifier.new("print")
+      call.arguments.size.should eq 3
+      call.arguments[0].should be_a IntegerLiteral
+      call.arguments[0].as(IntegerLiteral).value.should eq 123
+      call.arguments[1].should be_a IntegerLiteral
+      call.arguments[1].as(IntegerLiteral).value.should eq 456
+      call.arguments[2].should be_a IntegerLiteral
+      call.arguments[2].as(IntegerLiteral).value.should eq 789
     end
   end
 
@@ -277,10 +264,10 @@ describe Parser do
       expr = statements[0].as(ExpressionStatement).expression
       expr.should be_a Prefix
 
-      expr = expr.as(Prefix)
-      expr.operator.should eq Prefix::Operator::Negative
-      expr.right.should be_a IntegerLiteral
-      expr.right.as(IntegerLiteral).value.should eq 23
+      prefix = expr.as(Prefix)
+      prefix.operator.should eq Prefix::Operator::Negative
+      prefix.right.should be_a IntegerLiteral
+      prefix.right.as(IntegerLiteral).value.should eq 23
     end
 
     it "parses not-expressions" do
@@ -289,10 +276,10 @@ describe Parser do
       expr = statements[0].as(ExpressionStatement).expression
       expr.should be_a Prefix
 
-      expr = expr.as(Prefix)
-      expr.operator.should eq Prefix::Operator::Not
-      expr.right.should be_a BooleanLiteral
-      expr.right.as(BooleanLiteral).value?.should be_true
+      prefix = expr.as(Prefix)
+      prefix.operator.should eq Prefix::Operator::Not
+      prefix.right.should be_a BooleanLiteral
+      prefix.right.as(BooleanLiteral).value?.should be_true
     end
   end
 
@@ -309,12 +296,12 @@ describe Parser do
         expr = statements[0].as(ExpressionStatement).expression
         expr.should be_a Infix
 
-        expr = expr.as(Infix)
-        expr.left.should be_a IntegerLiteral
-        expr.left.as(IntegerLiteral).value.should eq 6
-        expr.operator.should eq Infix::Operator::{{ type.id }}
-        expr.right.should be_a IntegerLiteral
-        expr.right.as(IntegerLiteral).value.should eq 4
+        infix = expr.as(Infix)
+        infix.left.should be_a IntegerLiteral
+        infix.left.as(IntegerLiteral).value.should eq 6
+        infix.operator.should eq Infix::Operator::{{ type.id }}
+        infix.right.should be_a IntegerLiteral
+        infix.right.as(IntegerLiteral).value.should eq 4
       end
     {% end %}
   end
