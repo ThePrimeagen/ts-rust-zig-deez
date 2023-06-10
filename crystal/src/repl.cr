@@ -20,7 +20,7 @@ def init_repl : Nil
 
   loop do
     print ">> "
-    input = gets || exit 0
+    input = gets || ""
 
     tokens = Lexer.new(input).run
     illegal = tokens.select &.type.illegal?
@@ -68,6 +68,25 @@ private def format(value : FunctionValue)
     end
 
     # TODO: evaluate function body to get accurate return type
+    io << ") -> any"
+  end
+end
+
+private def format(value : BuiltinValue)
+  String.build do |io|
+    io << "builtin fn".colorize.red
+    io << '('
+
+    unless value.parameters.empty?
+      io << value.parameters[0]
+      if value.parameters.size > 1
+        value.parameters[1..].each do |param|
+          io << ", "
+          io << param
+        end
+      end
+    end
+
     io << ") -> any"
   end
 end
