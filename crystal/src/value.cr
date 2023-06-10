@@ -10,13 +10,22 @@ class Scope
   def initialize(@outer = nil)
     @store = {} of String => BaseValue
 
-    @store["len"] = BuiltinValue.new(%w[value], self) do |args|
+    @store["len"] = BuiltinValue.new(%w[str], self) do |args|
       arg = args[0]
-      unless arg.is_a? StringValue
-        next ErrorValue.new "cannot get length of type #{arg.type}"
+      if arg.is_a? StringValue
+        IntegerValue.new arg.value.size
+      else
+        ErrorValue.new "cannot get length of type #{arg.type}"
       end
+    end
 
-      IntegerValue.new arg.value.size
+    @store["rev"] = BuiltinValue.new(%w[str], self) do |args|
+      arg = args[0]
+      if arg.is_a? StringValue
+        StringValue.new arg.value.reverse
+      else
+        ErrorValue.new "cannot reverse type #{arg.type}"
+      end
     end
   end
 
