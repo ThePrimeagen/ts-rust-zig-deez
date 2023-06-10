@@ -4,44 +4,41 @@ import XCTest
 final class LexerTests: XCTestCase {
 
     func testNextToken() {
-        let lexer = Lexer("fn let = + ; ( ) { } ,")
+        var lexer = Lexer(input: "fn let = + ; ( ) { } ,")
 
         let expectedTokens: [Token] = [
-            Token(type: .function, literal: "fn"),
-            Token(type: .let, literal: "let"),
-            Token(type: .equal, literal: "="),
-            Token(type: .plus, literal: "+"),
-            Token(type: .semi, literal: ";"),
-            Token(type: .lParen, literal: "("),
-            Token(type: .rParen, literal: ")"),
-            Token(type: .lSqirly, literal: "{"),
-            Token(type: .rSqirly, literal: "}"),
-            Token(type: .comma, literal: ","),
-            Token(type: .eof, literal: "\0")
+            .function,
+            .let,
+            .assign,
+            .plus,
+            .semi,
+            .lParen,
+            .rParen,
+            .lSquirly,
+            .rSquirly,
+            .comma,
+            .eof
         ]
 
         for expectedToken in expectedTokens {
             let nextToken = lexer.nextToken()
-            XCTAssertEqual(nextToken.type, expectedToken.type)
-            XCTAssertEqual(nextToken.literal, expectedToken.literal)
+            XCTAssertEqual(nextToken, expectedToken)
         }
     }
     
     func testIdentifier() {
-        let lexer = Lexer("variable")
-        let expectedToken = Token(type: .ident, literal: "variable")
+        var lexer = Lexer(input: "variable")
+        let expectedToken = Token.ident("variable")
         let nextToken = lexer.nextToken()
         
-        XCTAssertEqual(nextToken.type, expectedToken.type)
-        XCTAssertEqual(nextToken.literal, expectedToken.literal)
+        XCTAssertEqual(nextToken, expectedToken)
     }
 
     func testNumber() {
-        let lexer = Lexer("123")
-        let expectedToken = Token(type: .int, literal: "123")
+        var lexer = Lexer(input: "123")
+        let expectedToken = Token.int(123)
         let nextToken = lexer.nextToken()
         
-        XCTAssertEqual(nextToken.type, expectedToken.type)
-        XCTAssertEqual(nextToken.literal, expectedToken.literal)
+        XCTAssertEqual(nextToken, expectedToken)
     }
 }

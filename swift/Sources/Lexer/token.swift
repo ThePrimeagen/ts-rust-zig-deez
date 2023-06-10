@@ -21,8 +21,8 @@ enum Token: Equatable {
     case `return`
     case lParen
     case rParen
-    case lSqirly
-    case rSqirly
+    case lSquirly
+    case rSquirly
     case function
     case `let`
 
@@ -38,8 +38,8 @@ enum Token: Equatable {
             case .assign: return "="
             case .lParen: return "("
             case .rParen: return ")"
-            case .lSqirly: return "{"
-            case .rSqirly: return "}"
+            case .lSquirly: return "{"
+            case .rSquirly: return "}"
             case .function: return "fn"
             case .let: return "let"
             case .minus: return "-"

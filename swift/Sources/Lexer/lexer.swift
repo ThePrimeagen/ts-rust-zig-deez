@@ -6,67 +6,50 @@ extension Character {
 
 extension String {
     func numberString(from index: String.Index) -> String {
-
         var endIndex = self.index(after: index)
-
-        while endIndex < self.endIndex {
-            if self[endIndex].isNumber == false {
-                return String(self[index..<endIndex])
-            }
+        while endIndex < self.endIndex && self[endIndex].isNumber {
             endIndex = self.index(after: endIndex)
         }
-        return String(self[index...])
+        return String(self[index..<endIndex])
     }
 
     func identifier(from index: String.Index) -> String {
         var endIndex = self.index(after: index)
-
-        while endIndex < self.endIndex {
-            if self[endIndex].isValidIdentifier == false {
-                return String(self[index..<endIndex])
-            }
+        while endIndex < self.endIndex && self[endIndex].isValidIdentifier {
             endIndex = self.index(after: endIndex)
         }
-        return String(self[index...])
+        return String(self[index..<endIndex])
     }
 }
 
 struct Lexer {
 
     let input: String
-    var currentIndex: String.Index
-
-    init(input: String) {
-        self.input = input
-        self.currentIndex = input.startIndex
+    lazy var currentIndex = input.startIndex
+    var currentChar: Character {
+        mutating get {
+            input[currentIndex]
+        }
     }
     
     mutating func nextToken() -> Token {
-
-        guard currentIndex < input.endIndex else {
-            return .eof
-        }
-
-        while self.input[currentIndex].isWhitespace {
+        while currentIndex < input.endIndex && currentChar.isWhitespace {
             currentIndex = input.index(after: currentIndex)
         }
-
-        let current = input[currentIndex]
-
+        guard currentIndex < input.endIndex else { return .eof }
         defer {
             // Move to the next character after we have returned this token.
             if currentIndex < input.endIndex {
                 currentIndex = input.index(after: currentIndex)
             }
         }
-
-        switch current {
+        switch currentChar {
             case "=": return .assign
             case "+": return .plus
             case "(": return .lParen
             case ")": return .rParen
-            case "{": return .lSqirly
-            case "}": return .rSqirly
+            case "{": return .lSquirly
+            case "}": return .rSquirly
             case ",": return .comma
             case ";": return .semi
             case let char where char.isValidIdentifier:
@@ -85,7 +68,7 @@ struct Lexer {
                 currentIndex = input.index(currentIndex, offsetBy: numString.count)
                 return .int(num)
             default: 
-                return .illegal(String(current))
+                return .illegal(String(currentChar))
         }
     }
 }
