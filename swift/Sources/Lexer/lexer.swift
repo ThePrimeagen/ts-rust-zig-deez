@@ -54,7 +54,7 @@ struct Lexer {
             case ";": return .semi
             case let char where char.isValidIdentifier:
                 let ident = input.identifier(from: currentIndex)
-                currentIndex = input.index(currentIndex, offsetBy: ident.count)
+                currentIndex = input.index(currentIndex, offsetBy: ident.count - 1)
                 switch ident {
                     case "fn": return .function
                     case "let": return .let
@@ -65,7 +65,7 @@ struct Lexer {
                 guard let num = Int(numString) else {
                     return .illegal(numString)
                 }
-                currentIndex = input.index(currentIndex, offsetBy: numString.count)
+                currentIndex = input.index(currentIndex, offsetBy: numString.count - 1)
                 return .int(num)
             default: 
                 return .illegal(String(currentChar))
