@@ -22,6 +22,7 @@ docker-ready: docker-build
 clean:
 	@echo "===> Cleaning"
 	@rm -rf .build
+	@echo "Feelin' squeaky"
 
 fmt:
 	@echo "===> Formatting"
@@ -37,7 +38,7 @@ test: test-lexer test-ast test-parser
 
 test-lexer:
 	@echo "===> Testing lexer"
-	@swift test --filter "lexerTests"
+	@swift test --filter "LexerTests"
 
 test-ast:
 	@echo "===> Testing AST"

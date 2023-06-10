@@ -17,7 +17,7 @@ let package = Package(
             name: "Lexer",
             dependencies: [.product(name: "ArgumentParser", package: "swift-argument-parser")]),
         .testTarget(
-            name: "lexerTests",
+            name: "LexerTests",
             dependencies: ["Lexer"]),
     ]
 )
