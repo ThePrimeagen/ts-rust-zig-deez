@@ -92,7 +92,11 @@ module Evaluator
               evaluate function.body, child
             end
 
-    ReturnValue.new value
+    if value.is_a? ReturnValue
+      value.value
+    else
+      value
+    end
   end
 
   def evaluate(node : Prefix, scope : Scope) : BaseValue
