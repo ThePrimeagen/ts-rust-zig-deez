@@ -51,7 +51,6 @@ def init_repl : Nil
     puts format result
   rescue ex
     STDERR.puts "#{"Error:".colorize.red} #{ex}"
-    STDERR.puts
   end
 end
 
