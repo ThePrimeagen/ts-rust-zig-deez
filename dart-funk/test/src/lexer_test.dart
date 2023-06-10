@@ -58,12 +58,8 @@ void main() {
   });
 
   group('Lexer samples', () {
-    late Logger logger;
-    setUp(() {
-      logger = Logger();
-    });
     test(
-      'should appropriate List<Token> when calling =+(){},;',
+      'should return appropriate List<Token> when calling =+(){},;',
       () async {
         // arrange
         const input = '=+(){},;';
@@ -223,6 +219,51 @@ void main() {
         expect(lexer2.position, 4);
         expect(lexer2.ch, 'f');
         expect(lexer3, isA<Lexer>());
+      },
+    );
+  });
+
+  group('Lexer generator', () {
+    const input = 'let five = 5;'
+        'let ten = 10;'
+        'let add = fn(x, y) {'
+        'x + y;'
+        '};'
+        'let result = add(five, ten);'
+        '!-/*5;'
+        '5 < 10 > 5;'
+        'if (5 < 10) {'
+        'return true;'
+        '} else {'
+        'return false;'
+        '}'
+        '10 == 10;'
+        '10 != 9;';
+    late final Logger logger;
+    setUp(() {
+      logger = Logger();
+    });
+    test(
+      'should return something when calling genLexSync',
+      () async {
+        // arrange
+
+        // act
+        final tokens = tokenGenerator(input);
+        final firstToken = tokens.first;
+        logger.info('first: $firstToken');
+
+        final lastToken = tokens.elementAt(tokens.length - 2);
+        logger.info('last: $lastToken');
+
+        // assert
+        expect(firstToken, isA<Token>());
+        expect(firstToken, const Token.let());
+
+        for (final token in tokens) {
+          logger.info(token.toString());
+          expect(token, isA<Token>());
+        }
       },
     );
   });
