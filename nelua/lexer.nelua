@@ -124,6 +124,7 @@ function Lexer:ReadIdent()
 end
 
 function Lexer:NextToken()
+  local result: boolean <noinit>, token: Token <noinit>
   self:SkipWhiteSpace()
 
   if strchar.isdigit(self.Char) then
@@ -132,26 +133,29 @@ function Lexer:NextToken()
 
   if strchar.isalpha(self.Char) or self.Char == "_"_u8 then
     local ident = self:ReadIdent()
+    result, token = Tokens:has_and_get(ident)
 
-    if Keywords:has(ident) then
-      return Keywords[ident]
+    if result then
+      return token
     else
       return Token{TokenType.Ident, ident}
     end
   end
 
-  local token: Token <noinit>
   local char = string.char(self.Char)
   local nextChar = string.char(self:Peek())
+  result, token = Tokens:has_and_get(char .. nextChar)
 
-  if Tokens:has(char .. nextChar) then
+  if result then
     self:ReadChar()
     self:ReadChar()
-    return Tokens[char .. nextChar]
+    return token
   else
-    if Tokens:has(char) then
+    result, token = Tokens:has_and_get(char)
+
+    if result then
       self:ReadChar()
-      return Tokens[char]
+      return token
     else
       self:ReadChar()
       return Token{TokenType.Illegal, "ILLEGAL"}
