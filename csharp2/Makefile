@@ -44,7 +44,7 @@ test-lexer:
 
 test-ast:
 	@echo "===> Testing AST"
-	# TODO: replace this line with your AST testing commands
+	@dotnet test MonkeyTests -l:"console;verbosity=normal" --filter AstTests
 
 test-parser:
 	@echo "===> Testing parser"

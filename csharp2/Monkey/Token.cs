@@ -39,7 +39,7 @@ enum TokenType
     False,
 }
 
-readonly record struct Token(TokenType Type, string? Literal = null)
+readonly record struct Token(TokenType Type, string Literal)
 {
     internal static Token Illegal = new(TokenType.Illegal, "ILLEGAL");
     internal static Token Eof = new(TokenType.Eof, "EOF");
