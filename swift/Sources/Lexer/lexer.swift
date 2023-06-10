@@ -64,7 +64,7 @@ struct Lexer {
         }
 
         switch current {
-            case "=": return .equal
+            case "=": return .assign
             case "+": return .plus
             case "(": return .lParen
             case ")": return .rParen
