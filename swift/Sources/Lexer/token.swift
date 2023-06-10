@@ -55,8 +55,4 @@ enum Token: Equatable {
             case .return: return "return"
         }
     }
-
-    static func ==(lhs: Token, rhs: Token) -> Bool {
-        return lhs.literal == rhs.literal
-    }
 }
