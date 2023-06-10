@@ -19,8 +19,23 @@ def init_repl : Nil
   scope = Scope.new
 
   loop do
-    print ">> "
+    print "\n>> "
     input = gets || ""
+
+    offset, quoted = count_delimiters(input, 0, false)
+    unless offset == 0
+      lines = [input] of String
+
+      loop do
+        print ">> "
+        input = gets || ""
+        lines << input
+        offset, quoted = count_delimiters(input, offset, quoted)
+        break if offset == 0
+      end
+
+      input = lines.join
+    end
 
     tokens = Lexer.new(input).run
     illegal = tokens.select &.type.illegal?
@@ -38,6 +53,21 @@ def init_repl : Nil
     STDERR.puts "#{"Error:".colorize.red} #{ex}"
     STDERR.puts
   end
+end
+
+private def count_delimiters(input : String, offset : Int32, quoted : Bool) : {Int32, Bool}
+  input.chars.each do |char|
+    case char
+    when '(', '{'
+      offset += 1 unless quoted
+    when ')', '}'
+      offset -= 1 unless quoted
+    when '"'
+      quoted = !quoted
+    end
+  end
+
+  {offset, quoted}
 end
 
 private def format(value : IntegerValue)
