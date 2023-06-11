@@ -121,10 +121,10 @@ TEST(TestLexer, TestIfElseExpressions) {
 
 	runTests({
 		{"if (true) { 10 }", Value{10}},
-		{"if (false) { 10 }", Value{nil}},
+		{"if (false) { 10 }", Value{}},
 		{"if (1) { 10 }", Value{10}},
 		{"if (1 < 2) { 10 }", Value{10}},
-		{"if (1 > 2) { 10 }", Value{nil}},
+		{"if (1 > 2) { 10 }", Value{}},
 		{"if (1 > 2) { 10 } else { 20 }", Value{20}},
 		{"if (1 < 2) { 10 } else { 20 }", Value{10}},
 	});
@@ -206,9 +206,9 @@ TEST(TestLexer, TestStringIndexExpressions) {
 	runTests({
 		{R"XXX( "Hello"[0] )XXX", Value{"H"} },
 		{R"XXX( "Hello"[4] )XXX", Value{"o"} },
-		{R"XXX( "Hello"[-1] )XXX", nil },
-		{R"XXX( "Hello"[5] )XXX", nil },
-		{R"XXX( ""[0] )XXX", nil },
+		{R"XXX( "Hello"[-1] )XXX", Value{} },
+		{R"XXX( "Hello"[5] )XXX", Value{} },
+		{R"XXX( ""[0] )XXX", Value{} },
 	});
 }
 
@@ -240,8 +240,8 @@ TEST(TestLexer, TestArrayIndexExpressions) {
 		{ "let myArray = [1, 2, 3]; myArray[2];", Value{3} },
 		{ "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", Value{6} },
 		{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value{2} },
-		{ "[1, 2, 3][3]", nil },
-		{ "[1, 2, 3][-1]", nil },
+		{ "[1, 2, 3][3]", Value{} },
+		{ "[1, 2, 3][-1]", Value{} },
 	});
 }
 
@@ -260,11 +260,11 @@ TEST(TestLexer, TestArrayBuiltinFunction) {
 	runTests({
 		{ "len([])", Value{0} },
 		{ "len([1, 2, 3])", Value{3} },
-		{ "first([])", nil },
+		{ "first([])", Value{} },
 		{ "first([1, 2, 3])", Value{1} },
-		{ "last([])", nil },
+		{ "last([])", Value{} },
 		{ "last([1, 2, 3])", Value{3} },
-		{ "rest([])", nil },
+		{ "rest([])", Value{} },
 		{ "rest([1, 2, 3])", Value{ Array{ Value{2}, Value{3} } } },
 	});
 }
@@ -274,11 +274,11 @@ TEST(TestLexer, TestStringBuiltinFunction) {
 	runTests({
 		{ R"XXX( len("")      )XXX", Value{0} },
 		{ R"XXX( len("123")   )XXX", Value{3} },
-		{ R"XXX( first("")    )XXX", nil },
+		{ R"XXX( first("")    )XXX", Value{} },
 		{ R"XXX( first("123") )XXX", Value{"1"}},
-		{ R"XXX( last("")     )XXX", nil },
+		{ R"XXX( last("")     )XXX", Value{} },
 		{ R"XXX( last("123")  )XXX", Value{"3"}},
-		{ R"XXX( rest("")     )XXX", nil },
+		{ R"XXX( rest("")     )XXX", Value{} },
 		{ R"XXX( rest("123")  )XXX", Value{"23"}},
 	});
 }
@@ -309,9 +309,9 @@ TEST(TestLexer, TestHashLiterals) {
 TEST(TestLexer, TestHashIndexExpressions) {
 	runTests({
 		{R"XXX( {"foo": 5}["foo"] )XXX",                Value{5} },
-		{R"XXX( {"foo": 5}["bar"] )XXX",                nil },
+		{R"XXX( {"foo": 5}["bar"] )XXX",                Value{} },
 		{R"XXX( let key = "foo"; {"foo": 5}[key] )XXX", Value{5} },
-		{R"XXX( {}["foo"] )XXX",                        nil },
+		{R"XXX( {}["foo"] )XXX",                        Value{} },
 		{R"XXX( {5: 5}[5] )XXX",                        Value{5} },
 		{R"XXX( {true: 5}[true] )XXX",                  Value{5} },
 		{R"XXX( {false: 5}[false] )XXX",                Value{5} },
@@ -334,5 +334,20 @@ TEST(TestLexer, TestFibonacciFunction) {
 		)XXX", Value{121393}},
 	});
 }
+
+
+TEST(TestLexer, TestAckermanFunction) {
+	runTests({
+		{R"XXX( 
+			let ackerman = fn(m,n)
+						if (m == 0) n + 1
+				else if (n == 0) ackerman(m-1, 1)
+				else             ackerman(m-1, ackerman(m, n-1))
+			ackerman(3,7);
+
+		)XXX", Value{1021}},
+	});
+}
+
 
 

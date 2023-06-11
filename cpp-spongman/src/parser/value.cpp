@@ -21,18 +21,33 @@ std::string std::to_string(const ValueType& data)
 			return "\"" + value + "\"";
 		},
 		[](const BoundFunction& value) -> std::string {
-			std::string str = "fn(";
-			bool first = true;
-			for (const auto& param : value.first->params()) {
-				if (!first)
-					str += ",";
-				first = false;
-				str += param;
-			}
-			return str + ")";
+			std::stringstream str;
+			str << *value.first;
+			return str.str();
 		},
 		[](const Array& value) -> std::string {
 			std::string str = "[";
+
+			if (value.size() > 0) {
+				// test for string result
+				std::string result;
+				bool isString = true;
+				for (const auto& element : value) {
+					if (!element.is<std::string>()) {
+						isString = false;
+						break;
+					}
+					const auto& elementString = element.as<std::string>();
+					if (elementString.length() != 1) {
+						isString = false;
+						break;
+					}
+					result += elementString[0];
+				}
+				if (isString)
+					return '"' + result + '"';
+			}
+
 			bool first = true;
 			for (const auto& element : value) {
 				if (!first)

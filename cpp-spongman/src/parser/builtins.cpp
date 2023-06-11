@@ -15,14 +15,13 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to len(): " + std::to_string(arguments.size()));
 
-			auto value = arguments[0];
 			return Value{std::visit(overloaded{
 				[](const String& str) { return static_cast<Integer>(str.length()); },
 				[](const Array& array) { return static_cast<Integer>(array.size()); },
 				[](const auto& value) -> Integer {
 					throw std::runtime_error("invalid argument to len(): " + std::to_string(value));
 				}
-			}, value.data)};
+			}, arguments[0].data)};
 		}
 	},
 	{ "first", {"arr"},
@@ -30,14 +29,13 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to first(): " + std::to_string(arguments.size()));
 
-			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const String& str) { return str.empty() ? nil : Value{std::string{str.front()}}; },
-				[](const Array& array) { return array.empty() ? nil : array.front(); },
+				[](const String& str) { return str.empty() ? Value{} : Value{std::string{str.front()}}; },
+				[](const Array& array) { return array.empty() ? Value{} : array.front(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to first(): " + std::to_string(value));
 				}
-			}, value.data);
+			}, arguments[0].data);
 		}
 	},
 	{ "last", {"arr"},
@@ -45,14 +43,13 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to last(): " + std::to_string(arguments.size()));
 
-			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const String& str) { return str.empty() ? nil : Value{std::string{str.back()}}; },
-				[](const Array& array) { return array.empty() ? nil : array.back(); },
+				[](const String& str) { return str.empty() ? Value{} : Value{std::string{str.back()}}; },
+				[](const Array& array) { return array.empty() ? Value{} : array.back(); },
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to last(): " + std::to_string(value));
 				}
-			}, value.data);
+			}, arguments[0].data);
 		}
 	},
 	{ "rest", {"arr"},
@@ -60,12 +57,11 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 			if (arguments.size() != 1)
 				throw std::runtime_error("wrong number of arguments to rest(): " + std::to_string(arguments.size()));
 
-			auto value = arguments[0];
 			return std::visit(overloaded{
-				[](const String& str) { return str.empty() ? nil : Value{str.substr(1)}; },
+				[](const String& str) { return str.empty() ? Value{} : Value{str.substr(1)}; },
 				[](const Array& array) {
 					if (array.empty())
-						return nil;
+						return Value{};
 					Array rest;
 					std::copy(++array.cbegin(), array.cend(), std::back_inserter(rest));
 					return Value{rest};
@@ -73,7 +69,7 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 				[](const auto& value) -> Value {
 					throw std::runtime_error("invalid argument to rest(): " + std::to_string(value));
 				}
-			}, value.data);
+			}, arguments[0].data);
 		}
 	},
 	{ "puts", {"str"},
@@ -94,10 +90,17 @@ std::vector<BuiltinFunctionExpression> BuiltinFunctionExpression::builtins{
 				}, argument.data);
 			}
 			std::cout << "\n";
-			return nil;
+			return Value{};
 		}
 	},
 };
+
+void BuiltinFunctionExpression::print(std::ostream& os) const
+{
+	AbstractFunctionExpression::print(os);
+	os << "{ ... }";
+}
+
 
 
 // BuiltinBinaryFunctionExpression
@@ -157,10 +160,17 @@ BuiltinBinaryFunctionExpression BuiltinBinaryFunctionExpression::plus {
 		return std::visit(overloaded{
 			[](const Integer left, const Integer right) { return Value{left + right}; },
 			[](const String& left, const String& right) { return Value{left + right}; },
+			[](const String& left, const Integer right) { return Value{left + std::to_string(right)}; },
 			[](const Array& left, const Array& right) {
 				Array result;
 				std::copy(left.cbegin(), left.cend(), std::back_inserter(result));
 				std::copy(right.cbegin(), right.cend(), std::back_inserter(result));
+				return Value{result};
+			},
+			[](const Hash& left, const Hash& right) {
+				Hash result;
+				for (const auto& [key, value] : left)  result[key] = value;
+				for (const auto& [key, value] : right) result[key] = value;
 				return Value{result};
 			},
 			[](const auto& left, const auto& right) -> Value {
@@ -260,39 +270,13 @@ BuiltinBinaryFunctionExpression BuiltinBinaryFunctionExpression::ge {
 BuiltinBinaryFunctionExpression BuiltinBinaryFunctionExpression::eq {
 	"==",
 	[](const Value& left, const Value& right) {
-		return std::visit(overloaded{
-			[](const Integer left, const Integer right) { return Value{left == right}; },
-			[](const bool left, const bool right) { return Value{left == right}; },
-			[](const String& left, const String& right) { return Value{left == right}; },
-			[](const Array& left, const Array& right) {
-				return Value{
-					left.size() == right.size() &&
-					std::equal(std::begin(left), std::end(left), std::begin(right))
-				};
-			},
-			[](const auto& left, const auto& right) -> Value {
-				BuiltinBinaryFunctionExpression::error("==", left, right); return {};
-			}
-		}, left.data, right.data);
+		return Value{left == right};
 	}
 };
 BuiltinBinaryFunctionExpression BuiltinBinaryFunctionExpression::neq {
 	"!=",
 	[](const Value& left, const Value& right) {
-		return std::visit(overloaded{
-			[](const Integer left, const Integer right) { return Value{left != right}; },
-			[](const bool left, const bool right) { return Value{left != right}; },
-			[](const String& left, const String& right) { return Value{left != right}; },
-			[](const Array& left, const Array& right) {
-				return Value{
-					left.size() != right.size() ||
-					!std::equal(std::begin(left), std::end(left), std::begin(right))
-				};
-			},
-			[](const auto& left, const auto& right) -> Value {
-				BuiltinBinaryFunctionExpression::error("!=", left, right); return {};
-			}
-		}, left.data, right.data);
+		return Value{!(left == right)};
 	}
 };
 BuiltinBinaryFunctionExpression BuiltinBinaryFunctionExpression::and_ {
