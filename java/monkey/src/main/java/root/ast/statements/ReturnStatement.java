@@ -1,6 +1,7 @@
-package root.ast;
+package root.ast.statements;
 
 import root.Token;
+import root.ast.expressions.Expression;
 
 public class ReturnStatement extends Statement {
 

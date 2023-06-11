@@ -1,4 +1,7 @@
-package root;
+package root.lexer;
+
+import root.Token;
+import root.TokenType;
 
 public class Lexer {
 
@@ -71,7 +74,7 @@ public class Lexer {
         this.pos++;
     }
 
-    private char getCc() {
+    char getCc() {
         return this.peek(this.pos);
     }
 

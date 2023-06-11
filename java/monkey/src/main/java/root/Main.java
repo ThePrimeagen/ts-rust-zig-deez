@@ -8,7 +8,7 @@ public class Main {
         System.out.printf("Hello %s! This is the Monkey programming language!%n", username);
         System.out.println("Feel free to type in commands!");
 
-        REPL repl = new REPL();
-        repl.start(System.in, System.out);
+        REPL repl = new REPL(System.in, System.out);
+        repl.start();
     }
 }

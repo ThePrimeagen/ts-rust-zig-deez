@@ -1,10 +1,13 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import root.Lexer;
-import root.Parser;
-import root.Token;
+import root.lexer.Lexer;
+import root.parser.Parser;
 import root.TokenType;
 import root.ast.*;
+import root.ast.expressions.IdentiferExpression;
+import root.ast.statements.LetStatement;
+import root.ast.statements.ReturnStatement;
+import root.ast.statements.Statement;
 
 import java.util.List;
 
@@ -63,8 +66,8 @@ public class ParserTest {
                 statements.add(
                         new LetStatement(TokenType.LET.token()) {
                             {
-                                name = new Identifier(TokenType.IDENT.createToken("myVar"), "myVar");
-                                value = new Identifier(TokenType.IDENT.createToken("anotherVar"), "anotherVar");
+                                name = new IdentiferExpression(TokenType.IDENT.createToken("myVar"), "myVar");
+                                value = new IdentiferExpression(TokenType.IDENT.createToken("anotherVar"), "anotherVar");
                             }
                         }
                 );

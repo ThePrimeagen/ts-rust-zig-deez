@@ -1,4 +1,4 @@
-import root.Lexer;
+import root.lexer.Lexer;
 import root.Token;
 import root.TokenType;
 import org.junit.jupiter.api.Assertions;

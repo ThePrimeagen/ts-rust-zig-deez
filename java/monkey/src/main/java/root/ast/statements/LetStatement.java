@@ -1,10 +1,12 @@
-package root.ast;
+package root.ast.statements;
 
 import root.Token;
+import root.ast.expressions.Expression;
+import root.ast.expressions.IdentiferExpression;
 
 public class LetStatement extends Statement {
 
-    public Identifier name;
+    public IdentiferExpression name;
     public Expression value;
 
     public LetStatement(Token token) {

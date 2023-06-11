@@ -1,5 +1,7 @@
 package root.ast;
 
+import root.ast.statements.Statement;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,5 +1,7 @@
 package root;
 
+import root.lexer.LexerIterable;
+
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Scanner;
@@ -8,24 +10,29 @@ public class REPL {
 
     private static final String PROMPT = ">> ";
 
-    public void start(InputStream inputStream, PrintStream printStream) {
+    private final InputStream inputStream;
+    private final PrintStream printStream;
+
+    public REPL(InputStream inputStream, PrintStream printStream) {
+        this.inputStream = inputStream;
+        this.printStream = printStream;
+    }
+
+    public void start() {
         var scanner = new Scanner(inputStream);
 
-        while (true) {
-            printStream.print(PROMPT);
+        printStream.print(PROMPT);
+        while (scanner.hasNextLine()) {
             var line = scanner.nextLine();
-
-            if (line.trim().length() == 0) {
-                break;
-            }
-
-            var lexer = new Lexer(line);
-
-            var t = lexer.nextToken();
-            while (t.type() != TokenType.EOF) {
-                printStream.println(t);
-                t = lexer.nextToken();
-            }
+            LexerIterable.fromString(line).forEachRemaining(this::printToken);
+            printStream.print(PROMPT);
         }
+    }
+
+    public void printToken(Token token) {
+        if (token.type() == TokenType.ILLEGAL) {
+            throw new IllegalArgumentException("Illegal Token Provided: " + token.literal());
+        }
+        printStream.println(token);
     }
 }

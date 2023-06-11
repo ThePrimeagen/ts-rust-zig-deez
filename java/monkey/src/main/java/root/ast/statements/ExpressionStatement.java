@@ -1,4 +1,6 @@
-package root.ast;
+package root.ast.statements;
+
+import root.ast.expressions.Expression;
 
 public class ExpressionStatement extends Statement {
 
