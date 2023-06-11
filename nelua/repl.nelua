@@ -1,0 +1,25 @@
+require("io")
+-- monkey
+require("lexer")
+
+io.printf("Monkey REPL!\nPress CTRL-C or type 'exit' to quit.\n")
+
+while true do
+  io.printf(">> ")
+  local line = io.read()
+
+  if line == "exit" then
+    break
+  end
+
+  local lexer = Lexer{line, 1, 1, 0}
+  lexer:ReadChar()
+  local token = lexer:NextToken()
+
+  while token.Type ~= TokenType.Eof do
+    print(token.Literal)
+    token = lexer:NextToken()
+  end
+
+  print(token.Literal)
+end

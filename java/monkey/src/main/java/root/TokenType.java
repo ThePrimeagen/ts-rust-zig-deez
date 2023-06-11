@@ -1,7 +1,5 @@
 package root;
 
-import java.util.Optional;
-
 public enum TokenType {
     ILLEGAL,
     EOF("eof"),
@@ -35,14 +33,14 @@ public enum TokenType {
     ELSE("else"),
     RETURN("return");
 
-    private final Optional<Token> token;
+    private final Token token;
 
     TokenType(String literal) {
-        token = Optional.of(new Token(this, literal));
+        token = new Token(this, literal);
     }
 
     TokenType() {
-        this.token = Optional.empty();
+        this.token = null;
     }
 
     public Token createToken(String literal) {
@@ -50,8 +48,10 @@ public enum TokenType {
     }
 
     public Token token() {
-        return token.orElseThrow(() -> new IllegalArgumentException(
+        if (token == null) {
+            throw new IllegalArgumentException(
                 "TokenType %s doesn't have a default Token. Create one using 'createToken'".formatted(this.name())
-        ));
+            );
+        }
     }
 }

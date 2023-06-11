@@ -1,5 +1,6 @@
 
-structural type Token = Illegal Text | Ident Text | Int Text | Eof
+unique type Token = Illegal Text | Ident Text | Int Text 
+    | Error Text Token | Eof
     | Assign | Plus | Comma 
     | Semicolon | Lparen | Rparen 
     | Lbrace |  Rbrace | Minus 
@@ -8,8 +9,8 @@ structural type Token = Illegal Text | Ident Text | Int Text | Eof
     | True | False | If | Else
     | Return | Eq | NotEq
 
-keyWords : Text -> Token
-keyWords word = 
+Token.keyWords : Text -> Token
+Token.keyWords word = 
     match word with
     "fn" -> Fn
     "let" -> Let
@@ -19,3 +20,44 @@ keyWords word =
     "else" -> Else
     "return" -> Return
     _ -> Ident word
+
+Token.isIdent : Token -> Boolean
+Token.isIdent = cases
+    Ident _ -> true
+    _ -> false
+
+Token.isInt : Token -> Boolean 
+Token.isInt = cases
+    Int _ -> true
+    _ -> false
+
+Token.toString: Token -> Text
+Token.toString = cases
+    Illegal t -> t
+    Ident t -> t
+    Int t -> t
+    Fn -> "fn"
+    Let -> "let"
+    Assign -> "="
+    Plus -> "+"
+    Minus -> "-"
+    Asterisk -> "*"
+    Slash -> "/"
+    Bang -> "!"
+    Gt -> ">"
+    Lt -> "<"
+    Eq -> "=="
+    NotEq -> "!="
+    True -> "true"
+    False -> "false"
+    If -> "if"
+    Else -> "else"
+    Return -> "return"
+    Comma -> ","
+    Semicolon -> ";"
+    Lparen -> "("
+    Rparen -> ")"    
+    Lbrace -> "{"
+    Rbrace -> "}"
+    Eof -> "end"
+    Error _ tk -> toString tk 
