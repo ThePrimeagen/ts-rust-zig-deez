@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "test": "tsc --noEmit src/lexer/__tests__/lexer.ts"
+  },
+	"devDependencies": {
+		"@typescript/analyze-trace": "^0.10.0",
+		"typescript": "^5.1.3"
+	}
+}
