@@ -74,7 +74,7 @@ public class Lexer {
         this.pos++;
     }
 
-    char getCc() {
+    protected char getCc() {
         return this.peek(this.pos);
     }
 

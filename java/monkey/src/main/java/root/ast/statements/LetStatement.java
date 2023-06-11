@@ -6,11 +6,27 @@ import root.ast.expressions.IdentiferExpression;
 
 public class LetStatement extends Statement {
 
-    public IdentiferExpression name;
-    public Expression value;
+    private IdentiferExpression name;
+    private Expression value;
 
     public LetStatement(Token token) {
         this.token = token;
+    }
+
+    public IdentiferExpression getName() {
+        return name;
+    }
+
+    public void setName(IdentiferExpression name) {
+        this.name = name;
+    }
+
+    public Expression getValue() {
+        return value;
+    }
+
+    public void setValue(Expression value) {
+        this.value = value;
     }
 
     @Override

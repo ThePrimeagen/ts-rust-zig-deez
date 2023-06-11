@@ -27,12 +27,12 @@ public class ParserTest {
 
         Assertions.assertNotNull(program);
         checkParseErrors(p);
-        Assertions.assertEquals(3, program.statements.size());
+        Assertions.assertEquals(3, program.getStatements().size());
 
         var expectedIdentifiers = List.of("x", "y", "foobar");
 
         var index = 0;
-        for (var statement : program.statements) {
+        for (var statement : program.getStatements()) {
             testStatement(statement, expectedIdentifiers.get(index++));
         }
     }
@@ -51,9 +51,9 @@ public class ParserTest {
 
         Assertions.assertNotNull(program);
         checkParseErrors(p);
-        Assertions.assertEquals(3, program.statements.size());
+        Assertions.assertEquals(3, program.getStatements().size());
 
-        for (var statement : program.statements) {
+        for (var statement : program.getStatements()) {
             Assertions.assertTrue(statement instanceof ReturnStatement);
             Assertions.assertEquals(TokenType.RETURN.token().literal(), statement.tokenLiteral());
         }
@@ -63,11 +63,11 @@ public class ParserTest {
     void testString() {
         var program = new Program() {
             {
-                statements.add(
+                getStatements().add(
                         new LetStatement(TokenType.LET.token()) {
                             {
-                                name = new IdentiferExpression(TokenType.IDENT.createToken("myVar"), "myVar");
-                                value = new IdentiferExpression(TokenType.IDENT.createToken("anotherVar"), "anotherVar");
+                                setName(new IdentiferExpression(TokenType.IDENT.createToken("myVar"), "myVar"));
+                                setValue(new IdentiferExpression(TokenType.IDENT.createToken("anotherVar"), "anotherVar"));
                             }
                         }
                 );
@@ -81,8 +81,8 @@ public class ParserTest {
         Assertions.assertEquals(TokenType.LET.token().literal(), statement.tokenLiteral());
 
         if (statement instanceof LetStatement letStatement) {
-            Assertions.assertEquals(name, letStatement.name.value);
-            Assertions.assertEquals(name, letStatement.name.tokenLiteral());
+            Assertions.assertEquals(name, letStatement.getName().getValue());
+            Assertions.assertEquals(name, letStatement.getName().tokenLiteral());
         } else {
             throw new AssertionError("statement not instance of LetStatement");
         }

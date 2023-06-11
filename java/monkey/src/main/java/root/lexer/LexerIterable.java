@@ -22,13 +22,13 @@ public class LexerIterable implements Iterable<Token> {
 
     private record LexerIterator(Lexer lexer) implements Iterator<Token> {
         @Override
-            public boolean hasNext() {
-                return lexer.getCc() != '\0';
-            }
-
-            @Override
-            public Token next() {
-                return lexer.nextToken();
-            }
+        public boolean hasNext() {
+            return lexer.getCc() != '\0';
         }
+
+        @Override
+        public Token next() {
+            return lexer.nextToken();
+        }
+    }
 }

@@ -8,7 +8,11 @@ import java.util.stream.Collectors;
 
 public class Program extends Node {
 
-    public final List<Statement> statements = new ArrayList<>();
+    private final List<Statement> statements = new ArrayList<>();
+
+    public List<Statement> getStatements() {
+        return statements;
+    }
 
     @Override
     public String tokenLiteral() {

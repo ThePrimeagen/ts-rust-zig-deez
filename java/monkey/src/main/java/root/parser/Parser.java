@@ -36,7 +36,7 @@ public class Parser {
             try {
                 Statement statement = parseStatement();
                 if (statement != null) {
-                    program.statements.add(statement);
+                    program.getStatements().add(statement);
                 }
             } catch (ParserException pe) {
                 this.errors.add(pe.getMessage());
@@ -82,7 +82,7 @@ public class Parser {
 
         this.expectPeek(TokenType.IDENT);
 
-        letStatement.name = new IdentiferExpression(this.currentToken, this.currentToken.literal());
+        letStatement.setName(new IdentiferExpression(this.currentToken, this.currentToken.literal()));
 
         this.expectPeek(TokenType.ASSIGN);
 
