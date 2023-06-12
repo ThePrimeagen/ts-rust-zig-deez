@@ -28,8 +28,6 @@ lexicon([60], lt).
 lexicon([62], gt).
 lexicon([61, 61], eq).
 lexicon([33, 61], neq).
-% lexicon([62, 61], geq).
-% lexicon([60, 61], leq).
 lexicon([108, 101, 116], let).
 lexicon([102, 110], function).
 lexicon([105, 102], if).
