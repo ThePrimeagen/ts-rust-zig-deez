@@ -52,9 +52,6 @@ int main(int argc, char *const argv[])
 		break;
 	}
 
-	//for (const auto& [key, value] : global->values)
-	//	std::cout << "\t" << key << " = " << value << "\n";
-
 	std::cout << "repl\n> ";
 
 	for (std::string line; std::getline(std::cin, line); std::cout << "\n> ") {
