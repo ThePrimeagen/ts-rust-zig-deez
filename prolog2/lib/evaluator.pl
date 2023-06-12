@@ -123,7 +123,7 @@ assert_all(Env, [ident(K)|Ks], [V|Vs]) :-
     assert_all(Env, Ks, Vs).
 
 truthy(nil, false).
-truthy(false, false).
+truthy(true, true).
 truthy(false, false).
 truthy(_, true).
 
