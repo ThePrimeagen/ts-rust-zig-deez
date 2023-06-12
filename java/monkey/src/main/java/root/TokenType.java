@@ -1,3 +1,5 @@
+package root;
+
 public enum TokenType {
     ILLEGAL,
     EOF("eof"),
@@ -51,5 +53,6 @@ public enum TokenType {
                 "TokenType %s doesn't have a default Token. Create one using 'createToken'".formatted(this.name())
             );
         }
+        return token;
     }
 }

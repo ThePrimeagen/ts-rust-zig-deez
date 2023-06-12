@@ -1,3 +1,8 @@
+package root.lexer;
+
+import root.Token;
+import root.TokenType;
+
 public class Lexer {
 
     private final String input;
@@ -69,7 +74,7 @@ public class Lexer {
         this.pos++;
     }
 
-    private char getCc() {
+    protected char getCc() {
         return this.peek(this.pos);
     }
 
