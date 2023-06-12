@@ -1,4 +1,0 @@
-#include "Tests.HC"
-
-Exit;
-
