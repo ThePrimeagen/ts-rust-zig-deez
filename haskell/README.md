@@ -1084,7 +1084,220 @@ advance = modify $ \lexer ->
 We can also go full degen mode and implement the lexer using monadic parser
 combinators.
 
-WIP would need some help to get the lexer to work with ByteString instead of Text (maybe that is more efficient)
+For the implementation I have followd the megaparsec
+[tutorial](https://markkarpov.com/tutorial/megaparsec.html).
+
+For this implementation I have used the `Text` type instead of `ByteString`,
+because it was easier, and it should be similar in performance.
+
+```haskell
+type Input = Text
+```
+
+Next we will define the Lexer. This is very simiar to our State implementation,
+but we no longer have to keep track of all the fields (`input`, `ch`, etc.),
+Parsec will do that for us.
+
+```haskell
+type Lexer = Parsec Void Input
+```
+
+the important part here is that we define the input of the parser to be of type
+`Text`, and if we enable overloaded strings with `{-# LANGUAGE
+OverloadedStrings #-}` we will be able to use basic strings as Text.
+
+I won't go too much into detail, as all the functions are explained in the
+tutorial, but let's look at how we handle identP now
+
+```haskell
+identP :: Lexer String
+identP = T.unpack <$> lexeme (takeWhile1P Nothing isIdentChar)
+```
+
+as before, we build a parser that reads from the input while we have an ident
+character, but instead of having to implement all the helper functions by hand
+we can use the megaparsec library. In the tutorial, they also apply the
+`lexeme` function, which will consume all the whitespace after the token. And
+finally, since we set the input of the parser to `Text` we will also get back a
+`Text` type, so we have to explicitly unpack it to a String. (intP is the same)
+
+When we implement the `nextToken` function we no longer have to deal with
+manually calling advance, peek, etc. All this complexity will be handled by the
+Parsec data type.
+
+For example, this is how our `nextToken` function will look like compared to
+the previous ones
+
+```haskell
+nextToken :: Lexer Token
+nextToken =
+    choice                               -- sequentially attempt each parser in the list
+                                         -- the order in which we do the parsing matters
+
+        [ LSquirly <$ symbol "{"         -- `symbol` will check if the given string matches with the current input
+
+        , try (NotEqual <$ symbol "!=")  -- we will try to find "!=", if we fail we don't consume any input
+                                         -- this is because we want to be able to use "!" in other matches
+            <|> (Bang <$ symbol "!")     -- for example with bang
+
+        , identToken <$> identP          -- we attempt to read an ident; we do this one last, because we know
+                                         -- that the only possibiliy now is to find an ident (because everything else failed)
+
+        , Illegal <$ lexeme anySingle    -- if literally everything failed we add an Illegal token and consume one character
+        ]
+```
+
+this is much simpler, since we do not have to keep track of using `advance`.
+The only tricky part is that the order in which you check each parser matters.
+This is because if the `symbol` parser matches any substring then it will
+consume the input. And if that is not intended you have to use `try`, which
+slows down the parsing (so use it sparingly, and design the parser in a better
+way).
+
+For example, if we have `symbol "abcd"` and the input is "abkekw", if we apply
+the the symbol on the input, we will be left with "kekw" as the rest of the
+input and an error as output. But if we use `try`, the rest of the input will
+be "abkekw", but the output will still be an error.
+
+Now, to get all the tokens, we can use the `many` parser combinator and `eof` like so
+
+```haskell
+tokensP = sc *> many nextToken <* eof
+```
+
+first we remove any whitespace with `sc`, then we read 0 or more tokens with
+`many nextToken` and then we check that we reached `eof`.
+
+As I said, the parsing can fail, for example if we do not cover all the cases
+(if the parsing is non exhaustive I guess), so if we run the parser (with the
+`parse` function) we will get a Result type, in Haskell it is called `Either`
+and has to constructors `Left` (usually used for Errors "Err") and `Right`
+(usually used for result "Ok"). The lexer will be implemented such that it
+cannot fail (in general, lexers will never fail, but will have special tokens
+`Illegal` in our case to indicate errors during tokenization), but we still
+have to handle the Result part.
+
+```haskell
+tokenize :: Tokenizer
+tokenize input = case parse tokensP "" $ T.pack input of
+    Left err -> error ("lexer should not fail" ++ errorBundlePretty err)
+    Right tokens -> tokens ++ [Eof]
+  where
+    tokensP = sc *> many nextToken <* eof
+```
+
+in case we encounter an error we just do an "unreachable", otherwise we return
+the tokens.
+
+### AST
+
+Similar to the Token module, I have created an AST module that will hold the
+definition of the abstract syntax tree of the Monkey Lang language.
+
+From the book, a program is a list of statements
+
+```haskell
+newtype Program = Program [Statement]
+    deriving (Show, Eq)
+```
+
+again, this can be seen as an enum with a single constructor that takes in a
+list of type `Statement`. Next we also define the `Statement` and `Expression`
+data types.
+
+The `Statement` data type will contain all the "non-value" expressions of the
+language, such as `let`, `return` and blocks (a block is a list of
+statemnets).
+
+For the `Statement` data type I have included a `IllegalStatement` constructor
+such that it is easier to handle errors. For example, if we encounter an
+unexpected token, or somehow we find an error, we consume the input until we
+find a `;` (semicolon) and then return an illegal statement.
+
+The `Expression` data type will contain all the "value" expressions of the
+language. You can think of them as terms that can be used in other
+expressions.
+
+For example, we can add two expression with the `+` operator, but we cannot add
+a `let` and something else, because `let` does not return anything.
+
+To be able to have multiple implementations, we can also define a common type
+for the parser.
+
+```haskell
+type Ast = [Token] -> Program
+```
+
+Our parser will take in a list of tokens and will build the tree structure of
+the program.
+
+### Parser.Parsec
+
+In the Lexer we have used Parsec and passed in as input `Text`, basically a
+list of characters. But this data type is generic such that it can actually
+take in as input any type of list of elements. For instance, we can use
+`[Token]` as the input for our parser and have all the function we have seen
+previously (such as `many`, `try`, etc.) to work for Token for free.
+
+```haskell
+type Input = [Token]
+
+type Parser = Parsec Void Input
+```
+
+What is great about using tokens as input is that we no longer have to deal
+with whitespaces. So we can check token after token, knowing that if we fail it
+means that there was a problem and not a whitespace.
+
+First we need a function that is similar to `symbol`. It will check if a token
+from the input stream is equal to what we provide as argument
+
+```haskell
+tokenP :: Token -> Parser Token
+tokenP t = satisfy (== t)
+```
+
+we can use the satisfy function, which will check if the predicate holds for
+the current token in the input. If it does, then it will parse it, otherwise
+fail.
+
+The next helper function is `identP`, which will parse an ident token and
+return it's name
+
+```haskell
+identP :: Parser String
+identP = satisfy isIdent >>= \case
+    (Ident t) -> return t
+    _ -> fail "Expected identifier"
+    where isIdent (Ident _) = True
+          isIdent _ = False
+```
+
+we can also use satisfy. (I don't know if this is the best way, because we do
+two matches, and one is useless)
+
+With these helpers and the function from megaparsec, we can create a parser for
+our grammar. It is really straigh forward (following the tutorial for megaparsec).
+The only tricky part is parsing arithmentic expressions, where we have to split
+out `Expression` type into `termP` and `expressionP`. And then we have to use
+`makeExprParser` with a table of operators to parse the expressions.
+
+Finally we will be able to parse a program as a list of statements
+
+```haskell
+programP :: Parser Program
+programP = Program <$> manyTill statementP' (tokenP Eof)
+```
+
+and again we will just export a function that parses a program from a list of
+tokens
+
+```haskell
+ast :: Ast
+ast s = case parse programP "" s of
+    Left err -> error ("parser should not fail" ++ show err)
+    Right p -> p
+```
 
 ## Contributions
 

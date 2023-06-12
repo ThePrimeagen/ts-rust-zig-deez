@@ -31,6 +31,13 @@ testTokenizeEqual tokenize = TestCase $ do
     let tokens = tokenize input
     assertEqual "testTokenizeEqual" expected tokens
 
+testTokenizeBig :: Tokenizer -> Test
+testTokenizeBig tokenize = TestCase $ do
+    let input = unlines ["let five = 5;", "", "let ten = 10;", "", "let add = fn(x, y) {", "    x + y;", "};", "", "let result = add(five, ten);", "1 + 2 * 3 / 5 - -4 == 7;", "5 < 10 == !false;", "", "if (5 < 10) {", "    return true;", "} else {", "    return false;", "};", "", "fn(x, y) { if (true) { x } else { x } } (1, 2);"]
+    let expected = [Let, Ident "five", Assign, Int "5", Semicolon, Let, Ident "ten", Assign, Int "10", Semicolon, Let, Ident "add", Assign, Function, LParen, Ident "x", Comma, Ident "y", RParen, LSquirly, Ident "x", Plus, Ident "y", Semicolon, RSquirly, Semicolon, Let, Ident "result", Assign, Ident "add", LParen, Ident "five", Comma, Ident "ten", RParen, Semicolon, Int "1", Plus, Int "2", Asterisk, Int "3", Slash, Int "5", Minus, Minus, Int "4", Equal, Int "7", Semicolon, Int "5", LessThan, Int "10", Equal, Bang, FalseTok, Semicolon, If, LParen, Int "5", LessThan, Int "10", RParen, LSquirly, Return, TrueTok, Semicolon, RSquirly, Else, LSquirly, Return, FalseTok, Semicolon, RSquirly, Semicolon, Function, LParen, Ident "x", Comma, Ident "y", RParen, LSquirly, If, LParen, TrueTok, RParen, LSquirly, Ident "x", RSquirly, Else, LSquirly, Ident "x", RSquirly, RSquirly, LParen, Int "1", Comma, Int "2", RParen, Semicolon, Eof]
+    let tokens = tokenize input
+    assertEqual "testTokenizeBig" expected tokens
+
 lexerTests :: Tokenizer -> Test
 lexerTests tokenize =
     TestList
@@ -38,4 +45,5 @@ lexerTests tokenize =
         , TestLabel "testTokenizeBasic" (testTokenizeBasic tokenize)
         , TestLabel "testTokenizeExtended" (testTokenizeExtended tokenize)
         , TestLabel "testTokenizeEqual" (testTokenizeEqual tokenize)
+        , TestLabel "testTokenizeBig" (testTokenizeBig tokenize)
         ]
