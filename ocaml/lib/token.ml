@@ -1,8 +1,9 @@
 type t =
   | Illegal
-  (* Identifiers *)
+  (* Items *)
   | Ident of string
   | Integer of string
+  | String of string
   (* Operators *)
   | Assign
   | Plus
@@ -17,11 +18,15 @@ type t =
   (* Delimiters *)
   | Comma
   | Semicolon
+  | Colon
   | LeftParen
   | RightParen
   | LeftBrace
   | RightBrace
+  | LeftBracket
+  | RightBracket
   (* Keyword *)
+  | Macro
   | Function
   | Let
   | True
@@ -40,5 +45,6 @@ let lookup_ident str =
   | "if" -> If
   | "else" -> Else
   | "return" -> Return
+  | "macro" -> Macro
   | _ -> Ident str
 ;;
