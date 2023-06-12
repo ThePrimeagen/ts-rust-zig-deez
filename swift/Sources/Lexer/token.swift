@@ -25,6 +25,8 @@ enum Token: Equatable {
     case rSqirly
     case function
     case `let`
+    case greaterThan
+    case lessThan
 
     var literal: String {
         switch self {
@@ -53,6 +55,8 @@ enum Token: Equatable {
             case .if: return "if"
             case .else: return "else"
             case .return: return "return"
+            case .greaterThan: return ">"
+            case .lessThan: return "<"
         }
     }
 

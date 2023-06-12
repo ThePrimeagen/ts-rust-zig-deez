@@ -1,49 +1,15 @@
 import Foundation
 
-
-extension Character {
-    var isValidIdentifier: Bool {
-        self.isLetter || self == "_"
-    }
-}
-
-extension String {
-    func numberString(from index: String.Index) -> String {
-
-        var endIndex = self.index(after: index)
-
-        while endIndex < self.endIndex {
-            if self[endIndex].isNumber == false {
-                return String(self[index..<endIndex])
-            }
-            endIndex = self.index(after: endIndex)
-        }
-        return String(self[index...])
-    }
-
-    func identifier(from index: String.Index) -> String {
-        var endIndex = self.index(after: index)
-
-        while endIndex < self.endIndex {
-            if self[endIndex].isValidIdentifier == false {
-                return String(self[index..<endIndex])
-            }
-            endIndex = self.index(after: endIndex)
-        }
-        return String(self[index...])
-    }
-}
-
 struct Lexer {
 
     let input: String
+    let keyWords: [String: Token]
     var currentIndex: String.Index
 
-    init(input: String) {
-        self.input = input
-        self.currentIndex = input.startIndex
+    static func from(code: String, keyWords: [String: Token] = .defaultKeyWords) -> Lexer {
+        Lexer(input: code, keyWords: keyWords, currentIndex: code.startIndex)
     }
-    
+
     mutating func nextToken() -> Token {
 
         guard currentIndex < input.endIndex else {
@@ -56,39 +22,57 @@ struct Lexer {
 
         let current = input[currentIndex]
 
+        var moveSize = 1
         defer {
             // Move to the next character after we have returned this token.
             if currentIndex < input.endIndex {
-                currentIndex = input.index(after: currentIndex)
+                currentIndex = input.index(currentIndex, offsetBy: moveSize)
             }
         }
 
         switch current {
-            case "=": return .equal
             case "+": return .plus
             case "(": return .lParen
             case ")": return .rParen
             case "{": return .lSqirly
             case "}": return .rSqirly
             case ",": return .comma
+            case "=": 
+                switch peekNext() {
+                    case "=": 
+                        moveSize = 2
+                        return .equals
+                    default: return .assign
+                }
             case ";": return .semi
+            case "!":
+                switch peekNext() {
+                    case "=": 
+                        moveSize = 2
+                        return .notEquals
+                    default: return .bang
+                }
             case let char where char.isValidIdentifier:
                 let ident = input.identifier(from: currentIndex)
-                currentIndex = input.index(currentIndex, offsetBy: ident.count)
-                switch ident {
-                    case "fn": return .function
-                    case "let": return .let
-                    default: return .ident(ident)
-                }
+                moveSize = ident.count
+                return keyWords[ident, default: .ident(ident)]
             case let char where char.isNumber:
                 let numString = input.numberString(from: currentIndex)
                 guard let num = Int(numString) else {
                     return .illegal(numString)
                 }
-                currentIndex = input.index(currentIndex, offsetBy: numString.count)
+                moveSize = numString.count
                 return .int(num)
             default: 
                 return .illegal(String(current))
         }
+    }
+
+    func peekNext() -> Character? {
+        guard currentIndex < input.endIndex else {
+            return nil
+        }
+        let nextIndex = input.index(after: currentIndex)
+        return input[nextIndex]
     }
 }
