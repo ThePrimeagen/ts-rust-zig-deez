@@ -1,5 +1,5 @@
-pub mod lexer;
+use rust_dr::repl;
 
 fn main() {
-    println!("Hello, world!");
+    repl::repl();
 }
