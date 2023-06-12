@@ -1,0 +1,163 @@
+
+let abs = fn(x)
+	if (x < 0) -x
+	else x
+
+let and = fn(xs) foldr($&&, true, xs)
+
+let concat = fn(xs) foldr($+, [], xs)
+
+let const = fn(a, b) a
+
+let converse = fn(f, a, b) f(b,a)
+
+let drop = fn(n, xs)
+	if (n > 0) drop(n-1, rest(xs))
+	else xs
+
+let dropwhile = fn(f, xs)
+	if (len(xs) == 0) []
+	else if(f(first(xs))) dropwhile(f, rest(xs))
+	else xs
+
+let filter = fn(f, xs) {
+	if (len(xs) == 0) []
+	else {
+		let x = first(xs);
+		let fxs = filter(f, rest(xs));
+		if (f(x)) [x] + fxs
+		else fxs
+	}
+}
+
+let foldr = fn(op, r, xs)
+	if (len(xs) == 0) r
+	else op(first(xs), foldr(op, r, rest(xs)))
+
+let foldl = fn(op, r, xs)
+	if (len(xs) == 0) r
+	else foldl(op, op(r, first(xs)), rest(xs))
+
+let foldl1 = fn(op, xs) foldl(op, first(xs), rest(xs))
+
+let foldr1 = fn(op, xs)
+	if (len(xs) < 2) xs
+	else op(first(xs), foldr1(op, rest(xs)))
+
+let fst = fn(a, b) a
+let id = fn(a) a
+
+let index = fn(xs) {
+	let index2 = fn(c, xs) {
+		if (len(xs) == 0) []
+		else [c] + index2(c + 1, rest(xs));
+	};
+	index2(0, xs);
+}
+
+let init = fn(xs) {
+	if (len(xs) < 2) []
+	else first(xs) + init(rest(xs));
+}
+
+let lay = fn(xs)
+	if (len(xs) == 0) ""
+	else if (len(xs) == 1) first(xs)
+	else first(xs) + "\n" + lay(rest(xs))
+
+let map = fn(f, xs)
+	if (len(xs) == 0) []
+	else [f(first(xs))] + map(f, rest(xs))
+
+let max = fn(xs) foldl1(max2, xs)
+
+let max2 = fn(a, b)
+	if (a >= b) a
+	else b
+
+let member = fn(xs, a) map($==, xs)
+
+let merge = fn(as, bs)
+	if (len(as) == 0) bs
+	else if (len(bs) == 0) as
+	else {
+		let a = first(as);
+		let b = first(bs);
+		if (a <= b) [a] + merge(rest(as), bs)
+		else        [b] + merge(as, rest(bs))
+	}
+
+let min2 = fn(a, b)
+	if (a > b) b
+	else a
+
+let min = fn(xs) foldl1(min2, xs)
+
+let neg = fn(a) -a
+
+let or = fn(xs) foldr($||, false)
+
+let postfix = fn(a, xs) xs + [a]
+
+let product = fn(xs) foldl1($*, xs)
+
+let rep = fn(c, x)
+	if (c <= 0) []
+	else [x] + rep(c - 1, x)
+
+let reverse = fn(xs) foldl(fn(a, b) { [b] + a }, [], xs)
+
+let seq = fn(a, b) b
+let snd = fn(a, b) b
+
+let sort = fn(xs) {
+	let n = len(xs);
+	if (n <= 1) xs
+	else merge(sort(take(n/2, xs)), sort(drop(n/2, xs)))
+}
+
+let spaces = fn(c)
+	if (c <= 0) ""
+	else " " + spaces(c - 1)
+
+let subtract = fn(x, y) y - x
+
+let sum = fn(xs) foldl($+, 0, xs)
+
+let take = fn(n, xs)
+	if (n <= 0 || (len(xs) == 0)) []
+	else [first(xs)] + take(n - 1, rest(xs))
+
+let takewhile = fn(f, xs)
+	if (len(xs) == 0) []
+	else if (f(first(xs))) [first(xs)] + takewhile(f, rest(xs))
+	else []
+
+let tl = fn(xs) rest(xs)
+
+let transpose = fn(xs) {
+	let xp = takewhile(fn(ys) { len(ts) > 0 }, xs);
+	if (len(xp) == 0) []
+	else map(first, [xp] + transpose(map(tl, xp)))
+}
+
+let until = fn(f, g, xs)
+	if (f(x)) x
+	else until(f, g, g(x))
+
+
+let ackerman = fn(m,n)
+	     if (m == 0) n + 1
+	else if (n == 0) ackerman(m-1, 1)
+	else             ackerman(m-1, ackerman(m, n-1))
+
+let hanoi = fn(n) {
+	let h = fn(n, a, b, c) {
+		if (n > 0) {
+			h(n-1, a, c, b);
+			puts("move the top disc from " + a + " to " + b);
+			h(n-1, c, b, a);
+		}
+	}
+	h(n, "A", "B", "C")
+}

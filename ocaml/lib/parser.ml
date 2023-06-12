@@ -13,6 +13,7 @@ type precedence =
   | `Product
   | `Prefix
   | `Call
+  | `Index
   ]
 [@@deriving show, ord]
 
@@ -24,6 +25,7 @@ let token_prec : Token.t -> precedence = function
   | Plus | Minus -> `Sum
   | Slash | Asterisk -> `Product
   | LeftParen -> `Call
+  | LeftBracket -> `Index
   | _ -> `Lowest
 ;;
 
@@ -84,6 +86,12 @@ let expect_assign parser =
     | _ -> false)
 ;;
 
+let expect_colon parser =
+  expect_peek parser (function
+    | Token.Colon -> true
+    | _ -> false)
+;;
+
 let expect_lparen parser =
   expect_peek parser (function
     | Token.LeftParen -> true
@@ -105,6 +113,12 @@ let expect_lbrace parser =
 let expect_rbrace parser =
   expect_peek parser (function
     | Token.RightBrace -> true
+    | _ -> false)
+;;
+
+let expect_rbracket parser =
+  expect_peek parser (function
+    | Token.RightBracket -> true
     | _ -> false)
 ;;
 
@@ -208,6 +222,7 @@ and parse_prefix_expression parser =
   match token with
   | Token.Ident _ -> expr_parse_identifier parser |> map_parser
   | Token.Integer _ -> expr_parse_number parser |> map_parser
+  | Token.String _ -> expr_parse_string parser |> map_parser
   | Token.Bang -> expr_parse_prefix parser token
   | Token.Minus -> expr_parse_prefix parser token
   | Token.True -> expr_parse_bool parser token
@@ -215,6 +230,9 @@ and parse_prefix_expression parser =
   | Token.LeftParen -> expr_parse_grouped parser
   | Token.If -> expr_parse_if parser
   | Token.Function -> expr_parse_fn parser
+  | Token.Macro -> expr_parse_macro parser
+  | Token.LeftBracket -> expr_parse_array_literal parser
+  | Token.LeftBrace -> expr_parse_hash_literal parser
   | tok -> Error (Fmt.str "unexpected prefix expr: %a\n %a" Token.pp tok pp parser)
 
 and parse_infix_expression parser left =
@@ -225,23 +243,14 @@ and parse_infix_expression parser left =
   Ok (parser, Ast.Infix { left; operator; right })
 
 and parse_call_expression parser fn =
-  let rec parse_list_of_arguments parser args =
-    match parser.peek with
-    | Some Token.RightParen -> Ok (advance parser, Ast.Call { fn; args = List.rev args })
-    | Some Token.Comma ->
-      let parser = advance parser in
-      let parser = advance parser in
-      let* parser, expr = parse_expression parser `Lowest in
-      parse_list_of_arguments parser (expr :: args)
-    | _ -> Error "unexpected next token"
-  in
-  match parser.peek with
-  | Some Token.RightParen -> parse_list_of_arguments parser []
-  | Some _ ->
-    let parser = advance parser in
-    let* parser, expr = parse_expression parser `Lowest in
-    parse_list_of_arguments parser [ expr ]
-  | None -> Error "hit eof"
+  parse_list_of_exprs parser ~close:Token.RightParen ~final:(fun args ->
+    Ast.Call { fn; args })
+
+and parse_index_expression parser left =
+  let parser = advance parser in
+  let* parser, index = parse_expression parser `Lowest in
+  let* parser = expect_rbracket parser in
+  Ok (parser, Ast.Index { left; index })
 
 and get_infix_fn parser =
   let open Token in
@@ -255,6 +264,7 @@ and get_infix_fn parser =
   | Some LessThan
   | Some GreaterThan -> Some parse_infix_expression
   | Some LeftParen -> Some parse_call_expression
+  | Some LeftBracket -> Some parse_index_expression
   | _ -> None
 
 and expr_parse_identifier parser =
@@ -262,9 +272,19 @@ and expr_parse_identifier parser =
   | Some (Ident identifier) -> Ok (Ast.Identifier { identifier })
   | _ -> Error "missing number"
 
+and expr_parse_string parser =
+  match parser.current with
+  | Some (String str) -> Ok (Ast.String str)
+  | _ -> Error "missing string"
+
 and expr_parse_number parser =
   match parser.current with
-  | Some (Integer num) -> Ok (Ast.Integer (Int.of_string num))
+  | Some (Integer num) ->
+    let num =
+      try Int.of_string num with
+      | Failure x -> Fmt.failwith "COULD NOT PARSE: '%s' DUE TO %s" num x
+    in
+    Ok (Ast.Integer num)
   | _ -> Error "missing number"
 
 and expr_parse_prefix parser operator =
@@ -291,6 +311,47 @@ and expr_parse_grouped parser =
   in
   Ok (parser, expr)
 
+and parse_list_of_exprs parser ~close ~final =
+  let rec parse' parser exprs =
+    match parser.peek with
+    | Some tok when phys_equal close tok -> Ok (advance parser, final (List.rev exprs))
+    | Some Token.Comma ->
+      let parser = advance parser in
+      let parser = advance parser in
+      let* parser, expr = parse_expression parser `Lowest in
+      parse' parser (expr :: exprs)
+    | _ -> Error "unexpected next token"
+  in
+  match parser.peek with
+  | Some tok when phys_equal close tok -> parse' parser []
+  | Some _ ->
+    let parser = advance parser in
+    let* parser, expr = parse_expression parser `Lowest in
+    parse' parser [ expr ]
+  | None -> Error "hit eof"
+
+and expr_parse_array_literal parser =
+  parse_list_of_exprs parser ~close:Token.RightBracket ~final:(fun exprs ->
+    Ast.Array exprs)
+
+and expr_parse_hash_literal parser =
+  let rec parse' parser exprs =
+    let empty = List.length exprs = 0 in
+    match parser.peek with
+    | Some Token.RightBrace -> Ok (advance parser, Ast.Hash (List.rev exprs))
+    | _ when empty -> parse_key_value parser exprs
+    | Some Token.Comma when not empty -> parse_key_value (advance parser) exprs
+    | _ -> Error "unexpected next token"
+  and parse_key_value parser exprs =
+    let parser = advance parser in
+    let* parser, key = parse_expression parser `Lowest in
+    let* parser = expect_colon parser in
+    let parser = advance parser in
+    let* parser, value = parse_expression parser `Lowest in
+    parse' parser ((key, value) :: exprs)
+  in
+  parse' parser []
+
 and expr_parse_if parser =
   let* parser = expect_lparen parser in
   let parser = advance parser in
@@ -315,17 +376,6 @@ and read_identifier parser =
   | _ -> Error "expected to read identifier"
 
 and expr_parse_fn parser =
-  let rec parse_list_of_parameters parser parameters =
-    match parser.peek with
-    | Some Token.RightParen -> Ok (advance parser, parameters)
-    | Some Token.Comma ->
-      let parser = advance parser in
-      let parser = advance parser in
-      let* ident = read_identifier parser in
-      parse_list_of_parameters parser (ident :: parameters)
-    | Some tok -> Error (Fmt.str "unexpected next parameter token %a" Token.pp tok)
-    | None -> Error "unexpected end of stream"
-  in
   let* parser = expect_lparen parser in
   let* parser, parameters =
     match parser.peek with
@@ -339,6 +389,32 @@ and expr_parse_fn parser =
   let* parser = expect_lbrace parser in
   let* parser, body = parse_block parser in
   Ok (parser, Ast.FunctionLiteral { parameters; body })
+
+and expr_parse_macro parser =
+  let* parser = expect_lparen parser in
+  let* parser, parameters =
+    match parser.peek with
+    | Some Token.RightParen -> parse_list_of_parameters parser []
+    | Some (Token.Ident _) ->
+      let parser = advance parser in
+      let* identifier = read_identifier parser in
+      parse_list_of_parameters parser [ identifier ]
+    | _ -> Error "unexpected start of parameter list"
+  in
+  let* parser = expect_lbrace parser in
+  let* parser, body = parse_block parser in
+  Ok (parser, Ast.Macro { parameters; body })
+
+and parse_list_of_parameters parser parameters =
+  match parser.peek with
+  | Some Token.RightParen -> Ok (advance parser, List.rev parameters)
+  | Some Token.Comma ->
+    let parser = advance parser in
+    let parser = advance parser in
+    let* ident = read_identifier parser in
+    parse_list_of_parameters parser (ident :: parameters)
+  | Some tok -> Error (Fmt.str "unexpected next parameter token %a" Token.pp tok)
+  | None -> Error "unexpected end of stream"
 ;;
 
 let string_of_statement = function
@@ -497,7 +573,7 @@ let 838383; |} in
     [%expect
       {|
       Program: [
-        EXPR: FunctionLiteral {parameters = [{ identifier = "y" }; { identifier = "x" }];
+        EXPR: FunctionLiteral {parameters = [{ identifier = "x" }; { identifier = "y" }];
         body =
         { block =
           [(Return
@@ -528,6 +604,67 @@ let 838383; |} in
     ] |}]
   ;;
 
+  let%expect_test "some infixes" =
+    expect_program "(1 < 2) == true;";
+    [%expect
+      {|
+      Program: [
+        EXPR: Infix {
+        left =
+        Infix {left = (Integer 1); operator = Token.LessThan; right = (Integer 2)};
+        operator = Token.Equal; right = (Boolean true)};
+      ] |}]
+  ;;
+
+  let%expect_test "string parse" =
+    expect_program "let x = \"hello, world!!\";";
+    [%expect
+      {|
+      Program: [
+        LET: let { identifier = "x" } = (String "hello, world!!")
+      ] |}]
+  ;;
+
+  let%expect_test "array parse" =
+    expect_program "[1, 2, fn (x) { x }];";
+    [%expect
+      {|
+      Program: [
+        EXPR: (Array
+         [(Integer 1); (Integer 2);
+           FunctionLiteral {parameters = [{ identifier = "x" }];
+             body =
+             { block = [(ExpressionStatement (Identifier { identifier = "x" }))] }}
+           ]);
+      ] |}]
+  ;;
+
+  let%expect_test "indexing" =
+    expect_program "[1, 2, 3][1 + 1];";
+    [%expect
+      {|
+      Program: [
+        EXPR: Index {left = (Array [(Integer 1); (Integer 2); (Integer 3)]);
+        index =
+        Infix {left = (Integer 1); operator = Token.Plus; right = (Integer 1)}};
+      ] |}]
+  ;;
+
+  let%expect_test "hash literals" =
+    expect_program "{};";
+    expect_program "{ 1: true, \"hello\": 17, true: false };";
+    [%expect
+      {|
+      Program: [
+        EXPR: (Hash []);
+      ]
+      Program: [
+        EXPR: (Hash
+         [((Integer 1), (Boolean true)); ((String "hello"), (Integer 17));
+           ((Boolean true), (Boolean false))]);
+      ] |}]
+  ;;
+
   let%expect_test "precedence comparisons" =
     let cmp a b =
       Fmt.pr "%a > %a -> %b@." pp_precedence a pp_precedence b (prec_gte a b)
@@ -536,6 +673,23 @@ let 838383; |} in
     cmp `Lowest `Lowest;
     [%expect {|
     `Lowest > `Call -> false
-    `Lowest > `Lowest -> true |}]
+    `Lowest > `Lowest -> true
+      |}]
+  ;;
+
+  let%expect_test "macro" =
+    expect_program "macro(x, y) { quote(y) }";
+    [%expect
+      {|
+      Program: [
+        EXPR: Macro {parameters = [{ identifier = "x" }; { identifier = "y" }];
+        body =
+        { block =
+          [(ExpressionStatement
+              Call {fn = (Identifier { identifier = "quote" });
+                args = [(Identifier { identifier = "y" })]})
+            ]
+          }};
+      ] |}]
   ;;
 end

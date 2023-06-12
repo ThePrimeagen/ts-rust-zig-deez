@@ -1,5 +1,8 @@
+use std::fmt::Display;
+
 use anyhow::Result;
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Ident(String),
@@ -7,7 +10,17 @@ pub enum Token {
 
     Illegal,
     Eof,
+    Assign,
+
+    Bang,
+    Dash,
+    ForwardSlash,
+    Asterisk,
     Equal,
+    NotEqual,
+    LessThan,
+    GreaterThan,
+
     Plus,
     Comma,
     Semicolon,
@@ -15,8 +28,49 @@ pub enum Token {
     Rparen,
     LSquirly,
     RSquirly,
+
     Function,
     Let,
+
+    If,
+    Else,
+    Return,
+    True,
+    False,
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return match self {
+            Token::Ident(x) => write!(f, "Ident({})", x),
+            Token::Int(x) => write!(f, "Int({})", x),
+            Token::Illegal => write!(f, "Illegal"),
+            Token::Eof => write!(f, "Eof"),
+            Token::Assign => write!(f, "Assign"),
+            Token::Bang => write!(f, "Bang"),
+            Token::Dash => write!(f, "Dash"),
+            Token::ForwardSlash => write!(f, "ForwardSlash"),
+            Token::Asterisk => write!(f, "Asterisk"),
+            Token::Equal => write!(f, "Equal"),
+            Token::NotEqual => write!(f, "NotEqual"),
+            Token::LessThan => write!(f, "LessThan"),
+            Token::GreaterThan => write!(f, "GreaterThan"),
+            Token::Plus => write!(f, "Plus"),
+            Token::Comma => write!(f, "Comma"),
+            Token::Semicolon => write!(f, "Semicolon"),
+            Token::Lparen => write!(f, "Lparen"),
+            Token::Rparen => write!(f, "Rparen"),
+            Token::LSquirly => write!(f, "LSquirly"),
+            Token::RSquirly => write!(f, "RSquirly"),
+            Token::Function => write!(f, "Function"),
+            Token::Let => write!(f, "Let"),
+            Token::If => write!(f, "If"),
+            Token::Else => write!(f, "Else"),
+            Token::Return => write!(f, "Return"),
+            Token::True => write!(f, "True"),
+            Token::False => write!(f, "False"),
+        }
+    }
 }
 
 pub struct Lexer {
@@ -27,7 +81,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    fn new(input: String) -> Lexer {
+    pub fn new(input: String) -> Lexer {
         let mut lex = Lexer {
             position: 0,
             read_position: 0,
@@ -50,22 +104,55 @@ impl Lexer {
             b',' => Token::Comma,
             b';' => Token::Semicolon,
             b'+' => Token::Plus,
-            b'=' => Token::Equal,
+            b'-' => Token::Dash,
+            b'!' => {
+                if self.peek() == b'=' {
+                    self.read_char();
+                    Token::NotEqual
+                } else {
+                    Token::Bang
+                }
+            },
+            b'>' => Token::GreaterThan,
+            b'<' => Token::LessThan,
+            b'*' => Token::Asterisk,
+            b'/' => Token::ForwardSlash,
+            b'=' => {
+                if self.peek() == b'=' {
+                    self.read_char();
+                    Token::Equal
+                } else {
+                    Token::Assign
+                }
+            },
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_ident();
                 return Ok(match ident.as_str() {
                     "fn" => Token::Function,
                     "let" => Token::Let,
+                    "if" => Token::If,
+                    "false" => Token::False,
+                    "true" => Token::True,
+                    "return" => Token::Return,
+                    "else" => Token::Else,
                     _ => Token::Ident(ident),
                 });
             },
             b'0'..=b'9' => return Ok(Token::Int(self.read_int())),
             0 => Token::Eof,
-            _ => todo!("we need to implement this....")
+            _ => unreachable!("no monkey program should contain these characters and you should feel bad about yourself")
         };
 
         self.read_char();
         return Ok(tok);
+    }
+
+    fn peek(&self) -> u8 {
+        if self.read_position >= self.input.len() {
+            return 0;
+        } else {
+            return self.input[self.read_position];
+        }
     }
 
     fn read_char(&mut self) {
@@ -116,7 +203,7 @@ mod test {
         let mut lexer = Lexer::new(input.into());
 
         let tokens = vec![
-            Token::Equal,
+            Token::Assign,
             Token::Plus,
             Token::Lparen,
             Token::Rparen,
@@ -143,24 +230,36 @@ mod test {
             let add = fn(x, y) {
                 x + y;
             };
-            let result = add(five, ten);"# ;
+            let result = add(five, ten);
+        !-/*5;
+        5 < 10 > 5;
+        if (5 < 10) {
+            return true;
+        } else {
+            return false;
+        }
+
+        10 == 10;
+        10 != 9;
+        "#;
+
 
         let mut lex = Lexer::new(input.into());
 
         let tokens = vec![
             Token::Let,
             Token::Ident(String::from("five")),
-            Token::Equal,
+            Token::Assign,
             Token::Int(String::from("5")),
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("ten")),
-            Token::Equal,
+            Token::Assign,
             Token::Int(String::from("10")),
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("add")),
-            Token::Equal,
+            Token::Assign,
             Token::Function,
             Token::Lparen,
             Token::Ident(String::from("x")),
@@ -176,7 +275,7 @@ mod test {
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("result")),
-            Token::Equal,
+            Token::Assign,
             Token::Ident(String::from("add")),
             Token::Lparen,
             Token::Ident(String::from("five")),
@@ -184,6 +283,47 @@ mod test {
             Token::Ident(String::from("ten")),
             Token::Rparen,
             Token::Semicolon,
+
+
+            Token::Bang,
+            Token::Dash,
+            Token::ForwardSlash,
+            Token::Asterisk,
+            Token::Int(String::from("5")),
+            Token::Semicolon,
+            Token::Int(String::from("5")),
+            Token::LessThan,
+            Token::Int(String::from("10")),
+            Token::GreaterThan,
+            Token::Int(String::from("5")),
+            Token::Semicolon,
+            Token::If,
+            Token::Lparen,
+            Token::Int(String::from("5")),
+            Token::LessThan,
+            Token::Int(String::from("10")),
+            Token::Rparen,
+            Token::LSquirly,
+            Token::Return,
+            Token::True,
+            Token::Semicolon,
+            Token::RSquirly,
+            Token::Else,
+            Token::LSquirly,
+            Token::Return,
+            Token::False,
+            Token::Semicolon,
+            Token::RSquirly,
+
+            Token::Int(String::from("10")),
+            Token::Equal,
+            Token::Int(String::from("10")),
+            Token::Semicolon,
+            Token::Int(String::from("10")),
+            Token::NotEqual,
+            Token::Int(String::from("9")),
+            Token::Semicolon,
+
             Token::Eof,
         ];
 

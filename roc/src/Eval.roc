@@ -1,13 +1,18 @@
 interface Eval
-    exposes [eval, evalWithEnv, newEnv, printValue]
-    imports [Lexer, Parser.{ Index, Node, ParsedData }]
+    exposes [eval, evalWithEnvs, newEnv, printValue]
+    imports [Lexer, Parser.{ Program, Node }]
 
 Value : [
     Int I64,
     True,
     False,
     Null,
-    Fn { paramsIndex : Index, bodyIndex : Index, envIndex : Index },
+
+    # This is a bit strange and I am still looking for a better way to do it.
+    # Since Roc is fully immutable and we need to reference a mutable environment,
+    # we need to use an array index.
+    # There is probably a better way to do this.
+    Fn { params : List Str, body : Node, envIndex : Nat },
 
     # Values that need to be propogated up and returned.
     RetInt I64,
@@ -16,14 +21,8 @@ Value : [
     RetNull,
 
     # Errors are just strings.
-    # They are boxed to not bloat Value.
-    # TODO: Boxing here breaks tests if run.
-    # It works fine in repl, so I guess this is just not testable for now.
-    Error (Box Str),
+    Err Str,
 ]
-
-makeError : Str -> Value
-makeError = \str -> Error (Box.box str)
 
 valueToType : Value -> Str
 valueToType = \val ->
@@ -49,204 +48,249 @@ printValue = \value ->
         False -> "false"
         Null -> "null"
         Fn _ -> "<function>"
-        Error boxedStr -> Str.concat "ERROR: " (Box.unbox boxedStr)
+        Err e -> "ERROR: \(e)"
         _ -> "Invalid ret value"
 
 Env : {
-    inner : List [T Str Value],
-    outer : Result Index [IsRoot],
+    rc : U32,
+    inner : Dict Str Value,
+    outer : Result Nat [IsRoot],
 }
+
+newEnv : {} -> Env
+newEnv = \{} -> { rc: 1, inner: Dict.empty {}, outer: Err IsRoot }
 
 Evaluator : {
-    nodes : List Node,
-    # TODO: This setup never frees old envs.
     envs : List Env,
-    currentEnv : Index,
+    currentEnv : Nat,
 }
 
-setIdent : Evaluator, Str, Value -> (Evaluator, Value)
-setIdent = \{ nodes, envs: envs0, currentEnv }, ident, val ->
-    { list: envs1, value: { inner, outer } } = List.replace envs0 (Num.toNat currentEnv) (newEnv {})
-    when List.findFirstIndex inner (\T k _ -> k == ident) is
-        Ok i ->
-            nextInner = List.set inner i (T ident val)
-            ({ nodes, currentEnv, envs: List.set envs1 (Num.toNat currentEnv) { inner: nextInner, outer } }, val)
+setVar : Evaluator, Str, Value -> (Evaluator, Value)
+setVar = \{ envs: envs0, currentEnv }, ident, val ->
+    { list: envs1, value: { rc, inner, outer } } = List.replace envs0 currentEnv (newEnv {})
+    nextInner = Dict.insert inner ident val
+    ({ currentEnv, envs: List.set envs1 currentEnv { rc, inner: nextInner, outer } }, val)
 
-        Err _ ->
-            # TODO: check if sorted insert is faster.
-            nextInner = List.append inner (T ident val)
-            ({ nodes, currentEnv, envs: List.set envs1 (Num.toNat currentEnv) { inner: nextInner, outer } }, val)
-
-getIdent : List Env, Index, Str -> Value
-getIdent = \envs, currentEnv, ident ->
-    # TODO: maybe do binary search if the list is large enough.
-    { inner, outer } =
-        when List.get envs (Num.toNat currentEnv) is
-            Ok env -> env
-            Err _ -> crash "bad env index"
-    when List.findFirst inner (\T k _ -> k == ident) is
-        Ok (T _ v) -> v
+getVar : List Env, Nat, Str -> Value
+getVar = \envs, currentEnv, ident ->
+    { inner, outer } = List.get envs currentEnv |> okOrUnreachable "bad env index"
+    when Dict.get inner ident is
+        Ok v -> v
         Err _ ->
             when outer is
                 Ok envIndex ->
-                    getIdent envs envIndex ident
+                    getVar envs envIndex ident
 
                 Err _ ->
-                    makeError "identifier not found: \(ident)"
+                    Err "identifier not found: \(ident)"
 
-newEnv : {} -> Env
-newEnv = \{} -> { inner: [], outer: Err IsRoot }
+incEnv : Evaluator, Nat -> Evaluator
+incEnv = \{ envs, currentEnv }, i ->
+    { rc, inner, outer } = List.get envs i |> okOrUnreachable "bad env index"
+    when outer is
+        Ok nextI ->
+            nextRc = Num.addSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Ok nextI }
+            { envs: nextEnvs, currentEnv }
+            |> incEnv nextI
 
-wrapAndSetEnv : Evaluator, Index -> Evaluator
-wrapAndSetEnv = \{ nodes, envs }, i ->
-    newIndex = List.len envs |> Num.toU32
-    nextEnvs = List.append envs { inner: [], outer: Ok i }
-    { nodes, envs: nextEnvs, currentEnv: newIndex }
+        _ ->
+            nextRc = Num.addSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Err IsRoot }
+            { envs: nextEnvs, currentEnv }
 
-eval : ParsedData -> (Env, Value)
-eval = \pd ->
-    evalWithEnv pd (newEnv {})
+decEnv : Evaluator, Nat -> Evaluator
+decEnv = \{ envs, currentEnv }, i ->
+    { rc, inner, outer } = List.get envs i |> okOrUnreachable "bad env index"
+    when outer is
+        Ok nextI ->
+            nextRc = Num.subSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Ok nextI }
+            { envs: nextEnvs, currentEnv }
+            |> decEnv nextI
+            |> maybeFreeEnv i
 
-evalWithEnv : ParsedData, Env -> (Env, Value)
-evalWithEnv = \{ program, nodes }, env ->
-    e0 = { nodes, envs: [env], currentEnv: 0 }
+        _ ->
+            nextRc = Num.subSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Err IsRoot }
+            { envs: nextEnvs, currentEnv }
+            |> maybeFreeEnv i
+
+maybeFreeEnv = \{ envs, currentEnv }, i ->
+    when List.get envs (Num.toNat i) is
+        Ok { rc: 0, inner } ->
+            e0, _, val <- Dict.walk inner { envs, currentEnv }
+            when val is
+                Fn { envIndex } ->
+                    e0
+                    |> decEnv envIndex
+
+                _ ->
+                    e0
+
+        _ ->
+            { envs, currentEnv }
+
+wrapAndSetEnv : Evaluator, Nat -> Evaluator
+wrapAndSetEnv = \{ envs }, i ->
+    # First pick unused envs
+    when List.findLastIndex envs (\{ rc } -> rc == 0) is
+        Ok newIndex ->
+            nextEnvs = List.set envs newIndex { rc: 1, inner: Dict.empty {}, outer: Ok i }
+            { envs: nextEnvs, currentEnv: newIndex }
+            |> incEnv i
+
+        Err _ ->
+            newIndex = List.len envs
+            nextEnvs = List.append envs { rc: 1, inner: Dict.empty {}, outer: Ok i }
+            { envs: nextEnvs, currentEnv: newIndex }
+            |> incEnv i
+
+eval : Program -> (List Env, Value)
+eval = \program ->
+    evalWithEnvs program [newEnv {}]
+
+evalWithEnvs : Program, List Env -> (List Env, Value)
+evalWithEnvs = \program, envs ->
+    e0 = { envs, currentEnv: 0 }
     ({ envs: outEnvs }, outVal) = evalProgram e0 program
-    (okOrUnreachable (List.get outEnvs 0) "failed to load root env", outVal)
+    (outEnvs, outVal)
 
-evalProgram : Evaluator, List Index -> (Evaluator, Value)
+evalProgram : Evaluator, List Node -> (Evaluator, Value)
 evalProgram = \e0, statements ->
-    List.walkUntil statements (e0, Null) \(e1, _), index ->
-        (e2, val) = evalNode e1 index
+    List.walkUntil statements (e0, Null) \(e1, _), node ->
+        (e2, val) = evalNode e1 node
         when val is
             RetInt int -> Break (e2, Int int)
             RetTrue -> Break (e2, True)
             RetFalse -> Break (e2, False)
             RetNull -> Break (e2, Null)
-            Error e -> Break (e2, Error e)
+            Err e -> Break (e2, Err e)
             _ -> Continue (e2, val)
 
-evalBlock : Evaluator, List Index -> (Evaluator, Value)
+evalBlock : Evaluator, List Node -> (Evaluator, Value)
 evalBlock = \e0, statements ->
-    List.walkUntil statements (e0, Null) \(e1, _), index ->
-        (e2, val) = evalNode e1 index
+    List.walkUntil statements (e0, Null) \(e1, _), node ->
+        (e2, val) = evalNode e1 node
         when val is
             RetInt int -> Break (e2, RetInt int)
             RetTrue -> Break (e2, RetTrue)
             RetFalse -> Break (e2, RetFalse)
             RetNull -> Break (e2, RetNull)
-            Error e -> Break (e2, Error e)
+            Err e -> Break (e2, Err e)
             _ -> Continue (e2, val)
 
-evalNode : Evaluator, Index -> (Evaluator, Value)
-evalNode = \e0, index ->
-    node = loadOrCrash e0 index
+evalNode : Evaluator, Node -> (Evaluator, Value)
+evalNode = \e0, node ->
     when node is
         Int int -> (e0, Int int)
         True -> (e0, True)
         False -> (e0, False)
-        Not { expr } ->
+        Not expr ->
             (e1, val) = evalNode e0 expr
             when val is
                 True -> (e1, False)
                 False -> (e1, True)
                 Null -> (e1, True)
                 Int _ -> (e1, False)
-                Error e -> (e1, Error e)
-                _ -> (e1, Null)
+                Err e -> (e1, Err e)
+                _ ->
+                    type = valueToType val
+                    (e1, Err "unknown operator: !\(type)")
 
-        Negate { expr } ->
+        Negate expr ->
             (e1, val) = evalNode e0 expr
             when val is
                 Int int -> (e1, Int -int)
-                Error e -> (e1, Error e)
+                Err e -> (e1, Err e)
                 _ ->
                     type = valueToType val
-                    (e1, makeError "unknown operator: -\(type)")
+                    (e1, Err "unknown operator: -\(type)")
 
-        Plus { lhs, rhs } ->
+        Plus lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             when (lhsVal, rhsVal) is
                 (Int lhsInt, Int rhsInt) ->
                     (e2, Int (lhsInt + rhsInt))
 
-                (_, Error e) | (Error e, _) ->
-                    (e2, Error e)
+                (_, Err e) | (Err e, _) ->
+                    (e2, Err e)
 
                 _ ->
-                    (e2, infixError "+" lhsVal rhsVal)
+                    (e2, infixErr "+" lhsVal rhsVal)
 
-        Minus { lhs, rhs } ->
+        Minus lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             when (lhsVal, rhsVal) is
                 (Int lhsInt, Int rhsInt) ->
                     (e2, Int (lhsInt - rhsInt))
 
-                (_, Error e) | (Error e, _) ->
-                    (e2, Error e)
+                (_, Err e) | (Err e, _) ->
+                    (e2, Err e)
 
                 _ ->
-                    (e2, infixError "-" lhsVal rhsVal)
+                    (e2, infixErr "-" lhsVal rhsVal)
 
-        Product { lhs, rhs } ->
+        Product lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             when (lhsVal, rhsVal) is
                 (Int lhsInt, Int rhsInt) ->
                     (e2, Int (lhsInt * rhsInt))
 
-                (_, Error e) | (Error e, _) ->
-                    (e2, Error e)
+                (_, Err e) | (Err e, _) ->
+                    (e2, Err e)
 
                 _ ->
-                    (e2, infixError "*" lhsVal rhsVal)
+                    (e2, infixErr "*" lhsVal rhsVal)
 
-        Div { lhs, rhs } ->
+        Div lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             when (lhsVal, rhsVal) is
                 (Int lhsInt, Int rhsInt) ->
                     (e2, Int (lhsInt // rhsInt))
 
-                (_, Error e) | (Error e, _) ->
-                    (e2, Error e)
+                (_, Err e) | (Err e, _) ->
+                    (e2, Err e)
 
                 _ ->
-                    (e2, infixError "/" lhsVal rhsVal)
+                    (e2, infixErr "/" lhsVal rhsVal)
 
-        Lt { lhs, rhs } ->
+        Lt lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             when (lhsVal, rhsVal) is
                 (Int lhsInt, Int rhsInt) ->
                     (e2, (lhsInt < rhsInt) |> boolToValue)
 
-                (_, Error e) | (Error e, _) ->
-                    (e2, Error e)
+                (_, Err e) | (Err e, _) ->
+                    (e2, Err e)
 
                 _ ->
-                    (e2, infixError "<" lhsVal rhsVal)
+                    (e2, infixErr "<" lhsVal rhsVal)
 
-        Gt { lhs, rhs } ->
+        Gt lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             when (lhsVal, rhsVal) is
                 (Int lhsInt, Int rhsInt) ->
                     (e2, (lhsInt > rhsInt) |> boolToValue)
 
-                (_, Error e) | (Error e, _) ->
-                    (e2, Error e)
+                (_, Err e) | (Err e, _) ->
+                    (e2, Err e)
 
                 _ ->
-                    (e2, infixError ">" lhsVal rhsVal)
+                    (e2, infixErr ">" lhsVal rhsVal)
 
-        Eq { lhs, rhs } ->
+        Eq lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             (e2, (lhsVal == rhsVal) |> boolToValue)
 
-        NotEq { lhs, rhs } ->
+        NotEq lhs rhs ->
             (e1, lhsVal) = evalNode e0 lhs
             (e2, rhsVal) = evalNode e1 rhs
             (e2, (lhsVal != rhsVal) |> boolToValue)
@@ -254,7 +298,7 @@ evalNode = \e0, index ->
         If { cond, consequence } ->
             (e1, condVal) = evalNode e0 cond
             when condVal is
-                Error e -> (e1, Error e)
+                Err e -> (e1, Err e)
                 _ ->
                     if isTruthy condVal then
                         evalNode e1 consequence
@@ -264,7 +308,7 @@ evalNode = \e0, index ->
         IfElse { cond, consequence, alternative } ->
             (e1, condVal) = evalNode e0 cond
             when condVal is
-                Error e -> (e1, Error e)
+                Err e -> (e1, Err e)
                 _ ->
                     if isTruthy condVal then
                         evalNode e1 consequence
@@ -274,89 +318,75 @@ evalNode = \e0, index ->
         Block statements ->
             evalBlock e0 statements
 
-        Return { expr } ->
+        Return expr ->
             (e1, exprVal) = evalNode e0 expr
             when exprVal is
                 Int int -> (e1, RetInt int)
                 True -> (e1, RetTrue)
                 False -> (e1, RetFalse)
                 Null -> (e1, RetNull)
-                Error e -> (e1, Error e)
+                Err e -> (e1, Err e)
                 _ -> (e1, Null)
 
         Let { ident, expr } ->
-            identNode = loadOrCrash e0 ident
-            when identNode is
-                Ident identStr ->
-                    (e1, exprVal) = evalNode e0 expr
-                    when exprVal is
-                        Error e -> (e1, Error e)
-                        _ -> setIdent e1 identStr exprVal
+            (e1, exprVal) = evalNode e0 expr
+            when exprVal is
+                Err e -> (e1, Err e)
+                _ -> setVar e1 ident exprVal
 
-                _ -> crash "We already verified that we have an ident when parsing"
-
-        Ident identStr ->
-            (e0, getIdent e0.envs e0.currentEnv identStr)
+        Ident ident ->
+            (e0, getVar e0.envs e0.currentEnv ident)
 
         Fn { params, body } ->
-            (e0, Fn { paramsIndex: params, bodyIndex: body, envIndex: e0.currentEnv })
+            e1 = incEnv e0 e0.currentEnv
+            (e1, Fn { params, body, envIndex: e1.currentEnv })
 
         Call { fn, args } ->
             (e1, fnVal) = evalNode e0 fn
-            argsNode = loadOrCrash e1 args
-            when argsNode is
-                CallArgs callArgs ->
-                    (e2, argVals) = evalArgs e1 callArgs
-                    when (argVals, fnVal) is
-                        ([Error e], _) -> (e2, Error e)
-                        (_, Error e) -> (e2, Error e)
-                        (_, Fn { paramsIndex, bodyIndex, envIndex }) ->
-                            (params, body) =
-                                when (loadOrCrash e2 paramsIndex, loadOrCrash e2 bodyIndex) is
-                                    (IdentList paramList, Block statementList) ->
-                                        (paramList, statementList)
+            (e2, argVals) = evalArgs e1 args
+            when (argVals, fnVal) is
+                ([Err e], _) -> (e2, Err e)
+                (_, Err e) -> (e2, Err e)
+                (_, Fn { params, body: Block body, envIndex }) ->
+                    if List.len params == List.len argVals then
+                        oldIndex = e2.currentEnv
+                        e3 = wrapAndSetEnv e2 envIndex
+                        newIndex = e3.currentEnv
 
-                                    _ -> crash "We already verified that we have an ident list and body when parsing"
+                        (e6, _) =
+                            List.walk params (e3, 0) \(e4, i), param ->
+                                (e5, _) =
+                                    List.get argVals i
+                                    |> okOrUnreachable "size checked"
+                                    |> \argVal -> setVar e4 param argVal
+                                (e5, i + 1)
 
-                            if List.len params == List.len argVals then
-                                e2Index = e2.currentEnv
-                                e3 = wrapAndSetEnv e2 envIndex
+                        (e7, val) = evalProgram e6 body
+                        # reset environment back to before the function was run.
+                        e8 = decEnv e7 newIndex
+                        ({ e8 & currentEnv: oldIndex }, val)
+                    else
+                        (e2, Err "FUNCTION applied with wrong number of args")
 
-                                (e6, _) =
-                                    List.walk params (e3, 0) \(e4, i), param ->
-                                        (e5, _) = setIdent e4 param (okOrUnreachable (List.get argVals i) "size checked")
-                                        (e5, i + 1)
-
-                                (e7, val) = evalProgram e6 body
-                                # reset environment back to before the function was run.
-                                ({ e7 & currentEnv: e2Index }, val)
-                            else
-                                (e2, makeError "FUNCTION applied with wrong number of args")
-
-                        _ ->
-                            type = valueToType fnVal
-                            (e2, makeError "expected FUNCTION instead got \(type)")
-
-                _ -> crash "We already verified that we have call args when parsing"
-
-        IdentList _ -> crash "unreachable"
-        CallArgs _ -> crash "unreachable"
+                _ ->
+                    type = valueToType fnVal
+                    (e2, Err "expected FUNCTION instead got \(type)")
 
 evalArgs = \e0, args ->
     List.walkUntil args (e0, List.withCapacity (List.len args)) \(e1, exprs), arg ->
         (e2, argVal) = evalNode e1 arg
         when argVal is
-            Error e -> Break (e2, [Error e])
+            Err e -> Break (e2, [Err e])
             _ -> Continue (e2, List.append exprs argVal)
 
-infixError : Str, Value, Value -> Value
-infixError = \op, lhs, rhs ->
+infixErr : Str, Value, Value -> Value
+infixErr = \opStr, lhs, rhs ->
     lhsType = valueToType lhs
     rhsType = valueToType rhs
     if lhsType != rhsType then
-        makeError "type mismatch: \(lhsType) \(op) \(rhsType)"
+        Err "type mismatch: \(lhsType) \(opStr) \(rhsType)"
     else
-        makeError "unknown operator: \(lhsType) \(op) \(rhsType)"
+        Err "unknown operator: \(lhsType) \(opStr) \(rhsType)"
 
 isTruthy : Value -> Bool
 isTruthy = \val ->
@@ -366,12 +396,6 @@ isTruthy = \val ->
         Null -> Bool.false
         Int _ -> Bool.true
         _ -> crash "ret values are not truthy"
-
-loadOrCrash : Evaluator, Index -> Node
-loadOrCrash = \{ nodes }, i ->
-    when List.get nodes (Num.toNat i) is
-        Ok v -> v
-        Err _ -> crash "Node index out of bounds during eval"
 
 okOrUnreachable = \res, str ->
     when res is
@@ -538,8 +562,7 @@ expect
         "let identity = fn(x) { return x; 12; }; identity(5);",
         "let double = fn(x) { 2 * x;  }; double(5);",
         "fn(x) {x} (5)",
-        # TODO: why does this cause freeing a a pointer that wasn't allocated?
-        # "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
     ]
     out = List.map inputs runFromSource
 
@@ -548,7 +571,7 @@ expect
         Int 5,
         Int 10,
         Int 5,
-        # Int 20,
+        Int 20,
     ]
     out == expected
 

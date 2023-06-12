@@ -1,0 +1,18 @@
+<Project Sdk="MicroFocus.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <OutputName>MonkeyCompiler</OutputName>
+    <RootNamespace>MonkeyCompiler</RootNamespace>
+    <AutoGenerateBindingRedirects>False</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CompilerTester.cbl" />
+    <Compile Include="lib\Lexer.cbl" />
+    <Compile Include="lib\Token.cbl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="global.json" />
+  </ItemGroup>
+</Project>

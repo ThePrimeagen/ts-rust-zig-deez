@@ -7,6 +7,7 @@ and expression =
   | Identifier of identifier
   | Integer of int
   | Boolean of bool
+  | String of string
   | Prefix of
       { operator : Token.t
       ; right : expression
@@ -28,6 +29,16 @@ and expression =
   | Call of
       { fn : expression
       ; args : expression list
+      }
+  | Array of expression list
+  | Index of
+      { left : expression
+      ; index : expression
+      }
+  | Hash of (expression * expression) list
+  | Macro of
+      { parameters : identifier list
+      ; body : block
       }
 [@@deriving show { with_path = false }, sexp]
 

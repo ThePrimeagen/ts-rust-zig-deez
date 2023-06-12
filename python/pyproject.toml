@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "deez_py"
+version = "0.1.6"
+description = "A Python implementation of a lexical analyzer that provides comprehensive scanning, and lookahead capabilities. It also implements a parser that comes with awesome functionalities."
+authors = [
+    "Mahmoud Harmouch <business@wiseai.dev>",
+    "BatikanHyt <batikanhyt@gmail.com>",
+    "ThePrimeagen <the.primeagen@gmail.com>"
+]
+license = "GNU General Public License v3.0"
+readme = "README.rst"
+repository = "https://github.com/ThePrimeagen/ts-rust-zig-deez"
+homepage = "https://github.com/ThePrimeagen/ts-rust-zig-deez"
+documentation = ""
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+]
+keywords = ["python", "deez_py", "lexer"]
+packages = [
+    { include = "deez_py", from = "." },
+]
+include = [
+    "LICENSE",
+    "README.rst",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+flake8 = "^6.0.0"
+coverage = "^7.2.7"
+rstcheck = "^6.1.2"
+mypy = "^1.3.0"
+pytest-cov = "^4.1.0"
+tox = "^4.6.0"
+isort = "^5.12.0"
+black = "^23.3.0"
+pre-commit = "^3.3.2"
+bump2version = "^1.0.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
