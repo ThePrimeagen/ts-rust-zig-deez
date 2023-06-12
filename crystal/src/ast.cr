@@ -24,9 +24,11 @@ end
 class Identifier < Expression
   property value : String
 
-  def_equals @value
-
   def initialize(@value)
+  end
+
+  def ==(other : Identifier)
+    @value == other.value
   end
 end
 
@@ -37,8 +39,15 @@ class IntegerLiteral < Expression
   end
 end
 
+class StringLiteral < Expression
+  property value : String
+
+  def initialize(@value)
+  end
+end
+
 class BooleanLiteral < Expression
-  property value : Bool
+  property? value : Bool
 
   def initialize(@value)
   end
@@ -136,6 +145,15 @@ class Infix < Expression
   property right : Expression
 
   def initialize(@left, @operator, @right)
+  end
+end
+
+class If < Expression
+  property condition : Expression
+  property consequence : Block
+  property alternative : Block?
+
+  def initialize(@condition, @consequence, @alternative)
   end
 end
 
