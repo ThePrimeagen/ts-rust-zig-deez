@@ -14,15 +14,11 @@ evaluate(assignment(ident(Key), Exp), env(Inner, Outer), nil) :-
 evaluate(return(Exp), Env, Value) :-
     evaluate(Exp, Env, Value).
 
-evaluate(if(Cond, Left, _), Env, Value) :-
+evaluate(if(Cond, Left, Right), Env, Value) :-
     evaluate(Cond, Env, CValue),
-    \+ is_false(CValue),
-    evaluate(Left, Env, Value).
-
-evaluate(if(Cond, _, Right), Env, Value) :-
-    evaluate(Cond, Env, CValue),
-    is_false(CValue),
-    evaluate(Right, Env, Value).
+    (\+ is_false(CValue) ->  
+        evaluate(Left, Env, Value); 
+        evaluate(Right, Env, Value)).
 
 evaluate(function(Params, Body), env(Inner, _), function(Params, Body, Inner)).
 
@@ -54,13 +50,13 @@ evaluate(bool(X), _, X).
 evaluate(ident(Key), env(Inner, Outer), Value) :- bindings(Inner, Key, Value); bindings(Outer, Key, Value).
 
 evaluate_program_stms([], _, nil).
-evaluate_program_stms([S], Env, Value) :- evaluate(S, Env, Value).
-evaluate_program_stms([return(Expr)|_], Env, Value) :- evaluate(Expr, Env, Value).
+evaluate_program_stms([S], Env, Value) :- evaluate(S, Env, Value), !.
+evaluate_program_stms([return(Expr)|_], Env, Value) :- evaluate(Expr, Env, Value), !.
 evaluate_program_stms([S|Ss], Env, Value) :- evaluate(S, Env, _), evaluate_program_stms(Ss, Env, Value).
 
 evaluate_block_stms([], _, nil).
-evaluate_block_stms([S|_], Env, Value) :- evaluate(S, Env, Value), Value \= nil.
-evaluate_block_stms([S|Ss], Env, Value) :- evaluate(S, Env, nil), evaluate_block_stms(Ss, Env, Value).
+evaluate_block_stms([S|_], Env, Value) :- evaluate(S, Env, Value), Value \= nil, !.
+evaluate_block_stms([_|Ss], Env, Value) :-  evaluate_block_stms(Ss, Env, Value).
 
 evaluate_function_args([], _, []).
 evaluate_function_args([A|As], Env, [V|Vs]) :- evaluate(A, Env, V), evaluate_function_args(As, Env, Vs).
@@ -153,5 +149,3 @@ op_prec(add, 2).
 op_prec(sub, 2).
 op_prec(mult, 3).
 op_prec(div, 3).
-
-
