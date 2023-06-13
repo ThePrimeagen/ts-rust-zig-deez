@@ -45,22 +45,22 @@ struct Lexer {
         }
         switch currentChar {
             case "=":
-                let peakIndex = input.index(after: currentIndex)
-                guard peakIndex != input.endIndex else { return .bang }
-                switch input[peakIndex] {
+                let peekIndex = input.index(after: currentIndex)
+                guard peekIndex != input.endIndex else { return .bang }
+                switch input[peekIndex] {
                     case "=":
-                        currentIndex = peakIndex
+                        currentIndex = peekIndex
                         return .equal
                     default: return .assign
                 }
             case "+": return .plus
             case "-": return .minus
             case "!":
-                let peakIndex = input.index(after: currentIndex)
-                guard peakIndex != input.endIndex else { return .bang }
-                switch input[peakIndex] {
+                let peekIndex = input.index(after: currentIndex)
+                guard peekIndex != input.endIndex else { return .bang }
+                switch input[peekIndex] {
                     case "=":
-                        currentIndex = peakIndex
+                        currentIndex = peekIndex
                         return .notEqual
                     default: return .bang
                 }
