@@ -23,13 +23,13 @@ extension String {
 }
 
 struct Lexer {
-
     let input: String
-    lazy var currentIndex = input.startIndex
-    var currentChar: Character {
-        mutating get {
-            input[currentIndex]
-        }
+    private var currentIndex: String.Index
+    private var currentChar: Character { input[currentIndex] }
+
+    init(input: String) {
+        self.input = input
+        self.currentIndex = input.startIndex
     }
     
     mutating func nextToken() -> Token {
