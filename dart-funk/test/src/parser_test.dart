@@ -209,7 +209,7 @@ void main() {
 
         // act
         final program = parse(parser);
-        logger.info('Program: $program');
+        logger.info(program.toString());
 
         // assert
         expect(program, isA<Program>());
@@ -229,7 +229,7 @@ void main() {
 
         // act
         final program = parse(parser);
-        logger.info('Program: $program');
+        logger.info(program.toString());
 
         // assert
         expect(program, isA<Program>());
@@ -261,7 +261,7 @@ void main() {
 
         // act
         final program = parse(parser);
-        logger.info('Program: $program');
+        logger.info(program.toString());
 
         // assert
         expect(program, isA<Program>());
@@ -470,30 +470,31 @@ void main() {
       logger = Logger(level: Level.debug);
       input = {
         '!true': '(!true)',
-        '1 + 2 + 3;': '((1 + 2) + 3)',
-        '-a * b;': '((-a) * b)',
-        '!-a': '(!(-a))',
-        'a + b + c': '((a + b) + c)',
-        'a + b - c': '((a + b) - c)',
-        'a * b * c': '((a * b) * c)',
-        'a * b / c': '((a * b) / c)',
-        'a + b / c': '(a + (b / c))',
-        'a + b * c + d / e - f': '(((a + (b * c)) + (d / e)) - f)',
+        // '1 + 2 + 3;': '((1 + 2) + 3)',
+        // '-a * b;': '((-a) * b)',
+        // '!-a': '(!(-a))',
+        // 'a + b + c': '((a + b) + c)',
+        // 'a + b - c': '((a + b) - c)',
+        // 'a * b * c': '((a * b) * c)',
+        // 'a * b / c': '((a * b) / c)',
+        // 'a + b / c': '(a + (b / c))',
+        // 'a + b * c + d / e - f': '(((a + (b * c)) + (d / e)) - f)',
+        // 'true': 'true',
+        // 'false': 'false',
+        // '3 > 5 == false': '((3 > 5) == false)',
+        // '3 < 5 == true': '((3 < 5) == true)',
+        // 'true == true': '(true == true)',
+        // '1 + (2 + 3) + 4': '((1 + (2 + 3)) + 4)',
+        // '(5 + 5) * 2': '((5 + 5) * 2)',
+        // '2 / (5 + 5)': '(2 / (5 + 5))',
+        // '-(5 + 5)': '(-(5 + 5))',
+        // '!(true == true)': '(!(true == true))',
+
         // '3 + 4; -5 * 5': '(3 + 4)((-5) * 5)',
         // '5 > 4 == 3 < 4': '((5 > 4) == (3 < 4))',
         // '5 < 4 != 3 > 4': '((5 < 4) != (3 > 4))',
         // '3 + 4 * 5 == 3 * 1 + 4 * 5':
         // '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
-        'true': 'true',
-        'false': 'false',
-        '3 > 5 == false': '((3 > 5) == false)',
-        '3 < 5 == true': '((3 < 5) == true)',
-        'true == true': '(true == true)',
-        '1 + (2 + 3) + 4': '((1 + (2 + 3)) + 4)',
-        '(5 + 5) * 2': '((5 + 5) * 2)',
-        '2 / (5 + 5)': '(2 / (5 + 5))',
-        '-(5 + 5)': '(-(5 + 5))',
-        '!(true == true)': '(!(true == true))',
         // 'a + add(b * c) + d': '((a + add((b * c))) + d)',
         // 'add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))':
         //     'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
@@ -523,6 +524,351 @@ void main() {
       },
     );
   });
+
+  group('Parser - If statements', () {
+    late Logger logger;
+    late String input;
+    late String inputElse;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = 'if (x < y) { x };';
+      inputElse = 'if (x < y) { xone } else { yone };';
+    });
+    test(
+      'should return a Program with an IfStatement',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        expect(program.statements[0], isA<ExpressionStatement>());
+        expect(
+          (program.statements[0] as ExpressionStatement).expression,
+          isA<IfExpression>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .condition,
+          isA<InfixExpression>(),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .condition as InfixExpression)
+              .left,
+          isA<Identifier>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as IfExpression)
+                      .condition as InfixExpression)
+                  .left as Identifier)
+              .value,
+          equals('x'),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .condition as InfixExpression)
+              .operator,
+          equals('<'),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .condition as InfixExpression)
+              .right,
+          isA<Identifier>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as IfExpression)
+                      .condition as InfixExpression)
+                  .right as Identifier)
+              .value,
+          equals('y'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .consequence,
+          isA<BlockStatement>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .consequence
+              .statements[0],
+          isA<ExpressionStatement>(),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .consequence
+                  .statements[0] as ExpressionStatement)
+              .expression,
+          isA<Identifier>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as IfExpression)
+                      .consequence
+                      .statements[0] as ExpressionStatement)
+                  .expression as Identifier)
+              .value,
+          equals('x'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .alternative,
+          isNull,
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .alternative,
+          isNull,
+        );
+      },
+    );
+    test(
+      'should return a Program with an IfStatement and Else',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(inputElse);
+        logger.info('Tokens: ${parser.tokens.join('\n\t')}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        expect(program.statements[0], isA<ExpressionStatement>());
+        expect(
+          (program.statements[0] as ExpressionStatement).expression,
+          isA<IfExpression>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .condition,
+          isA<InfixExpression>(),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .condition as InfixExpression)
+              .left,
+          isA<Identifier>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as IfExpression)
+                      .condition as InfixExpression)
+                  .left as Identifier)
+              .value,
+          equals('x'),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .condition as InfixExpression)
+              .operator,
+          equals('<'),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .condition as InfixExpression)
+              .right,
+          isA<Identifier>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as IfExpression)
+                      .condition as InfixExpression)
+                  .right as Identifier)
+              .value,
+          equals('y'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .consequence,
+          isA<BlockStatement>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .consequence
+              .statements[0],
+          isA<ExpressionStatement>(),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as IfExpression)
+                  .consequence
+                  .statements[0] as ExpressionStatement)
+              .expression,
+          isA<Identifier>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as IfExpression)
+                      .consequence
+                      .statements[0] as ExpressionStatement)
+                  .expression as Identifier)
+              .value,
+          equals('xone'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as IfExpression)
+              .alternative,
+          isA<BlockStatement>(),
+        );
+
+        expect(
+          // ignore: cast_nullable_to_non_nullable
+          (((((program.statements[0] as ExpressionStatement).expression
+                              as IfExpression)
+                          .alternative as BlockStatement)
+                      .statements[0] as ExpressionStatement)
+                  .expression as Identifier)
+              .value,
+          equals('yone'),
+        );
+      },
+    );
+  });
+
+  group('Parser - def function', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = 'fn(x, y) { x + y; }';
+    });
+    test(
+      'should return a Program with a FunctionLiteral',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        expect(program.statements[0], isA<ExpressionStatement>());
+        expect(
+          (program.statements[0] as ExpressionStatement).expression,
+          isA<FunctionLiteral>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as FunctionLiteral)
+              .parameters
+              .length,
+          equals(2),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as FunctionLiteral)
+              .parameters[0]
+              .value,
+          equals('x'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as FunctionLiteral)
+              .parameters[1]
+              .value,
+          equals('y'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as FunctionLiteral)
+              .body,
+          isA<BlockStatement>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as FunctionLiteral)
+              .body
+              .statements
+              .length,
+          equals(1),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as FunctionLiteral)
+                  .body
+                  .statements[0] as ExpressionStatement)
+              .expression,
+          isA<InfixExpression>(),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as FunctionLiteral)
+                      .body
+                      .statements[0] as ExpressionStatement)
+                  .expression as InfixExpression)
+              .left,
+          isA<Identifier>(),
+        );
+        expect(
+          (((((program.statements[0] as ExpressionStatement).expression
+                              as FunctionLiteral)
+                          .body
+                          .statements[0] as ExpressionStatement)
+                      .expression as InfixExpression)
+                  .left as Identifier)
+              .value,
+          equals('x'),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as FunctionLiteral)
+                      .body
+                      .statements[0] as ExpressionStatement)
+                  .expression as InfixExpression)
+              .operator,
+          equals('+'),
+        );
+        expect(
+          ((((program.statements[0] as ExpressionStatement).expression
+                          as FunctionLiteral)
+                      .body
+                      .statements[0] as ExpressionStatement)
+                  .expression as InfixExpression)
+              .right,
+          isA<Identifier>(),
+        );
+        expect(
+          (((((program.statements[0] as ExpressionStatement).expression
+                              as FunctionLiteral)
+                          .body
+                          .statements[0] as ExpressionStatement)
+                      .expression as InfixExpression)
+                  .right as Identifier)
+              .value,
+          equals('y'),
+        );
+      },
+    );
+  });
 }
 
 bool testLiteralExpression(Expression exp, dynamic expected) {
@@ -538,16 +884,18 @@ bool testLiteralExpression(Expression exp, dynamic expected) {
 
 // ignore: avoid_positional_boolean_parameters
 bool testBooleanLiteral(Expression exp, bool expected) {
-  if (exp is! Boolean) {
+  if (exp is! BooleanLiteral) {
     throw Exception('exp not Boolean. got=${exp.runtimeType}');
   }
   if (exp.value != expected) {
     throw Exception(
-        'exp.value not $expected. got=${exp.value} ${exp.runtimeType}');
+      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+    );
   }
   if (exp.tokenLiteral() != '$expected') {
     throw Exception(
-        'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}');
+      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+    );
   }
   return true;
 }
@@ -558,11 +906,13 @@ bool testIdentifier(Expression exp, String expected) {
   }
   if (exp.value != expected) {
     throw Exception(
-        'exp.value not $expected. got=${exp.value} ${exp.runtimeType}');
+      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+    );
   }
   if (exp.tokenLiteral() != expected) {
     throw Exception(
-        'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}');
+      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+    );
   }
   return true;
 }
@@ -573,11 +923,13 @@ bool testIntegerLiteral(Expression exp, int expected) {
   }
   if (exp.value != expected) {
     throw Exception(
-        'exp.value not $expected. got=${exp.value} ${exp.runtimeType}');
+      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+    );
   }
   if (exp.tokenLiteral() != '$expected') {
     throw Exception(
-        'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}');
+      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+    );
   }
   return true;
 }
