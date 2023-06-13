@@ -1,14 +1,13 @@
 :- module(evaluator, [evaluate/2]).
 :- dynamic bindings/3.
 
-
 evaluate(program(Stms), Value) :-
     evaluate_program_stms(Stms, env(program, nil), Value).
 
 evaluate(block(Stms), Env, Value) :-
     evaluate_block_stms(Stms, Env, Value).
 
-evaluate(assignment(ident(Key), Exp), env(Inner, Outer), nil) :- 
+evaluate(assignment(ident(Key), Exp), env(Inner, Outer), nil) :-
     evaluate(Exp, env(Inner, Outer), Value),
     assert_unique(Inner, Key, Value).
 
@@ -17,12 +16,12 @@ evaluate(return(Exp), Env, Value) :-
 
 evaluate(if(Cond, Left, _), Env, Value) :-
     evaluate(Cond, Env, CValue),
-    truthy(CValue, true),
+    \+ is_false(CValue),
     evaluate(Left, Env, Value).
 
 evaluate(if(Cond, _, Right), Env, Value) :-
     evaluate(Cond, Env, CValue),
-    truthy(CValue, false),
+    is_false(CValue),
     evaluate(Right, Env, Value).
 
 evaluate(function(Params, Body), env(Inner, _), function(Params, Body, Inner)).
@@ -109,45 +108,42 @@ evaluate_op(op(mult, Left, Right), Env, Value) :-
     evaluate(Right, Env, RValue),
     Value is LValue * RValue.
 
-assert_unique(Env, Key, Value) :- 
+assert_unique(Env, Key, Value) :-
     bindings(Env, Key, PValue),
-    retract(bindings(Env, Key, PValue)), 
+    retract(bindings(Env, Key, PValue)),
     assert(bindings(Env, Key, Value)), !.
 
-assert_unique(Env, Key, Value) :- 
+assert_unique(Env, Key, Value) :-
     assert((bindings(Env, Key, Value))).
 
-assert_all(_, [], []). 
-assert_all(Env, [ident(K)|Ks], [V|Vs]) :- 
+assert_all(_, [], []).
+assert_all(Env, [ident(K)|Ks], [V|Vs]) :-
     assert_unique(Env, K, V),
     assert_all(Env, Ks, Vs).
 
-truthy(nil, false).
-truthy(true, true).
-truthy(false, false).
-truthy(_, true).
+do_not(A, true) :- is_false(A).
+do_not(A, false) :- \+ is_false(A).
 
-do_not(true, false).
-do_not(false, true).
-do_not(nil, true).
-do_not(_, false).
+is_false(A) :- A = false; A = nil.
 
 do_neg(A, NA) :- integer(A), NA is -A.
-do_neg(_, nil).
+do_neg(A, nil) :- \+ integer(A).
 
-is_eq(A, A, true).
+is_eq(A, A, true) :- !.
 is_eq(_, _, false).
 
-is_neq(A, A, false).
+is_neq(A, A, false) :- !.
 is_neq(_, _, true).
 
-is_lt(A, B, true) :- integer(A), integer(B), A < B, !.
-is_lt(A, B, false) :- integer(A), integer(B), !.
-is_lt(_, _, nil).
+is_lt(A, B, true) :- are_integers(A, B), A < B.
+is_lt(A, B, false) :- are_integers(A, B), A >= B.
+is_lt(A, B, nil) :- \+ are_integers(A, B).
 
-is_gt(A, B, true) :- integer(A), integer(B), A > B, !.
-is_gt(A, B, false) :- integer(A), integer(B), !.
-is_gt(_, _, nil).
+is_gt(A, B, true) :- are_integers(A, B), A > B.
+is_gt(A, B, false) :- are_integers(A, B), A =< B.
+is_gt(A, B, nil) :- \+ are_integers(A, B).
+
+are_integers(A, B) :- integer(A), integer(B).
 
 op_prec(eq, 0).
 op_prec(neq, 0).
@@ -157,3 +153,5 @@ op_prec(add, 2).
 op_prec(sub, 2).
 op_prec(mult, 3).
 op_prec(div, 3).
+
+

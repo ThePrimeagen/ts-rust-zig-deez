@@ -156,7 +156,17 @@ test(evaluate_function) :-
       let addTwo = newAdder(2);
       let x = 3;
       addTwo(2);
-      return x;`, 3).
+      return x;`, 3),
+    test_evaluator(`
+      let counter = fn(x) {
+        if (x > 100) {
+          return true;
+        } else {
+          let foobar = 9999;
+          counter(x + 1);
+        }
+      };
+      counter(0);`, true).
 
 test_evaluator(StringCodes, Value) :-
     once(lex(StringCodes, Token)), 
