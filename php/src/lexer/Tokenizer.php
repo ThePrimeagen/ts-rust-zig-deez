@@ -40,11 +40,14 @@ class Tokenizer
         $ch = $this->ch;
 
         $token = match (true) {
+            $ch === "[" => new Token(TokenType::LeftBracket),
+            $ch === "]" => new Token(TokenType::RightBracket),
             $ch === "{" => new Token(TokenType::LeftBrace),
             $ch === "}" => new Token(TokenType::RightBrace),
             $ch === "(" => new Token(TokenType::LeftParen),
             $ch === ")" => new Token(TokenType::RightParen),
             $ch === "," => new Token(TokenType::Comma),
+            $ch === ":" => new Token(TokenType::Colon),
             $ch === ";" => new Token(TokenType::Semicolon),
             $ch === "=" => $this->readAssignOrEqualsToken(),
             $ch === "+" => new Token(TokenType::Plus),
@@ -56,7 +59,7 @@ class Tokenizer
             $ch === ">" => new Token(TokenType::GreaterThan),
             $ch === '"' => $this->readStringToken(),
             //            $ch === "$" => new Token(TokenType::Ident, $this->readWord()), // kidding
-            $ch === "\0" => new Token(TokenType::Eof),
+            $ch === "\0" => new Token(TokenType::EOF),
             Tokenizer::isLetter($ch) => $this->readWordToken(),
             ctype_digit($ch) => new Token(TokenType::Integer, $this->readInteger()),
             default => new Token(TokenType::Illegal, $ch),

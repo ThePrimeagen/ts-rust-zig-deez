@@ -90,7 +90,7 @@ class Parser
     {
         $program = new Program();
         try {
-            while ($this->currentToken->type !== TokenType::Eof) {
+            while ($this->currentToken->type !== TokenType::EOF) {
                 $statement = $this->parseStatement();
 
                 if ($statement !== null) {
@@ -380,7 +380,7 @@ class Parser
         $statements = [];
 
         $this->nextToken();
-        while ($this->currentToken->type !== TokenType::RightBrace && $this->currentToken->type !== TokenType::Eof) {
+        while ($this->currentToken->type !== TokenType::RightBrace && $this->currentToken->type !== TokenType::EOF) {
             $statement = $this->parseStatement();
             if ($statement !== null) {
                 $statements[] = $statement;
