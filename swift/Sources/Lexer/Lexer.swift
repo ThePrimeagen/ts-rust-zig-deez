@@ -26,15 +26,7 @@ struct Lexer {
     let input: String
     private var currentIndex: String.Index
     private var currentChar: Character { input[currentIndex] }
-    private var keywords: [String : Token] = [
-        "fn" : .function,
-        "let" : .let,
-        "true" : .true,
-        "false" : .false,
-        "if" : .if,
-        "else" : .else,
-        "return" : .return
-    ]
+    private var keywords: [String : Token] = Token.defaultKeywords
 
     init(input: String) {
         self.input = input
@@ -86,11 +78,7 @@ struct Lexer {
             case let char where char.isValidIdentifier:
                 let ident = input.identifier(from: currentIndex)
                 currentIndex = input.index(currentIndex, offsetBy: ident.count - 1)
-                if let token = keywords[ident] {
-                    return token
-                } else {
-                    return .ident(ident)
-                }
+                return keywords[ident, default: .ident(ident)]
             case let char where char.isNumber:
                 let numString = input.numberString(from: currentIndex)
                 guard let num = Int(numString) else {

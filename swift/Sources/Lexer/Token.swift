@@ -59,4 +59,16 @@ enum Token: Equatable {
             case .return: return "return"
         }
     }
+
+    static var defaultKeywords: [String : Token] {
+        return [
+            "fn" : .function,
+            "let" : .let,
+            "true" : .true,
+            "false" : .false,
+            "if" : .if,
+            "else" : .else,
+            "return" : .return
+        ]
+    }
 }
