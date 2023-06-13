@@ -44,8 +44,30 @@ struct Lexer {
             }
         }
         switch currentChar {
-            case "=": return .assign
+            case "=":
+                let peakIndex = input.index(after: currentIndex)
+                guard peakIndex != input.endIndex else { return .bang }
+                switch input[peakIndex] {
+                    case "=":
+                        currentIndex = peakIndex
+                        return .equal
+                    default: return .assign
+                }
             case "+": return .plus
+            case "-": return .minus
+            case "!":
+                let peakIndex = input.index(after: currentIndex)
+                guard peakIndex != input.endIndex else { return .bang }
+                switch input[peakIndex] {
+                    case "=":
+                        currentIndex = peakIndex
+                        return .notEqual
+                    default: return .bang
+                }
+            case "/": return .slash
+            case "*": return .asterisk
+            case "<": return .lessThan
+            case ">": return .greaterThan
             case "(": return .lParen
             case ")": return .rParen
             case "{": return .lSquirly
@@ -58,6 +80,11 @@ struct Lexer {
                 switch ident {
                     case "fn": return .function
                     case "let": return .let
+                    case "true": return .true
+                    case "false": return .false
+                    case "if": return .if
+                    case "else": return .else
+                    case "return": return .return
                     default: return .ident(ident)
                 }
             case let char where char.isNumber:

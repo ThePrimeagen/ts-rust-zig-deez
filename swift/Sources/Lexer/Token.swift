@@ -9,22 +9,24 @@ enum Token: Equatable {
     case plus
     case minus
     case bang
-    case asterisk
     case slash
+    case asterisk
+    case lessThan
+    case greaterThan
+    case assign
     case equal
     case notEqual
-    case assign
-    case `true`
-    case `false`
-    case `if`
-    case `else`
-    case `return`
     case lParen
     case rParen
     case lSquirly
     case rSquirly
     case function
     case `let`
+    case `true`
+    case `false`
+    case `if`
+    case `else`
+    case `return`
 
     var literal: String {
         switch self {
@@ -35,19 +37,21 @@ enum Token: Equatable {
             case .comma: return ","
             case .semi: return ";"
             case .plus: return "+"
+            case .minus: return "-"
+            case .bang: return "!"
+            case .slash: return "/"
+            case .asterisk: return "*"
+            case .lessThan: return "<"
+            case .greaterThan: return ">"
             case .assign: return "="
+            case .equal: return "=="
+            case .notEqual: return "!="
             case .lParen: return "("
             case .rParen: return ")"
             case .lSquirly: return "{"
             case .rSquirly: return "}"
             case .function: return "fn"
             case .let: return "let"
-            case .minus: return "-"
-            case .bang: return "!"
-            case .asterisk: return "*"
-            case .slash: return "/"
-            case .equal: return "=="
-            case .notEqual: return "!="
             case .true: return "true"
             case .false: return "false"
             case .if: return "if"
