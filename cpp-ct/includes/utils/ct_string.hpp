@@ -38,13 +38,11 @@ namespace mk {
         using const_iterator = CharT const*;
 
         constexpr BasicCtString(const CharT (&str)[N]) noexcept
-            : m_data(str), m_size(N - 1)
-        {}
+            : m_data{}
+        {
+            std::copy_n(str, m_data.size(), m_data.begin());
+        }
         
-        constexpr BasicCtString(std::basic_string_view<CharT> str) noexcept
-            : m_data(str.data()), m_size(str.size())
-        {}
-
         constexpr BasicCtString(const BasicCtString&) noexcept = default;
         constexpr BasicCtString(BasicCtString&&) noexcept = default;
         constexpr BasicCtString& operator=(const BasicCtString&) noexcept = default;
@@ -52,11 +50,11 @@ namespace mk {
         constexpr ~BasicCtString() noexcept = default;
 
         [[nodiscard]] constexpr const_iterator begin() const noexcept {
-            return m_data;
+            return m_data.begin();
         }
 
         [[nodiscard]] constexpr const_iterator end() const noexcept {
-            return m_data + m_size;
+            return m_data.end();
         }
 
         [[nodiscard]] constexpr const_reference operator[](size_type pos) const noexcept {
@@ -64,11 +62,11 @@ namespace mk {
         }
 
         [[nodiscard]] constexpr size_type size() const noexcept {
-            return m_size;
+            return m_data.size();
         }
 
         [[nodiscard]] constexpr const_pointer data() const noexcept {
-            return m_data;
+            return m_data.data();
         }
 
         template<typename T>
@@ -92,22 +90,19 @@ namespace mk {
         }
 
         constexpr auto view(size_type pos = 0, size_type count = std::string::npos) const noexcept {
-            return std::basic_string_view<CharT>(m_data + pos, count);
+            return std::basic_string_view<CharT>(data() + pos, count);
         }
 
         friend std::ostream& operator<<(std::ostream& os, BasicCtString const& str) {
-            return os << std::string_view(str.m_data, str.m_size);
+            return os << std::string_view(str.data(), str.size());
         }
 
-        const_pointer m_data;
-        std::size_t m_size;
+        std::array<CharT, N - 1> m_data;
     };
 
     template<typename CharT, std::size_t N>
     BasicCtString(const CharT (&)[N]) -> BasicCtString<CharT, N>;
-
-    template<typename CharT>
-    BasicCtString(std::basic_string_view<CharT>) -> BasicCtString<CharT, 0>;
+    
 
     template<std::size_t N>
     struct CtString: BasicCtString<char, N> {

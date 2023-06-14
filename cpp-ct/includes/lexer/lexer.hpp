@@ -30,17 +30,15 @@ namespace mk {
 
     } // namespace detail
 
-    template<std::size_t N>
+    template<CtString source>
     struct Lexer {
-        using source_type       = CtString<N>;
+        using source_type       = std::decay_t<decltype(source)>;
         using value_type        = typename source_type::value_type;
         using size_type         = std::size_t;
         using difference_type   = std::ptrdiff_t;
         using position_type     = typename Token::position_type;
 
-        constexpr Lexer(source_type source) noexcept
-            : m_source(source)
-        {
+        constexpr Lexer() noexcept {
             cache_newlines_for_lookup();
         }
 
@@ -51,21 +49,21 @@ namespace mk {
         constexpr ~Lexer() noexcept = default;
 
         [[nodiscard]] constexpr bool eof() const noexcept {
-            return m_current_cursor >= m_source.size();
+            return m_current_cursor >= source.size();
         }
 
         [[nodiscard]] constexpr value_type current() const noexcept {
-            return m_source[m_current_cursor];
+            return source[m_current_cursor];
         }
 
         [[nodiscard]] constexpr value_type peek(size_type k = 1u) const noexcept {
-            auto const index = std::min(cursor_position() + k, m_source.size());
-            if (index == m_source.size()) return static_cast<value_type>(0);
-            return m_source[index];
+            auto const index = std::min(cursor_position() + k, source.size());
+            if (index == source.size()) return static_cast<value_type>(0);
+            return source[index];
         }
 
         constexpr void skip(size_type n = 1u) noexcept {
-            set_cursor(std::min(cursor_position() + n, m_source.size()));
+            set_cursor(std::min(cursor_position() + n, source.size()));
         }
 
         constexpr void skip_while(auto&& predicate) noexcept {
@@ -134,7 +132,7 @@ namespace mk {
         }
         
         [[nodiscard]] constexpr auto lex(bool skip_whitespace = true) noexcept {
-            std::array<Token, N> tokens{};
+            std::array<Token, source.size()> tokens{};
             lex(tokens, skip_whitespace);
             return tokens;
         }
@@ -194,7 +192,7 @@ namespace mk {
                     ++end;
                     skip();
                 }
-                return Token{ TokenKind::string_literal, m_source.view(start, end - start), line, col };
+                return Token{ TokenKind::string_literal, source.view(start, end - start), line, col };
             }
 
             [[nodiscard]] constexpr Token try_lex_single_line_comment() noexcept {
@@ -202,7 +200,7 @@ namespace mk {
                     auto [line, col] = calculate_line_and_col();
                     skip(2);
                     auto const [start, end] = match_while([](auto c) { return !detail::is_newline(c); });
-                    return Token{ TokenKind::comment, m_source.view(start, end - start), line, col };
+                    return Token{ TokenKind::comment, source.view(start, end - start), line, col };
                 }
                 return make_unknown_token();
             }
@@ -221,7 +219,7 @@ namespace mk {
                         ++end;
                         skip();
                     }
-                    return Token{ TokenKind::comment, m_source.view(start, end - start), line, col };
+                    return Token{ TokenKind::comment, source.view(start, end - start), line, col };
                 }
                 return make_unknown_token();
             }
@@ -230,14 +228,14 @@ namespace mk {
                 auto [line, col] = calculate_line_and_col();
                 auto const [start, end] = match_while([](auto c) { return detail::is_newline(c); });
                 if (start == end) return make_unknown_token();
-                return Token{ TokenKind::newline, m_source.view(start, end - start), line, col };
+                return Token{ TokenKind::newline, source.view(start, end - start), line, col };
             }
             
             [[nodiscard]] constexpr Token try_lex_space() noexcept {
                 auto [line, col] = calculate_line_and_col();
                 auto const [start, end] = match_while([](auto c) { return detail::is_space(c); });
                 if (start == end) return make_unknown_token();
-                return Token{ TokenKind::whitespace, m_source.view(start, end - start), line, col };
+                return Token{ TokenKind::whitespace, source.view(start, end - start), line, col };
             }
             
             template<typename Fn>
@@ -253,7 +251,7 @@ namespace mk {
                 auto [line, col] = calculate_line_and_col();
                 {
                     #define MK_PUNCTUATOR_MULTI_CHAR(name, str, lookahead) \
-                        if (m_source.view(cursor_position(), lookahead + 1) == str) { \
+                        if (source.view(cursor_position(), lookahead + 1) == str) { \
                             return Token{ TokenKind::name, str, line, col }; \
                         }
                         
@@ -263,7 +261,7 @@ namespace mk {
                 {
                     switch(current()) {
                         #define MK_PUNCTUATOR_SINGLE_CHAR(name, c) \
-                            case c: return Token{ TokenKind::name, m_source.view(cursor_position(), 1), line, col };
+                            case c: return Token{ TokenKind::name, source.view(cursor_position(), 1), line, col };
                         #include <syntax/tokens.def>
                     }
 
@@ -281,7 +279,7 @@ namespace mk {
             
             if (start == end) return make_unknown_token();
 
-            return Token{ TokenKind::identifier, m_source.view(start, end - start), line, col };
+            return Token{ TokenKind::identifier, source.view(start, end - start), line, col };
         }
 
         [[nodiscard]] constexpr Token try_lex_number() noexcept {
@@ -293,7 +291,7 @@ namespace mk {
 
             if (start == end) return make_unknown_token();
 
-            return Token{ TokenKind::int_literal, m_source.view(start, end - start), line, col };
+            return Token{ TokenKind::int_literal, source.view(start, end - start), line, col };
         }
 
         [[nodiscard]] constexpr Token try_lex_keyword() noexcept {
@@ -305,7 +303,7 @@ namespace mk {
 
             if (start == end) return make_unknown_token();
 
-            auto const lexeme = m_source.view(start, end - start);
+            auto const lexeme = source.view(start, end - start);
 
             if (lexeme == "true") return Token{ TokenKind::bool_literal, lexeme, line, col };
             else if (lexeme == "false") return Token{ TokenKind::bool_literal, lexeme, line, col };
@@ -323,8 +321,8 @@ namespace mk {
         constexpr void cache_newlines_for_lookup() noexcept {
             m_cached_newlines_size = 1;
             m_cached_newlines[0] = 0;
-            for (size_type i{1}; i < m_source.size(); ++i) {
-                if (m_source[i] == '\n') {
+            for (size_type i{1}; i < source.size(); ++i) {
+                if (source[i] == '\n') {
                     m_cached_newlines[m_cached_newlines_size++] = static_cast<position_type>(i);
                 }
             }
@@ -352,9 +350,8 @@ namespace mk {
         }
 
     private:
-        source_type m_source;
         size_type m_current_cursor{};
-        std::array<position_type, N + 1> m_cached_newlines{};
+        std::array<position_type, source.size()> m_cached_newlines{};
         size_type m_cached_newlines_size{};
     };
 
