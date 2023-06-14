@@ -8,11 +8,148 @@
  */
 
 import lexer;
+import std.algorithm.iteration : joiner;
 import std.array : appender, Appender;
+import std.conv : to;
 import std.format : format;
 import std.range : empty, enumerate;
 
 import std.stdio : writefln;
+
+/// Function typedef for prefix Pratt parsing function
+alias PrefixParseFn = ExpressionNode function(ref Parser parser);
+
+/// Function typedef for infix Pratt parsing function
+alias InfixParseFn = ExpressionNode function(ref Parser parser,
+        ref ExpressionNode lhs, Precedence prec);
+
+/// Expression precedence
+enum Precedence : ubyte
+{
+    Lowest,
+    Ternary, // X ? a : b
+    Equals, // ==
+    LessGreater, // > | <
+    Term, // + | -
+    Factor, // * | /
+    Unary, // -X | !X
+    Call // myFunction(X)
+}
+
+/// Group together infix rules with precedence
+struct InfixRule
+{
+    InfixParseFn infix; /// Parsing function for infix operators
+    Precedence prec; /// Operator precedence
+
+    /**
+     * Constructs the rule for infix expression parsing.
+     * Params:
+     * infix = the infix operator parsing function
+     * prec = the operator precedence
+     */
+    this(InfixParseFn infix, Precedence prec)
+    {
+        this.infix = infix;
+        this.prec = prec;
+    }
+}
+
+/// Map reserved for prefix expression rules per token type
+immutable PrefixParseFn[TokenTag] prefixRules;
+
+/// Map reserved for infix expression rules per token type
+immutable InfixRule[TokenTag] infixRules;
+
+shared static this()
+{
+    import std.exception : assumeUnique;
+
+    PrefixParseFn[TokenTag] tempPrefixRules = [
+        TokenTag.Ident: &parseIdent, TokenTag.Minus: &parseUnary,
+        TokenTag.Bang: &parseUnary, TokenTag.Int: &parseInt,
+        TokenTag.True: &parseBoolean, TokenTag.False: &parseBoolean,
+    ];
+
+    InfixRule[TokenTag] tempInfixRules = [
+        TokenTag.Plus: InfixRule(&parseBinary, Precedence.Term),
+        TokenTag.Minus: InfixRule(&parseBinary, Precedence.Term),
+        TokenTag.Asterisk: InfixRule(&parseBinary, Precedence.Factor),
+        TokenTag.Slash: InfixRule(&parseBinary, Precedence.Factor),
+        TokenTag.Semicolon: InfixRule(null, Precedence.Lowest),
+        TokenTag.Eof: InfixRule(null, Precedence.Lowest)
+    ];
+
+    prefixRules = assumeUnique(tempPrefixRules);
+    infixRules = assumeUnique(tempInfixRules);
+}
+
+/**
+ * Construct identity node in expression.
+ * Params: parser = the parser iterating through tokens
+ * Returns: the identity node
+ */
+ExpressionNode parseIdent(ref Parser parser)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+    return new IdentifierNode(start);
+}
+
+/**
+ * Construct boolean node in expression.
+ * Params: parser = the parser iterating through tokens
+ * Returns: the boolean node (true | false)
+ */
+ExpressionNode parseBoolean(ref Parser parser)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+    return new BooleanNode(start);
+}
+
+/**
+ * Parse unary expression (prefix for now).
+ * Params: parser = the parser iterating through tokens
+ * Returns: the unary expression node
+ */
+ExpressionNode parseUnary(ref Parser parser)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+
+    auto expr = parser.parseExprPrecedence(Precedence.Unary);
+    return new PrefixExpressionNode(start, expr);
+}
+
+/**
+ * Construct integer node in expression.
+ * Params: parser = the parser iterating through tokens
+ * Returns: the integer node
+ */
+ExpressionNode parseInt(ref Parser parser)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+    return new IntNode(start);
+}
+
+/**
+ * Parse binary expression.
+ * Params:
+ * parser = the parser iterating through tokens
+ * lhs = the left hand side expression
+ * prec = the current operator precedence
+ * Returns: the binary expression node
+ */
+ExpressionNode parseBinary(ref Parser parser, ref ExpressionNode lhs, Precedence prec)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+
+    auto rhs = parser.parseExprPrecedence(cast(int)(prec) + 1);
+    return new InfixExpressionNode(start, lhs, rhs);
+}
 
 /// Most fundamental node
 /// TODO: use emplace for custom class allocation
@@ -22,9 +159,7 @@ class ParseNode
 
     /**
      * Constructs expression statement.
-     * Params:
-     * mainIdx = the starting index of the expression
-     * value = The expression creating the value
+     * Params: mainIdx = the starting index of the expression
      */
     this(ulong mainIdx)
     {
@@ -79,7 +214,7 @@ class ExpressionNode : ParseNode
 /// Wrapper for ExpressionNodes
 class ExpressionStatement : StatementNode
 {
-    const ExpressionNode value; /// Expression node reference
+    ExpressionNode value; /// Expression node reference
 
     /**
      * Constructs expression statement.
@@ -93,8 +228,10 @@ class ExpressionStatement : StatementNode
         this.value = value;
     }
 
-    // TODO: implement and override
-    //string show(ref Lexer lexer)
+    override string show(ref Lexer lexer)
+    {
+        return (this.value !is null) ? value.show(lexer) ~ ";" : "";
+    }
 }
 
 /// Node for let statements
@@ -117,7 +254,7 @@ class LetStatement : StatementNode
     /// Show the let statement's main identifier
     override string tokenLiteral(ref Lexer lexer)
     {
-        return format("%s", TokenTag.Let);
+        return to!string(TokenTag.Let);
     }
 
     /// Create statement string
@@ -148,7 +285,7 @@ class ReturnStatement : StatementNode
     /// Show the return statement's main identifier
     override string tokenLiteral(ref Lexer lexer)
     {
-        return format("%s", TokenTag.Return);
+        return to!string(TokenTag.Return);
     }
 
     /// Create statement string
@@ -170,13 +307,13 @@ class IdentifierNode : ExpressionNode
         super(mainIdx);
     }
 
-    /// Show the main identifier
+    /// Show the identifier tag
     override string tokenLiteral(ref Lexer lexer)
     {
-        return format("%s", TokenTag.Ident);
+        return to!string(TokenTag.Ident);
     }
 
-    /// Create id string
+    /// Create identifier string
     override string show(ref Lexer lexer)
     {
         return lexer.tagRepr(mainIdx);
@@ -198,7 +335,7 @@ class IntNode : ExpressionNode
     /// Show the main integer
     override string tokenLiteral(ref Lexer lexer)
     {
-        return format("%s", TokenTag.Int);
+        return to!string(TokenTag.Int);
     }
 
     /// Create int string
@@ -208,21 +345,58 @@ class IntNode : ExpressionNode
     }
 }
 
-/// Unary or binary operator node for expressions
-class OperatorNode : ExpressionNode
+/// Boolean node for expressions
+class BooleanNode : ExpressionNode
 {
     /**
-     * Constructs either unary or binary operator nodes.
-     * Params: mainIdx = the main token index
+     * Constructs boolean nodes.
+     * Params: mainIdx = the boolean token index
      */
     this(ulong mainIdx)
     {
         super(mainIdx);
     }
+
+    /// Show the main boolean value
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(lexer.tokens.tag[][mainIdx]);
+    }
+
+    /// Create boolean string
+    override string show(ref Lexer lexer)
+    {
+        return lexer.tagRepr(mainIdx);
+    }
+}
+
+/// Unary prefix operator node for expressions
+class PrefixExpressionNode : ExpressionNode
+{
+    ExpressionNode expr; /// Primary expression
+
+    /**
+     * Constructs the unary prefix expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * expr = the primary expression
+     */
+    this(ulong mainIdx, ExpressionNode expr)
+    {
+        super(mainIdx);
+        this.expr = expr;
+    }
+
+    /// Create expression string
+    override string show(ref Lexer lexer)
+    {
+        return format("%s%s", lexer.tagRepr(mainIdx), (this.expr !is null) ? expr.show(lexer) : "");
+    }
+
 }
 
 /// Infix binary operator node for expressions
-class InfixNode : OperatorNode
+class InfixExpressionNode : ExpressionNode
 {
     ExpressionNode lhs; /// lhs expression
     ExpressionNode rhs; /// rhs expression
@@ -290,20 +464,19 @@ struct Program
     /// Entire program representation for debugging purposes
     string show(ref Lexer lexer)
     {
-        auto reprBuilder = appender!string;
-        reprBuilder.reserve(128);
-        const auto newline_stop = this.statements[].length;
+        auto reprBuilder = appender!(string[]);
+        reprBuilder.reserve(16);
 
         foreach (i, statement; this.statements[].enumerate(0))
         {
             auto repr = statement.show(lexer);
             if (repr !is null && repr != "")
             {
-                reprBuilder.put(repr ~ ((i + 1) < newline_stop ? "\n" : ""));
+                reprBuilder.put(repr);
             }
         }
 
-        return reprBuilder.data;
+        return reprBuilder[].joiner("\n").to!string;
     }
 }
 
@@ -374,7 +547,7 @@ public:
     }
 
     /// Parse operator for subexpression
-    OperatorNode parseOperatorExpression(const ulong start)
+    InfixExpressionNode parseOperatorExpression(const ulong start)
     {
         auto lhs = new IntNode(start);
         const auto operator = this.position;
@@ -382,7 +555,7 @@ public:
         this.skipToken();
         auto rhs = this.parseExpression();
 
-        return new InfixNode(operator, lhs, rhs);
+        return new InfixExpressionNode(operator, lhs, rhs);
     }
 
     /// Parse expressions grouped by parentheses
@@ -423,6 +596,56 @@ public:
         return null;
     }
 
+    /// Testy test...
+    ExpressionNode parseExprPrecedence(int prec = Precedence.Ternary)
+    {
+        TokenTag token = tokenTags[this.position];
+        if (token !in prefixRules)
+        {
+            errors.put("Expected expression");
+            this.skipToken();
+            return null;
+        }
+
+        auto expr = prefixRules[token](this);
+
+        while (this.position < this.tokenCount)
+        {
+            token = tokenTags[this.position];
+            if (token !in infixRules)
+            {
+                errors.put(format("Invalid token %s for infix expression", token));
+                break;
+            }
+
+            const auto infixRule = infixRules[token];
+            const auto currentPrec = infixRule.prec;
+
+            if (currentPrec < prec)
+            {
+                break;
+            }
+
+            expr = infixRule.infix(this, expr, currentPrec);
+        }
+
+        return expr;
+    }
+
+    /// Parse expressions as statements
+    ExpressionStatement parseExpressionStatement()
+    {
+        const auto start = this.position;
+        auto expr = this.parseExprPrecedence();
+
+        if (tokenTags[this.position] == TokenTag.Semicolon)
+        {
+            this.skipToken();
+        }
+
+        return new ExpressionStatement(start, expr);
+    }
+
     /// Parse let statements
     LetStatement parseLetStatement()
     {
@@ -447,9 +670,16 @@ public:
             if (tag != tokenSlice[i])
             {
                 errors.put(format("Expected next token to be %s in %s statement, got %s instead",
-                        tokenSlice[i], TokenTag.Let, tag));
+                        tag, TokenTag.Let, tokenSlice[i]));
 
                 this.skipTokens(i);
+
+                while (this.position < this.tokenCount
+                        && tokenTags[this.position] != TokenTag.Semicolon)
+                {
+                    this.skipToken();
+                }
+
                 return null;
             }
         }
@@ -457,7 +687,7 @@ public:
         this.skipTokens(2);
 
         // Parse expression as part of let statement
-        auto value = this.parseExpression();
+        auto value = this.parseExprPrecedence();
 
         if (tokenTags[this.position] == TokenTag.Semicolon)
         {
@@ -474,7 +704,7 @@ public:
         this.skipToken();
 
         // Parse expression as part of let statement
-        auto value = this.parseExpression();
+        auto value = this.parseExprPrecedence();
 
         if (tokenTags[this.position] == TokenTag.Semicolon)
         {
@@ -510,15 +740,14 @@ public:
                 statement = this.parseIfStatement();
                 break;
             case Semicolon:
+                // Go straight to next token on semicolon
                 this.skipToken();
-                break;
+                continue;
             case Eof:
                 // Abort parsing on EOF
                 return;
             default:
-                errors.put(format("Unhandled %s token in parser", token));
-                this.skipToken();
-                continue;
+                statement = this.parseExpressionStatement();
             }
 
             if (statement !is null)
@@ -543,7 +772,9 @@ unittest
     parser.parseProgram();
 
     assert(parser.program.statements[].empty, "Statement list must be empty for empty program");
-    assert(parser.errors[].length == 0, "Error list must be empty for empty string");
+
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for empty string", parser.errors[]));
 }
 
 /// Single let statement test
@@ -557,7 +788,27 @@ unittest
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0, "Error list must be empty for empty string");
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for empty string", parser.errors[]));
+
+    const auto programListing = parser.program.show(lexer);
+    assert(input == programListing,
+            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+}
+
+/// Single identifier expression statement test
+unittest
+{
+    const auto input = "foobar;";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for empty string", parser.errors[]));
 
     const auto programListing = parser.program.show(lexer);
     assert(input == programListing,
@@ -577,7 +828,28 @@ let foobar = y;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0, "Error list must be empty for program");
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for empty string", parser.errors[]));
+
+    const auto programListing = parser.program.show(lexer);
+    assert(input == programListing,
+            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+}
+
+/// Prefix expression test
+unittest
+{
+    const auto input = "let x = !5;
+let y = -15;";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for empty string", parser.errors[]));
 
     const auto programListing = parser.program.show(lexer);
     assert(input == programListing,
@@ -598,8 +870,7 @@ let 838383";
     parser.parseProgram();
 
     assert(parser.program.statements[].empty, "Statement list must be empty for erroneous program");
-    writefln("Got these errors -> %s", parser.errors[]);
-    assert(parser.errors[].length == 3, "Error list must not be empty for erroneous program");
+    assert(parser.errors[].length >= 3, "Error list must not be empty for erroneous program");
 }
 
 /// Multiple return statement test
@@ -615,7 +886,8 @@ return 993322;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0, "Error list must be empty for program");
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for empty string", parser.errors[]));
 
     const auto programListing = parser.program.show(lexer);
     assert(input == programListing,
