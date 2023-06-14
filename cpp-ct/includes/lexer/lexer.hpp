@@ -121,31 +121,26 @@ namespace mk {
         [[nodiscard]] constexpr size_type cursor_position() const noexcept {
             return m_current_cursor;
         }
+        
+        template<std::size_t M>
+        [[nodiscard]] constexpr auto lex(std::array<Token, M>& tokens, bool skip_whitespace = true) noexcept {
+            size_type index{};
 
-        [[nodiscard]] constexpr auto lex() noexcept {
-            std::vector<Token> tokens;
-            while (!eof()) {
-                tokens.push_back(next());
+            while(index < tokens.size()) {
+                auto token = next();
+                if (skip_whitespace && (token.is_one_of(TokenKind::whitespace, TokenKind::newline))) continue;
+                tokens[index++] = token;
             }
+        }
+        
+        [[nodiscard]] constexpr auto lex(bool skip_whitespace = true) noexcept {
+            std::array<Token, N> tokens{};
+            lex(tokens, skip_whitespace);
             return tokens;
         }
 
 
     private:
-            constexpr size_type calculate_number_of_tokens() noexcept {
-                size_type count{};
-                size_type const start = cursor_position();
-
-                while(true) {
-                    auto token = next();
-                    if (token.is_eof() || token.is_unknown()) break;
-                    ++count;
-                }
-
-                set_cursor(start);
-
-                return count;
-            }
 
             constexpr void set_cursor(size_type k) noexcept {
                 m_current_cursor = k;

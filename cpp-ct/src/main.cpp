@@ -2,20 +2,11 @@
 #include <array>
 #include <lexer/lexer.hpp>
 
-template<std::size_t M, std::size_t N>
-constexpr std::array<mk::Token, M> lex_source(mk::CtString<N> source, bool skip_whitespace = true) noexcept {
+template<std::size_t N>
+constexpr auto lex_source(mk::CtString<N> source, bool skip_whitespace = true) noexcept {
     auto temp = mk::Lexer(source);
-    std::size_t curr_ptr{};
-    std::array<mk::Token, M> tokens;
-
-    while (curr_ptr < M) {
-        mk::Token token = temp.next();
-        if (token.is(mk::TokenKind::unknown)) break;
-        if (skip_whitespace && token.is_one_of(mk::TokenKind::whitespace, mk::TokenKind::newline)) continue;
-        tokens[curr_ptr++] = token;
-
-        if (token.is_one_of(mk::TokenKind::eof, mk::TokenKind::illegal)) break;
-    }
+    std::array<mk::Token, 100> tokens;
+    temp.lex(tokens, skip_whitespace);
     return tokens;
 }
 
@@ -46,7 +37,7 @@ int main() {
         let s = "Hello, \"World!\"";
     )");
 
-    constexpr auto tokens = lex_source<1000>(source);
+    constexpr auto tokens = lex_source(source);
     auto const eof_pos = std::find_if(tokens.begin(), tokens.end(), [](auto const& token) {
         return token.is_eof();
     });
