@@ -282,6 +282,7 @@ void main() {
       'should return an Identifier Expression',
       () async {
         // arrange
+        const input = 'foobar;';
         final parser = Parser.fromSource(input);
 
         // act

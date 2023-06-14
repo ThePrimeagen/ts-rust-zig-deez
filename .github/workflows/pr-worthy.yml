@@ -9,7 +9,7 @@ name: Test if the language in PR passes corresponding checks
 on:
   pull_request:
     # for new PRs, or those who are ready and/or request a review
-    types: [opened, ready_for_review, review_requested]
+    types: [edited, opened, reopened, synchronize, ready_for_review, review_requested]
     branches: [master]  # only run the workflow on merging into the master branch
 
 defaults:
@@ -27,19 +27,19 @@ jobs:
         
       - name: Get changed files
         id: changed-files-dir-names
-        uses: tj-actions/changed-files@v35.9.3
+        uses: tj-actions/changed-files@v36.1.0
         with:
-          since_last_remote_commit: true
+          #since_last_remote_commit: true
           dir_names: true
-          dir_names_exclude_root: true
-          dir_names_max_depth: 2
+          dir_names_exclude_current_dir: true
+          dir_names_max_depth: 1
 
       - name: Build docker images for every language affected
-        if: steps.changed-files-dir-names.outputs.any_changed == 'true'
+        #if: steps.changed-files-dir-names.outputs.any_changed == 'true'
         run: |
-          for i in ${{ steps.changed-files-dir-names.outputs.all_changed_and_modified_files }}; do pushd "$i"; make docker-build; popd; done
+          for i in ${{ steps.changed-files-dir-names.outputs.all_changed_and_modified_files }}; do if [[ $i != .* ]]; then pushd "$i"; make docker-build; popd; fi; done
 
       - name: Run docker containers for built images
-        if: steps.changed-files-dir-names.outputs.any_changed == 'true'
+        #if: steps.changed-files-dir-names.outputs.any_changed == 'true'
         run: |
-          for i in ${{ steps.changed-files-dir-names.outputs.all_changed_and_modified_files }}; do pushd "$i"; make docker-ready; popd; done
+          for i in ${{ steps.changed-files-dir-names.outputs.all_changed_and_modified_files }}; do if [[ $i != .* ]]; then pushd "$i"; make docker-ready; popd; fi; done

@@ -56,6 +56,7 @@ struct StatementList : public Statement
 	StatementList(std::vector<StatementP>&& statements)
 	: statements{std::move(statements)} {}
 
+	static ExpressionP parse(Lexer& lexer);
 	void print(std::ostream& str) const override;
 	virtual Value eval(EnvironmentP env) const;
 

@@ -32,7 +32,7 @@ data Token
     | If
     | Else
     | Return
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 isIdentChar :: Char -> Bool
 isIdentChar c = isLetter c || c == '_'

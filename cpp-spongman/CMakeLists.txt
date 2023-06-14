@@ -13,11 +13,14 @@ else()
 endif()
 
 
+#include(CheckIPOSupported)
+#check_ipo_supported(RESULT LTO_supported)
+
 
 set(This TsRustZigDeez)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 
 FILE(GLOB Headers
   src/lexer/*.hh
@@ -31,16 +34,12 @@ FILE(GLOB Sources
   src/parser/*.cpp
 )
 
-#add_compile_options(
-#  -Wall -Wpedantic -g
-#)
-
+set_source_files_properties(src/lexer/*.cc LANGUAGE CXX) 
 
 add_compile_options(
   -Wall -Wpedantic
   -Wno-switch
   -g
-  -O3
 )
 
 enable_testing()
@@ -59,6 +58,17 @@ target_link_libraries(${This}
   ${This}_lib
 )
 
+
+
+#if( LTO_supported )
+#    message(STATUS "IPO / LTO enabled")
+#    set_property(TARGET ${This} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+#    set_property(TARGET ${This}_lib PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+#endif()
+
+
+
+# install
 
 install(
   TARGETS ${This}

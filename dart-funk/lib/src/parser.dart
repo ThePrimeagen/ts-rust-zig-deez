@@ -220,6 +220,7 @@ Program parse(Parser parser) {
   newParser = _currTokenIs(exprParser, TokenType.eof)
       ? exprParser
       : _finishStatement(exprParser, recurse: true);
+
   return (newParser, ExpressionStatement(expression));
 }
 

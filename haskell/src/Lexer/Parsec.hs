@@ -11,7 +11,9 @@ import Text.Megaparsec.Char (space1)
 import Text.Megaparsec.Char.Lexer qualified as L
 import Token (Token (..), Tokenizer, identToken, isIdentChar)
 
-type Lexer = Parsec Void Text
+type Input = Text
+
+type Lexer = Parsec Void Input
 
 tokenize :: Tokenizer
 tokenize input = case parse tokensP "" $ T.pack input of

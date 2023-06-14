@@ -51,16 +51,31 @@ struct Value
 {
 	ValueType data;
 
+	/*
+	Value() : data{NullValue{}} {}
+	Value(Value&& other) = default;
+	constexpr Value& operator=(Value&& other) = default;
+
+	Value(const Value& other) = delete;
+	constexpr Value& operator=(const Value& other) = delete;
+
 	template<typename T>
-	const T& get() const {
-		if (!std::holds_alternative<T>(data))
+	Value(T&& other)
+	: data{std::move(other)} {}
+	*/
+
+	template<typename T>
+	constexpr bool is() const { return std::holds_alternative<T>(data); }
+
+	template<typename T>
+	const T& as() const {
+		if (!is<T>())
 			throw std::runtime_error("Error trying to convert " + std::to_string(data) + " to " + Value{T{}}.typeName());
 		return std::get<T>(data);
 	}
 
 	std::string typeName() const;
 };
-const Value nil;
 
 inline size_t ValueHash::operator()(const Value& value) const
 {

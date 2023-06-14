@@ -266,7 +266,7 @@ ExpressionP Expression::parseValue(Lexer& lexer)
 		}
 		case TokenType::Integer:
 		{
-			uint32_t value = 0;
+			Integer value = 0;
 			std::from_chars(token.literal.data(), token.literal.data() + token.literal.size(), value);
 			lexer.next();
 			return std::make_unique<IntegerLiteralExpression>(value);
@@ -339,13 +339,13 @@ Value UnaryExpression::eval(EnvironmentP env) const
 	auto evaluatedValue = value->eval(env);
 	switch(op) {
 		case TokenType::Minus:
-			return Value{-evaluatedValue.get<Integer>()};
+			return Value{-evaluatedValue.as<Integer>()};
 		case TokenType::Bang:
-			if (!std::holds_alternative<bool>(evaluatedValue.data))
+			if (!evaluatedValue.is<bool>())
 				return Value{false};
-			return Value{!evaluatedValue.get<bool>()};
+			return Value{!evaluatedValue.as<bool>()};
 		case TokenType::Tilde:
-			return Value{~evaluatedValue.get<Integer>()};
+			return Value{~evaluatedValue.as<Integer>()};
 	}
 	throw std::runtime_error("invalid unary operation: " + std::to_string(op));
 }
@@ -360,7 +360,7 @@ void UnaryExpression::print(std::ostream& os) const
 
 Value CallExpression::eval(EnvironmentP env) const
 {
-	auto [fn, closureEnv] = function->eval(env).get<BoundFunction>();
+	auto [fn, closureEnv] = function->eval(env).as<BoundFunction>();
 	return fn->call(closureEnv, env, arguments);
 }
 
@@ -443,19 +443,20 @@ Value FunctionExpression::call(
 
 	auto argumentIter = arguments.begin();
 	for (const auto& parameterName : parameters) {
-		Value argumentValue;
 		if (argumentIter != arguments.end()) {
 			const auto& argument= *(argumentIter++);
-			argumentValue = argument->eval(callerEnv);
+			locals->set(parameterName, argument->eval(callerEnv));
 		}
-		locals->set(parameterName, std::move(argumentValue));
+		else {
+			locals->set(parameterName, Value{});
+		}
 	}
 
 	try {
 		return body->eval(locals);
 	}
-	catch (const Value& value) {
-		return value;
+	catch (Value& value) {
+		return std::move(value);
 	}
 }
 
@@ -486,9 +487,8 @@ Value BuiltinFunctionExpression::call(
 Value IdentifierExpression::eval(EnvironmentP env) const
 {
 	auto value = env->get(identifier);
-	if (value == nil) {
+	if (value.is<NullValue>())
 		std::cout << "WARNING: identifier '" + identifier + "' not found\n";
-	}
 	return value;
 }
 
@@ -584,18 +584,18 @@ Value IndexExpression::eval(EnvironmentP env) const
 	return std::visit(overloaded{
 		[](const Array& value, const Integer indexValue) -> Value {
 			if (indexValue < 0 || indexValue >= static_cast<Integer>(value.size()))
-				return nil;
+				return {};
 			return value[indexValue];
 		},
 		[](const String& value, const Integer indexValue) -> Value {
 			if (indexValue < 0 || indexValue >= static_cast<Integer>(value.length()))
-				return nil;
+				return {};
 			return Value{value.substr(indexValue, 1)};	// TODO: 'char' type?
 		},
 		[&evaluatedIndex](const Hash& value, const auto& indexValue) -> Value {
 			if (const auto iter = value.find(evaluatedIndex); iter != value.end())
 				return iter->second;
-			return nil;
+			return {};
 		},
 		[](const auto& value, auto& indexValue) -> Value {
 			throw std::runtime_error("Error: can't index into ");// + std::to_string(value));

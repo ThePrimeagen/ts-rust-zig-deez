@@ -1,3 +1,3 @@
 require "./src/*"
 
-puts "Hello, world!"
+init_repl

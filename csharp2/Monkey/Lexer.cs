@@ -1,45 +1,5 @@
 ﻿namespace Monkey;
 
-enum TokenType
-{
-    Ident,
-    Int,
-
-    Illegal,
-    Eof,
-    Assign,
-
-    // Separators
-    Bang,
-    Dash,
-    ForwardSlash,
-    Asterisk,
-    Equal,
-    NotEqual,
-    LessThan,
-    GreaterThan,
-
-    // Operators
-    Plus,
-    Comma,
-    Semicolon,
-    Lparen,
-    Rparen,
-    LSquirly,
-    RSquirly,
-
-    // Keywords
-    Function,
-    Let,
-    If,
-    Else,
-    Return,
-    True,
-    False,
-}
-
-readonly record struct Token(TokenType Type, string? Literal = default);
-
 class Lexer
 {
     readonly string _input;
@@ -64,43 +24,43 @@ class Lexer
         {
             return ReadIdent() switch
             {
-                "fn" => new(TokenType.Function),
-                "let" => new(TokenType.Let),
-                "if" => new(TokenType.If),
-                "false" => new(TokenType.False),
-                "true" => new(TokenType.True),
-                "return" => new(TokenType.Return),
-                "else" => new(TokenType.Else),
+                "fn" => Token.Function,
+                "let" => Token.Let,
+                "if" => Token.If,
+                "false" => Token.False,
+                "true" => Token.True,
+                "return" => Token.Return,
+                "else" => Token.Else,
                 var ident => new(TokenType.Ident, ident.ToString()),
             };
         }
 
         Token token = _ch switch
         {
-            '{' => new(TokenType.LSquirly),
-            '}' => new(TokenType.RSquirly),
-            '(' => new(TokenType.Lparen),
-            ')' => new(TokenType.Rparen),
-            ',' => new(TokenType.Comma),
-            ';' => new(TokenType.Semicolon),
-            '+' => new(TokenType.Plus),
-            '-' => new(TokenType.Dash),
+            '{' => Token.LSquirly,
+            '}' => Token.RSquirly,
+            '(' => Token.LParen,
+            ')' => Token.RParen,
+            ',' => Token.Comma,
+            ';' => Token.Semicolon,
+            '+' => Token.Plus,
+            '-' => Token.Minus,
             '!' => Peek() switch
             {
-                '=' => new(TokenType.NotEqual),
-                _ => new(TokenType.Bang),
+                '=' => Token.NotEqual,
+                _ => Token.Bang,
             },
-            '>' => new(TokenType.GreaterThan),
-            '<' => new(TokenType.LessThan),
-            '*' => new(TokenType.Asterisk),
-            '/' => new(TokenType.ForwardSlash),
+            '>' => Token.GreaterThan,
+            '<' => Token.LessThan,
+            '*' => Token.Asterisk,
+            '/' => Token.Slash,
             '=' => Peek() switch
             {
-                '=' => new(TokenType.Equal),
-                _ => new(TokenType.Assign),
+                '=' => Token.Equal,
+                _ => Token.Assign,
             },
-            '\0' => new(TokenType.Eof),
-            _ => new(TokenType.Illegal)
+            '\0' => Token.Eof,
+            _ => Token.Illegal,
         };
 
         if (token.Type is TokenType.Equal or TokenType.NotEqual)
