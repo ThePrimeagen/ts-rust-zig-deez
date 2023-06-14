@@ -27,6 +27,8 @@ namespace mk {
     }
 
     struct Token {
+        using position_type = unsigned;
+
         constexpr Token() noexcept = default;
         constexpr Token(Token const&) noexcept = default;
         constexpr Token(Token&&) noexcept = default;
@@ -34,8 +36,11 @@ namespace mk {
         constexpr Token& operator=(Token&&) noexcept = default;
         constexpr ~Token() noexcept = default;
 
-        constexpr Token(TokenKind kind, std::string_view lexeme) noexcept
-            : m_kind(kind), m_lexeme(lexeme)
+        constexpr Token(TokenKind kind, std::string_view lexeme, position_type line = 0, position_type column = 0) noexcept
+            : m_kind(kind)
+            , m_lexeme(lexeme)
+            , m_line(line)
+            , m_column(column)
         {}
 
         [[nodiscard]] constexpr TokenKind kind() const noexcept {
@@ -73,9 +78,19 @@ namespace mk {
             return !(*this == other);
         }
 
+        [[nodiscard]] constexpr position_type line() const noexcept {
+            return m_line;
+        }
+        
+        [[nodiscard]] constexpr position_type column() const noexcept {
+            return m_column;
+        }
+
     private:
         TokenKind m_kind{TokenKind::illegal};
         std::string_view m_lexeme;
+        position_type m_line{};
+        position_type m_column{};
     };
 
 } // namespace mk
@@ -85,7 +100,7 @@ std::ostream& operator<<(std::ostream& os, mk::TokenKind kind) {
 }
 
 std::ostream& operator<<(std::ostream& os, mk::Token const& token) {
-    return os << "Token(" << mk::to_string(token.kind()) << ", '" << token.lexeme() << "')";
+    return os << "Token(" << mk::to_string(token.kind()) << ", '" << token.lexeme() << "', <" << token.line() + 1<< ", " << token.column() + 1 <<">" ")";
 }
 
 #endif // MK_SYNTAX_TOKENS_HPP

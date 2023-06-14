@@ -32,14 +32,17 @@ namespace mk {
 
     template<std::size_t N>
     struct Lexer {
-        using source_type = CtString<N>;
-        using value_type = typename source_type::value_type;
-        using size_type = std::size_t;
-        using difference_type = std::ptrdiff_t;
+        using source_type       = CtString<N>;
+        using value_type        = typename source_type::value_type;
+        using size_type         = std::size_t;
+        using difference_type   = std::ptrdiff_t;
+        using position_type     = typename Token::position_type;
 
         constexpr Lexer(source_type source) noexcept
             : m_source(source)
-        {}
+        {
+            cache_newlines_for_lookup();
+        }
 
         constexpr Lexer(Lexer const&) noexcept = default;
         constexpr Lexer(Lexer&&) noexcept = default;
@@ -55,14 +58,14 @@ namespace mk {
             return m_source[m_current_cursor];
         }
 
-        [[nodiscard]] constexpr value_type peek(std::size_t k = 1ul) const noexcept {
-            auto const index = std::min(m_current_cursor + k, m_source.size());
+        [[nodiscard]] constexpr value_type peek(size_type k = 1u) const noexcept {
+            auto const index = std::min(cursor_position() + k, m_source.size());
             if (index == m_source.size()) return static_cast<value_type>(0);
             return m_source[index];
         }
 
-        constexpr void skip(std::size_t n = 1ul) noexcept {
-            m_current_cursor = std::min(m_current_cursor + n, m_source.size());
+        constexpr void skip(size_type n = 1u) noexcept {
+            set_cursor(std::min(cursor_position() + n, m_source.size()));
         }
 
         constexpr void skip_while(auto&& predicate) noexcept {
@@ -119,8 +122,31 @@ namespace mk {
             return m_current_cursor;
         }
 
+        [[nodiscard]] constexpr auto lex() noexcept {
+            std::vector<Token> tokens;
+            while (!eof()) {
+                tokens.push_back(next());
+            }
+            return tokens;
+        }
+
 
     private:
+            constexpr size_type calculate_number_of_tokens() noexcept {
+                size_type count{};
+                size_type const start = cursor_position();
+
+                while(true) {
+                    auto token = next();
+                    if (token.is_eof() || token.is_unknown()) break;
+                    ++count;
+                }
+
+                set_cursor(start);
+
+                return count;
+            }
+
             constexpr void set_cursor(size_type k) noexcept {
                 m_current_cursor = k;
             }
@@ -130,7 +156,8 @@ namespace mk {
             }
 
             [[nodiscard]] constexpr Token make_eof_token() const noexcept {
-                return Token{ TokenKind::eof, "EOF" };
+                auto const [line, col] = calculate_line_and_col(cursor_position());
+                return Token{ TokenKind::eof, "EOF", line, col };
             }
 
             [[nodiscard]] constexpr Token try_lex_whitespace() noexcept {
@@ -155,6 +182,7 @@ namespace mk {
                 if (eof()) return make_eof_token();
                 
                 if (current() != '"') return make_unknown_token();
+                auto [line, col] = calculate_line_and_col();
                 skip();
                 auto const start = cursor_position();
                 auto end = start;
@@ -171,20 +199,22 @@ namespace mk {
                     ++end;
                     skip();
                 }
-                return Token{ TokenKind::string_literal, m_source.view(start, end - start) };
+                return Token{ TokenKind::string_literal, m_source.view(start, end - start), line, col };
             }
 
             [[nodiscard]] constexpr Token try_lex_single_line_comment() noexcept {
                 if (current() == '/' && peek() == '/') {
+                    auto [line, col] = calculate_line_and_col();
                     skip(2);
                     auto const [start, end] = match_while([](auto c) { return !detail::is_newline(c); });
-                    return Token{ TokenKind::comment, m_source.view(start, end - start) };
+                    return Token{ TokenKind::comment, m_source.view(start, end - start), line, col };
                 }
                 return make_unknown_token();
             }
             
             [[nodiscard]] constexpr Token try_lex_multi_line_comment() noexcept {
                 if (current() == '/' && peek() == '*') {
+                    auto [line, col] = calculate_line_and_col();
                     skip(2);
                     auto const start = cursor_position();
                     auto end = start;
@@ -196,21 +226,23 @@ namespace mk {
                         ++end;
                         skip();
                     }
-                    return Token{ TokenKind::comment, m_source.view(start, end - start) };
+                    return Token{ TokenKind::comment, m_source.view(start, end - start), line, col };
                 }
                 return make_unknown_token();
             }
             
             [[nodiscard]] constexpr Token try_lex_newline() noexcept {
+                auto [line, col] = calculate_line_and_col();
                 auto const [start, end] = match_while([](auto c) { return detail::is_newline(c); });
                 if (start == end) return make_unknown_token();
-                return Token{ TokenKind::newline, m_source.view(start, end - start) };
+                return Token{ TokenKind::newline, m_source.view(start, end - start), line, col };
             }
             
             [[nodiscard]] constexpr Token try_lex_space() noexcept {
+                auto [line, col] = calculate_line_and_col();
                 auto const [start, end] = match_while([](auto c) { return detail::is_space(c); });
                 if (start == end) return make_unknown_token();
-                return Token{ TokenKind::whitespace, m_source.view(start, end - start) };
+                return Token{ TokenKind::whitespace, m_source.view(start, end - start), line, col };
             }
             
             template<typename Fn>
@@ -223,10 +255,11 @@ namespace mk {
 
             [[nodiscard]] constexpr Token match_punctuation_helper() const noexcept {
                 if (eof()) return make_eof_token();
+                auto [line, col] = calculate_line_and_col();
                 {
                     #define MK_PUNCTUATOR_MULTI_CHAR(name, str, lookahead) \
                         if (m_source.view(cursor_position(), lookahead + 1) == str) { \
-                            return Token{ TokenKind::name, str }; \
+                            return Token{ TokenKind::name, str, line, col }; \
                         }
                         
                     #include <syntax/tokens.def>
@@ -235,7 +268,7 @@ namespace mk {
                 {
                     switch(current()) {
                         #define MK_PUNCTUATOR_SINGLE_CHAR(name, c) \
-                            case c: return Token{ TokenKind::name, m_source.view(cursor_position(), 1) };
+                            case c: return Token{ TokenKind::name, m_source.view(cursor_position(), 1), line, col };
                         #include <syntax/tokens.def>
                     }
 
@@ -247,25 +280,31 @@ namespace mk {
             if (eof()) return make_eof_token();
             if (!(detail::is_alpha(current()) || current() == '_')) return make_unknown_token();
 
+            auto [line, col] = calculate_line_and_col();
+
             auto const [start, end] = match_while([](auto c) { return detail::is_alpha(c) || detail::is_num(c) || c == '_'; });
             
             if (start == end) return make_unknown_token();
 
-            return Token{ TokenKind::identifier, m_source.view(start, end - start) };
+            return Token{ TokenKind::identifier, m_source.view(start, end - start), line, col };
         }
 
         [[nodiscard]] constexpr Token try_lex_number() noexcept {
             if (eof()) return make_eof_token();
+            
+            auto [line, col] = calculate_line_and_col();
 
             auto const [start, end] = match_while([](auto c) { return detail::is_num(c); });
 
             if (start == end) return make_unknown_token();
 
-            return Token{ TokenKind::int_literal, m_source.view(start, end - start) };
+            return Token{ TokenKind::int_literal, m_source.view(start, end - start), line, col };
         }
 
         [[nodiscard]] constexpr Token try_lex_keyword() noexcept {
             if (eof()) return make_eof_token();
+
+            auto [line, col] = calculate_line_and_col();
 
             auto const [start, end] = match_while([](auto c) { return detail::is_alpha(c); });
 
@@ -273,11 +312,11 @@ namespace mk {
 
             auto const lexeme = m_source.view(start, end - start);
 
-            if (lexeme == "true") return Token{ TokenKind::bool_literal, lexeme };
-            else if (lexeme == "false") return Token{ TokenKind::bool_literal, lexeme };
+            if (lexeme == "true") return Token{ TokenKind::bool_literal, lexeme, line, col };
+            else if (lexeme == "false") return Token{ TokenKind::bool_literal, lexeme, line, col };
 
             #define MK_KEYWORD(name) \
-                if (lexeme == #name) return Token{ TokenKind::kw_## name, #name };
+                if (lexeme == #name) return Token{ TokenKind::kw_## name, #name, line, col };
             
             #include <syntax/tokens.def>
 
@@ -286,10 +325,42 @@ namespace mk {
             return make_unknown_token();
         }
 
+        constexpr void cache_newlines_for_lookup() noexcept {
+            m_cached_newlines_size = 1;
+            m_cached_newlines[0] = 0;
+            for (size_type i{1}; i < m_source.size(); ++i) {
+                if (m_source[i] == '\n') {
+                    m_cached_newlines[m_cached_newlines_size++] = static_cast<position_type>(i);
+                }
+            }
+        }
+        
+        // NOTE: We should use linear search since the cache is small and binary search for large caches
+        [[nodiscard]] constexpr size_type get_newline_position(size_type char_pos) const noexcept {
+            for (size_type i{1}; i < m_cached_newlines_size; ++i) {
+                if (m_cached_newlines[i] > char_pos) {
+                    return i - 1u;
+                }
+            }
+            return std::max(static_cast<unsigned>(m_cached_newlines_size), 1u) - 1u;
+        }
+
+        [[nodiscard]] constexpr std::pair<position_type, position_type> calculate_line_and_col() const noexcept {
+            auto const char_pos = cursor_position();
+            return calculate_line_and_col(char_pos);
+        }
+        
+        [[nodiscard]] constexpr std::pair<position_type, position_type> calculate_line_and_col(size_type char_pos) const noexcept {
+            auto const line = get_newline_position(char_pos);
+            auto const col = char_pos - m_cached_newlines[line] - 1;
+            return { static_cast<position_type>(line), col };
+        }
 
     private:
         source_type m_source;
         size_type m_current_cursor{};
+        std::array<position_type, N + 1> m_cached_newlines{};
+        size_type m_cached_newlines_size{};
     };
 
 } // namespace mk
