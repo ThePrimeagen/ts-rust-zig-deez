@@ -1,158 +1,151 @@
 ﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Monkey.Lexing;
 
 namespace Monkey.Parsing;
 
+// This parser has almost the same implementation as in the books, but instead of using Maps to find Prefix and Infix Expressions, we are using pattern matchin
 public static class Parser
 {
+    // By default all enums are ints underneath, starting with 0 and increasing in value. We can change the type, but it still needs to remain a whole number
     private enum Precedence: byte
     {
         Lowest, Equals, Comparison, Sum, Product, Prefix, Call
     }
 
-    public static IStatement[] Parse(IEnumerable<IToken> input)
-        => ParseStatements(CollectionsMarshal.AsSpan(input.ToList())).Statements;
+    public static IStatement[] Parse(IToken[] input)
+        => ParseStatements(new TokenReader(input)).Statements;
 
-    private static (IStatement Statement, int Length) ParseStatement(ReadOnlySpan<IToken> input)
+    private static (IStatement[] Statements, TokenReader Remaining) ParseStatements(TokenReader input)
+    {
+        var result = new List<IStatement>();
+
+        while (
+            input is [not EoFToken and not RSquirlyToken, ..]
+            && ParseStatement(input) is var (statement, remaining)
+        )
+        {
+            result.Add(statement);
+            input = remaining;
+        }
+
+        return (result.ToArray(), input);
+    }
+
+    private static (IStatement Statement, TokenReader Remaining) ParseStatement(TokenReader input)
     {
         return input switch
         {
+            // Thanks to returning the remaining tokens, we can easily chain complex pattern matching together
             [LetToken, IdentifierToken(var name), AssignToken, .. var expressionTokens]
-                when ParseExpression(expressionTokens) is var (expression, length)
-                && expressionTokens[length] is SemicolonToken
-                => (Statements.Let(name, expression), length + 4),
+                when ParseExpression(expressionTokens) is (var expression, [SemicolonToken, .. var remaining])
+                => (Statements.Let(name, expression), remaining),
 
             [ReturnToken, .. var expressionTokens]
-                when ParseExpression(expressionTokens) is var (expression, length)
-                && expressionTokens[length] is SemicolonToken
-                => (Statements.Return(expression), length + 2),
+                when ParseExpression(expressionTokens) is (var expression, [SemicolonToken, .. var remaining])
+                => (Statements.Return(expression), remaining),
 
-            _ when ParseExpression(input) is var (expression, length)
-                => (Statements.Expression(expression), length + (input[length] is SemicolonToken ? 1 : 0)),
+            _ when ParseExpression(input) is var (expression, remaining)
+                => (Statements.Expression(expression), remaining.SkipWhile(token => token is SemicolonToken)),
 
             _ => throw new UnreachableException()
         };
     }
 
-    private static (IExpression Expression, int Length) ParseExpression(ReadOnlySpan<IToken> input, Precedence precedence = Precedence.Lowest)
+    private static (IExpression Expression, TokenReader Remaining) ParseExpression(TokenReader input, Precedence precedence = Precedence.Lowest)
     {
-        var (left, current) = ParsePrefixExpression(input);
+        var (left, remaining) = ParsePrefixExpression(input);
 
         while (
-            input[current..] is [var infix, ..]
-            && GetPrecedence(infix) > precedence
-            && ParseInfixExpression(input[current..], left) is var (right, length)
+            remaining is [var infixOperator, ..]
+            && GetPrecedence(infixOperator) > precedence
+            && ParseInfixExpression(remaining, left) is var (right, next)
         )
         {
-            current += length;
+            remaining = next;
             left = right;
         }
 
-        return (left, current);
+        return (left, remaining);
     }
 
-    private static (IExpression Expression, int Length) ParsePrefixExpression(ReadOnlySpan<IToken> input)
+    private static (IExpression Expression, TokenReader Remaining) ParsePrefixExpression(TokenReader input)
     {
         return input switch
         {
-            [IdentifierToken(var identifier), ..]
-                => (Expressions.Identifier(identifier), 1),
+            [IdentifierToken(var identifier), .. var remaining]
+                => (Expressions.Identifier(identifier), remaining),
 
-            [IntegerToken(var integer), ..]
-                => (Expressions.Integer(integer), 1),
+            [IntegerToken(var integer), .. var remaining]
+                => (Expressions.Integer(integer), remaining),
 
             [(BangToken or DashToken) and var token, .. var expressionTokens]
-                when ParseExpression(expressionTokens, Precedence.Prefix) is var (expression, length)
-                => (Expressions.Prefix(token, expression), length + 1),
+                when ParseExpression(expressionTokens, Precedence.Prefix) is var (expression, remaining)
+                => (Expressions.Prefix(token, expression), remaining),
 
-            [TrueToken, ..]
-                => (Expressions.Boolean(true), 1),
+            [TrueToken, .. var remaining]
+                => (Expressions.Boolean(true), remaining),
 
-            [FalseToken, ..]
-                => (Expressions.Boolean(false), 1),
+            [FalseToken, .. var remaining]
+                => (Expressions.Boolean(false), remaining),
 
             [LParenToken, .. var expressionTokens]
-                when ParseExpression(expressionTokens) is var (expression, length)
-                && expressionTokens[length] is RParenToken
-                => (expression, length + 2),
+                when ParseExpression(expressionTokens) is (var expression, [RParenToken, .. var remaining])
+                => (expression, remaining),
 
+            // in case of optional patterns, we can either provide all the combinations needed, or nest the patterns to save performance
             [IfToken, LParenToken, .. var condition]
-                when ParseExpression(condition) is var (conditionExpression, conditionLength)
-                && condition[conditionLength..] is [RParenToken, LSquirlyToken, .. var consequence]
-                && ParseStatements(consequence) is var (consequenceStatements, consequenceLength)
-                && consequence[consequenceLength..] is [RSquirlyToken, .. var optionalElse]
-                && conditionLength + consequenceLength + 5 is var length
+                when ParseExpression(condition) is (var conditionExpression, [RParenToken, LSquirlyToken, .. var consequence])
+                && ParseStatements(consequence) is (var consequenceStatements, [RSquirlyToken, .. var optionalElse])
                 => optionalElse switch
                 {
                     [ElseToken, LSquirlyToken, .. var alternative]
-                        when ParseStatements(alternative) is var (alternativeStatements, alternativeLength)
-                        && alternative[alternativeLength] is RSquirlyToken
-                        => (Expressions.If(conditionExpression, Statements.Block(consequenceStatements), Statements.Block(alternativeStatements)), length + alternativeLength + 3),
+                        when ParseStatements(alternative) is (var alternativeStatements, [RSquirlyToken, .. var remaining])
+                        => (Expressions.If(conditionExpression, Statements.Block(consequenceStatements), Statements.Block(alternativeStatements)), remaining),
 
-                    _ => (Expressions.If(conditionExpression, Statements.Block(consequenceStatements), Statements.Block(Array.Empty<IStatement>())), length),
+                    var remaining
+                        => (Expressions.If(conditionExpression, Statements.Block(consequenceStatements), Statements.Block(Array.Empty<IStatement>())), remaining)
                 },
 
             [FunctionToken, LParenToken, .. var parameterTokens]
-                when ParseFunctionParameters(parameterTokens) is var (parameters, parametersLength)
-                && parameterTokens[parametersLength..] is [LSquirlyToken, .. var bodyTokens]
-                && ParseStatements(bodyTokens) is var (bodyStatements, bodyLength)
-                && bodyTokens[bodyLength] is RSquirlyToken
-                => (Expressions.Function(parameters, Statements.Block(bodyStatements)), parametersLength + bodyLength + 4),
+                when ParseFunctionParameters(parameterTokens) is (var parameters, [LSquirlyToken, .. var bodyTokens])
+                && ParseStatements(bodyTokens) is (var bodyStatements, [RSquirlyToken, .. var remaining])
+                => (Expressions.Function(parameters, Statements.Block(bodyStatements)), remaining),
 
-            [var invalid, ..]
-                => (Expressions.Error("Unexpected prefix token", invalid), 1),
+            [var invalid, .. var remaining]
+                => (Expressions.Error("Unexpected prefix token", invalid), remaining),
 
-            [] => (Expressions.Error("Unexpected end of input", Tokens.EoF), 0)
+            [] => (Expressions.Error("Unexpected end of input", Tokens.EoF), input)
         };
     }
 
-    private static (IExpression Expression, int Length) ParseInfixExpression(ReadOnlySpan<IToken> input, IExpression left)
+    private static (IExpression Expression, TokenReader Remaining) ParseInfixExpression(TokenReader input, IExpression left)
     {
         return input switch
         {
             [LParenToken, .. var arguments]
-                when ParseCallArguments(arguments) is var (expressions, length)
-                => (Expressions.Call(left, expressions), length + 1),
+                when ParseCallArguments(arguments) is var (expressions, remaining)
+                => (Expressions.Call(left, expressions), remaining),
 
-            [var token, .. var rest]
+            [var token, .. var right]
                 when IsBinaryOperationToken(token)
-                && ParseExpression(rest, GetPrecedence(token)) is var (expression, length)
-                => (Expressions.Infix(left, token, expression), length + 1),
+                && ParseExpression(right, GetPrecedence(token)) is var (expression, remaining)
+                => (Expressions.Infix(left, token, expression), remaining),
 
-            [var invalid, ..]
-                => (Expressions.Error("Unexpected operator found", invalid), 1),
+            [var invalid, .. var remaining]
+                => (Expressions.Error("Unexpected operator found", invalid), remaining),
 
-            [] => (Expressions.Error("Unexpected end of input", Tokens.EoF), 0)
+            [] => (Expressions.Error("Unexpected end of input", Tokens.EoF), input)
         };
     }
 
-    private static (IStatement[] Statements, int Length) ParseStatements(ReadOnlySpan<IToken> input)
+    private static (string[] Identifiers, TokenReader Remaining) ParseFunctionParameters(TokenReader input)
     {
-        var result = new List<IStatement>();
-        var current = 0;
-
-        while (
-            input[current..] is [not EoFToken and not RSquirlyToken, ..] span
-            && ParseStatement(span) is var (statement, length)
-        )
-        {
-            current += length;
-            result.Add(statement);
-        }
-
-        return (result.ToArray(), current);
-    }
-
-    private static (string[] Identifiers, int Length) ParseFunctionParameters(ReadOnlySpan<IToken> input)
-    {
-        var current = 0;
         var result = new List<string>();
 
-        while (input[current..] is [IdentifierToken(var identifier), (CommaToken or RParenToken) and var separator, ..])
+        while (input is [IdentifierToken(var identifier), (CommaToken or RParenToken) and var separator, .. var remaining])
         {
+            input = remaining;
             result.Add(identifier);
-            current += 2;
 
             if (separator is RParenToken)
             {
@@ -160,21 +153,17 @@ public static class Parser
             }
         }
 
-        return (result.ToArray(), current);
+        return (result.ToArray(), input);
     }
 
-    private static (IExpression[] Arguments, int Length) ParseCallArguments(ReadOnlySpan<IToken> input)
+    private static (IExpression[] Arguments, TokenReader Remaining) ParseCallArguments(TokenReader input)
     {
-        var current = 0;
         var result = new List<IExpression>();
 
-        while (
-            ParseExpression(input[current..]) is var (expression, length)
-            && input[current + length] is (CommaToken or RParenToken) and var separator
-        )
+        while (ParseExpression(input) is (var expression, [(CommaToken or RParenToken) and var separator, .. var remaining]))
         {
+            input = remaining;
             result.Add(expression);
-            current += length + 1;
 
             if (separator is RParenToken)
             {
@@ -182,7 +171,7 @@ public static class Parser
             }
         }
 
-        return (result.ToArray(), current);
+        return (result.ToArray(), input);
     }
 
     private static bool IsBinaryOperationToken(IToken token)
