@@ -186,7 +186,7 @@ class Program extends Node {
     final retVal = StringBuffer('Program:');
     if (statements.isNotEmpty) {
       retVal.write('\n\t${statements.join('\n\t')}');
-    }else{
+    } else {
       retVal.write('\n\t\tNo statements found');
     }
     if (errors.isNotEmpty) {
