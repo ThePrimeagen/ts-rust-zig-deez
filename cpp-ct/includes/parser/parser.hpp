@@ -73,7 +73,7 @@ namespace mk {
             static_assert(T.kind != TokenKind::eof, "Unexpected end of file");
 
             if constexpr (T.kind == TokenKind::close_bracket) {
-                return ParserResult<ArrayLiteralExpr<Es...>, TokenList<Ts...>>();
+                return ParserResult<Expr<ArrayLiteralExpr<Es...>>, TokenList<Ts...>>();
             } else if constexpr (T.kind == TokenKind::comma) {
                 return parse_array_literal_helper(dequeue_token_list(ts), arr);
             } else {
