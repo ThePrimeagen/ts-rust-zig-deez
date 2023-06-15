@@ -61,11 +61,56 @@ namespace mk {
         }
 
         template<ParserToken T, ParserToken... Ts>
-        [[nodiscard]] constexpr auto parse_expression(TokenList<T, Ts...> ts) {
-            if constexpr (T.kind == TokenKind::int_literal || T.kind == TokenKind::string_literal) {
-                return ParserResult<decltype(parse_literal(ts)), TokenList<Ts...>>();
+        [[nodiscard]] constexpr auto parse_binary_expression() {
+            
+        }
+
+        template<typename E, ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_expression(TokenList<T, Ts...> ts, Expr<E> expr);
+        
+        template<ParserToken T, ParserToken... Ts, typename... Es>
+        [[nodiscard]] constexpr auto parse_array_literal_helper(TokenList<T, Ts...> ts, ArrayLiteralExpr<Es...> arr = ArrayLiteralExpr<>{}) {
+            static_assert(T.kind != TokenKind::eof, "Unexpected end of file");
+
+            if constexpr (T.kind == TokenKind::close_bracket) {
+                return ParserResult<ArrayLiteralExpr<Es...>, TokenList<Ts...>>();
+            } else if constexpr (T.kind == TokenKind::comma) {
+                return parse_array_literal_helper(dequeue_token_list(ts), arr);
             } else {
-                static_assert(T.kind == TokenKind::int_literal || T.kind == TokenKind::string_literal, "Expected literal");
+                using expr_t = decltype(parse_expression(ts, Expr<void>{}));
+                using rest_t = second_parser_result_t<expr_t>;
+                using result_t = first_parser_result_t<expr_t>;
+                return parse_array_literal_helper(rest_t{}, ArrayLiteralExpr<Es..., result_t>{});
+            }
+        }
+        
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_array_literal(TokenList<T, Ts...> ts) {
+            static_assert(T.kind == TokenKind::open_bracket, "Expected '['");
+            return parse_array_literal_helper(dequeue_token_list(ts), ArrayLiteralExpr<>{});
+        }
+
+        template<typename E, ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_expression(TokenList<T, Ts...> ts, Expr<E> expr) {
+            if constexpr (T.kind == TokenKind::semicolon || T.kind == TokenKind::eof) {
+                return ParserResult<decltype(expr), TokenList<Ts...>>();
+            } else if constexpr (T.kind == TokenKind::int_literal || T.kind == TokenKind::string_literal) {
+                return parse_expression(TokenList<Ts...>{}, Expr<decltype(parse_literal(ts))>{});
+            } else if constexpr (T.kind == TokenKind::open_paren ) {
+                using inner_expr_t = decltype(parse_expression(dequeue_token_list(ts)));
+                using rest_t = second_parser_result_t<inner_expr_t>;
+                using result_t = first_parser_result_t<inner_expr_t>;
+                constexpr auto closing_pair = get_element_at_from_token_list<0>(rest_t{});
+                if constexpr (T.kind == TokenKind::open_paren && closing_pair.kind != TokenKind::close_paren) {
+                    // NOTE: We double check because we want lazy evaluation. Otherwise, it'll fail to compile
+                    static_assert(T.kind == TokenKind::open_paren, "Expected expression after '('");
+                } else {
+                    return parse_expression(dequeue_token_list(rest_t{}), Expr<result_t>{});
+                }
+            } else if constexpr (T.kind == TokenKind::open_bracket) {
+                return parse_array_literal(ts);
+            } else {
+                return ParserResult<decltype(expr), TokenList<T, Ts...>>();
             }
         }
 
@@ -85,14 +130,11 @@ namespace mk {
             static_assert(assign_op.kind == TokenKind::equal, "Expected equal sign after identifier");
 
             static_assert(sizeof...(Ts) > 2, "Expected expression after '='");
-            using expr_result_t = decltype(parse_expression(slice_token_list<2, Ts...>(ts)));
+            using expr_result_t = decltype(parse_expression(slice_token_list<2, Ts...>(ts), Expr<void>{}));
 
             using stmt_t = DeclarationStmt<Type<TypeKind::int_>, IdentifierExpr<identifier.lexeme>, first_parser_result_t<expr_result_t>>;
 
             using rest_tokens_t = second_parser_result_t<expr_result_t>;
-            
-            constexpr auto semicolon = get_element_at_from_token_list<0>(rest_tokens_t{});
-            static_assert(semicolon.kind == TokenKind::semicolon, "Expected ';' after an expression");
 
             return ParserResult<stmt_t, decltype(dequeue_token_list(rest_tokens_t{}))>{};
         }

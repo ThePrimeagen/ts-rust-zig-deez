@@ -11,7 +11,9 @@
 namespace mk {
 
     namespace detail {
-        
+        template<typename T>
+        constexpr decltype(auto) rewriter_helper(std::ostream& os, Expr<T>);
+
         template<CtString V>
         constexpr decltype(auto) rewriter_helper(std::ostream& os, IdentifierExpr<V>) {
             os << V;
@@ -27,6 +29,23 @@ namespace mk {
         template<CtString V>
         constexpr decltype(auto) rewriter_helper(std::ostream& os, StringLiteralExpr<V>) {
             os << to_string(TypeKind::string) << "(\"" << V << "\")";
+            return os;
+        }
+        
+        template<typename E, typename... Es>
+        constexpr decltype(auto) rewriter_helper(std::ostream& os, ArrayLiteralExpr<E, Es...>) {
+            os << '[';
+            rewriter_helper(os, E{});
+            if constexpr (sizeof...(Es) > 0) {
+                ((os << ", ", rewriter_helper(os, Es{})), ...);
+            }
+            os << ']';
+            return os;
+        }
+
+        template<typename T>
+        constexpr decltype(auto) rewriter_helper(std::ostream& os, Expr<T>) {
+            rewriter_helper(os, T{});
             return os;
         }
 

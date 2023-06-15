@@ -60,6 +60,11 @@ namespace mk {
     struct StringLiteralExpr {
         static constexpr auto value = val;
     };
+    
+    template<typename... Es>
+    struct ArrayLiteralExpr {
+        using elements = std::tuple<Es...>;
+    };
 
 } // namespace mk
 
