@@ -37,10 +37,20 @@ namespace mk {
         using const_pointer = CharT const*;
         using const_iterator = CharT const*;
 
+        constexpr BasicCtString() noexcept
+            : m_data{}
+        {}
+        
         constexpr BasicCtString(const CharT (&str)[N]) noexcept
             : m_data{}
         {
             std::copy_n(str, m_data.size(), m_data.begin());
+        }
+        
+        constexpr BasicCtString(std::string_view str) noexcept
+            : m_data{}
+        {
+            std::copy_n(str.begin(), N, m_data.begin());
         }
         
         constexpr BasicCtString(const BasicCtString&) noexcept = default;
@@ -119,6 +129,16 @@ namespace mk {
 
     template<typename CharT>
     CtString(std::basic_string_view<CharT>) -> CtString<0>;
+
+    namespace literal {
+        
+        template<CtString S>
+        constexpr auto operator""_ct() noexcept {
+            return S;
+        }
+
+    } // namespace literal
+    
 
 } // namespace mk
 
