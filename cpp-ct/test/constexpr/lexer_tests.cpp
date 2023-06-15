@@ -3,12 +3,12 @@
 #include "lexer_test_utils.hpp"
 
 template<std::size_t M, mk::CtString source>
-constexpr std::array<mk::Token, M> lex_source([[maybe_unused]] bool skip_whitespace = true) noexcept {
+constexpr std::array<mk::Token, M> lex_source() noexcept {
     [[maybe_unused]] auto lexer = mk::Lexer<source>();
     
     std::array<mk::Token, M> tokens{};
 
-    lexer.lex(tokens, skip_whitespace);
+    lexer.lex(tokens);
     return tokens;
 }
 

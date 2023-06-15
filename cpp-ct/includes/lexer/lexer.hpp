@@ -5,6 +5,9 @@
 #include <iostream>
 
 namespace mk {
+    
+    template<CtString source>
+    struct Lexer;
 
     namespace detail {
 
@@ -26,6 +29,22 @@ namespace mk {
         
         [[nodiscard]] constexpr bool is_whitespace(char c) noexcept {
             return is_space(c) || is_newline(c);
+        }
+
+        template<CtString Source, bool SkipWhitespace = true>
+        [[nodiscard]] constexpr std::size_t calculate_number_of_tokens() noexcept {
+            std::size_t count{};
+            auto lexer = Lexer<Source>{};
+            while (!lexer.eof()) {
+                auto token = lexer.next();
+                if constexpr (SkipWhitespace) {
+                    if (token.is_one_of(TokenKind::whitespace, TokenKind::newline)) {
+                        continue;
+                    }
+                }
+                ++count;
+            }
+            return count + 1;
         }
 
     } // namespace detail
@@ -120,26 +139,29 @@ namespace mk {
             return m_current_cursor;
         }
         
-        template<std::size_t M>
-        [[nodiscard]] constexpr auto lex(std::array<Token, M>& tokens, bool skip_whitespace = true) noexcept {
+        template<bool SkipWhitespace = true, std::size_t M>
+        [[nodiscard]] constexpr auto lex(std::array<Token, M>& tokens) noexcept {
             size_type index{};
 
             while(index < tokens.size()) {
                 auto token = next();
-                if (skip_whitespace && (token.is_one_of(TokenKind::whitespace, TokenKind::newline))) continue;
+                if constexpr (SkipWhitespace) {
+                    if (token.is_one_of(TokenKind::whitespace, TokenKind::newline)) continue;
+                }
                 tokens[index++] = token;
             }
         }
         
-        [[nodiscard]] constexpr auto lex(bool skip_whitespace = true) noexcept {
-            std::array<Token, source.size()> tokens{};
-            lex(tokens, skip_whitespace);
+        template<bool SkipWhitespace = true>
+        [[nodiscard]] constexpr auto lex() noexcept {
+            constexpr auto number_of_tokens = detail::calculate_number_of_tokens<source, SkipWhitespace>();
+            std::array<Token, number_of_tokens> tokens{};
+            lex<SkipWhitespace>(tokens);
             return tokens;
         }
 
 
     private:
-
             constexpr void set_cursor(size_type k) noexcept {
                 m_current_cursor = k;
             }
@@ -354,6 +376,20 @@ namespace mk {
         std::array<position_type, source.size()> m_cached_newlines{};
         size_type m_cached_newlines_size{};
     };
+
+    namespace detail {
+        
+        template<typename T>
+        struct is_lexer : std::false_type {};
+
+        template<CtString S>
+        struct is_lexer<Lexer<S>> : std::true_type {};
+
+
+    } // namespace detail
+    
+    template<typename T>
+    concept LexerType = detail::is_lexer<T>::value;
 
 } // namespace mk
 
