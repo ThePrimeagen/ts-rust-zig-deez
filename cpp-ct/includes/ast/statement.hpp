@@ -42,9 +42,10 @@ namespace mk {
         using expression = Expr;
     };
 
-    template<typename Type, typename Expr>
+    template<typename Type, typename Identifier, typename Expr>
     struct DeclarationStmt {
         using type = Type;
+        using identifier = Identifier;
         using expression = Expr;
     };
 

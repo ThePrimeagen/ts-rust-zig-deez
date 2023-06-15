@@ -51,9 +51,13 @@ namespace mk {
         static constexpr auto var_name = VarName;
     };
 
-    template<typename Type, auto&& val>
-    struct LiteralExpr {
-        using type = Type;
+    template<auto val>
+    struct IntegerLiteralExpr {
+        static constexpr auto value = val;
+    };
+    
+    template<CtString val>
+    struct StringLiteralExpr {
         static constexpr auto value = val;
     };
 
