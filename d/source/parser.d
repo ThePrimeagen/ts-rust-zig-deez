@@ -245,7 +245,7 @@ class ExpressionStatement : StatementNode
      * mainIdx = the starting index of the expression
      * value = The expression creating the value
      */
-    this(ulong mainIdx, ExpressionNode value)
+    this(ulong mainIdx, ref ExpressionNode value)
     {
         super(mainIdx);
         this.value = value;
@@ -268,7 +268,7 @@ class LetStatement : StatementNode
      * mainIdx = the index of the variable initialized
      * value = The expression initializing the variable
      */
-    this(ulong mainIdx, ExpressionNode value)
+    this(ulong mainIdx, ref ExpressionNode value)
     {
         super(mainIdx);
         this.value = value;
@@ -299,7 +299,7 @@ class ReturnStatement : StatementNode
      * mainIdx = the index of the statement start
      * value = The expression describing the value
      */
-    this(ulong mainIdx, ExpressionNode value)
+    this(ulong mainIdx, ref ExpressionNode value)
     {
         super(mainIdx);
         this.value = value;
@@ -404,7 +404,7 @@ class PrefixExpressionNode : ExpressionNode
      * mainIdx = the index of the operator tag
      * expr = the primary expression
      */
-    this(ulong mainIdx, ExpressionNode expr)
+    this(ulong mainIdx, ref ExpressionNode expr)
     {
         super(mainIdx);
         this.expr = expr;
@@ -425,13 +425,13 @@ class InfixExpressionNode : ExpressionNode
     ExpressionNode rhs; /// rhs expression
 
     /**
-     * Constructs the unary/binary operator expression
+     * Constructs the binary operator expression
      * Params:
      * mainIdx = the index of the operator tag
      * lhs = the left hand side expression
      * rhs = the right hand side expression
      */
-    this(ulong mainIdx, ExpressionNode lhs, ExpressionNode rhs)
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
     {
         super(mainIdx);
         this.lhs = lhs;
@@ -521,7 +521,7 @@ public:
      * Constructs the parser.
      * Params: lexer = the lexer with tokens to parse
      */
-    this(const Lexer lexer)
+    this(const ref Lexer lexer)
     {
         this.lexer = lexer;
         this.tokenTags = this.lexer.tokens.tag[];
