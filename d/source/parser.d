@@ -69,6 +69,7 @@ shared static this()
         TokenTag.Ident: &parseIdent, TokenTag.Minus: &parseUnary,
         TokenTag.Bang: &parseUnary, TokenTag.Int: &parseInt,
         TokenTag.True: &parseBoolean, TokenTag.False: &parseBoolean,
+        TokenTag.LParen: &parseGroupedExpression
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
@@ -76,8 +77,13 @@ shared static this()
         TokenTag.Minus: InfixRule(&parseBinary, Precedence.Term),
         TokenTag.Asterisk: InfixRule(&parseBinary, Precedence.Factor),
         TokenTag.Slash: InfixRule(&parseBinary, Precedence.Factor),
+        TokenTag.Eq: InfixRule(&parseBinary, Precedence.Equals),
+        TokenTag.NotEq: InfixRule(&parseBinary, Precedence.Equals),
+        TokenTag.Lt: InfixRule(&parseBinary, Precedence.LessGreater),
+        TokenTag.Gt: InfixRule(&parseBinary, Precedence.LessGreater),
         TokenTag.Semicolon: InfixRule(null, Precedence.Lowest),
-        TokenTag.Eof: InfixRule(null, Precedence.Lowest)
+        TokenTag.Eof: InfixRule(null, Precedence.Lowest),
+        TokenTag.RParen: InfixRule(null, Precedence.Lowest)
     ];
 
     prefixRules = assumeUnique(tempPrefixRules);
@@ -118,7 +124,7 @@ ExpressionNode parseUnary(ref Parser parser)
     const auto start = parser.position;
     parser.skipToken();
 
-    auto expr = parser.parseExprPrecedence(Precedence.Unary);
+    auto expr = parser.parseExpression(Precedence.Unary);
     return new PrefixExpressionNode(start, expr);
 }
 
@@ -147,8 +153,25 @@ ExpressionNode parseBinary(ref Parser parser, ref ExpressionNode lhs, Precedence
     const auto start = parser.position;
     parser.skipToken();
 
-    auto rhs = parser.parseExprPrecedence(cast(int)(prec) + 1);
+    auto rhs = parser.parseExpression(cast(int)(prec) + 1);
     return new InfixExpressionNode(start, lhs, rhs);
+}
+
+/// Parse expressions grouped by parentheses
+ExpressionNode parseGroupedExpression(ref Parser parser)
+{
+    parser.skipToken();
+    auto expr = parser.parseExpression(Precedence.Lowest);
+
+    if (parser.tokenTags[][parser.position] != TokenTag.RParen)
+    {
+        writefln("Expected ')' at position %d; got %s instead",
+                parser.position, parser.tokenTags[][parser.position]);
+        return null;
+    }
+
+    parser.skipToken();
+    return expr;
 }
 
 /// Most fundamental node
@@ -418,7 +441,7 @@ class InfixExpressionNode : ExpressionNode
     /// Create expression string
     override string show(ref Lexer lexer)
     {
-        return format("%s%s%s", (this.lhs !is null) ? lhs.show(lexer) ~ " " : "",
+        return format("(%s%s%s)", (this.lhs !is null) ? lhs.show(lexer) ~ " " : "",
                 lexer.tagRepr(mainIdx), (this.rhs !is null) ? " " ~ rhs.show(lexer) : "");
     }
 }
@@ -532,7 +555,7 @@ public:
 
     /**
      * Seeks a token ahead of the current position.
-     * Returns: the token ahead of the current position.
+     * Returns: the token ahead of the current position
      */
     TokenTag peek()
     {
@@ -546,59 +569,14 @@ public:
         }
     }
 
-    /// Parse operator for subexpression
-    InfixExpressionNode parseOperatorExpression(const ulong start)
+    /**
+     * Pratt parser to scan for expression nodes.
+     * Params: prec = the starting operator precedence
+     * Returns: the node associated with the expression
+     */
+    ExpressionNode parseExpression(int prec = Precedence.Ternary)
     {
-        auto lhs = new IntNode(start);
-        const auto operator = this.position;
-
-        this.skipToken();
-        auto rhs = this.parseExpression();
-
-        return new InfixExpressionNode(operator, lhs, rhs);
-    }
-
-    /// Parse expressions grouped by parentheses
-    ExpressionNode parseGroupedExpression()
-    {
-        return null;
-    }
-
-    /// Parse expressions
-    ExpressionNode parseExpression()
-    {
-        const auto token = tokenTags[this.position];
-
-        with (TokenTag)
-        {
-            if (token == Int)
-            {
-                const auto start = this.position;
-                const auto nextToken = this.peek();
-
-                if (nextToken == Plus)
-                {
-                    this.skipToken();
-                    return parseOperatorExpression(start);
-                }
-                else if (nextToken == Semicolon)
-                {
-                    this.skipToken();
-                    return new IntNode(start);
-                }
-            }
-            else if (token == LParen)
-            {
-                return parseGroupedExpression();
-            }
-        }
-
-        return null;
-    }
-
-    /// Testy test...
-    ExpressionNode parseExprPrecedence(int prec = Precedence.Ternary)
-    {
+        // Process prefix expressions
         TokenTag token = tokenTags[this.position];
         if (token !in prefixRules)
         {
@@ -609,6 +587,7 @@ public:
 
         auto expr = prefixRules[token](this);
 
+        // Process infix expressions with LHS as reference expression
         while (this.position < this.tokenCount)
         {
             token = tokenTags[this.position];
@@ -621,7 +600,7 @@ public:
             const auto infixRule = infixRules[token];
             const auto currentPrec = infixRule.prec;
 
-            if (currentPrec < prec)
+            if (currentPrec < prec || infixRule.infix is null)
             {
                 break;
             }
@@ -636,7 +615,7 @@ public:
     ExpressionStatement parseExpressionStatement()
     {
         const auto start = this.position;
-        auto expr = this.parseExprPrecedence();
+        auto expr = this.parseExpression();
 
         if (tokenTags[this.position] == TokenTag.Semicolon)
         {
@@ -687,7 +666,7 @@ public:
         this.skipTokens(2);
 
         // Parse expression as part of let statement
-        auto value = this.parseExprPrecedence();
+        auto value = this.parseExpression();
 
         if (tokenTags[this.position] == TokenTag.Semicolon)
         {
@@ -704,7 +683,7 @@ public:
         this.skipToken();
 
         // Parse expression as part of let statement
-        auto value = this.parseExprPrecedence();
+        auto value = this.parseExpression();
 
         if (tokenTags[this.position] == TokenTag.Semicolon)
         {
@@ -760,6 +739,17 @@ public:
 
 /** Parser tests */
 
+/// Helper function that validates parsing a valid program.
+private void validateParseProgram(const string expected, ref Lexer lexer, ref Parser parser)
+{
+    assert(parser.errors[].length == 0,
+            format("Error list %s must be empty for program", parser.errors[]));
+
+    const auto programListing = parser.program.show(lexer);
+    assert(expected == programListing,
+            format("Listing --\n%sDoes not match expected output--\n%s", programListing, expected));
+}
+
 /// Minimal parser test
 unittest
 {
@@ -788,12 +778,7 @@ unittest
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0,
-            format("Error list %s must be empty for empty string", parser.errors[]));
-
-    const auto programListing = parser.program.show(lexer);
-    assert(input == programListing,
-            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+    validateParseProgram(input, lexer, parser);
 }
 
 /// Single identifier expression statement test
@@ -807,12 +792,7 @@ unittest
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0,
-            format("Error list %s must be empty for empty string", parser.errors[]));
-
-    const auto programListing = parser.program.show(lexer);
-    assert(input == programListing,
-            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+    validateParseProgram(input, lexer, parser);
 }
 
 /// Multiple let statement test
@@ -828,19 +808,21 @@ let foobar = y;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0,
-            format("Error list %s must be empty for empty string", parser.errors[]));
-
-    const auto programListing = parser.program.show(lexer);
-    assert(input == programListing,
-            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+    validateParseProgram(input, lexer, parser);
 }
 
 /// Prefix expression test
 unittest
 {
     const auto input = "let x = !5;
-let y = -15;";
+let y = -15;
+!true;
+!false;";
+
+    const auto expected = "let x = !5;
+let y = -15;
+!true;
+!false;";
 
     auto lexer = Lexer(input);
     lexer.tokenize();
@@ -848,12 +830,7 @@ let y = -15;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0,
-            format("Error list %s must be empty for empty string", parser.errors[]));
-
-    const auto programListing = parser.program.show(lexer);
-    assert(input == programListing,
-            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+    validateParseProgram(expected, lexer, parser);
 }
 
 /// Multiple let statement test
@@ -886,10 +863,33 @@ return 993322;";
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    assert(parser.errors[].length == 0,
-            format("Error list %s must be empty for empty string", parser.errors[]));
+    validateParseProgram(input, lexer, parser);
+}
 
-    const auto programListing = parser.program.show(lexer);
-    assert(input == programListing,
-            format("Listing --\n%sDoes not match expected output--\n%s", programListing, input));
+/// Main operator precedence test
+unittest
+{
+    const auto input = "3 < 5 == false;
+3 > 5 == false;
+1 + (2 + 3) + 4;
+(5 + 5) * 2;
+2 / (5 + 5);
+-(5 + 5);
+!(true == true);";
+
+    const auto expected = "((3 < 5) == false);
+((3 > 5) == false);
+((1 + (2 + 3)) + 4);
+((5 + 5) * 2);
+(2 / (5 + 5));
+-(5 + 5);
+!(true == true);";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
 }
