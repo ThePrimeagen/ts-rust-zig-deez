@@ -1,10 +1,11 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import root.ast.statements.ExpressionStatement;
 import root.lexer.Lexer;
 import root.parser.Parser;
 import root.TokenType;
 import root.ast.*;
-import root.ast.expressions.IdentiferExpression;
+import root.ast.expressions.IdentifierExpression;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
@@ -66,8 +67,8 @@ public class ParserTest {
                 getStatements().add(
                         new LetStatement(TokenType.LET.token()) {
                             {
-                                setName(new IdentiferExpression(TokenType.IDENT.createToken("myVar"), "myVar"));
-                                setValue(new IdentiferExpression(TokenType.IDENT.createToken("anotherVar"), "anotherVar"));
+                                setName(new IdentifierExpression(TokenType.IDENT.createToken("myVar"), "myVar"));
+                                setValue(new IdentifierExpression(TokenType.IDENT.createToken("anotherVar"), "anotherVar"));
                             }
                         }
                 );
@@ -75,6 +76,27 @@ public class ParserTest {
         };
 
         Assertions.assertEquals("let myVar = anotherVar;", program.toString());
+    }
+
+    @Test
+    void TestIdentifierExpression() {
+        var input = "foobar;";
+
+        var l = new Lexer(input);
+        var p = new Parser(l);
+
+        var program = p.parseProgram();
+
+        checkParseErrors(p);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        var statement = program.getStatements().get(0);
+        Assertions.assertInstanceOf(ExpressionStatement.class, statement);
+        var ident = ((ExpressionStatement) statement).getExpression();
+        Assertions.assertInstanceOf(IdentifierExpression.class, ident);
+        var value = ((IdentifierExpression) ident).getValue();
+        Assertions.assertEquals("foobar", value);
+        Assertions.assertEquals("foobar", ident.tokenLiteral());
     }
 
     private void testStatement(Statement statement, String name) {

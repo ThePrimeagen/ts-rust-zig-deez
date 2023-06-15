@@ -2,11 +2,11 @@ package root.ast.expressions;
 
 import root.Token;
 
-public class IdentiferExpression extends Expression {
+public class IdentifierExpression extends Expression {
 
     private String value;
 
-    public IdentiferExpression(Token token, String value) {
+    public IdentifierExpression(Token token, String value) {
         this.token = token;
         this.value = value;
     }

@@ -3,7 +3,9 @@ package root.parser;
 import root.Token;
 import root.TokenType;
 import root.ast.*;
-import root.ast.expressions.IdentiferExpression;
+import root.ast.expressions.Expression;
+import root.ast.expressions.IdentifierExpression;
+import root.ast.statements.ExpressionStatement;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
@@ -60,7 +62,7 @@ public class Parser {
         return switch (this.currentToken.type()) {
             case LET -> this.parseLetStatement();
             case RETURN -> this.parseReturnStatement();
-            default -> null;
+            default -> this.parseExpressionStatement();
         };
     }
 
@@ -82,7 +84,7 @@ public class Parser {
 
         this.expectPeek(TokenType.IDENT);
 
-        letStatement.setName(new IdentiferExpression(this.currentToken, this.currentToken.literal()));
+        letStatement.setName(new IdentifierExpression(this.currentToken, this.currentToken.literal()));
 
         this.expectPeek(TokenType.ASSIGN);
 
@@ -92,6 +94,35 @@ public class Parser {
         }
 
         return letStatement;
+    }
+
+    private Statement parseExpressionStatement() {
+        ExpressionStatement statement = new ExpressionStatement(this.currentToken);
+
+        statement.setExpression(this.parseExpression(OperatorPrecedence.LOWEST));
+
+        if (this.peekTokenIs(TokenType.SEMI)) {
+            this.nextToken();
+        }
+
+        return statement;
+    }
+
+    private Expression parseExpression(OperatorPrecedence precedence) {
+        Expression prefix = this.prefixParse();
+
+        return prefix;
+    }
+
+    private Expression prefixParse() {
+        return switch (currentToken.type()) {
+            case IDENT -> new IdentifierExpression(currentToken, currentToken.literal());
+            default -> null;
+        };
+    }
+
+    private Expression infixParse(Expression expression) {
+        return null;
     }
 
     private boolean curTokenIs(TokenType type) {
