@@ -38,10 +38,14 @@ namespace mk {
     using second_parser_result_t = typename P::token_list;
     
     template<typename T, typename...Ts>
-    constexpr auto push_to_program_list(ProgramNode<Ts...>, T) -> ProgramNode<Ts..., T>;
+    constexpr auto push_to_program_list(ProgramNode<Ts...>, T) noexcept {
+        return ProgramNode<Ts..., T>{};
+    };
 
     template<detail::ParserToken T, detail::ParserToken... Ts>
-    constexpr auto dequeue_token_list(TokenList<T, Ts...>) -> TokenList<Ts...>;
+    constexpr auto dequeue_token_list(TokenList<T, Ts...>) noexcept {
+        return TokenList<Ts...>{};
+    };
 
     template<std::size_t I, detail::ParserToken T, detail::ParserToken... Ts>
     constexpr auto get_element_at_from_token_list(TokenList<T, Ts...>) noexcept {
