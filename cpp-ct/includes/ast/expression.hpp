@@ -51,7 +51,7 @@ namespace mk {
         static constexpr auto var_name = VarName;
     };
 
-    template<auto val>
+    template<std::int64_t val>
     struct IntegerLiteralExpr {
         static constexpr auto value = val;
     };
