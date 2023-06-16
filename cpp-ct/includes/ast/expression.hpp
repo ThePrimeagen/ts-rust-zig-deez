@@ -5,7 +5,6 @@
 #include <ast/types.hpp>
 
 namespace mk {
-    struct ASTNode;
 
     // enum class ExpressionKind {
     //     unknown,
@@ -16,22 +15,19 @@ namespace mk {
     //     literal,
     // };
 
-    template<typename T>
-    struct Expr {
-        using type = T;
-    };
+    struct EmptyExpr {};
 
-    template<typename L, typename R, typename Op>
+    template<TokenKind Op, typename L, typename R>
     struct BinaryExpr {
         using left = L;
         using right = R;
-        using op = Op;
+        static constexpr auto op = Op;
     };
 
-    template<typename T, typename Op>
+    template<TokenKind Op, typename T>
     struct UnaryExpr {
         using operand = T;
-        using op = Op;
+        static constexpr auto op = Op;
     };
     
     template<typename Node, typename... args>
@@ -66,16 +62,6 @@ namespace mk {
     };
 
     namespace detail {
-        
-        template<typename T>
-        struct is_expr : std::false_type {};
-
-        template<typename T>
-        struct is_expr<Expr<T>> : std::true_type {};
-
-        template<typename T>
-        constexpr bool is_expr_v = is_expr<T>::value;
-
         template<typename T>
         struct is_identifier_expr : std::false_type {};
 
@@ -124,8 +110,8 @@ namespace mk {
         template<typename T>
         struct is_binary_expr : std::false_type {};
 
-        template<typename L, typename R, typename Op>
-        struct is_binary_expr<BinaryExpr<L, R, Op>> : std::true_type {};
+        template<TokenKind Op, typename L, typename R>
+        struct is_binary_expr<BinaryExpr<Op, L, R>> : std::true_type {};
 
         template<typename T>
         constexpr bool is_binary_expr_v = is_binary_expr<T>::value;
@@ -133,8 +119,8 @@ namespace mk {
         template<typename T>
         struct is_unary_expr : std::false_type {};
 
-        template<typename T, typename Op>
-        struct is_unary_expr<UnaryExpr<T, Op>> : std::true_type {};
+        template<TokenKind Op, typename T>
+        struct is_unary_expr<UnaryExpr<Op, T>> : std::true_type {};
 
         template<typename T>
         constexpr bool is_unary_expr_v = is_unary_expr<T>::value;
@@ -148,7 +134,22 @@ namespace mk {
         template<typename T>
         constexpr bool is_call_expr_v = is_call_expr<T>::value;
 
+        template<typename T>
+        constexpr bool is_expr_v = 
+            is_call_expr_v<T> ||
+            is_unary_expr_v<T> ||
+            is_binary_expr_v<T> || 
+            is_identifier_expr_v<T> ||
+            is_integer_literal_expr_v<T> ||
+            is_bool_literal_expr_v<T> ||
+            is_string_literal_expr_v<T> ||
+            is_array_literal_expr_v<T> ||
+            std::is_same_v<T, EmptyExpr>;
+
     } // namespace detail
+
+    template<typename T>
+    concept Expr = detail::is_expr_v<T>;
 
 } // namespace mk
 

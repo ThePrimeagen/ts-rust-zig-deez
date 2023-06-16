@@ -63,22 +63,17 @@ namespace mk {
                     static_assert(T.kind == TokenKind::int_literal, "Expected literal");
                 }
             }
-
-            template<ParserToken T, ParserToken... Ts>
-            [[nodiscard]] constexpr auto parse_binary_expression() {
-                
-            }
             
             template<ParserToken T, ParserToken... Ts, typename... Es>
             [[nodiscard]] constexpr auto parse_array_literal_helper(TokenList<T, Ts...> ts, ArrayLiteralExpr<Es...> arr = ArrayLiteralExpr<>{}) {
                 static_assert(T.kind != TokenKind::eof, "Unexpected end of file");
 
                 if constexpr (T.kind == TokenKind::close_bracket) {
-                    return ParserResult<Expr<ArrayLiteralExpr<Es...>>, TokenList<Ts...>>();
+                    return ParserResult<ArrayLiteralExpr<Es...>, TokenList<Ts...>>();
                 } else if constexpr (T.kind == TokenKind::comma) {
                     return parse_array_literal_helper(dequeue_token_list(ts), arr);
                 } else {
-                    using expr_t = decltype(parse_expression(ts, Expr<void>{}));
+                    using expr_t = decltype(parse_expression(ts, EmptyExpr{}));
                     using rest_t = second_parser_result_t<expr_t>;
                     using result_t = first_parser_result_t<expr_t>;
                     return parse_array_literal_helper(rest_t{}, ArrayLiteralExpr<Es..., result_t>{});
@@ -91,8 +86,8 @@ namespace mk {
                 return parse_array_literal_helper(dequeue_token_list(ts), ArrayLiteralExpr<>{});
             }
 
-            template<typename E, ParserToken T, ParserToken... Ts>
-            [[nodiscard]] constexpr auto parse_expression(TokenList<T, Ts...> ts, Expr<E> expr) {
+            template<ParserToken T, ParserToken... Ts>
+            [[nodiscard]] constexpr auto parse_expression(TokenList<T, Ts...> ts, Expr auto expr) {
                 if constexpr (
                     T.kind == TokenKind::semicolon ||
                     T.kind == TokenKind::eof ||
@@ -101,8 +96,14 @@ namespace mk {
                     T.kind == TokenKind::close_brace
                 ) {
                     return ParserResult<decltype(expr), TokenList<T, Ts...>>();
+                } else if constexpr (is_unary_token(T.kind)) {
+                    static_assert(sizeof...(Ts) > 0, "Unexpected end of file");
+                    using inner_expr_t = decltype(parse_expression(dequeue_token_list(ts), expr));
+                    using rest_t = second_parser_result_t<inner_expr_t>;
+                    using result_t = first_parser_result_t<inner_expr_t>;
+                    return ParserResult<UnaryExpr<T.kind, result_t>, rest_t>();
                 } else if constexpr (T.kind == TokenKind::int_literal || T.kind == TokenKind::string_literal || T.kind == TokenKind::bool_literal) {
-                    return ParserResult<Expr<decltype(parse_literal(ts))>, TokenList<Ts...>>{};
+                    return ParserResult<decltype(parse_literal(ts)), TokenList<Ts...>>{};
                 } else if constexpr (T.kind == TokenKind::open_paren ) {
                     using inner_expr_t = decltype(parse_expression(dequeue_token_list(ts), expr));
                     using rest_t = second_parser_result_t<inner_expr_t>;
@@ -118,7 +119,7 @@ namespace mk {
                 } else if constexpr (T.kind == TokenKind::open_bracket) {
                     return parse_array_literal(ts);
                 } else if constexpr (T.kind == TokenKind::identifier) {
-                    return ParserResult<Expr<IdentifierExpr<T.lexeme>>, TokenList<Ts...>>{};
+                    return ParserResult<IdentifierExpr<T.lexeme>, TokenList<Ts...>>{};
                 } else {
                     return ParserResult<decltype(expr), TokenList<T, Ts...>>();
                 }
@@ -170,7 +171,7 @@ namespace mk {
                 static_assert(assign_op.kind == TokenKind::equal, "Expected equal sign after identifier");
 
                 static_assert(sizeof...(Ts) > 2, "Expected expression after '='");
-                using expr_result_t = decltype(parse_expression(slice_token_list<2>(ts), Expr<void>{}));
+                using expr_result_t = decltype(parse_expression(slice_token_list<2>(ts), EmptyExpr{}));
 
                 using stmt_t = DeclarationStmt<Type<TypeKind::int_>, IdentifierExpr<identifier.lexeme>, first_parser_result_t<expr_result_t>>;
 
@@ -216,7 +217,7 @@ namespace mk {
                 static_assert(open_paren.kind == TokenKind::open_paren, "Expected '(' after if keyword");
 
                 static_assert(sizeof...(Ts) > 1, "Expected expression after '('");
-                using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
+                using expr_result_t = decltype(parse_expression(ts, EmptyExpr{}));
 
                 using rest_tokens_t = second_parser_result_t<expr_result_t>;
 
@@ -251,7 +252,7 @@ namespace mk {
                 static_assert(open_paren.kind == TokenKind::open_paren, "Expected '(' after while keyword");
 
                 static_assert(sizeof...(Ts) > 1, "Expected expression after '('");
-                using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
+                using expr_result_t = decltype(parse_expression(ts, EmptyExpr{}));
 
                 using rest_tokens_t = second_parser_result_t<expr_result_t>;
 
@@ -276,7 +277,7 @@ namespace mk {
                 constexpr auto ts = TokenList<Ts...>{};
 
                 static_assert(sizeof...(Ts) > 0, "Expected expression after return keyword");
-                using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
+                using expr_result_t = decltype(parse_expression(ts, EmptyExpr{}));
 
                 using rest_tokens_t = second_parser_result_t<expr_result_t>;
 
@@ -371,7 +372,7 @@ namespace mk {
                 constexpr auto next_token = get_element_at_from_token_list<0>(ts);
 
                 if constexpr (next_token.kind == TokenKind::identifier) {
-                    using identifier_result_t = decltype(parse_expression(ts, Expr<void>{}));
+                    using identifier_result_t = decltype(parse_expression(ts, EmptyExpr{}));
                     using identifier_t = first_parser_result_t<identifier_result_t>;
                     
                     using fn_args_result_t = decltype(parse_fn_args(second_parser_result_t<identifier_result_t>{}));
@@ -477,7 +478,7 @@ namespace mk {
                         return ParserResult<result_t, remaining_t>{};
                     }
                 } else {
-                    using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
+                    using expr_result_t = decltype(parse_expression(ts, EmptyExpr{}));
 
                     using result_t = decltype(push_to_block_list(list, first_parser_result_t<expr_result_t>{}));
                     using remaining_t = second_parser_result_t<expr_result_t>;

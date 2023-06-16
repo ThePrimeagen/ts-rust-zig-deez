@@ -93,6 +93,37 @@ namespace mk {
         position_type m_column{};
     };
 
+
+    constexpr bool is_unary_token(TokenKind tk) noexcept {
+        switch (tk) {
+            case TokenKind::exclamation_mark:
+            case TokenKind::minus:
+            case TokenKind::plus:
+            case TokenKind::tilde: return true;
+            default: return false;
+        }
+    }
+
+    constexpr bool is_binary_token(TokenKind tk) noexcept {
+        switch (tk) {
+            case TokenKind::ampersand:
+            case TokenKind::ampersand_ampersand:
+            case TokenKind::caret:
+            case TokenKind::equal_equal:
+            case TokenKind::greater_than:
+            case TokenKind::less_than:
+            case TokenKind::minus:
+            case TokenKind::not_equal:
+            case TokenKind::percent:
+            case TokenKind::pipe:
+            case TokenKind::pipe_pipe:
+            case TokenKind::plus:
+            case TokenKind::slash:
+            case TokenKind::star: return true;
+            default: return false;
+        }
+    }
+
 } // namespace mk
 
 std::ostream& operator<<(std::ostream& os, mk::TokenKind kind) {

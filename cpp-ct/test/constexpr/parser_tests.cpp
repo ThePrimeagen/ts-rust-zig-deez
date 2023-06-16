@@ -17,7 +17,7 @@ TEST_CASE("parse let declaration", "[constexpr][parser][let-stmt]") {
                     DeclarationStmt<
                         Type<TypeKind::int_>,
                         IdentifierExpr<"five">,
-                        Expr<IntegerLiteralExpr<5>>
+                        IntegerLiteralExpr<5>
                     >
                 >
             >
@@ -36,7 +36,7 @@ TEST_CASE("parse let declaration", "[constexpr][parser][let-stmt]") {
                     DeclarationStmt<
                         Type<TypeKind::int_>,
                         IdentifierExpr<"five">,
-                        Expr<StringLiteralExpr<"test deez nuts">>
+                        StringLiteralExpr<"test deez nuts">
                     >
                 >
             >
@@ -55,13 +55,13 @@ TEST_CASE("parse let declaration", "[constexpr][parser][let-stmt]") {
                     DeclarationStmt<
                         Type<TypeKind::int_>,
                         IdentifierExpr<"five">,
-                        Expr<ArrayLiteralExpr<
-                            Expr<IntegerLiteralExpr<1>>,
-                            Expr<IntegerLiteralExpr<2>>,
-                            Expr<IntegerLiteralExpr<3>>,
-                            Expr<IntegerLiteralExpr<4>>,
-                            Expr<IntegerLiteralExpr<5>>
-                        >>
+                        ArrayLiteralExpr<
+                            IntegerLiteralExpr<1>,
+                            IntegerLiteralExpr<2>,
+                            IntegerLiteralExpr<3>,
+                            IntegerLiteralExpr<4>,
+                            IntegerLiteralExpr<5>
+                        >
                     >
                 >
             >
@@ -80,13 +80,13 @@ TEST_CASE("parse let declaration", "[constexpr][parser][let-stmt]") {
                     DeclarationStmt<
                         Type<TypeKind::int_>,
                         IdentifierExpr<"five">,
-                        Expr<ArrayLiteralExpr<
-                            Expr<IntegerLiteralExpr<1>>,
-                            Expr<IntegerLiteralExpr<2>>,
-                            Expr<StringLiteralExpr<"three">>,
-                            Expr<IntegerLiteralExpr<4>>,
-                            Expr<StringLiteralExpr<"five">>
-                        >>
+                        ArrayLiteralExpr<
+                            IntegerLiteralExpr<1>,
+                            IntegerLiteralExpr<2>,
+                            StringLiteralExpr<"three">,
+                            IntegerLiteralExpr<4>,
+                            StringLiteralExpr<"five">
+                        >
                     >
                 >
             >
@@ -110,9 +110,9 @@ TEST_CASE("parse if statement", "[constexpr][parser][if-stmt]") {
                 ProgramNode<
                     BlockStmt<
                         IfStmt<
-                            Expr<BoolLiteralExpr<true>>,
+                            BoolLiteralExpr<true>,
                             BlockStmt<
-                                Expr<IntegerLiteralExpr<5>>
+                                IntegerLiteralExpr<5>
                             >,
                             void
                         >
@@ -138,12 +138,12 @@ TEST_CASE("parse if statement", "[constexpr][parser][if-stmt]") {
                 ProgramNode<
                     BlockStmt<
                         IfStmt<
-                            Expr<BoolLiteralExpr<true>>,
+                            BoolLiteralExpr<true>,
                             BlockStmt<
-                                Expr<IntegerLiteralExpr<5>>
+                                IntegerLiteralExpr<5>
                             >,
                             BlockStmt<
-                                Expr<IntegerLiteralExpr<6>>
+                                IntegerLiteralExpr<6>
                             >
                         >
                     >
@@ -170,17 +170,17 @@ TEST_CASE("parse if statement", "[constexpr][parser][if-stmt]") {
                 ProgramNode<
                     BlockStmt<
                         IfStmt<
-                            Expr<BoolLiteralExpr<true>>,
+                            BoolLiteralExpr<true>,
                             BlockStmt<
-                                Expr<IntegerLiteralExpr<5>>
+                                IntegerLiteralExpr<5>
                             >,
                             IfStmt<
-                                Expr<BoolLiteralExpr<false>>,
+                                BoolLiteralExpr<false>,
                                 BlockStmt<
-                                    Expr<IntegerLiteralExpr<6>>
+                                    IntegerLiteralExpr<6>
                                 >,
                                 BlockStmt<
-                                    Expr<IntegerLiteralExpr<7>>
+                                    IntegerLiteralExpr<7>
                                 >
                             >
                         >
@@ -205,9 +205,9 @@ TEST_CASE("parse while statement", "[constexpr][parser][while-stmt]") {
             ProgramNode<
                 BlockStmt<
                     WhileStmt<
-                        Expr<BoolLiteralExpr<true>>,
+                        BoolLiteralExpr<true>,
                         BlockStmt<
-                            Expr<IntegerLiteralExpr<5>>
+                            IntegerLiteralExpr<5>
                         >
                     >
                 >
@@ -230,9 +230,9 @@ TEST_CASE("parse return statement", "[constexpr][parser][return-stmt]") {
             ProgramNode<
                 BlockStmt<
                     WhileStmt<
-                        Expr<BoolLiteralExpr<true>>,
+                        BoolLiteralExpr<true>,
                         BlockStmt<
-                            ReturnStmt<Expr<IntegerLiteralExpr<5>>>
+                            ReturnStmt<IntegerLiteralExpr<5>>
                         >
                     >
                 >
@@ -263,7 +263,7 @@ TEST_CASE("parse function", "[constexpr][parser][function]") {
                                 ArgType<Type<TypeKind::bool_>, IdentifierExpr<"c">>
                             >,
                             BlockStmt<
-                                ReturnStmt<Expr<IntegerLiteralExpr<5>>>
+                                ReturnStmt<IntegerLiteralExpr<5>>
                             >
                         >
                     >
@@ -286,14 +286,14 @@ TEST_CASE("parse function", "[constexpr][parser][function]") {
                 ProgramNode<
                     BlockStmt<
                         FunctionDecl<
-                            Expr<IdentifierExpr<"add">>,
+                            IdentifierExpr<"add">,
                             Type<TypeKind::int_>,
                             std::tuple<
                                 ArgType<Type<TypeKind::int_>, IdentifierExpr<"a">>,
                                 ArgType<Type<TypeKind::int_>, IdentifierExpr<"b">>
                             >,
                             BlockStmt<
-                                ReturnStmt<Expr<IdentifierExpr<"a">>>
+                                ReturnStmt<IdentifierExpr<"a">>
                             >
                         >
                     >
@@ -317,7 +317,7 @@ TEST_CASE("parse function", "[constexpr][parser][function]") {
                 ProgramNode<
                     BlockStmt<
                         FunctionDecl<
-                            Expr<IdentifierExpr<"add">>,
+                            IdentifierExpr<"add">,
                             Type<TypeKind::int_>,
                             std::tuple<
                                 ArgType<Type<TypeKind::int_>, IdentifierExpr<"a">>,
@@ -335,7 +335,7 @@ TEST_CASE("parse function", "[constexpr][parser][function]") {
                                 >
                             >,
                             BlockStmt<
-                                ReturnStmt<Expr<IdentifierExpr<"a">>>
+                                ReturnStmt<IdentifierExpr<"a">>
                             >
                         >
                     >

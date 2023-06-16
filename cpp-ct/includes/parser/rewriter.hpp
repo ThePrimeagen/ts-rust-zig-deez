@@ -106,8 +106,6 @@ namespace mk {
                     os << ']';
                 };
                 helper(os, block, depth, use_indentation);
-            } else if constexpr (is_expr_v<T>) {
-                rewriter_helper(os, initialize_value<typename T::type>(), depth, use_indentation);
             } else if constexpr (is_while_stmt_v<T>) {
                 os << std::setw(indent) << "while (";
                 rewriter_helper(os, initialize_value<typename T::condition>(), depth, false) << ')' << '\n';
@@ -166,6 +164,10 @@ namespace mk {
                     os << ") -> ";
                     rewriter_helper(os, initialize_value<typename T::return_type>(), depth, use_indentation);
                 }
+            } else if constexpr (is_unary_expr_v<T>) {
+                os << T::op << '(';
+                rewriter_helper(os, initialize_value<typename T::operand>(), depth, use_indentation);
+                os << ')';
             }
             return os;
         }

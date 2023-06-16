@@ -98,7 +98,7 @@ namespace mk::test  {
             Token(TokenKind::int_literal, "10"),
             Token(TokenKind::semicolon, ";"),
             Token(TokenKind::int_literal, "10"),
-            Token(TokenKind::exclamation_mark_equal, "!="),
+            Token(TokenKind::not_equal, "!="),
             Token(TokenKind::int_literal, "9"),
             Token(TokenKind::semicolon, ";"),
             Token(TokenKind::eof, "EOF")
