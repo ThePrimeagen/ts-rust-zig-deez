@@ -190,3 +190,28 @@ TEST_CASE("parse if statement", "[constexpr][parser][if-stmt]") {
         );
     }
 }
+
+TEST_CASE("parse while statement", "[constexpr][parser][while-stmt]") {
+    constexpr auto source = CtString(R"(
+        while(true) {
+            5
+        }
+    )");
+    constexpr auto ast = parse_tokens<Lexer<source>>();
+
+    static_assert(
+        std::is_same_v<
+            std::decay_t<decltype(ast)>,
+            ProgramNode<
+                BlockStmt<
+                    WhileStmt<
+                        Expr<BoolLiteralExpr<true>>,
+                        BlockStmt<
+                            Expr<IntegerLiteralExpr<5>>
+                        >
+                    >
+                >
+            >
+        >
+    );
+}
