@@ -129,8 +129,36 @@ namespace mk {
                 return parse_array_literal(ts);
             } else if constexpr (T.kind == TokenKind::identifier) {
                 return ParserResult<Expr<IdentifierExpr<T.lexeme>>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::kw_int) {
+                return ParserResult<Type<TypeKind::int_>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::kw_bool) {
+                return ParserResult<Type<TypeKind::bool_>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::kw_fn) {
+                return ParserResult<Type<TypeKind::fn>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::kw_string) {
+                return ParserResult<Type<TypeKind::string>, TokenList<Ts...>>{};
             } else {
                 return ParserResult<decltype(expr), TokenList<T, Ts...>>();
+            }
+        }
+
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_type(TokenList<T, Ts...>) {
+            if constexpr (T.kind == TokenKind::kw_int) {
+                return ParserResult<Type<TypeKind::int_>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::kw_bool) {
+                return ParserResult<Type<TypeKind::bool_>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::kw_string) {
+                return ParserResult<Type<TypeKind::string>, TokenList<Ts...>>{};
+            } else {
+                constexpr bool is_a_valid_type = (
+                    T.kind == TokenKind::kw_int ||
+                    T.kind == TokenKind::kw_bool ||
+                    T.kind == TokenKind::kw_string
+                    // TODO: Figure out how to handle function types. C++ doesn't allow calling function before it deduces the return type
+                    // T.kind == TokenKind::kw_fn
+                );
+                static_assert(is_a_valid_type, "Expected type after ':'; [int, string, fn, or bool]");
             }
         }
 
@@ -269,6 +297,108 @@ namespace mk {
             return ParserResult<stmt, rest_tokens_t>{};
         }
 
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_arg_type(TokenList<T, Ts...> ts) {
+            static_assert(T.kind == TokenKind::identifier, "Expected identifier");
+
+            static_assert(sizeof...(Ts) > 0, "Expected ':' after identifier");
+            constexpr auto colon = get_element_at_from_token_list<1>(ts);
+            static_assert(colon.kind == TokenKind::colon, "Expected ':' after identifier");
+
+            static_assert(sizeof...(Ts) > 1, "Expected type after ':'");
+
+            using rest_tokens_t = decltype(slice_token_list<2>(ts));
+
+            using type_result_t = decltype(parse_type(rest_tokens_t{}));
+
+            return ParserResult<ArgType<first_parser_result_t<type_result_t>, IdentifierExpr<T.lexeme>>, second_parser_result_t<type_result_t>>{};
+        }
+
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_fn_return_type(TokenList<T, Ts...>) {
+            static_assert(T.kind == TokenKind::right_arrow, "Expected '->'");
+
+            static_assert(sizeof...(Ts) > 0, "Expected type after '->'");
+
+            using type_result_t = decltype(parse_type(TokenList<Ts...>{}));
+
+            return ParserResult<first_parser_result_t<type_result_t>, second_parser_result_t<type_result_t>>{};
+        }
+
+        template<ParserToken T, ParserToken... Ts, typename... Us>
+        [[nodiscard]] constexpr auto parse_arg_list(TokenList<T, Ts...> ts, std::tuple<Us...> res) {
+            if constexpr (T.kind != TokenKind::close_paren) {
+                static_assert(sizeof...(Ts) > 0, "Expected ')' after argument list");
+            }
+
+            if constexpr (T.kind == TokenKind::close_paren) {
+                return ParserResult<std::tuple<Us...>, TokenList<Ts...>>{};
+            } else if constexpr (T.kind == TokenKind::comma) {
+                return parse_arg_list(TokenList<Ts...>{}, res);
+            } else {
+                using arg_result_t = decltype(parse_arg_type(ts));
+
+                using rest_tokens_t = second_parser_result_t<arg_result_t>;
+
+                using new_res_t = std::tuple<Us..., first_parser_result_t<arg_result_t>>;
+
+                return parse_arg_list(rest_tokens_t{}, new_res_t{});
+            }
+        }
+
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_fn_args(TokenList<T, Ts...>) {
+            static_assert(T.kind == TokenKind::open_paren, "Expected '(' after fn keyword");
+
+            constexpr auto rest_tokens = TokenList<Ts...>{};
+
+            using arg_list_result_t = decltype(parse_arg_list(rest_tokens, std::tuple<>{}));
+
+            using rest_tokens_t = second_parser_result_t<arg_list_result_t>;
+
+            return ParserResult<first_parser_result_t<arg_list_result_t>, rest_tokens_t>{};
+        }
+
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_fn_decl(TokenList<T, Ts...>) {
+            static_assert(T.kind == TokenKind::kw_fn, "Expected fn keyword");
+
+            auto const ts = TokenList<Ts...>{};
+
+            constexpr auto next_token = get_element_at_from_token_list<0>(ts);
+
+            if constexpr (next_token.kind == TokenKind::identifier) {
+                using identifier_result_t = decltype(parse_expression(ts, Expr<void>{}));
+                using identifier_t = first_parser_result_t<identifier_result_t>;
+                
+                using fn_args_result_t = decltype(parse_fn_args(second_parser_result_t<identifier_result_t>{}));
+                using fn_args_t = first_parser_result_t<fn_args_result_t>;
+                using rest_tokens_t = second_parser_result_t<fn_args_result_t>;
+                
+                using return_result_t = decltype(parse_fn_return_type(rest_tokens_t{}));
+                using return_t = first_parser_result_t<return_result_t>;
+
+                using fn_body_result_t = decltype(parse_block_stmt(second_parser_result_t<return_result_t>{}));
+                using fn_body_t = first_parser_result_t<fn_body_result_t>;
+
+
+                return ParserResult<FunctionDecl<identifier_t, return_t, fn_args_t, fn_body_t>, second_parser_result_t<fn_body_result_t>>{};
+                
+            } else {
+                using fn_args_result_t = decltype(parse_fn_args(ts));
+                using fn_args_t = first_parser_result_t<fn_args_result_t>;
+                using rest_tokens_t = second_parser_result_t<fn_args_result_t>;
+
+                using return_result_t = decltype(parse_fn_return_type(rest_tokens_t{}));
+                using return_t = first_parser_result_t<return_result_t>;
+
+                using fn_body_result_t = decltype(parse_block_stmt(second_parser_result_t<return_result_t>{}));
+                using fn_body_t = first_parser_result_t<fn_body_result_t>;
+
+                return ParserResult<AnonFunctionDecl<return_t, fn_args_t, fn_body_t>, second_parser_result_t<fn_body_result_t>>{};
+            }
+        }
+
 
         template<ParserToken T, ParserToken... Ts, typename... Us>
         [[nodiscard]] constexpr auto parse_stmt(TokenList<T, Ts...> ts, BlockStmt<Us...> list = BlockStmt<>{}) {
@@ -332,6 +462,17 @@ namespace mk {
 
                 static_assert(get_element_at_from_token_list<0>(remaining_t{}).kind == TokenKind::semicolon, "Expected semicolon after return statement");
                 return ParserResult<result_t, decltype(dequeue_token_list(remaining_t{}))>{};
+            } else if constexpr (T.kind == TokenKind::kw_fn) {
+                using parse_result_t = decltype(parse_fn_decl(ts));
+
+                using result_t = decltype(push_to_block_list(list, first_parser_result_t<parse_result_t>{}));
+                using remaining_t = second_parser_result_t<parse_result_t>;
+
+                if constexpr (get_element_at_from_token_list<0>(remaining_t{}).kind == TokenKind::semicolon) {
+                    return ParserResult<result_t, decltype(dequeue_token_list(remaining_t{}))>{};
+                } else {
+                    return ParserResult<result_t, remaining_t>{};
+                }
             } else {
                 using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
 

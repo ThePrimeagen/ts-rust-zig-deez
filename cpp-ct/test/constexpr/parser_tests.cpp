@@ -240,3 +240,66 @@ TEST_CASE("parse return statement", "[constexpr][parser][return-stmt]") {
         >
     );
 }
+
+TEST_CASE("parse function", "[constexpr][parser][function]") {
+    SECTION("Anon function") {
+        constexpr auto source = CtString(R"(
+            fn(a: int, b: string, c: bool) -> int {
+                return 5;
+            }
+        )");
+        constexpr auto ast = parse_tokens<Lexer<source>>();
+
+        static_assert(
+            std::is_same_v<
+                std::decay_t<decltype(ast)>,
+                ProgramNode<
+                    BlockStmt<
+                        AnonFunctionDecl<
+                            Type<TypeKind::int_>,
+                            std::tuple<
+                                ArgType<Type<TypeKind::int_>, IdentifierExpr<"a">>,
+                                ArgType<Type<TypeKind::string>, IdentifierExpr<"b">>,
+                                ArgType<Type<TypeKind::bool_>, IdentifierExpr<"c">>
+                            >,
+                            BlockStmt<
+                                ReturnStmt<Expr<IntegerLiteralExpr<5>>>
+                            >
+                        >
+                    >
+                >
+            >
+        );
+    }
+
+    SECTION("function declaration") {
+        constexpr auto source = CtString(R"(
+            fn add(a: int, b: int) -> int {
+                return a;
+            }
+        )");
+        constexpr auto ast = parse_tokens<Lexer<source>>();
+
+        static_assert(
+            std::is_same_v<
+                std::decay_t<decltype(ast)>,
+                ProgramNode<
+                    BlockStmt<
+                        FunctionDecl<
+                            Expr<IdentifierExpr<"add">>,
+                            Type<TypeKind::int_>,
+                            std::tuple<
+                                ArgType<Type<TypeKind::int_>, IdentifierExpr<"a">>,
+                                ArgType<Type<TypeKind::int_>, IdentifierExpr<"b">>
+                            >,
+                            BlockStmt<
+                                ReturnStmt<Expr<IdentifierExpr<"a">>>
+                            >
+                        >
+                    >
+                >
+            >
+        );
+    }
+}
+

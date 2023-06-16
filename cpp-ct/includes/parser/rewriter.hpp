@@ -116,6 +116,54 @@ namespace mk {
             } else if constexpr (is_return_stmt_v<T>) {
                 os << std::setw(indent) << "return ";
                 rewriter_helper(os, initialize_value<typename T::expression>(), depth, use_indentation) << ';';
+            } else if constexpr (is_function_decl_v<T>) {
+                os << std::setw(indent) << "fn ";
+                if constexpr (!is_anon_function_decl_v<T>) {
+                    rewriter_helper(os, initialize_value<typename T::id>(), depth, use_indentation);
+                }
+                os << '(';
+                if constexpr (std::tuple_size_v<typename T::params> != 0) {
+                    auto helper = []<typename U, typename...Us>(std::ostream& os, std::tuple<U, Us...>, int depth, bool use_indentation) {
+                        if constexpr (!std::is_void_v<U>) {
+                            rewriter_helper(os, initialize_value<U>(), depth, use_indentation);
+                        }
+                        if constexpr (sizeof... (Us) > 0) {
+                            ((os << ", ", rewriter_helper(os, initialize_value<Us>(), depth, use_indentation)), ...);
+                        }
+                    };
+                    helper(os, typename T::params{}, depth + 1, use_indentation);
+                }
+                os << ") -> ";
+                rewriter_helper(os, initialize_value<typename T::return_type>(), depth, use_indentation) << ' ';
+
+                rewriter_helper(os, initialize_value<typename T::body>(), depth, use_indentation);
+            } else if constexpr (is_arg_type_v<T>) {
+                rewriter_helper(os, initialize_value<typename T::id>(), depth, use_indentation);
+                os << ": ";
+                rewriter_helper(os, initialize_value<typename T::type>(), depth, use_indentation);
+            } else if constexpr (is_type_v<T>) {
+                if constexpr (T::kind == TypeKind::int_) {
+                    os << "int";
+                } else if constexpr (T::kind == TypeKind::bool_) {
+                    os << "bool";
+                } else if constexpr (T::kind == TypeKind::string) {
+                    os << "string";
+                } else if constexpr (T::kind == TypeKind::fn) {
+                    os << "fn(";
+                    if constexpr (std::tuple_size_v<typename T::params> != 0) {
+                        auto helper = []<typename U, typename...Us>(std::ostream& os, std::tuple<U, Us...>, int depth, bool use_indentation) {
+                            if constexpr (!std::is_void_v<U>) {
+                                rewriter_helper(os, initialize_value<U>(), depth, use_indentation);
+                            }
+                            if constexpr (sizeof... (Us) > 0) {
+                                ((os << ", ", rewriter_helper(os, initialize_value<Us>(), depth, use_indentation)), ...);
+                            }
+                        };
+                        helper(os, typename T::params{}, depth + 1, use_indentation);
+                    }
+                    os << ") -> ";
+                    rewriter_helper(os, initialize_value<typename T::return_type>(), depth, use_indentation);
+                }
             }
             return os;
         }

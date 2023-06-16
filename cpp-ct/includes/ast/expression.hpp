@@ -33,12 +33,6 @@ namespace mk {
         using operand = T;
         using op = Op;
     };
-
-    template<typename T, typename Node>
-    struct ArgExpr {
-        using type = T;
-        using node = Node;
-    };
     
     template<typename Node, typename... args>
     struct CallExpr {
@@ -153,15 +147,6 @@ namespace mk {
 
         template<typename T>
         constexpr bool is_call_expr_v = is_call_expr<T>::value;
-
-        template<typename T>
-        struct is_arg_expr : std::false_type {};
-
-        template<typename T, typename Node>
-        struct is_arg_expr<ArgExpr<T, Node>> : std::true_type {};
-
-        template<typename T>
-        constexpr bool is_arg_expr_v = is_arg_expr<T>::value;
 
     } // namespace detail
 

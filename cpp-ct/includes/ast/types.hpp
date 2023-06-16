@@ -29,6 +29,20 @@ namespace mk {
         static constexpr auto kind = Kind;
     };
 
+    namespace detail {
+        
+        template<typename T>
+        struct is_type : std::false_type {};
+
+        template<TypeKind Kind>
+        struct is_type<Type<Kind>> : std::true_type {};
+
+        template<typename T>
+        static constexpr bool is_type_v = is_type<T>::value;
+
+    } // namespace detail
+    
+
 } // namespace mk
 
 

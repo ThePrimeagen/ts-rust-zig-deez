@@ -40,6 +40,8 @@ MK_TOKEN(identifier)
 
 MK_TOKEN_BEGIN(keyword_begin)
     MK_KEYWORD(int)
+    MK_KEYWORD(bool)
+    MK_KEYWORD(string)
     
     MK_KEYWORD(fn)
     MK_KEYWORD(let)
@@ -86,6 +88,7 @@ MK_TOKEN_BEGIN(punctuator_begin)
     // For larger lookahead, keep them on the top so that they are matched first
     MK_PUNCTUATOR_MULTI_CHAR(less_than_less_than_equal, "<<=", 2)
     MK_PUNCTUATOR_MULTI_CHAR(greater_than_greater_than_equal, ">>=", 2)
+    MK_PUNCTUATOR_MULTI_CHAR(right_arrow, "->", 1)
     MK_PUNCTUATOR_MULTI_CHAR(plus_equal, "+=", 1)
     MK_PUNCTUATOR_MULTI_CHAR(minus_equal, "-=", 1)
     MK_PUNCTUATOR_MULTI_CHAR(star_equal, "*=", 1)
