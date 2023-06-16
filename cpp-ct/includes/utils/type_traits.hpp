@@ -1,7 +1,7 @@
 #if !defined(MK_TYPE_TRAITS_HPP)
 #define MK_TYPE_TRAITS_HPP
 
-#include <ast/ast_node.hpp>
+#include <ast/statement.hpp>
 #include <parser/parser_token.hpp>
 
 namespace mk {
@@ -38,8 +38,8 @@ namespace mk {
     using second_parser_result_t = typename P::token_list;
     
     template<typename T, typename...Ts>
-    constexpr auto push_to_program_list(ProgramNode<Ts...>, T) noexcept {
-        return ProgramNode<Ts..., T>{};
+    constexpr auto push_to_block_list(BlockStmt<Ts...>, T) noexcept {
+        return BlockStmt<Ts..., T>{};
     };
 
     template<detail::ParserToken T, detail::ParserToken... Ts>

@@ -15,10 +15,9 @@ namespace mk {
     //     type,
     // };
 
-    template<typename... Ts>
+    template<typename T>
     struct ProgramNode {
-        static constexpr auto size = sizeof...(Ts);
-        using type = std::tuple<Ts...>;
+        using type = T;
     };
     
 } // namespace mk
