@@ -2,8 +2,7 @@
 
 require 'vendor/autoload.php';
 
-class Tokenizer
-{
+class Tokenizer {
     private int $inputLength;
     private string $input;
 
@@ -11,21 +10,20 @@ class Tokenizer
     private int $readPosition = 0;
     private string $ch = "\0";
 
-    /** @var TokenType[]  */
+    /** @var TokenType[] */
     private static array $keywords = [
-        "fn" => TokenType::Function,
-        "let" => TokenType::Let,
-        "true" => TokenType::True,
-        "false" => TokenType::False,
-        "if" => TokenType::If,
-        "else" => TokenType::Else,
-        "return" => TokenType::Return,
+        'fn' => TokenType::Function,
+        'let' => TokenType::Let,
+        'true' => TokenType::True,
+        'false' => TokenType::False,
+        'if' => TokenType::If,
+        'else' => TokenType::Else,
+        'return' => TokenType::Return,
     ];
 
-    public function __construct(string $input, ?int $length = null)
-    {
+    public function __construct(string $input, int $length = null) {
         $this->input = $input;
-        if ($length === null) {
+        if (null === $length) {
             $length = strlen($input);
         }
 
@@ -33,46 +31,45 @@ class Tokenizer
         $this->readNextChar();
     }
 
-    public function getNextToken(): Token
-    {
+    public function getNextToken(): Token {
         $this->skipWhitespaces();
 
         $ch = $this->ch;
 
         $token = match (true) {
-            $ch === "[" => new Token(TokenType::LeftBracket),
-            $ch === "]" => new Token(TokenType::RightBracket),
-            $ch === "{" => new Token(TokenType::LeftBrace),
-            $ch === "}" => new Token(TokenType::RightBrace),
-            $ch === "(" => new Token(TokenType::LeftParen),
-            $ch === ")" => new Token(TokenType::RightParen),
-            $ch === "," => new Token(TokenType::Comma),
-            $ch === ":" => new Token(TokenType::Colon),
-            $ch === ";" => new Token(TokenType::Semicolon),
-            $ch === "=" => $this->readAssignOrEqualsToken(),
-            $ch === "+" => new Token(TokenType::Plus),
-            $ch === "-" => new Token(TokenType::Minus),
-            $ch === "!" => $this->readNotOrNotEqualsToken(),
-            $ch === "*" => new Token(TokenType::Asterisk),
-            $ch === "/" => new Token(TokenType::Slash),
-            $ch === "<" => new Token(TokenType::LessThan),
-            $ch === ">" => new Token(TokenType::GreaterThan),
-            $ch === '"' => $this->readStringToken(),
+            '[' === $ch => new Token(TokenType::LeftBracket),
+            ']' === $ch => new Token(TokenType::RightBracket),
+            '{' === $ch => new Token(TokenType::LeftBrace),
+            '}' === $ch => new Token(TokenType::RightBrace),
+            '(' === $ch => new Token(TokenType::LeftParen),
+            ')' === $ch => new Token(TokenType::RightParen),
+            ',' === $ch => new Token(TokenType::Comma),
+            ':' === $ch => new Token(TokenType::Colon),
+            ';' === $ch => new Token(TokenType::Semicolon),
+            '=' === $ch => $this->readAssignOrEqualsToken(),
+            '+' === $ch => new Token(TokenType::Plus),
+            '-' === $ch => new Token(TokenType::Minus),
+            '!' === $ch => $this->readNotOrNotEqualsToken(),
+            '*' === $ch => new Token(TokenType::Asterisk),
+            '/' === $ch => new Token(TokenType::Slash),
+            '<' === $ch => new Token(TokenType::LessThan),
+            '>' === $ch => new Token(TokenType::GreaterThan),
+            '"' === $ch => $this->readStringToken(),
             //            $ch === "$" => new Token(TokenType::Ident, $this->readWord()), // kidding
-            $ch === "\0" => new Token(TokenType::EOF),
+            "\0" === $ch => new Token(TokenType::EOF),
             Tokenizer::isLetter($ch) => $this->readWordToken(),
             ctype_digit($ch) => new Token(TokenType::Integer, $this->readInteger()),
             default => new Token(TokenType::Illegal, $ch),
         };
 
         if (
-            $token->type === TokenType::Function ||
-            $token->type === TokenType::Let ||
-            $token->type === TokenType::Identifier ||
-            $token->type === TokenType::Integer ||
-            $token->type === TokenType::True ||
-            $token->type === TokenType::False ||
-            $token->type === TokenType::If
+            TokenType::Function === $token->type
+            || TokenType::Let === $token->type
+            || TokenType::Identifier === $token->type
+            || TokenType::Integer === $token->type
+            || TokenType::True === $token->type
+            || TokenType::False === $token->type
+            || TokenType::If === $token->type
         ) {
             return $token;
         }
@@ -82,15 +79,13 @@ class Tokenizer
         return $token;
     }
 
-    private function skipWhitespaces(): void
-    {
-        while ($this->ch === " " || $this->ch === "\t" || $this->ch === "\n" || $this->ch === "\r") {
+    private function skipWhitespaces(): void {
+        while (' ' === $this->ch || "\t" === $this->ch || "\n" === $this->ch || "\r" === $this->ch) {
             $this->readNextChar();
         }
     }
 
-    private function peekChar(): string
-    {
+    private function peekChar(): string {
         if ($this->readPosition >= $this->inputLength) {
             return "\0";
         }
@@ -98,8 +93,7 @@ class Tokenizer
         return $this->input[$this->readPosition];
     }
 
-    private function readNextChar(): void
-    {
+    private function readNextChar(): void {
         if ($this->readPosition >= $this->inputLength) {
             $this->ch = "\0";
         } else {
@@ -107,16 +101,14 @@ class Tokenizer
         }
 
         $this->position = $this->readPosition;
-        $this->readPosition++;
+        ++$this->readPosition;
     }
 
-    private static function isLetter(string $ch): bool
-    {
-        return $ch >= "a" && $ch <= "z" || $ch >= "A" && $ch <= "Z" || $ch === "_";
+    private static function isLetter(string $ch): bool {
+        return $ch >= 'a' && $ch <= 'z' || $ch >= 'A' && $ch <= 'Z' || '_' === $ch;
     }
 
-    private function readWordToken(): Token
-    {
+    private function readWordToken(): Token {
         $word = $this->readWord();
 
         if (isset(self::$keywords[$word])) {
@@ -126,8 +118,7 @@ class Tokenizer
         return new Token(TokenType::Identifier, $word);
     }
 
-    private function readWord(): string
-    {
+    private function readWord(): string {
         $position = $this->position;
 
         while (Tokenizer::isLetter($this->ch)) {
@@ -137,8 +128,7 @@ class Tokenizer
         return substr($this->input, $position, $this->position - $position);
     }
 
-    private function readInteger(): string
-    {
+    private function readInteger(): string {
         $position = $this->position;
 
         while (ctype_digit($this->ch)) {
@@ -148,28 +138,27 @@ class Tokenizer
         return substr($this->input, $position, $this->position - $position);
     }
 
-    private function readAssignOrEqualsToken(): Token
-    {
-        if ($this->peekChar() === "=") {
+    private function readAssignOrEqualsToken(): Token {
+        if ('=' === $this->peekChar()) {
             $this->readNextChar();
+
             return new Token(TokenType::Equals);
         }
 
         return new Token(TokenType::Assign);
     }
 
-    private function readNotOrNotEqualsToken(): Token
-    {
-        if ($this->peekChar() === "=") {
+    private function readNotOrNotEqualsToken(): Token {
+        if ('=' === $this->peekChar()) {
             $this->readNextChar();
+
             return new Token(TokenType::NotEquals);
         }
 
         return new Token(TokenType::Not);
     }
 
-    private function readStringToken(): Token
-    {
+    private function readStringToken(): Token {
         $startPosition = $this->position + 1;
 
         $escaped = false;
@@ -177,15 +166,15 @@ class Tokenizer
 
         do {
             $this->readNextChar();
-            if ($this->ch === '\\') {
+            if ('\\' === $this->ch) {
                 $escaped = true;
                 $this->readNextChar();
-                if ($this->ch === '"') {
+                if ('"' === $this->ch) {
                     $this->readNextChar();
                 }
             }
-            $lastIsQuote = $this->ch === '"';
-        } while (!$lastIsQuote && $this->ch !== "\0");
+            $lastIsQuote = '"' === $this->ch;
+        } while (!$lastIsQuote && "\0" !== $this->ch);
 
         if ($escaped) {
             $stringWithQuotes = substr($this->input, $startPosition - 1, $this->position - $startPosition + 2);
@@ -208,6 +197,6 @@ class Tokenizer
             return new Token(TokenType::String, $stringValue);
         }
 
-        return new Token(TokenType::UnterminatedString, '"' . $stringValue);
+        return new Token(TokenType::UnterminatedString, '"'.$stringValue);
     }
 }

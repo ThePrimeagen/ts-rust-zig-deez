@@ -2,8 +2,7 @@
 
 require 'vendor/autoload.php';
 
-function tokenToPrecedence(TokenType $tokenType): Precedence
-{
+function tokenToPrecedence(TokenType $tokenType): Precedence {
     return match ($tokenType) {
         TokenType::Equals, TokenType::NotEquals => Precedence::Equals,
         TokenType::LessThan, TokenType::GreaterThan => Precedence::LessGreater,
@@ -14,8 +13,7 @@ function tokenToPrecedence(TokenType $tokenType): Precedence
     };
 }
 
-class Parser
-{
+class Parser {
     private readonly Tokenizer $tokenizer;
 
     private Token $currentToken;
@@ -26,14 +24,11 @@ class Parser
 
     /** @var Closure<Expression>[] */
     private array $prefixParseFns = [];
+
     /** @var Closure[] */
     private array $infixParseFns = [];
 
-    /**
-     * @param Tokenizer $tokenizer
-     */
-    public function __construct(Tokenizer $tokenizer)
-    {
+    public function __construct(Tokenizer $tokenizer) {
         $this->tokenizer = $tokenizer;
 
         $this->currentToken = $this->tokenizer->getNextToken();
@@ -65,35 +60,18 @@ class Parser
     /**
      * @return string[]
      */
-    public function getErrors(): array
-    {
+    public function getErrors(): array {
         return $this->errors;
     }
 
-    private function nextToken(): void
-    {
-        $this->currentToken = $this->peekToken;
-        $this->peekToken = $this->tokenizer->getNextToken();
-    }
-
-    private function peekPrecedence(): Precedence
-    {
-        return tokenToPrecedence($this->peekToken->type);
-    }
-
-    private function currentPrecedence(): Precedence
-    {
-        return tokenToPrecedence($this->currentToken->type);
-    }
-
-    public function parseProgram(): ?Program
-    {
+    public function parseProgram(): ?Program {
         $program = new Program();
+
         try {
-            while ($this->currentToken->type !== TokenType::EOF) {
+            while (TokenType::EOF !== $this->currentToken->type) {
                 $statement = $this->parseStatement();
 
-                if ($statement !== null) {
+                if (null !== $statement) {
                     $program->appendStatement($statement);
                 }
 
@@ -105,8 +83,20 @@ class Parser
         return $program;
     }
 
-    private function parseStatement(): ?Statement
-    {
+    private function nextToken(): void {
+        $this->currentToken = $this->peekToken;
+        $this->peekToken = $this->tokenizer->getNextToken();
+    }
+
+    private function peekPrecedence(): Precedence {
+        return tokenToPrecedence($this->peekToken->type);
+    }
+
+    private function currentPrecedence(): Precedence {
+        return tokenToPrecedence($this->currentToken->type);
+    }
+
+    private function parseStatement(): ?Statement {
         return match ($this->currentToken->type) {
             TokenType::Let => $this->parseLetStatement(),
             TokenType::Return => $this->parseReturnStatement(),
@@ -114,19 +104,19 @@ class Parser
         };
     }
 
-    private function expectPeek(TokenType $tokenType): bool
-    {
+    private function expectPeek(TokenType $tokenType): bool {
         if ($this->peekToken->type === $tokenType) {
             $this->nextToken();
+
             return true;
         }
 
         $this->peekError($tokenType);
+
         return false;
     }
 
-    private function parseLetStatement(): ?LetStatement
-    {
+    private function parseLetStatement(): ?LetStatement {
         $letToken = $this->currentToken;
 
         if (!$this->expectPeek(TokenType::Identifier)) {
@@ -148,8 +138,7 @@ class Parser
         return new LetStatement($letToken, $identifier, $letExpression);
     }
 
-    private function parseReturnStatement(): ?ReturnStatement
-    {
+    private function parseReturnStatement(): ?ReturnStatement {
         $returnToken = $this->currentToken;
         $this->nextToken();
 
@@ -160,31 +149,30 @@ class Parser
         return new ReturnStatement($returnToken, $returnExpression);
     }
 
-    private function parseExpressionStatement(): ?ExpressionStatement
-    {
+    private function parseExpressionStatement(): ?ExpressionStatement {
         $expression = $this->parseExpression(Precedence::Lowest);
 
-        if ($this->peekToken->type === TokenType::Semicolon) {
+        if (TokenType::Semicolon === $this->peekToken->type) {
             $this->nextToken();
         }
 
         return new ExpressionStatement($this->currentToken, $expression);
     }
 
-    private function parseExpression(Precedence $precedence): ?Expression
-    {
+    private function parseExpression(Precedence $precedence): ?Expression {
         $prefix = $this->prefixParseFns[$this->currentToken->type->name] ?? null;
-        if ($prefix === null) {
+        if (null === $prefix) {
             $this->noPrefixParseFnError($this->currentToken->type);
+
             return null;
         }
 
         /** @var Expression $leftExpression */
         $leftExpression = $prefix();
 
-        while ($this->peekToken->type !== TokenType::Semicolon && $precedence->value < $this->peekPrecedence()->value) {
+        while (TokenType::Semicolon !== $this->peekToken->type && $precedence->value < $this->peekPrecedence()->value) {
             $infix = $this->infixParseFns[$this->peekToken->type->name] ?? null;
-            if ($infix === null) {
+            if (null === $infix) {
                 return $leftExpression;
             }
 
@@ -193,46 +181,42 @@ class Parser
             /** @var Expression $leftExpression */
             $leftExpression = $infix($leftExpression);
         }
+
         return $leftExpression;
     }
 
-    private function peekError(TokenType $tokenType): void
-    {
+    private function peekError(TokenType $tokenType): void {
         $expected = $tokenType->name;
         $actual = $this->peekToken->type->name;
 
-        $this->errors[] = "Expected next token to be " . $expected . ", got " . $actual . " instead";
+        $this->errors[] = 'Expected next token to be '.$expected.', got '.$actual.' instead';
     }
 
-    private function registerPrefix(TokenType $tokenType, Closure $param): void
-    {
+    private function registerPrefix(TokenType $tokenType, Closure $param): void {
         $this->prefixParseFns[$tokenType->name] = $param;
     }
 
-    private function registerInfix(TokenType $tokenType, Closure $param): void
-    {
+    private function registerInfix(TokenType $tokenType, Closure $param): void {
         $this->infixParseFns[$tokenType->name] = $param;
     }
 
-    private function parseIdentifier(): Identifier
-    {
+    private function parseIdentifier(): Identifier {
         return new Identifier($this->currentToken, $this->currentToken->literal);
     }
 
-    private function parseIntegerLiteral(): ?IntegerLiteral
-    {
+    private function parseIntegerLiteral(): ?IntegerLiteral {
         $int = (int) $this->currentToken->literal;
 
-        if ($int === PHP_INT_MAX && $this->currentToken->literal !== (string) PHP_INT_MAX) {
-            $this->errors[] = "Could not parse " . $this->currentToken->literal . " as integer (too big).";
+        if (PHP_INT_MAX === $int && $this->currentToken->literal !== (string) PHP_INT_MAX) {
+            $this->errors[] = 'Could not parse '.$this->currentToken->literal.' as integer (too big).';
+
             return null;
         }
 
         return new IntegerLiteral($this->currentToken, $int);
     }
 
-    private function parseFunctionLiteral(): ?FunctionLiteral
-    {
+    private function parseFunctionLiteral(): ?FunctionLiteral {
         if (!$this->expectPeek(TokenType::LeftParen)) {
             return null;
         }
@@ -248,27 +232,26 @@ class Parser
         return new FunctionLiteral($this->currentToken, $parameters, $body);
     }
 
-    private function parseStringLiteral(): StringLiteral
-    {
+    private function parseStringLiteral(): StringLiteral {
         return new StringLiteral($this->currentToken, $this->currentToken->literal);
     }
 
-    private function handleUnterminatedString(): null
-    {
-        $this->errors[] = "Unterminated string literal";
+    private function handleUnterminatedString(): null {
+        $this->errors[] = 'Unterminated string literal';
+
         return null;
     }
 
     /**
      * @return Identifier[]
      */
-    private function parseFunctionParameters(): array
-    {
+    private function parseFunctionParameters(): array {
         /** @var Identifier[] $identifiers */
         $identifiers = [];
 
-        if ($this->peekToken->type === TokenType::RightParen) {
+        if (TokenType::RightParen === $this->peekToken->type) {
             $this->nextToken();
+
             return $identifiers;
         }
 
@@ -276,8 +259,7 @@ class Parser
 
         $identifiers[] = new Identifier($this->currentToken, $this->currentToken->literal);
 
-
-        while ($this->peekToken->type === TokenType::Comma) {
+        while (TokenType::Comma === $this->peekToken->type) {
             $this->nextToken();
             $this->nextToken();
 
@@ -291,13 +273,11 @@ class Parser
         return $identifiers;
     }
 
-    private function parseBoolean(): BooleanLiteral
-    {
-        return new BooleanLiteral($this->currentToken, $this->currentToken->type === TokenType::True);
+    private function parseBoolean(): BooleanLiteral {
+        return new BooleanLiteral($this->currentToken, TokenType::True === $this->currentToken->type);
     }
 
-    private function parseIfExpression(): ?IfExpression
-    {
+    private function parseIfExpression(): ?IfExpression {
         $ifToken = $this->currentToken;
 
         if (!$this->expectPeek(TokenType::LeftParen)) {
@@ -318,7 +298,7 @@ class Parser
 
         $consequence = $this->parseBlockStatement();
 
-        if ($this->peekToken->type === TokenType::Else) {
+        if (TokenType::Else === $this->peekToken->type) {
             $this->nextToken();
 
             if (!$this->expectPeek(TokenType::LeftBrace)) {
@@ -333,30 +313,28 @@ class Parser
         return new IfExpression($ifToken, $condition, $consequence, $alternative);
     }
 
-    private function noPrefixParseFnError(TokenType $tokenType): void
-    {
-        $this->errors[] = "No prefix parse function for " . $tokenType->name . " found";
+    private function noPrefixParseFnError(TokenType $tokenType): void {
+        $this->errors[] = 'No prefix parse function for '.$tokenType->name.' found';
     }
 
-    private function parsePrefixExpression(): ?PrefixExpression
-    {
+    private function parsePrefixExpression(): ?PrefixExpression {
         $token = $this->currentToken;
         $this->nextToken();
         $right = $this->parseExpression(Precedence::Prefix);
+
         return new PrefixExpression($token, $right);
     }
 
-    private function parseInfixExpression(Expression $left): ?InfixExpression
-    {
+    private function parseInfixExpression(Expression $left): ?InfixExpression {
         $token = $this->currentToken;
         $precedence = $this->currentPrecedence();
         $this->nextToken();
         $right = $this->parseExpression($precedence);
+
         return new InfixExpression($token, $left, $right);
     }
 
-    private function parseGroupedExpression(): ?Expression
-    {
+    private function parseGroupedExpression(): ?Expression {
         $this->nextToken();
         $exp = $this->parseExpression(Precedence::Lowest);
 
@@ -367,22 +345,21 @@ class Parser
         return $exp;
     }
 
-    private function parseCallExpression(Expression $left): ?CallExpression
-    {
+    private function parseCallExpression(Expression $left): ?CallExpression {
         $token = $this->currentToken;
         $arguments = $this->parseCallArguments();
+
         return new CallExpression($token, $left, $arguments);
     }
 
-    private function parseBlockStatement(): BlockStatement
-    {
+    private function parseBlockStatement(): BlockStatement {
         /** @var Statement[] $statements */
         $statements = [];
 
         $this->nextToken();
-        while ($this->currentToken->type !== TokenType::RightBrace && $this->currentToken->type !== TokenType::EOF) {
+        while (TokenType::RightBrace !== $this->currentToken->type && TokenType::EOF !== $this->currentToken->type) {
             $statement = $this->parseStatement();
-            if ($statement !== null) {
+            if (null !== $statement) {
                 $statements[] = $statement;
             }
             $this->nextToken();
@@ -394,20 +371,20 @@ class Parser
     /**
      * @return Expression[]
      */
-    private function parseCallArguments(): array
-    {
+    private function parseCallArguments(): array {
         /** @var Expression[] $arguments */
         $arguments = [];
 
-        if ($this->peekToken->type === TokenType::RightParen) {
+        if (TokenType::RightParen === $this->peekToken->type) {
             $this->nextToken();
+
             return $arguments;
         }
 
         $this->nextToken();
         $arguments[] = $this->parseExpression(Precedence::Lowest);
 
-        while ($this->peekToken->type === TokenType::Comma) {
+        while (TokenType::Comma === $this->peekToken->type) {
             $this->nextToken();
             $this->nextToken();
             $arguments[] = $this->parseExpression(Precedence::Lowest);

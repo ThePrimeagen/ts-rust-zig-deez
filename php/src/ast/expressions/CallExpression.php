@@ -2,12 +2,8 @@
 
 require 'vendor/autoload.php';
 
-readonly class CallExpression implements Expression
-{
-
+readonly class CallExpression implements Expression {
     /**
-     * @param Token $token
-     * @param Expression $function
      * @param Expression[] $arguments
      */
     public function __construct(
@@ -17,17 +13,14 @@ readonly class CallExpression implements Expression
     ) {
     }
 
-    public function expressionNode(): void
-    {
+    public function __toString(): string {
+        return $this->function.'('.implode(', ', $this->arguments).')';
     }
 
-    public function tokenLiteral(): string
-    {
-        return "(";
+    public function expressionNode(): void {
     }
 
-    public function __toString(): string
-    {
-        return $this->function . "(" . implode(", ", $this->arguments) . ")";
+    public function tokenLiteral(): string {
+        return '(';
     }
 }
