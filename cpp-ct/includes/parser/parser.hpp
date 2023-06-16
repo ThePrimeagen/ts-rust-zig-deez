@@ -249,6 +249,26 @@ namespace mk {
             return ParserResult<stmt, second_parser_result_t<body_result_t>>{};
         }
 
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_return_stmt(TokenList<T, Ts...>) {
+            static_assert(T.kind == TokenKind::kw_return, "Expected return keyword");
+
+            constexpr auto ts = TokenList<Ts...>{};
+
+            static_assert(sizeof...(Ts) > 0, "Expected expression after return keyword");
+            using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
+
+            using rest_tokens_t = second_parser_result_t<expr_result_t>;
+
+            static_assert(rest_tokens_t::size > 0, "Expected semicolon after expression");
+            constexpr auto semicolon = get_element_at_from_token_list<0>(rest_tokens_t{});
+            static_assert(semicolon.kind == TokenKind::semicolon, "Expected semicolon after expression");
+
+            using stmt = ReturnStmt<first_parser_result_t<expr_result_t>>;
+
+            return ParserResult<stmt, rest_tokens_t>{};
+        }
+
 
         template<ParserToken T, ParserToken... Ts, typename... Us>
         [[nodiscard]] constexpr auto parse_stmt(TokenList<T, Ts...> ts, BlockStmt<Us...> list = BlockStmt<>{}) {
@@ -304,6 +324,14 @@ namespace mk {
                 } else {
                     return ParserResult<result_t, remaining_t>{};
                 }
+            } else if constexpr (T.kind == TokenKind::kw_return) {
+                using parse_result_t = decltype(parse_return_stmt(ts));
+
+                using result_t = decltype(push_to_block_list(list, first_parser_result_t<parse_result_t>{}));
+                using remaining_t = second_parser_result_t<parse_result_t>;
+
+                static_assert(get_element_at_from_token_list<0>(remaining_t{}).kind == TokenKind::semicolon, "Expected semicolon after return statement");
+                return ParserResult<result_t, decltype(dequeue_token_list(remaining_t{}))>{};
             } else {
                 using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
 

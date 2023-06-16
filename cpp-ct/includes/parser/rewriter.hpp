@@ -47,11 +47,13 @@ namespace mk {
 
         template<typename T>
         std::ostream& rewriter_helper(std::ostream& os, T block, int depth, bool use_indentation) {
+            auto indent = (depth + 1) * indent_width_v * static_cast<int>(use_indentation);
+
             if constexpr (is_block_stmt<T>::value) {
                 if constexpr(T::size != 0) {
                     auto helper = []<typename...Us>(std::ostream& os, BlockStmt<Us...>, int depth, bool use_indentation) {
                         if constexpr (!(std::is_void_v<Us> || ...)) {
-                            const auto indent = depth * indent_width_v * static_cast<int>(use_indentation);
+                            auto const indent = depth * indent_width_v * static_cast<int>(use_indentation);
                             os << std::setw(indent) << '{' << '\n';
                             rewriter_helper(os, detail::initialize_value<std::tuple<Us...>>(), depth + 1, use_indentation);
                             os << std::setw(indent) << '}';
@@ -72,7 +74,6 @@ namespace mk {
                     helper(os, block, depth, use_indentation);
                 }
             } else if constexpr (is_if_stmt<T>::value) {
-                auto const indent = (depth + 1) * indent_width_v * static_cast<int>(use_indentation);
                 os << std::setw(indent) << "if (";
                 rewriter_helper(os, initialize_value<typename T::condition>(), depth, false) << ')' << '\n';
                 rewriter_helper(os, initialize_value<typename T::then>(), depth, use_indentation) << '\n';
@@ -81,7 +82,6 @@ namespace mk {
                     rewriter_helper(os, initialize_value<typename T::else_>(), depth, use_indentation);
                 }
             } else if constexpr (is_declaration_stmt<T>::value) {
-                auto const indent = (depth + 1) * indent_width_v * static_cast<int>(use_indentation);
                 os << std::setw(indent) << "let "; 
                 rewriter_helper(os, initialize_value<typename T::identifier>(), depth, use_indentation) << " = ";
                 rewriter_helper(os, initialize_value<typename T::expression>(), depth, use_indentation);
@@ -109,10 +109,13 @@ namespace mk {
             } else if constexpr (is_expr_v<T>) {
                 rewriter_helper(os, initialize_value<typename T::type>(), depth, use_indentation);
             } else if constexpr (is_while_stmt_v<T>) {
-                os << "while (";
+                os << std::setw(indent) << "while (";
                 rewriter_helper(os, initialize_value<typename T::condition>(), depth, false) << ')' << '\n';
                 rewriter_helper(os, initialize_value<typename T::body>(), depth, use_indentation);
                 os << '\n';
+            } else if constexpr (is_return_stmt_v<T>) {
+                os << std::setw(indent) << "return ";
+                rewriter_helper(os, initialize_value<typename T::expression>(), depth, use_indentation) << ';';
             }
             return os;
         }
