@@ -1,6 +1,7 @@
 #if !defined(MK_AST_STATEMENT_HPP)
 #define MK_AST_STATEMENT_HPP
 
+#include <tuple>
 namespace mk {
     
     // enum class StatementKind {
@@ -107,6 +108,15 @@ namespace mk {
         template<typename T>
         static constexpr auto is_declaration_stmt_v = is_declaration_stmt<T>::value;
 
+
+        template<typename T>
+        struct is_tuple : std::false_type {};
+
+        template<typename... Ts>
+        struct is_tuple<std::tuple<Ts...>> : std::true_type {};
+
+        template<typename T>
+        static constexpr auto is_tuple_v = is_tuple<T>::value;
 
     } // namespace detail
     

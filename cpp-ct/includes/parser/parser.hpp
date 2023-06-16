@@ -220,6 +220,36 @@ namespace mk {
             return ParserResult<stmt, second_parser_result_t<else_result_t>>{};
         }
 
+        template<ParserToken T, ParserToken... Ts>
+        [[nodiscard]] constexpr auto parse_while_stmt(TokenList<T, Ts...>) {
+            static_assert(T.kind == TokenKind::kw_while, "Expected while keyword");
+
+            constexpr auto ts = TokenList<Ts...>{};
+
+            static_assert(sizeof...(Ts) > 0, "Expected '(' after while keyword");
+            constexpr auto open_paren = get_element_at_from_token_list<0>(ts);
+            static_assert(open_paren.kind == TokenKind::open_paren, "Expected '(' after while keyword");
+
+            static_assert(sizeof...(Ts) > 1, "Expected expression after '('");
+            using expr_result_t = decltype(parse_expression(ts, Expr<void>{}));
+
+            using rest_tokens_t = second_parser_result_t<expr_result_t>;
+
+            static_assert(rest_tokens_t::size > 0, "Expected '{' after ')'");
+            constexpr auto open_brace = get_element_at_from_token_list<0>(rest_tokens_t{});
+            static_assert(open_brace.kind == TokenKind::open_brace, "Expected '{' after ')'");
+
+            using body_result_t = decltype(parse_block_stmt(rest_tokens_t{}));
+
+            using stmt = WhileStmt<
+                first_parser_result_t<expr_result_t>,
+                first_parser_result_t<body_result_t>
+            >;
+
+            return ParserResult<stmt, second_parser_result_t<body_result_t>>{};
+        }
+
+
         template<ParserToken T, ParserToken... Ts, typename... Us>
         [[nodiscard]] constexpr auto parse_stmt(TokenList<T, Ts...> ts, BlockStmt<Us...> list = BlockStmt<>{}) {
             if constexpr (T.kind == TokenKind::kw_let) {
@@ -254,6 +284,17 @@ namespace mk {
                 }
             } else if constexpr(T.kind == TokenKind::open_brace) {
                 using parse_result_t = decltype(parse_block_stmt(ts));
+
+                using result_t = decltype(push_to_block_list(list, first_parser_result_t<parse_result_t>{}));
+                using remaining_t = second_parser_result_t<parse_result_t>;
+
+                if constexpr (get_element_at_from_token_list<0>(remaining_t{}).kind == TokenKind::semicolon) {
+                    return ParserResult<result_t, decltype(dequeue_token_list(remaining_t{}))>{};
+                } else {
+                    return ParserResult<result_t, remaining_t>{};
+                }
+            } else if constexpr(T.kind == TokenKind::kw_while) {
+                using parse_result_t = decltype(parse_while_stmt(ts));
 
                 using result_t = decltype(push_to_block_list(list, first_parser_result_t<parse_result_t>{}));
                 using remaining_t = second_parser_result_t<parse_result_t>;

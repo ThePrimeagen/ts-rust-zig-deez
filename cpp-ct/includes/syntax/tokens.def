@@ -44,6 +44,8 @@ MK_TOKEN_BEGIN(keyword_begin)
     MK_KEYWORD(fn)
     MK_KEYWORD(let)
     
+    MK_KEYWORD(for)
+    MK_KEYWORD(while)
     MK_KEYWORD(if)
     MK_KEYWORD(else)
     MK_KEYWORD(return)

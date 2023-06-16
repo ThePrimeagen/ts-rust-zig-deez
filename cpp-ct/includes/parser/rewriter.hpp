@@ -49,15 +49,24 @@ namespace mk {
         std::ostream& rewriter_helper(std::ostream& os, T block, int depth, bool use_indentation) {
             if constexpr (is_block_stmt<T>::value) {
                 if constexpr(T::size != 0) {
-                    auto helper = []<typename U, typename...Us>(std::ostream& os, BlockStmt<U, Us...>, int depth, bool use_indentation) {
-                        if constexpr (!std::is_void_v<U>) {
+                    auto helper = []<typename...Us>(std::ostream& os, BlockStmt<Us...>, int depth, bool use_indentation) {
+                        if constexpr (!(std::is_void_v<Us> || ...)) {
                             const auto indent = depth * indent_width_v * static_cast<int>(use_indentation);
                             os << std::setw(indent) << '{' << '\n';
-                            rewriter_helper(os, detail::initialize_value<U>(), depth + 1, use_indentation) << '\n';
+                            rewriter_helper(os, detail::initialize_value<std::tuple<Us...>>(), depth + 1, use_indentation);
                             os << std::setw(indent) << '}';
                         }
+                    };
+                    helper(os, block, depth, use_indentation);
+                }
+            } else if constexpr (is_tuple_v<T>) {
+                if constexpr (std::tuple_size_v<T> != 0) {
+                    auto helper = []<typename U, typename...Us>(std::ostream& os, std::tuple<U, Us...>, int depth, bool use_indentation) {
+                        if constexpr (!std::is_void_v<U>) {
+                            rewriter_helper(os, detail::initialize_value<U>(), depth, use_indentation) << '\n';
+                        }
                         if constexpr (sizeof... (Us) > 0) {
-                            rewriter_helper(os, detail::initialize_value<BlockStmt<Us...>>(), depth + 1, use_indentation);
+                            rewriter_helper(os, detail::initialize_value<std::tuple<Us...>>(), depth, use_indentation);
                         }
                     };
                     helper(os, block, depth, use_indentation);
@@ -99,6 +108,11 @@ namespace mk {
                 helper(os, block, depth, use_indentation);
             } else if constexpr (is_expr_v<T>) {
                 rewriter_helper(os, initialize_value<typename T::type>(), depth, use_indentation);
+            } else if constexpr (is_while_stmt_v<T>) {
+                os << "while (";
+                rewriter_helper(os, initialize_value<typename T::condition>(), depth, false) << ')' << '\n';
+                rewriter_helper(os, initialize_value<typename T::body>(), depth, use_indentation);
+                os << '\n';
             }
             return os;
         }
