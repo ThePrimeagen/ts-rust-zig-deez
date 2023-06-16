@@ -24,9 +24,19 @@ namespace mk {
         return "unknown";
     }
 
+    template<TypeKind Kind, typename...>
+    struct Type;
+
     template<TypeKind Kind>
-    struct Type {
+    struct Type<Kind> {
         static constexpr auto kind = Kind;
+    };
+    
+    template<typename ReturnType, typename Args>
+    struct Type<TypeKind::fn, ReturnType, Args> {
+        static constexpr auto kind = TypeKind::fn;
+        using params = Args;
+        using return_type = ReturnType;
     };
 
     namespace detail {
@@ -34,8 +44,8 @@ namespace mk {
         template<typename T>
         struct is_type : std::false_type {};
 
-        template<TypeKind Kind>
-        struct is_type<Type<Kind>> : std::true_type {};
+        template<TypeKind Kind, typename... Ts>
+        struct is_type<Type<Kind, Ts...>> : std::true_type {};
 
         template<typename T>
         static constexpr bool is_type_v = is_type<T>::value;

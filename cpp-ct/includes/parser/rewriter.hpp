@@ -138,8 +138,10 @@ namespace mk {
 
                 rewriter_helper(os, initialize_value<typename T::body>(), depth, use_indentation);
             } else if constexpr (is_arg_type_v<T>) {
-                rewriter_helper(os, initialize_value<typename T::id>(), depth, use_indentation);
-                os << ": ";
+                if constexpr (!std::is_void_v<typename T::id>) {
+                    rewriter_helper(os, initialize_value<typename T::id>(), depth, use_indentation);
+                    os << ": ";
+                }
                 rewriter_helper(os, initialize_value<typename T::type>(), depth, use_indentation);
             } else if constexpr (is_type_v<T>) {
                 if constexpr (T::kind == TypeKind::int_) {

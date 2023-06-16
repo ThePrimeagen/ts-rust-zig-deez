@@ -301,5 +301,47 @@ TEST_CASE("parse function", "[constexpr][parser][function]") {
             >
         );
     }
+
+    SECTION("function declaration with function type in it") {
+        constexpr auto source = CtString(R"(
+            fn add(a: int, b: int, c: fn(int, f: int) -> int) -> int {
+                return a;
+            }
+        )");
+
+        constexpr auto ast = parse_tokens<Lexer<source>>();
+
+        static_assert(
+            std::is_same_v<
+                std::decay_t<decltype(ast)>,
+                ProgramNode<
+                    BlockStmt<
+                        FunctionDecl<
+                            Expr<IdentifierExpr<"add">>,
+                            Type<TypeKind::int_>,
+                            std::tuple<
+                                ArgType<Type<TypeKind::int_>, IdentifierExpr<"a">>,
+                                ArgType<Type<TypeKind::int_>, IdentifierExpr<"b">>,
+                                ArgType<
+                                    Type<
+                                        TypeKind::fn,
+                                        Type<TypeKind::int_>,
+                                        std::tuple<
+                                            ArgType<Type<TypeKind::int_>, void>,
+                                            ArgType<Type<TypeKind::int_>, IdentifierExpr<"f">>
+                                        >
+                                    >,
+                                    IdentifierExpr<"c">
+                                >
+                            >,
+                            BlockStmt<
+                                ReturnStmt<Expr<IdentifierExpr<"a">>>
+                            >
+                        >
+                    >
+                >
+            >
+        );
+    }
 }
 
