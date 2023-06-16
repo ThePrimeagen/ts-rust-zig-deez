@@ -1,4 +1,12 @@
+<div align="center">
+
 # MonkeyLang Interpreter in Haskell
+
+##### Haskek tutorial
+
+![Copilot knows what's the shit](./resources/copilot.png)
+
+</div>
 
 ## Quickstart
 
@@ -22,34 +30,896 @@ cat program.monkey | cabal run haskell basic
 - [HLint](https://hackage.haskell.org/package/hlint) to check code
 - [Cabal](https://hackage.haskell.org/package/Cabal) the build tool
 
-## Lexer
+## Implementation
 
-### Basic
+Some useful things to know before the implementation
 
-`Lexer.Basic` is an attempt to make a very simple implementation of a lexer
-using only pattern matching and iterating over a string.
+### [Data.ByteString.Char8](https://hackage.haskell.org/package/bytestring-0.11.4.0/docs/Data-ByteString-Char8.html)
 
-### Monad
+Haskell `String` type is actually a linked list of `Char`. This is not very
+performant, e.g., `length` and indexing `(!!)` operations are O(N). Also,
+indexing is unsafe (can "panic"). `ByteString` is an alternative to the
+standard `String`. With this data type we have O(1) operations and built in
+safe indexing `(!?)` that return `Maybe` types (`Option` in Rust).
 
-`Lexer.Monad` is an example of how you would implement a Lexer using
-Transformer Monads. `Lexer.State` is the actual implementation using a State
-Monad. This one feels the most similar to the book implementation.
 
-### Megaparsec
+For this reason I have created a type alias that I used in my implementation
 
-`Lexer.Parsec` is an implementation of a lexer using the megaparsec library.
-For some reason it feels really slow.
+```haskell
+type Input = ByteString
+```
 
-Overall I think it is cool to see different implementations for how to
-implement lexers.
+### Token
 
-### Lens
+I created a separate Token module to help with having the same format across
+different implementations of lexers.
 
-`Lexer.Lens` is an implementation of a lexer using State and Lens.
+In this module we can define our Token enum. We can do that with the `data`
+keyword like so
 
-## Why use certain packages?
+```haskell
+data Token
+    = Illegal
+    | Eof
+    | Ident String
+    ...
+    deriving (Show, Eq)
+```
 
-### [Control.Lens](https://hackage.haskell.org/package/lens-5.2.2/docs/Control-Lens.html)
+this is equivalent to the Rust code
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+enum Token {
+    Illegal,
+    Eof,
+    Ident(String),
+    ...
+}
+```
+
+This basically means that we have a data type called `Token` which has (in this
+example) 3 constructors, `Illegal`, `Eof` and `Indent`. The `Ident` constructor
+can also hold a `String` value as a container.
+
+```haskell
+>>> myIllegalToken :: Token = Illegal
+>>> myIdentToken :: Token = Ident "myIdent"
+-- :: Token is not required, but it helps to visualize the type
+```
+
+Next we can define a common type for our lexing function. We want a function
+that will take in a `String` and return a list of tokens `[Token]`. I decided
+to not require a `ByteString` here, because we can convert the `String`
+internally and not have the user of this library concern with the input type.
+
+This means that we are going to have a function `tokenize` at some point with
+the following definition
+
+```haskell
+tokenize :: String -> [Token]
+```
+
+To enforce the rule that all implementations will have this type we can create
+a type alias for this function like this
+
+```haskell
+type Tokenizer = String -> [Token]
+```
+
+and now we can do
+
+```haskell
+tokenize :: Tokenizer
+```
+
+which is the same thing.
+
+We can also add here some helper functions, for example we can implement a
+function that checks if a character `Char` is part of an identifier or not. In
+the book they use `a-zA-Z_`. In Haskell we can use the `==` function to check
+if two things are equal. And the `||` function to perform the `or` operation on
+truth values, like any other language.
+
+For example we can try to implmenet the `isIdentChar` like this
+
+```haskell
+isIdentChar :: Char -> Bool
+isIdentChar c = c == 'a' || c == 'b' ...
+```
+
+however this is to difficult to maintain, so we can also make use of a range
+
+```haskell
+>>> ['a'..'z']
+"abcdefghijklmnopqrstuvwxyz"
+```
+
+this is equivalent to doing a range in Rust like this `('a'..='z')`. In Haskell
+the ranges are inclusive by default, not the best in my opinion, but it is what
+it is. Next we need to check if the character is in this generated `String`. We
+can use `elem` for this
+
+```haskell
+isIdentChar c = elem c ['a'..'z'] || elem c ['A'..'Z'] || c == '_'
+```
+
+We can also use the infix notation (or however it is called) to convert a
+function into an operator
+
+```haskell
+isIdentChar c = c `elem` ['a'..'z'] || c `elem` ['A'..'Z'] || c == '_'
+```
+
+now instead of taking the arguments from the next two positions, `elem` will
+take them from the lefthand side and righthand side.
+
+To make everything cleaner we have a function `isLetter` in `Data.Char` module
+that checks if a character is `a-zA-Z`
+
+```haskell
+isIdentChar :: Char -> Bool
+isIdentChar c = isLetter c || c == '_'
+```
+
+Next let's implement a function that will take in a `String` value and will
+return a `Token` that represents the given keyword or identifier. It is
+basically a map from a string to a token. We can do that in Haskell by using
+the usual `if ... else` statements that everyone is familiar with. First let us
+imagine that we only care about "fn", "let" and identifiers
+
+```haskell
+identToken :: String -> Token
+identToken ident = if ident == "fn" then Function else if ident == "let" then Let else Ident x
+```
+
+we can see that this can get out of hand really quickly, so as many other
+languages Haskell has a switch kind of statement `case ... of`
+
+```haskell
+identToken :: String -> Token
+identToken ident = case ident of
+    "fn" -> Function
+    "let" -> Let
+    x -> Ident x
+```
+
+this looks nice and is easier to maintain, but I prefer to use pattern matching
+when possible
+
+```haskell
+identToken :: String -> Token
+identToken "fn" = Function
+identToken "let" = Let
+identToken x = Ident x
+```
+
+this is pretty much the same as the one above, but we explicitly define a
+function for each case. Haskell will try each one from top to bottom until one
+matches and then it will execute it.
+
+### Lexer.Book
+
+`Lexer.Book` shows how one would implement the lexer by following the book.
+Book.hs is a module that will export a `tokenize` function.
+
+First we need to define the data structure that will hold the lexer. We can do
+this by using the `data` keyword
+
+```haskell
+data Lexer = Lexer Input Int Int Char
+```
+
+then, to create a new Lexer we can create a function that takes in an Input and
+returns a Lexer.
+
+```haskell
+newLexer :: Input -> Lexer
+newLexer input = Lexer input 0 0 '\0'
+```
+
+however this is not very intuitive, what does each `Int` mean and what is the
+`Char`? Because of this we can actually use a more verbose way of defining this
+data type by using records
+
+```haskell
+data Lexer = Lexer
+    { input :: Input      -- The input string
+    , position :: Int     -- The position of the cursor
+    , readPosition :: Int -- The position of the reading head
+    , ch :: Char          -- The current character
+    }
+```
+
+and the syntax to instantiate the structure (very similar to Rust btw) is like this
+
+```haskell
+newLexer :: Input -> Lexer
+newLexer input =
+    Lexer
+        { input = input
+        , position = 0
+        , readPosition = 0
+        , ch = '\0'
+        }
+```
+
+With this definition we will be able to access the fields of a lexer using the
+record names. For example lets say that we have a `lexer :: Lexer`, then we can
+access the input by doing `input lexer`, or we can use `readPosition lexer` to
+get the readPosition. We can even craft a more complex example, lets say
+
+```haskell
+input lexer !? readPosition lexer
+```
+
+which would return the lookahead character. This is similar to indexing in a list
+
+```rust
+lexer.input[lexer.readPosition]
+```
+
+or to be more precise it would be the same as
+
+```rust
+lexer.input.get(lexer.readPosition)
+```
+
+because it returns an optional value, in Haskell it is called `Maybe`.
+
+With this information we can try to build a `peek` function. This will be
+responsible for giving us the character that is under the reading head, or the
+null `\0` character if we are outside of the bounds. This function will receive
+the Lexer as an argument and it will return a character.
+
+```haskell
+peek :: Lexer -> Char
+```
+
+Right now we know how to index the ByteString and get a Maybe of out it. But
+how do we extract the Char from the optional? For this we can use a `case ...
+of` statement.
+
+```haskell
+case input lexer !? readPosition lexer of
+    Just c -> c
+    Nothing -> '\0'
+```
+
+Similar to how Option in Rust has two constructors (Some and None), the Maybe
+type in Haskell has two as well one called `Just` that holds the value (Some)
+and an empty one `Nothing` (None).
+
+There is however a shorter way of writting this, by using the `fromMaybe`
+function, located in `Data.Maybe`. This function takes a default value and a
+Maybe value and will work exactly as the case from above. (`unwrap_or`)
+
+Now we can finally write the function as
+
+```haskell
+peek lexer = fromMaybe '\0' (input lexer BS.!? readPosition lexer)
+```
+
+Now let us try to create a function that takes in a lexer and gives us a token.
+(imagine that we only care for the left squirly for now and don't have
+whitespace)
+
+```haskell
+nextToken :: Lexer -> Token
+nextToken lexer = case ch lexer of
+    '{' -> LSquirly
+    _ -> Illegal
+```
+
+```haskell
+>>> nextToken (newLexer "hi")
+Illegal
+>>> nextToken (newLexer "{hello}")
+LSquirly
+```
+
+so if we find a left squirly we return the `LSquirly` type otherwise we return
+`Illegal`. But what if we want the token after this one? If we call nextToken
+again on the lexer we would get the same result twice
+
+```haskell
+>>> lexer = newLexer "{hello}"
+>>> nextToken lexer
+LSquirly
+>>> nextToken lexer
+LSquirly
+```
+
+To understand how to tackle this issue lets try to implement the `advance`
+function. This function will move the cursor of the lexer one position forward.
+It will basically take in a `Lexer` and return a new one with the fields
+changed.
+
+```haskell
+advance :: Lexer -> Lexer
+```
+
+In Haskell the variables are immutable, this means that the functions will
+create new instances (clone) each time they are called. If we want to update
+the values inside a structure we need to copy all the fields and instantiate a
+new one. So advance will looks like this
+
+```haskell
+advance lexer =
+    Lexer
+        { input = input lexer
+        , position = readPosition lexer
+        , readPosition = readPosition lexer + 1
+        , ch = peek lexer
+        }
+```
+
+however copying each field can be tedious in large structures, so there is some
+syntactic sugar which allows you to not specify all fields by doing an
+"update" on the `lexer` argument (or binding in FP world)
+
+```haskell
+advance lexer =
+    lexer
+        { position = readPosition lexer
+        , readPosition = readPosition lexer + 1
+        , ch = peek lexer
+        }
+```
+
+still not great but it can be useful to know this trick.
+
+Now we can try to implement our `nextToken` function in terms of `advance`, so
+we just need to make the nextToken function return both the token and the next
+lexer. We can use tuples for that
+
+```haskell
+nextToken :: Lexer -> (Token, Lexer)
+nextToken lexer = case ch lexer of
+    '{' -> (LSquirly, advance lexer)
+    _ -> (Illegal, advance lexer)
+```
+
+Now if we take the example from before
+
+```haskell
+>>> nextToken (newLexer "hi")
+Illegal
+>>> lexer = newLexer "{hello}"
+>>> (token, lexer) = nextToken lexer
+>>> token
+LSquirly
+>>> (token, lexer) = nextToken lexer
+>>> token
+Illegal
+```
+
+we can see that we can actually move the lexer forward. Altough it is pretty
+tedious to do it by hand. Lets try to make a recursive function that runs until
+eof. This function will return a list of tokens `[Token]` instead of just a
+single one (like nextToken does)
+
+```haskell
+go :: Lexer -> [Token]
+```
+
+As we have seen, the first thing to do is to get the next token using
+`nextToken lexer`. A useful statement in Haskell is `let ... in` which allows
+you to define a variable in the `let` block and then use it in the `in` block
+
+```haskell
+go lexer = let (token, lexer') = nextToken lexer
+           in undefined
+```
+
+now instead of undefined we need to add our base case and the recursive call,
+as we said, if we find the `Eof` token we stop, this will be the base case
+
+
+```haskell
+-- we return [Eof] at the end because this is how it is done in the book
+go lexer = let (token, lexer') = nextToken lexer
+           in if token == Eof then [Eof] else undefined
+```
+
+but how do we recursively build the list of tokens? Let us imagine that the go
+function is done, and we just call it like so
+
+```haskell
+>>> tokens = go lexer
+```
+
+you can prepend a new token to `tokens` by using the cons (:) function
+
+```haskell
+>>> LSquirly : tokens
+[LSquirly, ........]
+```
+
+with this in mind we can actually replace the `undefined` with `token : go lexer'`
+
+```haskell
+go lexer = let (token, lexer') = nextToken lexer
+           in if token == Eof then [Eof] else token : go lexer'
+```
+
+Now to integrate the `go` function with our `Tokenizer` type we can do the following
+(don't forget to call advance once, aka read the book)
+
+```haskell
+-- pack is part of ByteString and it converts from String to ByteString
+tokenize :: Tokenizer
+tokenize input = go (advance (newLexer (pack input)))
+```
+
+here we `pack` the `String` input into a `ByteString`, then we build a `Lexer`,
+then we advance the lexer one position and then we run the tokenizer to get the
+list of tokens.
+
+We can also write this in a prettier way by using `$` instead of (...)
+
+```haskell
+tokenize :: Tokenizer
+tokenize input = go $ advance $ newLexer $ pack input
+```
+
+and to be cool haskelers we can do an Eta reduction and use `.`
+
+```haskell
+tokenize :: Tokenizer
+tokenize = go . advance . newLexer . pack
+```
+
+We can also we `case ... of` instead of if else and write the function like this
+
+```haskell
+tokenize :: Tokenizer
+tokenize = go . advance . newLexer . BS.pack -- you can qualify imports to have "namespaces"
+  where
+    go lexer = case nextToken lexer of
+        (Eof, _) -> [Eof]
+        (token, lexer') -> token : go lexer'
+```
+
+The `where` syntax is the reverse of `let ... in`, it allows you to use a thing
+in the current block that you will define in the where statement (or at least
+this is how I viewed it the first time I saw it and stick with it).
+
+Next we can define more helper functions. For example `skipWhitespace` which
+will advance the lexer while we encounter whitespace characters. We also have a
+`readIdent` function that will read while it find an identifier character
+(a-zA-Z_). And the last one is `readInt` which will read while it find a digit
+(0-9). (I will probably do the rest at some point)
+
+```haskell
+skipWhitespace :: Lexer -> Lexer      -- create a new lexer that has all the whitespace consumed
+readIdent :: Lexer -> (String, Lexer) -- gives us an identifier as a `String` and the lexer with the input consumed
+readInt :: Lexer -> (String, Lexer)   -- same but for int literals
+```
+
+Keeping in mind all the whitespaces and more tokens the `nextToken` function
+would look like this
+
+```haskell
+nextToken :: Lexer -> (Token, Lexer)
+nextToken lexer = (token, lexer'')                            -- return the token and the lexex that we will define in where
+  where
+    lexer' = skipWhitespace lexer                             -- create a new lexer that starts with an interesting character
+    (token, lexer'') =
+        case ch lexer' of
+            '{' -> (LSquirly, advance lexer')
+
+            '!' ->                                            -- if we find a `bang`
+                if peek lexer' == '='                         -- we peek and check if the next character is `=`
+                    then (NotEqual, advance $ advance lexer') -- if yes we return `NotEqual` and have to advance twice on `lexer'`
+                                                              -- once for `!` and once for `=`
+                    else (Bang, advance lexer')               -- otherwise we just have a `Bang`
+
+            c | isIdentChar c ->                              -- if we have a character `c` that satisfies `isIdentChar c`
+                    let (str, lexer''') = readIdent lexer'    -- we do `readIdent` and get a string and a new lexer (''' why? crying)
+                     in (identToken str, lexer''')            -- and we use our mapping from the beginning to return the right Token
+
+            _ -> (Illegal, advance lexer')                    -- otherwise it is an illegal token, but we still have to advance
+```
+
+You can see how manually handling the lexer can be very painful. I usually like
+to use `apostrophe` in the name to indicate a new one (how one might do
+variable1, variable2, etc), but at some point it becomes hard to keep track
+which one you have to use.
+
+### Lexer.Monad
+
+The issue that we had in the Book implementation is that it is really hard to
+keep track of each instance of the Lexer in the nextToken function. We want
+something like
+
+```rust
+impl Lexer {
+    next_token(&mut self) -> Token {
+        // do whatever
+    }
+}
+```
+
+We still need part of our old code for this implementation
+
+```haskell
+type Input = ByteString
+
+data Lexer = Lexer
+    { input :: Input
+    , position :: Int
+    , readPosition :: Int
+    , ch :: Char
+    }
+
+newLexer :: Input -> Lexer
+newLexer input =
+    Lexer
+        { input = input
+        , position = 0
+        , readPosition = 0
+        , ch = '\0'
+        }
+```
+
+Previously, we had a `nextToken` function that was taking in a Lexer and was
+outputing a (Token, Lexer) tuple. We want to abstract this type in a Monad. I
+know "it is just a monoid in the category of endofunctors, what's the problem?".
+
+First we define a data type that will store the function.
+
+```haskell
+data LexerT = LexerToken { runLexer :: Lexer -> (Token, Lexer) }
+```
+
+But what if we want to tokenize a list of tokens, or return a string, or unit
+`()`? We would have to define a constructor for each type.
+
+```haskell
+data LexerT = LexerToken { runLexer :: Lexer -> (Token, Lexer) }
+            | LexerTokens { runLexer :: Lexer -> ([Token], Lexer)}
+            | LexerString { runLexer :: Lexer -> (String, Lexer)}
+            | LexerUnit { runLexer :: Lexer -> ((), Lexer)}
+```
+
+if you can see a pattern here you are right. We can actually make use of
+generics (suck on that Go) to not have to write each constructor manually
+
+```haskell
+newtype LexerT a = LexerT { runLexer :: Lexer -> (a, Lexer)}
+```
+
+Now we can have a runLexer for any type of a, we can have `LexerT Token` that
+parses a single token, `LexerT [Token]` that parses a list of tokens, etc. We
+can also use `newtype` instead of `data` because we have a single constructor
+with a single field (this allows for some optimizations I think, because it can
+be considered just a simple function).
+
+This is the same as you would define a generic structure in Rust
+
+```rust
+struct LexerT<T> {
+    runLexer: impl Fn(Lexer) -> (T, Lexer);
+}
+```
+
+Lets say that we have a function `parseInt :: LexerT String` and we want to
+convert the `String` to a `Token`, basically change the type from `LexerT
+String` to `LexerT Token`. We can do this by running the lexer, looking inside
+the tuple, building a new tuple and return it. It would be something like this
+
+```haskell
+>>> lexer = newLexer ... blah blah ...
+>>> (value, lexer') = runLexer parseInt lexer
+>>> result = (Int value, lexer')
+```
+
+wait... that is just what we were doing before. Lets try to make this easier by
+implementing `Functor` for our data type (I have no idea how to make this
+friendly for beginners but)
+
+To implement the Functor class we need to define the `fmap` function. Similar
+to how we implement traits in Rust. This function take as arguments a function
+and a functor and applies the function on the inside value and will return the
+functor, but with the inside changed.
+
+```haskell
+instance Functor LexerT where
+    fmap f (LexerT m) = LexerT $ \lexer ->
+        let (a, lexer') = m lexer
+         in (f a, lexer')
+```
+
+- `f` is our function
+- `m` is the record of the `LexerT` type, which is the `runLexer` function
+- `LexerT` we have to create a new LexerT functor
+- `\lexer -> ...` is a lambda function that takes in a `Lexer` and will return
+  us a tuple; this lambda will be the new record of the functor
+- `let (a, lexer') = m lexer` will run the lexer and give us the results, an
+  `a` and the new lexer `lexer'`
+- `in (f a, lexer')` applies the function `f` on the the result `a` and returns
+  the tuple
+
+With this class implemented we can write the code from above as
+
+```haskell
+>>> lexer = newLexer ... blah blah ...
+>>> result = runLexer (fmap Int parseInt) lexer
+```
+
+this can also be rewritten as
+
+```haskell
+>>> lexer = newLexer ... blah blah ...
+>>> result = runLexer (Int <$> parseInt) lexer
+```
+
+to use the operator `(<$>)` instead of the function `fmap`.
+
+Next thing. Say that you have a `stringP :: LexerT String` a `charP :: LexerT
+Char` and you want to prepend the `Char` to the `String`. Well, we know that we
+can inject a function into a functor, but how to combine them
+
+```haskell
+>>> lexer = newLexer ... blah blah ...
+>>> charPWithFunction :: LexerT (String -> String) = (:) <$> charP
+>>> (theFunction, lexer') = runLexer charPWithFunction lexer
+>>> (string, lexer'') = runLexer stringP lexer'
+>>> result = (theFunction string, lexer'')
+```
+
+intuitively this is what we were doing before, in the Book implementation. To
+not have to do this manually each time we can implement the `Applicative`
+class, which requires two function, `pure` and `<*>`
+
+```haskell
+instance Applicative LexerT where
+    pure a = LexerT $ \lexer -> (a, lexer)
+    (<*>) (LexerT mf) (LexerT ma) = LexerT $ \lexer ->
+        let (f, lexer') = mf lexer
+            (a, lexer'') = ma lexer'
+         in (f a, lexer'')
+```
+
+- `pure` takes in a `thing` and creates a `LexerT` that always returns that thing
+- `<*>` does all the stuff that we did manually above
+- `mf` (yes, I know you read it m**er) is the Functor with the function
+- `ma` is the functor with the value
+- `let (f, lexer') = mf lexer` we get the function and the new lexer
+- `(a, lexer'') = ma lexer'` then we get the value and the new new lexer (see how it saves us from dealing with '''?)
+- `in (f a, lexer'')` runs the function f on the result a and returns the new new lexer
+
+So now we can rewrite the thing from above as
+
+```haskell
+>>> lexer = newLexer ... blah blah ...
+>>> charPWithFunction :: LexerT (String -> String) = (:) <$> charP
+>>> result = runLexer (charPWithFunction <*> stringP) lexer
+```
+
+or even more concise
+
+```haskell
+>>> lexer = newLexer ... blah blah ...
+>>> result = runLexer ((:) <$> charP <*> stringP) lexer
+```
+
+For Monad I don't really have an explanation of why we need it, other than it
+allows us to use `do` notation. Monad only requires a single function to be
+implemented `>>=` (bind). I am not very experienced with monads, but from what
+I know it is used to sequence together multiple monads.
+
+```haskell
+instance Monad LexerT where
+    (LexerT m) >>= k = LexerT $ \lexer ->
+        let (a, lexer') = m lexer
+         in runLexer (k a) lexer'
+```
+
+- `>>=` takes in a monad `LexerT a` and a function `k` that build a monad from a value
+- `let (a, lexer') = m lexer` as usual we run the lexer and get the result and the new lexer
+- `k a` here we build a new monad from `a` using `k`
+- `in runLexer (k a) lexer'` we run again the lexer with the new monad
+
+You can think of `>>=` as doing
+
+```haskell
+main = monad >>= function
+main = do
+    myThing <- monad
+    function myThing
+```
+
+and of `>>` (Because we implemented `>>=` in Monad we get `>>` for free is like
+default functions on Traits) as doing
+
+```haskell
+main = monad >> function
+main = do
+    _ <- monad -- discards the result
+    function
+```
+
+You might say that this is very similar to functor and yes, it just runs the
+lexer at the end again in this one. I guess this is why the meme quote. But now
+we can use `do` with our `LexerT` type.
+
+We can build the peek function in terms of `LexerT` now. This will return a
+value of `Char` when executed.
+
+```haskell
+peek :: LexerT Char
+peek = LexerT $ \lexer -> (fromMaybe '\0' $ input lexer BS.!? readPosition lexer, lexer)
+```
+
+The logic of getting the character stays the same, but we need to add some
+boilerplate code to make it easier later.
+
+Lets also implement a getter for the `Char` inside the `Lexer`
+
+```haskell
+current :: LexerT Char
+current = LexerT $ \lexer -> (ch lexer, lexer)
+```
+
+And also the advance function
+
+```haskell
+advance :: LexerT ()
+advance = LexerT $ \lexer ->
+    ( ()
+    , lexer
+        { position = readPosition lexer
+        , readPosition = readPosition lexer + 1
+        , ch = fromMaybe '\0' $ input lexer BS.!? readPosition lexer
+        }
+    )
+```
+
+Now we also need to reimplement the helper function from before
+
+```haskell
+skipWhitespace :: LexerT ()
+readIdent :: LexerT String
+readInt :: LexerT String
+```
+
+And finally we can rewrite `nextToken`
+
+```haskell
+nextToken :: LexerT Token
+nextToken = do
+    skipWhitespace                                     -- skip the whitespace
+    ch <- current                                      -- get the current character
+    case ch of
+        '{' -> LSquirly <$ advance                     -- if it is { then return LSquirly and advance the lexer
+
+        '!' -> do
+            p <- peek                                  -- peek the lookahead character
+            if p == '='
+                then NotEqual <$ advance <* advance    -- if it is `=` we return `NotEqual` and advance twice (same reason as before)
+                else Bang <$ advance                   -- otherwise we return `Bang` and advance once
+
+        c | isIdentChar c -> identToken <$> readIdent  -- if we have an identifier character we read the string ident
+                                                       -- and then convert it to Token using the mapping
+                                                       -- no need to advance here because readIdent will advance for us
+
+        _ -> Illegal <$ advance                        -- otherwise it is an illegal token and we advance
+```
+
+this is much easier to read and maintain.
+
+To implement the tokenize function let's look again at the `go` function
+
+```haskell
+go :: LexerT [Token]
+go = do
+    token <- nextToken         -- get the next token
+    case token of
+        Eof -> pure [Eof]      -- if the token is `Eof` then we just create a LexerT that returns `[Eof]` when executed
+
+        _ -> (token :) <$> go  -- otherwise we need to prepend the current token to the result of calling `go` again
+                               -- but since go returns a `LexerT [Token]`, which is a functor, we have to inject the
+                               -- `(token :)` that we used in the Book implementation with `fmap` into the LexerT
+```
+
+you can see that `lexer'` is not longer needed in this case.
+
+Finally we can implement the tokenize function
+
+```haskell
+tokenize :: Tokenizer
+tokenize =
+    fst                                  -- 5. we take the first element in the tuple since runLexer
+                                         -- returns the tokens and the new lexer
+        . runLexer                       -- 4. we run the lexer
+            (advance >> go)              -- 3. we advance once the lexer and then run go on it
+        . newLexer                       -- 2. we build the Lexer with the input
+        . BS.pack                        -- 1. we pack the String into ByteString
+```
+
+### Lexer.State [Control.Monad.State](https://hackage.haskell.org/package/mtl-2.3.1/docs/Control-Monad-State-Class.html)
+
+Instead of implementing the instances of Functors and Monads manually, we can
+actually use the package [mtl](https://hackage.haskell.org/package/mtl). This
+includes monad classes that would be useful to us.
+
+For example the `State` monad, which is what we implemented with `LexerT`.
+
+There are a few differences however, mostly in the naming of the functions. We
+will need to import the `import Control.Monad.State` module.
+
+First we have to change the `LexerT` to a type alias
+
+```haskell
+type LexerT = State Lexer
+```
+
+Then in `tokenize` the `runLexer` needs to be replaced by `runState`
+
+```haskell
+tokenize :: Tokenizer
+tokenize = fst . runState (advance >> go) . newLexer . BS.pack
+```
+
+but there is an even better one, `evalState`, which does the `fst` for us
+
+```haskell
+tokenize :: Tokenizer
+tokenize = evalState (advance >> go) . newLexer . BS.pack
+```
+
+Then `nextToken` stays the same. So we go to `peek` next
+
+```haskell
+peek :: LexerT Char
+peek = do
+    input <- gets input
+    readPosition <- gets readPosition
+    pure $ fromMaybe '\0' $ input BS.!? readPosition
+```
+
+which makes use of the `gets` function of the `State` if you want to compare to
+how I would write the `Lexer.Monad` version in do notation here it is
+
+```haskell
+peek :: LexerT Char
+peek = do
+    let getInput = input
+    let getReadPosition = readPosition
+    LexerT $ \lexer -> (fromMaybe '\0' $ getInput lexer BS.!? getReadPosition lexer, lexer)
+```
+
+Next the `current` function
+
+```haskell
+current :: LexerT Char
+current = gets ch
+```
+
+will be just a call to `gets`, pretty much how the Lexer.Monad implementation
+was. And the last one is `advance`
+
+```haskell
+advance :: LexerT ()
+advance = modify $ \lexer ->
+    lexer
+        { input = input lexer
+        , ch = fromMaybe '\0' $ input lexer BS.!? readPosition lexer
+        , position = readPosition lexer
+        , readPosition = readPosition lexer + 1
+        }
+```
+
+which uses `modify` also a function from `State` that takes as input a function
+`State -> State`. It basically creates a new state from the current one, based
+on the lambda function that we provided.
+
+Now we also need to copy the helper function from before, since they will be
+the same.
+
+### Lexer.Lens [Control.Lens](https://hackage.haskell.org/package/lens-5.2.2/docs/Control-Lens.html)
 
 Record syntax in Haskell is not very user friendly. Reading and updating fields
 is verbose and using lenses makes it more like to to other languages where
@@ -112,59 +982,322 @@ lexer' = lexer & input %~(take 2) & position +~1 & readPosition +~1 & ch .~ 'b'
 This seems trivial here but when if we have a record with many fields it
 becomes very verbose and hard to read particularly with nested records.
 
-### [Data.ByteString.Char8](https://hackage.haskell.org/package/bytestring-0.11.4.0/docs/Data-ByteString-Char8.html)
-
-Haskell `String` type is actually a linked list of `char`. This is not very
-performant, e.g., `length` and indexing `(!!)` operations are O(N). Also,
-indexing is unsafe (can fail) with crafting or importing safe operations. With
-`ByteString` we have O(1) operations and built in safe indexing that return
-`Maybe` types (Option in Rust).
-
-## [Control.Monad.Trans.State](https://hackage.haskell.org/package/transformers-0.6.1.0/docs/Control-Monad-Trans-State.html)
-
-Since we work with pure function (that have no side effects), we have to keep
-passing the state around. You can see this in the `Lexer.Basic` version where
-the lexer (a simple `String` in that case) is being parsed around recursively
-and returned in a tuple `nextToken :: Lexer -> (Token, Lexer)`. In languages
-like Rust we can implement a function for a structure to mutate it `pub fn
-next_token(&mut self) -> Token`.
-
-The `state` monad allows us to obfuscate the passing around of the state and
-perform updates on the state within a function without the need for new
-variable names.
+In our code we can do the following (we need to enable `{-# LANGUAGE TemplateHaskell #-}`)
 
 ```haskell
-nextToken :: Lexer -> (Token, Lexer)
-nextToken lexer = (token, lexer'')
-    where
-        lexer'           = skipWhitespace lexer
-        (token, lexer'') =
-            case lexer' ^. ch of
-                '{' -> (LSquirly, advance lexer')
-                ...
+type Input = ByteString
+
+data Lexer = Lexer
+    { _input :: Input
+    , _position :: Int
+    , _readPosition :: Int
+    , _ch :: Char
+    }
+
+makeLenses ''Lexer
 ```
 
-becomes
+Most of the functions will stay the same, however we need to change the
+`newLexer` function since we change the structure of Lexer
 
 ```haskell
-nextToken :: State Lexer Token
-nextToken = do
-    modify skipWhitespace
-    lexer <- get
-    case lexer ^. ch of
-        '{' -> LSquirly <$ advance
-        ...
+newLexer :: Input -> Lexer
+newLexer i = Lexer
+    { _input = i
+    , _position = 0
+    , _readPosition = 0
+    , _ch = '\0'
+    }
 ```
 
-See how the logic of doing the actual parsing stays the same, we only hide the
-fact that we need to return the current state of the lexer from this function.
+Since our `LexerT` is an instance of `MonadState` we can use the combinators
+and operators provided by the `lens` library.
+One of these operators is `use :: MonadState s m => Lens s a -> m a` which
+simply gets the current state and returns the focused field.
+Therefore the `peek` and `current` functions will look like the following
 
-## Some weird things
+```haskell
+peek :: LexerT Char
+peek = do
+    readPos <- use readPosition
+    buffer <- use input
+    pure $ fromMaybe '\0' (buffer BS.!? readPos)
 
-1. How to deal with `dist-newstyle` when building with docker? Since the
-   Makefile mounts the `$pwd` to the container it generates garbage files in
-   the host filesystem. My workaround was to run `cabal clean` at the end, but
-   is there a better way?
+current :: LexerT Char
+current = use ch
+```
+
+The `(.=) :: MonadState s m => Lens s a -> a -> m ()` operators allows us
+to set the field, focused by the lens on the lhs, of the current state
+to the value of the rhs.
+There are also operators for modifying `%=`, adding `+=`, etc..
+By prepending `<` to the operator it will return the new value
+of the focused field and prepending `<<` will return the old value.
+Thus we can write the `advance` function like this
+
+```haskell
+advance :: LexerT ()
+advance = do
+    readPos <- readPosition <<+= 1 -- Increment and return the old value.
+    buffer <- use input
+    ch .= fromMaybe '\0' (buffer BS.!? readPos)
+    position .= readPos
+```
+
+Notice that `<<+=` and `.=` are user defined operators,
+while `<-` is the language syntax for monadic bind.
+
+The lens library also provides `Prism`s and `Traversal`s as a very powerfull
+way to work with sum types and containers.
+However I think for a simple program like this lenses are overkill but
+I guess it is more of a prefernce, which one you like more.
+
+Personally I prefer to use `{-# LANGUAGE RecordWildCards #-}`, rather than
+lens, which allows you to do the following
+
+```haskell
+advance :: LexerT ()
+advance = modify $ \lexer@Lexer{..} ->
+    lexer
+        { input = input
+        , ch = fromMaybe '\0' $ input BS.!? readPosition
+        , position = readPosition
+        , readPosition = readPosition + 1
+        }
+```
+
+instead of
+
+```haskell
+advance :: LexerT ()
+advance = modify $ \lexer ->
+    lexer
+        { input = input lexer
+        , ch = fromMaybe '\0' $ input lexer BS.!? readPosition lexer
+        , position = readPosition lexer
+        , readPosition = readPosition lexer + 1
+        }
+```
+
+### Lexer.Parsec [Text.Megaparsec](https://hackage.haskell.org/package/megaparsec-9.3.1/docs/Text-Megaparsec.html)
+
+We can also go full degen mode and implement the lexer using monadic parser
+combinators.
+
+For the implementation I have followd the megaparsec
+[tutorial](https://markkarpov.com/tutorial/megaparsec.html).
+
+For this implementation I have used the `Text` type instead of `ByteString`,
+because it was easier, and it should be similar in performance.
+
+```haskell
+type Input = Text
+```
+
+Next we will define the Lexer. This is very simiar to our State implementation,
+but we no longer have to keep track of all the fields (`input`, `ch`, etc.),
+Parsec will do that for us.
+
+```haskell
+type Lexer = Parsec Void Input
+```
+
+the important part here is that we define the input of the parser to be of type
+`Text`, and if we enable overloaded strings with `{-# LANGUAGE
+OverloadedStrings #-}` we will be able to use basic strings as Text.
+
+I won't go too much into detail, as all the functions are explained in the
+tutorial, but let's look at how we handle identP now
+
+```haskell
+identP :: Lexer String
+identP = T.unpack <$> lexeme (takeWhile1P Nothing isIdentChar)
+```
+
+as before, we build a parser that reads from the input while we have an ident
+character, but instead of having to implement all the helper functions by hand
+we can use the megaparsec library. In the tutorial, they also apply the
+`lexeme` function, which will consume all the whitespace after the token. And
+finally, since we set the input of the parser to `Text` we will also get back a
+`Text` type, so we have to explicitly unpack it to a String. (intP is the same)
+
+When we implement the `nextToken` function we no longer have to deal with
+manually calling advance, peek, etc. All this complexity will be handled by the
+Parsec data type.
+
+For example, this is how our `nextToken` function will look like compared to
+the previous ones
+
+```haskell
+nextToken :: Lexer Token
+nextToken =
+    choice                               -- sequentially attempt each parser in the list
+                                         -- the order in which we do the parsing matters
+
+        [ LSquirly <$ symbol "{"         -- `symbol` will check if the given string matches with the current input
+
+        , try (NotEqual <$ symbol "!=")  -- we will try to find "!=", if we fail we don't consume any input
+                                         -- this is because we want to be able to use "!" in other matches
+            <|> (Bang <$ symbol "!")     -- for example with bang
+
+        , identToken <$> identP          -- we attempt to read an ident; we do this one last, because we know
+                                         -- that the only possibiliy now is to find an ident (because everything else failed)
+
+        , Illegal <$ lexeme anySingle    -- if literally everything failed we add an Illegal token and consume one character
+        ]
+```
+
+this is much simpler, since we do not have to keep track of using `advance`.
+The only tricky part is that the order in which you check each parser matters.
+This is because if the `symbol` parser matches any substring then it will
+consume the input. And if that is not intended you have to use `try`, which
+slows down the parsing (so use it sparingly, and design the parser in a better
+way).
+
+For example, if we have `symbol "abcd"` and the input is "abkekw", if we apply
+the the symbol on the input, we will be left with "kekw" as the rest of the
+input and an error as output. But if we use `try`, the rest of the input will
+be "abkekw", but the output will still be an error.
+
+Now, to get all the tokens, we can use the `many` parser combinator and `eof` like so
+
+```haskell
+tokensP = sc *> many nextToken <* eof
+```
+
+first we remove any whitespace with `sc`, then we read 0 or more tokens with
+`many nextToken` and then we check that we reached `eof`.
+
+As I said, the parsing can fail, for example if we do not cover all the cases
+(if the parsing is non exhaustive I guess), so if we run the parser (with the
+`parse` function) we will get a Result type, in Haskell it is called `Either`
+and has to constructors `Left` (usually used for Errors "Err") and `Right`
+(usually used for result "Ok"). The lexer will be implemented such that it
+cannot fail (in general, lexers will never fail, but will have special tokens
+`Illegal` in our case to indicate errors during tokenization), but we still
+have to handle the Result part.
+
+```haskell
+tokenize :: Tokenizer
+tokenize input = case parse tokensP "" $ T.pack input of
+    Left err -> error ("lexer should not fail" ++ errorBundlePretty err)
+    Right tokens -> tokens ++ [Eof]
+  where
+    tokensP = sc *> many nextToken <* eof
+```
+
+in case we encounter an error we just do an "unreachable", otherwise we return
+the tokens.
+
+### AST
+
+Similar to the Token module, I have created an AST module that will hold the
+definition of the abstract syntax tree of the Monkey Lang language.
+
+From the book, a program is a list of statements
+
+```haskell
+newtype Program = Program [Statement]
+    deriving (Show, Eq)
+```
+
+again, this can be seen as an enum with a single constructor that takes in a
+list of type `Statement`. Next we also define the `Statement` and `Expression`
+data types.
+
+The `Statement` data type will contain all the "non-value" expressions of the
+language, such as `let`, `return` and blocks (a block is a list of
+statemnets).
+
+For the `Statement` data type I have included a `IllegalStatement` constructor
+such that it is easier to handle errors. For example, if we encounter an
+unexpected token, or somehow we find an error, we consume the input until we
+find a `;` (semicolon) and then return an illegal statement.
+
+The `Expression` data type will contain all the "value" expressions of the
+language. You can think of them as terms that can be used in other
+expressions.
+
+For example, we can add two expression with the `+` operator, but we cannot add
+a `let` and something else, because `let` does not return anything.
+
+To be able to have multiple implementations, we can also define a common type
+for the parser.
+
+```haskell
+type Ast = [Token] -> Program
+```
+
+Our parser will take in a list of tokens and will build the tree structure of
+the program.
+
+### Parser.Parsec
+
+In the Lexer we have used Parsec and passed in as input `Text`, basically a
+list of characters. But this data type is generic such that it can actually
+take in as input any type of list of elements. For instance, we can use
+`[Token]` as the input for our parser and have all the function we have seen
+previously (such as `many`, `try`, etc.) to work for Token for free.
+
+```haskell
+type Input = [Token]
+
+type Parser = Parsec Void Input
+```
+
+What is great about using tokens as input is that we no longer have to deal
+with whitespaces. So we can check token after token, knowing that if we fail it
+means that there was a problem and not a whitespace.
+
+First we need a function that is similar to `symbol`. It will check if a token
+from the input stream is equal to what we provide as argument
+
+```haskell
+tokenP :: Token -> Parser Token
+tokenP t = satisfy (== t)
+```
+
+we can use the satisfy function, which will check if the predicate holds for
+the current token in the input. If it does, then it will parse it, otherwise
+fail.
+
+The next helper function is `identP`, which will parse an ident token and
+return it's name
+
+```haskell
+identP :: Parser String
+identP = satisfy isIdent >>= \case
+    (Ident t) -> return t
+    _ -> fail "Expected identifier"
+    where isIdent (Ident _) = True
+          isIdent _ = False
+```
+
+we can also use satisfy. (I don't know if this is the best way, because we do
+two matches, and one is useless)
+
+With these helpers and the function from megaparsec, we can create a parser for
+our grammar. It is really straigh forward (following the tutorial for megaparsec).
+The only tricky part is parsing arithmentic expressions, where we have to split
+out `Expression` type into `termP` and `expressionP`. And then we have to use
+`makeExprParser` with a table of operators to parse the expressions.
+
+Finally we will be able to parse a program as a list of statements
+
+```haskell
+programP :: Parser Program
+programP = Program <$> manyTill statementP' (tokenP Eof)
+```
+
+and again we will just export a function that parses a program from a list of
+tokens
+
+```haskell
+ast :: Ast
+ast s = case parse programP "" s of
+    Left err -> error ("parser should not fail" ++ show err)
+    Right p -> p
+```
 
 ## Contributions
 

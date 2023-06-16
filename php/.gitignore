@@ -1,1 +1,7 @@
+# IDE
 .idea
+.vscode
+
+# Composer
+vendor
+.php-cs-fixer.cache

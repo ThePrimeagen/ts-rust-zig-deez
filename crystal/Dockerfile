@@ -1,6 +1,11 @@
-FROM alpine:latest
-RUN apk add --update crystal shards yaml yaml-dev musl-dev pcre2 gc libevent libgcc
-RUN mkdir /src
-WORKDIR /src
+FROM ubuntu:latest
+
+RUN apt-get install -y crystal
+COPY . /app
+WORKDIR /app
+
+RUN shards install
 RUN crystal spec
-ENTRYPOINT [ "/usr/bin/deez" ]
+RUN shards build
+
+ENTRYPOINT [ "/app/bin/deez" ]

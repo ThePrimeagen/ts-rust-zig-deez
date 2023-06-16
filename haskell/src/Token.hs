@@ -1,5 +1,7 @@
 module Token where
 
+import Data.Char (isLetter)
+
 type Tokenizer = String -> [Token]
 
 data Token
@@ -30,7 +32,10 @@ data Token
     | If
     | Else
     | Return
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
+
+isIdentChar :: Char -> Bool
+isIdentChar c = isLetter c || c == '_'
 
 identToken :: String -> Token
 identToken "fn" = Function

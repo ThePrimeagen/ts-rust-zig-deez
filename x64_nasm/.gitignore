@@ -1,4 +1,16 @@
 .idea/
 
+# Object files and executables.
 *.o
 lexer
+gen_header
+
+# This is generated.
+sys/sys.asm
+
+# Local test files. Not committing these because they are LARGE.
+.test.*
+
+# Perf + valgrind.
+callgrind.out.*
+perf.data

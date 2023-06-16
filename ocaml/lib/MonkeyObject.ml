@@ -3,8 +3,12 @@ type 'a environment = 'a Environment.environment
 type t =
   | Return of t
   | Integer of int
+  | String of string
   | Boolean of bool
   | Function of func
+  | Builtin of builtin
+  | Array of t list
+  | Hash of (t * t) list
   | Null
 
 and func =
@@ -12,7 +16,17 @@ and func =
   ; body : Ast.block
   ; env : t environment [@opaque]
   }
-[@@deriving show]
+
+and builtin = BuiltinFn of (t list -> (t, string) result)
+[@@deriving show { with_path = false }]
+
+(* | Macro of macro *)
+(* and macro = *)
+(*   { m_parameters : Ast.identifier list *)
+(*   ; m_body : Ast.block *)
+(*   ; m_env : t environment [@opaque] *)
+(*   } *)
 
 let monkey_true = Boolean true
 let monkey_false = Boolean false
+let builtin_fn f = Builtin (BuiltinFn f)

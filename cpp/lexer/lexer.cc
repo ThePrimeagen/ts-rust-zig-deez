@@ -4,7 +4,7 @@
 #include <exception>
 
 
-lexer::lexer(const std::string input)
+lexer::lexer(std::string_view input)
   : input_{input},
     position_{0},
     read_position_{1},

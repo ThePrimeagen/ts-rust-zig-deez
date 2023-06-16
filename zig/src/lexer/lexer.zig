@@ -73,6 +73,10 @@ pub const Lexer = struct {
         return lex;
     }
 
+    pub fn has_tokens(self: *Self) bool {
+        return self.ch != 0;
+    }
+
     pub fn next_token(self: *Self) Token {
         self.skip_whitespace();
         const tok: Token = switch (self.ch) {

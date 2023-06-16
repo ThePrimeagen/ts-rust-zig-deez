@@ -1,4 +1,5 @@
-import unittest, sugar, ../src/lexer
+import std/[unittest, sugar, sequtils]
+import ../src/lexer
 
 suite "lexer tests":
   test "lexemes match":
@@ -10,14 +11,15 @@ suite "lexer tests":
       };
       let result = add(five, ten);
     """
+    var lexer = newLexer(source)
     let lexemes = collect:
-      for val in lex(source): val[0]
+      for a in toSeq(lexer.tokens()): a.kind
     let expected = @[
-      t_let, ident, equal, t_int, semicolon,
-      t_let, ident, equal, t_int, semicolon,
-      t_let, ident, equal, function, leftparen, ident, comma, ident, rightparen, leftsquirrel,
-      ident, plus, ident, semicolon,
-      rightsquirrel, semicolon,
-      t_let, ident, equal, ident, leftparen, ident, comma, ident, rightparen, semicolon,
+      tkLet, tkIdent, tkAssign, tkInt, tkSemicolon,
+      tkLet, tkIdent, tkAssign, tkInt, tkSemicolon,
+      tkLet, tkIdent, tkAssign, tkFunction, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkLBrace,
+      tkIdent, tkPlus, tkIdent, tkSemicolon,
+      tkRBrace, tkSemicolon,
+      tkLet, tkIdent, tkAssign, tkIdent, tkLParen, tkIdent, tkComma, tkIdent, tkRParen, tkSemicolon, tkEof
     ]
     check lexemes == expected
