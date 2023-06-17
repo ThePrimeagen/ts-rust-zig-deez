@@ -22,6 +22,7 @@ Map<TokenType, Precedence> precedences() {
     TokenType.dash: Precedence.sum,
     TokenType.slash: Precedence.product,
     TokenType.asterisk: Precedence.product,
+    TokenType.lParen: Precedence.call,
   };
 }
 

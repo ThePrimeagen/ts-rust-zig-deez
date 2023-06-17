@@ -36,6 +36,7 @@ final _infixParseFns =
   TokenType.ne: _parseInfixExpression,
   TokenType.lt: _parseInfixExpression,
   TokenType.gt: _parseInfixExpression,
+  TokenType.lParen: _parseCallExpression,
 };
 
 @immutable
@@ -615,6 +616,64 @@ bool _currTokenIs(Parser parser, TokenType type) {
           [...statements, statement],
         );
       }
+  }
+}
+
+(Parser, CallExpression) _parseCallExpression(
+  Parser parser,
+  Expression function,
+) {
+  final (argParser, args) = parseCallArguments(parser, []);
+
+  if (argParser.currToken.type != TokenType.rParen) {
+    return (
+      argParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.rParen}, '
+            'got ${argParser.peekToken.type} instead',
+            argParser,
+            [],
+            // line: argParser.peekToken.line,
+            // column: argParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression() as CallExpression
+    );
+  }
+
+  return (argParser, CallExpression(function, args));
+}
+
+(Parser, List<Expression>) parseCallArguments(
+  Parser parser,
+  List<Expression> args,
+) {
+  switch (parser.peekToken.type) {
+    case TokenType.rParen:
+      return (advanceParser(parser), args);
+    case TokenType.eof:
+      return (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Unexpected end of input',
+              parser,
+              [],
+              // line: parser.peekToken.line,
+              // column: parser.peekToken.column,
+            )
+          ],
+        ),
+        args,
+      );
+    case TokenType.comma:
+      return parseCallArguments(advanceParser(parser), args);
+    case _:
+      final (newParser, arg) =
+          _parseExpression(advanceParser(parser), Precedence.lowest);
+      return parseCallArguments(newParser, [...args, arg]);
   }
 }
 

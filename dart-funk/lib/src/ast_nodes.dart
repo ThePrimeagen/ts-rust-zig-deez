@@ -106,7 +106,7 @@ class LetStatement extends Statement {
 
   @override
   String toString() {
-    return '${token.value} ${name.value} = ${value.token.value};';
+    return '${token.value} ${name.value} = $value;';
   }
 }
 
@@ -171,6 +171,22 @@ class InfixExpression extends Expression {
   @override
   String toString() {
     return '($left $operator $right)';
+  }
+}
+
+class CallExpression extends Expression {
+  const CallExpression(this.function, this.arguments)
+      : super(const Token.lParen());
+  final Expression function;
+  final List<Expression> arguments;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer(function.toString())
+      ..write('(')
+      ..write(arguments.join(', '))
+      ..write(')');
+    return retVal.toString();
   }
 }
 

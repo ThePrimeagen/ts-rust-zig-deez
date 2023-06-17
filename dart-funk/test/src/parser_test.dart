@@ -4,6 +4,96 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:monkeydart/monkeydart.dart';
 import 'package:test/test.dart';
 
+bool testLiteralExpression(Expression exp, dynamic expected) {
+  if (expected is int) {
+    return testIntegerLiteral(exp, expected);
+  } else if (expected is String) {
+    return testIdentifier(exp, expected);
+  } else if (expected is bool) {
+    return testBooleanLiteral(exp, expected);
+  }
+  throw Exception('type of exp not handled. got=${exp.runtimeType}');
+}
+
+// ignore: avoid_positional_boolean_parameters
+bool testBooleanLiteral(Expression exp, bool expected) {
+  if (exp is! BooleanLiteral) {
+    throw Exception('exp not Boolean. got=${exp.runtimeType}');
+  }
+  if (exp.value != expected) {
+    throw Exception(
+      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+    );
+  }
+  if (exp.tokenLiteral() != '$expected') {
+    throw Exception(
+      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+    );
+  }
+  return true;
+}
+
+bool testIdentifier(Expression exp, String expected) {
+  if (exp is! Identifier) {
+    throw Exception('exp not Identifier. got=${exp.runtimeType}');
+  }
+  if (exp.value != expected) {
+    throw Exception(
+      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+    );
+  }
+  if (exp.tokenLiteral() != expected) {
+    throw Exception(
+      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+    );
+  }
+  return true;
+}
+
+bool testIntegerLiteral(Expression exp, int expected) {
+  if (exp is! IntegerLiteral) {
+    throw Exception('exp not IntegerLiteral. got=${exp.runtimeType}');
+  }
+  if (exp.value != expected) {
+    throw Exception(
+      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+    );
+  }
+  // if (exp.tokenLiteral() != '$expected') {
+  //   throw Exception(
+  //     'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+  //   );
+  // }
+  return true;
+}
+
+bool testInfixExpression(
+  Expression expression,
+  int left,
+  String operator,
+  int right,
+) {
+  if (expression is! InfixExpression) {
+    throw Exception('expression is not InfixExpression. got=$expression');
+  }
+  if (expression.operator != operator) {
+    throw Exception(
+      'expression.operator is not $operator. got=${expression.operator}',
+    );
+  }
+  // if (testLiteralExpression(expression.left, left)) {
+  //   throw Exception(
+  //     'expression.left is not $left. got=${expression.left}',
+  //   );
+  // }
+  // if (testLiteralExpression(expression.right, right)) {
+  //   throw Exception(
+  //     'expression.right is not $right. got=${expression.right}',
+  //   );
+  // }
+  return true;
+}
+
 void main() {
   group('Parser - constructors', () {
     late Logger logger;
@@ -242,6 +332,105 @@ void main() {
         );
       },
     );
+
+    test(
+      'should return LetStatements with correct values',
+      () async {
+        // arrange
+        final things = [
+          (input: 'let x = 5;', id: 'x', val: 5),
+          (input: 'let y = true;', id: 'y', val: true),
+          (input: 'let foobar = y;', id: 'foobar', val: 'y'),
+        ];
+
+        // act - assert
+        for (final thing in things) {
+          final parser = Parser.fromSource(thing.input);
+          final program = parse(parser);
+          logger.info(program.toString());
+
+          expect(program, isA<Program>());
+          expect(program.statements.length, equals(1));
+          expect(program.statements[0], isA<LetStatement>());
+          expect(
+            (program.statements[0] as LetStatement).name,
+            isA<Identifier>(),
+          );
+          expect(
+            ((program.statements[0] as LetStatement).name as Identifier).value,
+            equals(thing.id),
+          );
+          expect(
+            (program.statements[0] as LetStatement).value,
+            isA<Expression>(),
+          );
+          final value = (program.statements[0] as LetStatement).value;
+          switch (value) {
+            case _ when value is IntegerLiteral:
+              expect(
+                ((program.statements[0] as LetStatement).value
+                        as IntegerLiteral)
+                    .value,
+                equals(thing.val),
+              );
+            case _ when value is BooleanLiteral:
+              expect(
+                ((program.statements[0] as LetStatement).value
+                        as BooleanLiteral)
+                    .value,
+                equals(thing.val),
+              );
+            case _ when value is Identifier:
+              expect(
+                ((program.statements[0] as LetStatement).value as Identifier)
+                    .value,
+                equals(thing.val),
+              );
+            case _:
+              logger.alert('Unexpected value type: ${value.runtimeType}');
+          }
+        }
+      },
+    );
+
+    test(
+      'should return a valid let statement with complex grouping',
+      () async {
+        // arrange
+        const input = 'let x = 1 * 2 * 3 * 4 * 5';
+        const expected = 'let x = ((((1 * 2) * 3) * 4) * 5);';
+        final parser = Parser.fromSource(input);
+
+        // act
+        final program = parse(parser);
+        logger.info(program.toString());
+
+        // assert
+        expect(program, isA<Program>());
+        expect(program.statements.length, equals(1));
+        expect(program.statements[0], isA<LetStatement>());
+        expect(
+          (program.statements[0] as LetStatement).toString(),
+          equals(expected),
+        );
+      },
+    );
+    test(
+      'should return an error when using invalid Let input',
+      () async {
+        // arrange
+        const input = 'let x 12 * 3;';
+        final parser = Parser.fromSource(input);
+
+        // act
+        final program = parse(parser);
+        logger.info(program.toString());
+
+        // assert
+        expect(program, isA<Program>());
+        expect(program.errors.length, equals(1));
+      },
+    );
   });
 
   group('Parser - ReturnStatement', () {
@@ -458,6 +647,50 @@ void main() {
                     .right as IntegerLiteral)
                 .value,
             equals(int.parse(element.rrand)),
+          );
+        }
+      },
+    );
+
+    test(
+      'should return a Infix Expression with precedence',
+      () async {
+        // arrange
+        input = [
+          (input: 'true == true', lrand: 'true', op: '==', rrand: 'true'),
+          (input: 'true != false', lrand: 'true', op: '!=', rrand: 'false'),
+          (input: 'false == false', lrand: 'false', op: '==', rrand: 'false'),
+        ];
+
+        // act - assert
+        for (final (element as ({
+              String input,
+              String lrand,
+              String op,
+              String rrand
+            })) in input) {
+          final parser = Parser.fromSource(element.input);
+          final program = parse(parser);
+          logger.info('Program: $program');
+
+          expect(program, isA<Program>());
+          expect(program.statements.length, equals(1));
+          expect(program.statements[0], isA<ExpressionStatement>());
+          expect(
+            (program.statements[0] as ExpressionStatement).expression,
+            isA<InfixExpression>(),
+          );
+          expect(
+            ((program.statements[0] as ExpressionStatement).expression
+                    as InfixExpression)
+                .operator,
+            equals(element.op),
+          );
+          expect(
+            ((program.statements[0] as ExpressionStatement).expression
+                    as InfixExpression)
+                .left,
+            isA<BooleanLiteral>(),
           );
         }
       },
@@ -869,68 +1102,114 @@ void main() {
         );
       },
     );
+
+    test(
+      'should return correct parameters',
+      () async {
+        // arrange
+        final inputMap = {
+          'fn() {}': [],
+          'fn(x) {}': ['x'],
+          'fn(x, y, z) {}': ['x', 'y', 'z'],
+        };
+
+        // act - assert
+        for (final item in inputMap.entries) {
+          final parser = Parser.fromSource(item.key);
+          final program = parse(parser);
+          logger.info('$program');
+          final function = (program.statements[0] as ExpressionStatement)
+              .expression as FunctionLiteral;
+          expect(function.parameters.length, equals(item.value.length));
+          for (var i = 0; i < item.value.length; i++) {
+            expect(function.parameters[i].value, equals(item.value[i]));
+          }
+        }
+      },
+    );
   });
-}
 
-bool testLiteralExpression(Expression exp, dynamic expected) {
-  if (expected is int) {
-    return testIntegerLiteral(exp, expected);
-  } else if (expected is String) {
-    return testIdentifier(exp, expected);
-  } else if (expected is bool) {
-    return testBooleanLiteral(exp, expected);
-  }
-  throw Exception('type of exp not handled. got=${exp.runtimeType}');
-}
+  group('Parser - call expressions', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = 'add(1, 2 * 3, 4 + 5);';
+    });
+    test(
+      'should return a CallExpression',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.info('Tokens: ${parser.tokens}');
 
-// ignore: avoid_positional_boolean_parameters
-bool testBooleanLiteral(Expression exp, bool expected) {
-  if (exp is! BooleanLiteral) {
-    throw Exception('exp not Boolean. got=${exp.runtimeType}');
-  }
-  if (exp.value != expected) {
-    throw Exception(
-      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
-    );
-  }
-  if (exp.tokenLiteral() != '$expected') {
-    throw Exception(
-      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
-    );
-  }
-  return true;
-}
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
 
-bool testIdentifier(Expression exp, String expected) {
-  if (exp is! Identifier) {
-    throw Exception('exp not Identifier. got=${exp.runtimeType}');
-  }
-  if (exp.value != expected) {
-    throw Exception(
-      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
-    );
-  }
-  if (exp.tokenLiteral() != expected) {
-    throw Exception(
-      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
-    );
-  }
-  return true;
-}
+        final args = ((program.statements[0] as ExpressionStatement).expression
+                as CallExpression)
+            .arguments;
 
-bool testIntegerLiteral(Expression exp, int expected) {
-  if (exp is! IntegerLiteral) {
-    throw Exception('exp not IntegerLiteral. got=${exp.runtimeType}');
-  }
-  if (exp.value != expected) {
-    throw Exception(
-      'exp.value not $expected. got=${exp.value} ${exp.runtimeType}',
+        // assert
+        testLiteralExpression(args[0], 1);
+        testInfixExpression(args[1], 2, '*', 3);
+        testInfixExpression(args[2], 4, '+', 5);
+
+        expect(program.statements.length, equals(1));
+        expect(program.statements[0], isA<ExpressionStatement>());
+        expect(
+          (program.statements[0] as ExpressionStatement).expression,
+          isA<CallExpression>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as CallExpression)
+              .function,
+          isA<Identifier>(),
+        );
+        expect(
+          (((program.statements[0] as ExpressionStatement).expression
+                      as CallExpression)
+                  .function as Identifier)
+              .value,
+          equals('add'),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as CallExpression)
+              .arguments
+              .length,
+          equals(3),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as CallExpression)
+              .arguments[0],
+          isA<IntegerLiteral>(),
+        );
+      },
     );
-  }
-  if (exp.tokenLiteral() != '$expected') {
-    throw Exception(
-      'exp.tokenLiteral not $expected. got=${exp.tokenLiteral()}',
+
+    test(
+      'should return a list of arguments',
+      () async {
+        // arrange
+        final inputMap = {
+          '();': <Expression>[],
+          '(1);': [1],
+          '(1, 2 * 3, 4 + 5);': [1, (2 * 3), (4 + 5)],
+        };
+
+        // act
+        for (final item in inputMap.entries) {
+          final parser = Parser.fromSource(item.key);
+          final args = parseCallArguments(parser, []);
+          logger.info('args: $args');
+        }
+
+        // assert
+      },
     );
-  }
-  return true;
+  });
 }
