@@ -69,7 +69,7 @@ shared static this()
         TokenTag.Ident: &parseIdent, TokenTag.Minus: &parseUnary,
         TokenTag.Bang: &parseUnary, TokenTag.Int: &parseInt,
         TokenTag.True: &parseBoolean, TokenTag.False: &parseBoolean,
-        TokenTag.LParen: &parseGroupedExpression
+        TokenTag.LParen: &parseGroupedExpression, TokenTag.If: &parseIfExpression
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
@@ -81,9 +81,10 @@ shared static this()
         TokenTag.NotEq: InfixRule(&parseBinary, Precedence.Equals),
         TokenTag.Lt: InfixRule(&parseBinary, Precedence.LessGreater),
         TokenTag.Gt: InfixRule(&parseBinary, Precedence.LessGreater),
+        TokenTag.RParen: InfixRule(null, Precedence.Lowest),
+        TokenTag.RSquirly: InfixRule(null, Precedence.Lowest),
         TokenTag.Semicolon: InfixRule(null, Precedence.Lowest),
         TokenTag.Eof: InfixRule(null, Precedence.Lowest),
-        TokenTag.RParen: InfixRule(null, Precedence.Lowest)
     ];
 
     prefixRules = assumeUnique(tempPrefixRules);
@@ -165,13 +166,75 @@ ExpressionNode parseGroupedExpression(ref Parser parser)
 
     if (parser.tokenTags[][parser.position] != TokenTag.RParen)
     {
-        writefln("Expected ')' at position %d; got %s instead",
-                parser.position, parser.tokenTags[][parser.position]);
+        parser.errors.put(format("Expected ')' at position %d; got %s instead",
+                parser.position, parser.tokenTags[][parser.position]));
+
         return null;
     }
 
     parser.skipToken();
     return expr;
+}
+
+/// Parse if-else statements
+ExpressionNode parseIfExpression(ref Parser parser)
+{
+    const auto start = parser.position;
+    const TokenTag[] tokenTags = parser.tokenTags[];
+
+    // expect lparen and skip before block statement
+    if (parser.peek() != TokenTag.LParen)
+    {
+        parser.skipToken();
+
+        parser.errors.put(format("Expected '(' at position %d; got %s instead",
+                parser.position, tokenTags[parser.position]));
+
+        return null;
+    }
+
+    parser.skipTokens(2);
+
+    auto expr = parser.parseExpression();
+
+    // Expect rparen & lsquirly and skip both before consequence block statement
+    if (tokenTags[parser.position] != TokenTag.RParen)
+    {
+        parser.errors.put(format("Expected ')' at position %d; got %s instead",
+                parser.position, tokenTags[parser.position]));
+
+        return null;
+    }
+
+    parser.skipToken();
+    if (tokenTags[parser.position] != TokenTag.LSquirly)
+    {
+        parser.errors.put(format("Expected '{' at position %d; got %s instead",
+                parser.position, tokenTags[parser.position]));
+
+        return null;
+    }
+
+    auto trueBranch = parser.parseBlockStatement();
+
+    // Expect else & lsquirly and skip both before alternative block statement
+    if (tokenTags[parser.position] != TokenTag.Else)
+    {
+        return new IfExpressionNode(start, expr, trueBranch, null);
+    }
+
+    parser.skipToken();
+    if (tokenTags[parser.position] != TokenTag.LSquirly)
+    {
+        parser.errors.put(format("Expected '{' at position %d; got %s instead",
+                parser.position, tokenTags[parser.position]));
+
+        return null;
+    }
+
+    auto falseBranch = parser.parseBlockStatement();
+
+    return new IfExpressionNode(start, expr, trueBranch, falseBranch);
 }
 
 /// Most fundamental node
@@ -318,6 +381,48 @@ class ReturnStatement : StatementNode
     }
 }
 
+/// Node for nesting statements in blocks
+class BlockStatement : StatementNode
+{
+    StatementNode[] statements; /// Statement listing in block
+
+    /**
+     * Constructs return statement.
+     * Params:
+     * mainIdx = the index of the block start
+     * statements = The statement listing
+     */
+    this(ulong mainIdx, StatementNode[] statements)
+    {
+        super(mainIdx);
+        this.statements = statements;
+    }
+
+    /// Show the block statement's main identifier
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.LSquirly);
+    }
+
+    /// Create statement string
+    override string show(ref Lexer lexer)
+    {
+        auto reprBuilder = appender!(string[]);
+        reprBuilder.reserve(8);
+
+        foreach (statement; this.statements[])
+        {
+            auto repr = statement.show(lexer);
+            if (repr !is null && repr != "")
+            {
+                reprBuilder.put(repr);
+            }
+        }
+
+        return "{ " ~ reprBuilder[].joiner("\n").to!string ~ " }";
+    }
+}
+
 /// Identifier node for expressions
 class IdentifierNode : ExpressionNode
 {
@@ -446,6 +551,44 @@ class InfixExpressionNode : ExpressionNode
     }
 }
 
+/// Expression node for ifs
+class IfExpressionNode : ExpressionNode
+{
+    ExpressionNode expr; /// Main expression to choose consequence/alternative
+    BlockStatement trueBranch; /// Consequence expression
+    BlockStatement falseBranch; /// Alternative expression
+
+    /**
+     * Constructs the binary operator expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * expr = the main expression
+     * trueBranch = the expression for the 'true' branch
+     * falseBranch = the expression for the 'false' branch
+     */
+    this(ulong mainIdx, ExpressionNode expr, BlockStatement trueBranch, BlockStatement falseBranch)
+    {
+        super(mainIdx);
+        this.expr = expr;
+        this.trueBranch = trueBranch;
+        this.falseBranch = falseBranch;
+    }
+
+    /// Show the if keyword
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.If);
+    }
+
+    /// Create expression string
+    override string show(ref Lexer lexer)
+    {
+        return format("if %s %s%s", (this.expr !is null) ? expr.show(lexer) : "",
+                (this.trueBranch !is null) ? trueBranch.show(lexer) : "",
+                (this.falseBranch !is null) ? " else " ~ falseBranch.show(lexer) : "");
+    }
+}
+
 /// Listing for node collection
 struct Program
 {
@@ -490,7 +633,7 @@ struct Program
         auto reprBuilder = appender!(string[]);
         reprBuilder.reserve(16);
 
-        foreach (i, statement; this.statements[].enumerate(0))
+        foreach (statement; this.statements[])
         {
             auto repr = statement.show(lexer);
             if (repr !is null && repr != "")
@@ -509,7 +652,7 @@ struct Parser
 private:
     ulong position = 0; /// Current token cursor
     ulong peekPosition = 1; /// Lookahead cursor (after current token)
-    const Lexer lexer; /// Lexer instance with token list
+    Lexer lexer; /// Lexer instance with token list
     const TokenTag[] tokenTags; /// Alias for tokens in lexer
     const ulong tokenCount; /// Cached token length
 
@@ -521,7 +664,7 @@ public:
      * Constructs the parser.
      * Params: lexer = the lexer with tokens to parse
      */
-    this(const ref Lexer lexer)
+    this(ref Lexer lexer)
     {
         this.lexer = lexer;
         this.tokenTags = this.lexer.tokens.tag[];
@@ -580,7 +723,7 @@ public:
         TokenTag token = tokenTags[this.position];
         if (token !in prefixRules)
         {
-            errors.put("Expected expression");
+            errors.put(format("Expected expression, but got %s token", token));
             this.skipToken();
             return null;
         }
@@ -616,11 +759,6 @@ public:
     {
         const auto start = this.position;
         auto expr = this.parseExpression();
-
-        if (tokenTags[this.position] == TokenTag.Semicolon)
-        {
-            this.skipToken();
-        }
 
         return new ExpressionStatement(start, expr);
     }
@@ -693,10 +831,48 @@ public:
         return new ReturnStatement(start, value);
     }
 
-    /// Parse if statements
-    StatementNode parseIfStatement()
+    /// Parse block statements
+    BlockStatement parseBlockStatement()
     {
-        return null;
+        const auto start = this.position;
+        this.skipToken();
+
+        auto blockBuilder = appender!(StatementNode[])();
+        blockBuilder.reserve(8);
+
+        // Keep parsing statements until block ends
+        while (this.position < this.tokenCount && this.tokenTags[this.position] != TokenTag
+                .RSquirly)
+        {
+            auto statement = this.parseStatement();
+            if (statement !is null)
+            {
+                blockBuilder.put(statement);
+            }
+        }
+
+        this.skipToken();
+        return new BlockStatement(start, blockBuilder[]);
+    }
+
+    /// Parse statements
+    StatementNode parseStatement()
+    {
+        const auto token = tokenTags[this.position];
+        switch (token) with (TokenTag)
+        {
+        case Let:
+            return this.parseLetStatement();
+        case Return:
+            return this.parseReturnStatement();
+        case Semicolon:
+            goto case; // Explicit fallthrough to EOF case
+        case Eof:
+            this.skipToken();
+            return null;
+        default:
+            return this.parseExpressionStatement();
+        }
     }
 
     /// Parse token list to create statement AST nodes
@@ -704,30 +880,7 @@ public:
     {
         while (this.position < this.tokenCount)
         {
-            const auto token = tokenTags[this.position];
-            StatementNode statement = null;
-
-            switch (token) with (TokenTag)
-            {
-            case Let:
-                statement = this.parseLetStatement();
-                break;
-            case Return:
-                statement = this.parseReturnStatement();
-                break;
-            case If:
-                statement = this.parseIfStatement();
-                break;
-            case Semicolon:
-                // Go straight to next token on semicolon
-                this.skipToken();
-                continue;
-            case Eof:
-                // Abort parsing on EOF
-                return;
-            default:
-                statement = this.parseExpressionStatement();
-            }
+            StatementNode statement = parseStatement();
 
             if (statement !is null)
             {
@@ -884,6 +1037,51 @@ unittest
 (2 / (5 + 5));
 -(5 + 5);
 !(true == true);";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Simple if expression test
+unittest
+{
+    const auto input = "if (x < y) { x }";
+    const auto expected = "if (x < y) { x; };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Simple if-else expression test
+unittest
+{
+    const auto input = "if (x < y) { x } else { y }";
+    const auto expected = "if (x < y) { x; } else { y; };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// More complicated if-else expression test
+unittest
+{
+    const auto input = "if ((x * 7) < 5 - y) { x + 4 } else { y - 2 }";
+    const auto expected = "if ((x * 7) < (5 - y)) { (x + 4); } else { (y - 2); };";
 
     auto lexer = Lexer(input);
     lexer.tokenize();
