@@ -111,7 +111,9 @@ namespace mk {
             case TokenKind::caret:
             case TokenKind::equal_equal:
             case TokenKind::greater_than:
+            case TokenKind::greater_than_equal:
             case TokenKind::less_than:
+            case TokenKind::less_than_equal:
             case TokenKind::minus:
             case TokenKind::not_equal:
             case TokenKind::percent:

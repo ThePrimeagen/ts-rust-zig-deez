@@ -168,6 +168,11 @@ namespace mk {
                 os << T::op << '(';
                 rewriter_helper(os, initialize_value<typename T::operand>(), depth, use_indentation);
                 os << ')';
+            } else if constexpr (is_binary_expr_v<T>) {
+                os << T::op << '(';
+                rewriter_helper(os, initialize_value<typename T::lhs>(), depth, use_indentation) << ',' << ' ';
+                rewriter_helper(os, initialize_value<typename T::rhs>(), depth, use_indentation);
+                os << ')';
             }
             return os;
         }

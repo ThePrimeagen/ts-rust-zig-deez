@@ -42,6 +42,16 @@ namespace mk {
 
     namespace detail {
 
+        template<ParserToken... Ts>
+        [[nodiscard]] constexpr auto is_next_token_binary(TokenList<Ts...> ts) {
+            if constexpr (sizeof...(Ts) == 0) {
+                return false;
+            } else {
+                constexpr auto next_token = get_element_at_from_token_list<0>(ts);
+                return is_binary_token(next_token.kind);
+            }
+        }
+
         struct ParserImpl {
 
             template<ParserToken T, ParserToken... Ts>
@@ -87,7 +97,7 @@ namespace mk {
             }
 
             template<ParserToken T, ParserToken... Ts>
-            [[nodiscard]] constexpr auto parse_expression(TokenList<T, Ts...> ts, Expr auto expr) {
+            [[nodiscard]] constexpr auto parse_expression_helper(TokenList<T, Ts...> ts, Expr auto expr) {
                 if constexpr (
                     T.kind == TokenKind::semicolon ||
                     T.kind == TokenKind::eof ||
@@ -96,14 +106,23 @@ namespace mk {
                     T.kind == TokenKind::close_brace
                 ) {
                     return ParserResult<decltype(expr), TokenList<T, Ts...>>();
+                } else if constexpr (T.kind == TokenKind::int_literal || T.kind == TokenKind::string_literal || T.kind == TokenKind::bool_literal) {
+                    return ParserResult<decltype(parse_literal(ts)), TokenList<Ts...>>{};
+                } else if constexpr(is_binary_token(T.kind) && !std::is_same_v<decltype(expr), EmptyExpr>) {
+                    static_assert(sizeof...(Ts) > 0, "Unexpected end of file");
+                    using inner_expr_t = decltype(parse_expression(dequeue_token_list(ts), EmptyExpr{}));
+                    using rest_t = second_parser_result_t<inner_expr_t>;
+                    using result_t = first_parser_result_t<inner_expr_t>;
+                    
+                    static_assert(!std::is_same_v<result_t, EmptyExpr>, "Expected expression after binary operator");
+
+                    return ParserResult<BinaryExpr<T.kind, decltype(expr), result_t>, rest_t>();
                 } else if constexpr (is_unary_token(T.kind)) {
                     static_assert(sizeof...(Ts) > 0, "Unexpected end of file");
                     using inner_expr_t = decltype(parse_expression(dequeue_token_list(ts), expr));
                     using rest_t = second_parser_result_t<inner_expr_t>;
                     using result_t = first_parser_result_t<inner_expr_t>;
                     return ParserResult<UnaryExpr<T.kind, result_t>, rest_t>();
-                } else if constexpr (T.kind == TokenKind::int_literal || T.kind == TokenKind::string_literal || T.kind == TokenKind::bool_literal) {
-                    return ParserResult<decltype(parse_literal(ts)), TokenList<Ts...>>{};
                 } else if constexpr (T.kind == TokenKind::open_paren ) {
                     using inner_expr_t = decltype(parse_expression(dequeue_token_list(ts), expr));
                     using rest_t = second_parser_result_t<inner_expr_t>;
@@ -122,6 +141,20 @@ namespace mk {
                     return ParserResult<IdentifierExpr<T.lexeme>, TokenList<Ts...>>{};
                 } else {
                     return ParserResult<decltype(expr), TokenList<T, Ts...>>();
+                }
+            }
+
+            template<ParserToken... Ts>
+            [[nodiscard]] constexpr auto parse_expression(TokenList<Ts...> ts, Expr auto expr) {
+                static_assert(sizeof...(Ts) > 0, "Unexpected end of file");
+                using parse_result_t = decltype(parse_expression_helper(ts, expr));
+                using rest_t = second_parser_result_t<parse_result_t>;
+                using result_t = first_parser_result_t<parse_result_t>;
+
+                if constexpr (is_next_token_binary(rest_t{})) {
+                    return parse_expression(rest_t{}, result_t{});
+                } else {
+                    return parse_result_t{};
                 }
             }
 

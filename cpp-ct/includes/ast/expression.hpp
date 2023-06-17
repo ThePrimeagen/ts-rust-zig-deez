@@ -19,8 +19,8 @@ namespace mk {
 
     template<TokenKind Op, typename L, typename R>
     struct BinaryExpr {
-        using left = L;
-        using right = R;
+        using lhs = L;
+        using rhs = R;
         static constexpr auto op = Op;
     };
 

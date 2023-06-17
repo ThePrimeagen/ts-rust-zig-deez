@@ -345,3 +345,151 @@ TEST_CASE("parse function", "[constexpr][parser][function]") {
     }
 }
 
+TEST_CASE("parse unary operation", "[constexpr][parser][unary]") {
+    constexpr auto source = CtString(R"(
+        -5;
+        ~4;
+        !true;
+        +3;
+        ----5;
+    )");
+    constexpr auto ast = parse_tokens<Lexer<source>>();
+
+    static_assert(
+        std::is_same_v<
+            std::decay_t<decltype(ast)>,
+            ProgramNode<
+                BlockStmt<
+                    UnaryExpr<
+                        TokenKind::minus,
+                        IntegerLiteralExpr<5>
+                    >,
+                    UnaryExpr<
+                        TokenKind::tilde,
+                        IntegerLiteralExpr<4>
+                    >,
+                    UnaryExpr<
+                        TokenKind::exclamation_mark,
+                        BoolLiteralExpr<true>
+                    >,
+                    UnaryExpr<
+                        TokenKind::plus,
+                        IntegerLiteralExpr<3>
+                    >,
+                    UnaryExpr<
+                        TokenKind::minus,
+                        UnaryExpr<
+                            TokenKind::minus,
+                            UnaryExpr<
+                                TokenKind::minus,
+                                UnaryExpr<
+                                    TokenKind::minus,
+                                    IntegerLiteralExpr<5>
+                                >
+                            >
+                        >
+                    >
+                >
+            >
+        >
+    );
+}
+
+
+TEST_CASE("parse binary operation", "[constexpr][parser][binary]") {
+    SECTION("simple operations") {
+
+        constexpr auto source = CtString(R"(
+            5 + 5;
+            4 - 4;
+            3 * 3;
+            2 / 2;
+            1 % 1;
+            0 == 0;
+            1 != 1;
+            2 < 2;
+            3 > 3;
+            4 <= 4;
+            5 >= 5;
+            true && true;
+            false || false;
+        )");
+        constexpr auto ast = parse_tokens<Lexer<source>>();
+
+        static_assert(
+            std::is_same_v<
+                std::decay_t<decltype(ast)>,
+                ProgramNode<
+                    BlockStmt<
+                        BinaryExpr<
+                            TokenKind::plus,
+                            IntegerLiteralExpr<5>,
+                            IntegerLiteralExpr<5>
+                        >,
+                        BinaryExpr<
+                            TokenKind::minus,
+                            IntegerLiteralExpr<4>,
+                            IntegerLiteralExpr<4>
+                        >,
+                        BinaryExpr<
+                            TokenKind::star,
+                            IntegerLiteralExpr<3>,
+                            IntegerLiteralExpr<3>
+                        >,
+                        BinaryExpr<
+                            TokenKind::slash,
+                            IntegerLiteralExpr<2>,
+                            IntegerLiteralExpr<2>
+                        >,
+                        BinaryExpr<
+                            TokenKind::percent,
+                            IntegerLiteralExpr<1>,
+                            IntegerLiteralExpr<1>
+                        >,
+                        BinaryExpr<
+                            TokenKind::equal_equal,
+                            IntegerLiteralExpr<0>,
+                            IntegerLiteralExpr<0>
+                        >,
+                        BinaryExpr<
+                            TokenKind::not_equal,
+                            IntegerLiteralExpr<1>,
+                            IntegerLiteralExpr<1>
+                        >,
+                        BinaryExpr<
+                            TokenKind::less_than,
+                            IntegerLiteralExpr<2>,
+                            IntegerLiteralExpr<2>
+                        >,
+                        BinaryExpr<
+                            TokenKind::greater_than,
+                            IntegerLiteralExpr<3>,
+                            IntegerLiteralExpr<3>
+                        >,
+                        BinaryExpr<
+                            TokenKind::less_than_equal,
+                            IntegerLiteralExpr<4>,
+                            IntegerLiteralExpr<4>
+                        >,
+                        BinaryExpr<
+                            TokenKind::greater_than_equal,
+                            IntegerLiteralExpr<5>,
+                            IntegerLiteralExpr<5>
+                        >,
+                        BinaryExpr<
+                            TokenKind::ampersand_ampersand,
+                            BoolLiteralExpr<true>,
+                            BoolLiteralExpr<true>
+                        >,
+                        BinaryExpr<
+                            TokenKind::pipe_pipe,
+                            BoolLiteralExpr<false>,
+                            BoolLiteralExpr<false>
+                        >
+                    >
+                >
+            >
+        );
+    }
+}
+
