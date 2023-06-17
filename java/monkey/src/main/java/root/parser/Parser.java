@@ -6,6 +6,7 @@ import root.ast.*;
 import root.ast.expressions.Expression;
 import root.ast.expressions.IdentifierExpression;
 import root.ast.expressions.IntegerLiteralExpression;
+import root.ast.expressions.PrefixExpression;
 import root.ast.statements.ExpressionStatement;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
@@ -67,7 +68,7 @@ public class Parser {
         };
     }
 
-    private Statement parseReturnStatement() {
+    private ReturnStatement parseReturnStatement() {
         ReturnStatement returnStatement = new ReturnStatement(this.currentToken);
 
         this.nextToken();
@@ -80,7 +81,7 @@ public class Parser {
         return returnStatement;
     }
 
-    private Statement parseLetStatement() throws ParserException {
+    private LetStatement parseLetStatement() throws ParserException {
         LetStatement letStatement = new LetStatement(this.currentToken);
 
         this.expectPeek(TokenType.IDENT);
@@ -97,7 +98,7 @@ public class Parser {
         return letStatement;
     }
 
-    private Statement parseExpressionStatement() throws ParserException {
+    private ExpressionStatement parseExpressionStatement() throws ParserException {
         ExpressionStatement statement = new ExpressionStatement(this.currentToken);
 
         statement.setExpression(this.parseExpression(OperatorPrecedence.LOWEST));
@@ -109,8 +110,16 @@ public class Parser {
         return statement;
     }
 
+    private void noPrefixParseFnError(TokenType type) throws ParserException {
+        throw new ParserException("No prefix parse function found for " + type);
+    }
+
     private Expression parseExpression(OperatorPrecedence precedence) throws ParserException {
         Expression prefix = this.prefixParse();
+
+        if (prefix == null) {
+            noPrefixParseFnError(currentToken.type());
+        }
 
         return prefix;
     }
@@ -121,8 +130,16 @@ public class Parser {
             // NumberFormatException should never be thrown here, since we already know it's an INT
             // token and those contain valid int representations in their values
             case INT -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
+            case BANG, MINUS -> parsePrefixExpression();
             default -> null;
         };
+    }
+
+    private PrefixExpression parsePrefixExpression() throws ParserException {
+        var expression = new PrefixExpression(currentToken, currentToken.literal());
+        nextToken();
+        expression.setRight(parseExpression(OperatorPrecedence.PREFIX));
+        return expression;
     }
 
     private Expression infixParse(Expression expression) {

@@ -4,7 +4,7 @@ import root.Token;
 
 public class IntegerLiteralExpression extends Expression {
 
-    private Long value;
+    private final Long value;
 
     public IntegerLiteralExpression(Token token, long value) {
         this.token = token;
@@ -13,10 +13,6 @@ public class IntegerLiteralExpression extends Expression {
 
     public Long getValue() {
         return value;
-    }
-
-    public void setValue(Long value) {
-        this.value = value;
     }
 
     @Override

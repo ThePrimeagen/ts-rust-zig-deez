@@ -1,6 +1,8 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import root.ast.expressions.Expression;
 import root.ast.expressions.IntegerLiteralExpression;
+import root.ast.expressions.PrefixExpression;
 import root.ast.statements.ExpressionStatement;
 import root.lexer.Lexer;
 import root.parser.Parser;
@@ -76,11 +78,14 @@ public class ParserTest {
         var program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
-        var statement = program.getStatements().get(0);
-        Assertions.assertInstanceOf(ExpressionStatement.class, statement);
-        var ident = ((ExpressionStatement) statement).getExpression();
-        Assertions.assertInstanceOf(IdentifierExpression.class, ident);
-        var value = ((IdentifierExpression) ident).getValue();
+
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var statement = (ExpressionStatement) program.getStatements().get(0);
+
+        Assertions.assertInstanceOf(IdentifierExpression.class, statement.getExpression());
+        var ident = (IdentifierExpression) statement.getExpression();
+
+        var value = ident.getValue();
         Assertions.assertEquals("foobar", value);
         Assertions.assertEquals("foobar", ident.tokenLiteral());
     }
@@ -92,13 +97,52 @@ public class ParserTest {
         var program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
-        var statement = program.getStatements().get(0);
-        Assertions.assertInstanceOf(ExpressionStatement.class, statement);
-        var ident = ((ExpressionStatement) statement).getExpression();
-        Assertions.assertInstanceOf(IntegerLiteralExpression.class, ident);
-        var value = ((IntegerLiteralExpression) ident).getValue();
+
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var statement = (ExpressionStatement) program.getStatements().get(0);
+
+        Assertions.assertInstanceOf(IntegerLiteralExpression.class, statement.getExpression());
+        var integer = (IntegerLiteralExpression) statement.getExpression();
+
+        var value = integer.getValue();
         Assertions.assertEquals(5, value);
-        Assertions.assertEquals("5", ident.tokenLiteral());
+        Assertions.assertEquals("5", integer.tokenLiteral());
+    }
+
+    private record PrefixTestRecord(String input, String operator, long integerValue) {
+    }
+
+    @Test
+    void testParsingPrefixExpressions() {
+        var prefixTests = List.of(
+                new PrefixTestRecord("!5", "!", 5),
+                new PrefixTestRecord("- 15;", "-", 15)
+        );
+
+        for (PrefixTestRecord(String input, String operator, long integerValue) : prefixTests) {
+            Program program = buildProgram(input);
+
+            Assertions.assertEquals(1, program.getStatements().size());
+
+            Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+            var statement = (ExpressionStatement) program.getStatements().get(0);
+
+            Assertions.assertInstanceOf(PrefixExpression.class, statement.getExpression());
+            var prefix = (PrefixExpression) statement.getExpression();
+            Assertions.assertEquals(operator, prefix.getOperator());
+
+            var right = prefix.getRight();
+            testIntegerLiteral(right, integerValue);
+        }
+    }
+
+    private void testIntegerLiteral(Expression expression, Long expectedValue) {
+        if (expression instanceof IntegerLiteralExpression integerLiteralExpression) {
+            Assertions.assertEquals(expectedValue, integerLiteralExpression.getValue());
+            Assertions.assertEquals(expectedValue.toString(), integerLiteralExpression.tokenLiteral());
+        } else {
+            throw new AssertionError(expression.getClass().getSimpleName() + " is not IntegerLiteralExpression");
+        }
     }
 
     private Program buildProgram(String input) {
