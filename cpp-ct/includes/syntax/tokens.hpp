@@ -126,6 +126,28 @@ namespace mk {
         }
     }
 
+    constexpr int operator_precedence(TokenKind tk) {
+        switch (tk) {
+            case TokenKind::star:
+            case TokenKind::slash:
+            case TokenKind::percent: return 3;
+            case TokenKind::plus:
+            case TokenKind::minus: return 4;
+            case TokenKind::less_than:
+            case TokenKind::less_than_equal:
+            case TokenKind::greater_than:
+            case TokenKind::greater_than_equal: return 6;
+            case TokenKind::equal_equal:
+            case TokenKind::not_equal: return 7;
+            case TokenKind::ampersand: return 10;
+            case TokenKind::caret: return 11;
+            case TokenKind::pipe: return 12;
+            case TokenKind::ampersand_ampersand: return 13;
+            case TokenKind::pipe_pipe: return 14;
+            default: return -1;
+        }
+    }
+
 } // namespace mk
 
 std::ostream& operator<<(std::ostream& os, mk::TokenKind kind) {
