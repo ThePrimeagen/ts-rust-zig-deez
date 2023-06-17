@@ -5,6 +5,7 @@ import root.TokenType;
 import root.ast.*;
 import root.ast.expressions.Expression;
 import root.ast.expressions.IdentifierExpression;
+import root.ast.expressions.IntegerLiteralExpression;
 import root.ast.statements.ExpressionStatement;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
@@ -96,7 +97,7 @@ public class Parser {
         return letStatement;
     }
 
-    private Statement parseExpressionStatement() {
+    private Statement parseExpressionStatement() throws ParserException {
         ExpressionStatement statement = new ExpressionStatement(this.currentToken);
 
         statement.setExpression(this.parseExpression(OperatorPrecedence.LOWEST));
@@ -108,15 +109,18 @@ public class Parser {
         return statement;
     }
 
-    private Expression parseExpression(OperatorPrecedence precedence) {
+    private Expression parseExpression(OperatorPrecedence precedence) throws ParserException {
         Expression prefix = this.prefixParse();
 
         return prefix;
     }
 
-    private Expression prefixParse() {
+    private Expression prefixParse() throws ParserException {
         return switch (currentToken.type()) {
             case IDENT -> new IdentifierExpression(currentToken, currentToken.literal());
+            // NumberFormatException should never be thrown here, since we already know it's an INT
+            // token and those contain valid int representations in their values
+            case INT -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
             default -> null;
         };
     }

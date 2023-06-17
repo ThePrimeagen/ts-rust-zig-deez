@@ -1,5 +1,6 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import root.ast.expressions.IntegerLiteralExpression;
 import root.ast.statements.ExpressionStatement;
 import root.lexer.Lexer;
 import root.parser.Parser;
@@ -21,13 +22,8 @@ public class ParserTest {
                 let y = 10;
                 let foobar = 838383;""";
 
-        var l = new Lexer(input);
-        var p = new Parser(l);
+        var program = buildProgram(input);
 
-        var program = p.parseProgram();
-
-        Assertions.assertNotNull(program);
-        checkParseErrors(p);
         Assertions.assertEquals(3, program.getStatements().size());
 
         var expectedIdentifiers = List.of("x", "y", "foobar");
@@ -45,13 +41,8 @@ public class ParserTest {
                 return 10;
                 return 993322;""";
 
-        var l = new Lexer(input);
-        var p = new Parser(l);
+        var program = buildProgram(input);
 
-        var program = p.parseProgram();
-
-        Assertions.assertNotNull(program);
-        checkParseErrors(p);
         Assertions.assertEquals(3, program.getStatements().size());
 
         for (var statement : program.getStatements()) {
@@ -82,12 +73,7 @@ public class ParserTest {
     void TestIdentifierExpression() {
         var input = "foobar;";
 
-        var l = new Lexer(input);
-        var p = new Parser(l);
-
-        var program = p.parseProgram();
-
-        checkParseErrors(p);
+        var program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
         var statement = program.getStatements().get(0);
@@ -97,6 +83,32 @@ public class ParserTest {
         var value = ((IdentifierExpression) ident).getValue();
         Assertions.assertEquals("foobar", value);
         Assertions.assertEquals("foobar", ident.tokenLiteral());
+    }
+
+    @Test
+    void testIntegerLiteralExpression() {
+        var input = "5;";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        var statement = program.getStatements().get(0);
+        Assertions.assertInstanceOf(ExpressionStatement.class, statement);
+        var ident = ((ExpressionStatement) statement).getExpression();
+        Assertions.assertInstanceOf(IntegerLiteralExpression.class, ident);
+        var value = ((IntegerLiteralExpression) ident).getValue();
+        Assertions.assertEquals(5, value);
+        Assertions.assertEquals("5", ident.tokenLiteral());
+    }
+
+    private Program buildProgram(String input) {
+        var l = new Lexer(input);
+        var p = new Parser(l);
+        var program = p.parseProgram();
+
+        checkParseErrors(p);
+
+        return program;
     }
 
     private void testStatement(Statement statement, String name) {
