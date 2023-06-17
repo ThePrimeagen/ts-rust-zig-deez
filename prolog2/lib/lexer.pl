@@ -2,22 +2,29 @@
 
 lex(StringCodes, Tokens) :- phrase(tok(Tokens), StringCodes).
 
-tok([Token | Ts]) --> ch(punct, [C|Cs]), {lexicon([C|Cs], Token)}, !, tok(Ts).
-tok([Token | Ts]) --> ch(alpha, [C|Cs]), {lexicon([C|Cs], Token)}, !, tok(Ts).
-tok([int(Number) | Ts]) --> ch(digit, [C|Cs]), {number_codes(Number, [C|Cs])}, !, tok(Ts).
-tok([ident(Atom) | Ts]) --> ch(alpha, [C|Cs]), {atom_codes(Atom, [C|Cs])}, !, tok(Ts).
-tok(Ts) --> ch(space, [_|_]), !, tok(Ts).
+tok([Token | Ts]) --> chars(punct, [C|Cs]), {lexicon([C|Cs], Token)}, !, tok(Ts).
+tok([Token | Ts]) --> chars(alpha, [C|Cs]), {lexicon([C|Cs], Token)}, !, tok(Ts).
+tok([int(Number) | Ts]) --> chars(digit, [C|Cs]), {number_codes(Number, [C|Cs])}, !, tok(Ts).
+tok([ident(Atom) | Ts]) --> chars(alpha, [C|Cs]), {atom_codes(Atom, [C|Cs])}, !, tok(Ts).
+tok([string(Str) | Ts]) --> [34], str(Cs), {string_codes(Str, Cs)}, !, tok(Ts).
+tok(Ts) --> chars(space, [_|_]), !, tok(Ts).
 tok([eof]) --> [].
 
-ch(Type, [C|Cs]) --> [C], {code_type(C, Type)}, ch(Type, Cs).
-ch(_, []) --> [].
+chars(Type, [C|Cs]) --> [C], {code_type(C, Type)}, chars(Type, Cs).
+chars(_, []) --> [].
+
+str([]) --> [34].
+str([C|Cs]) --> [C], str(Cs).
 
 lexicon([61], assign).
 lexicon([43], plus).
 lexicon([44], comma).
+lexicon([58], colon).
 lexicon([59], semicolon).
 lexicon([40], lparen).
 lexicon([41], rparen).
+lexicon([91], lbracket).
+lexicon([93], rbracket).
 lexicon([123], lsquirly).
 lexicon([125], rsquirly).
 lexicon([33], bang).

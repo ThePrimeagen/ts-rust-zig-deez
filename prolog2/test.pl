@@ -4,41 +4,65 @@
 :- use_module(lib/evaluator, [evaluate/2]).
 
 test(lex_simple) :-
-    lex(`=+(){},;`,
-        [assign, plus, lparen, rparen, lsquirly, rsquirly, comma, semicolon, eof]).
+    test_lexer(`=+(){},;`, [assign, plus, lparen, rparen, lsquirly, rsquirly, comma, semicolon, eof]).
 
 test(lex_full) :-
-    lex(`
-    let five = 5;
-    let ten = 10;
-    let add = fn(x, y) {
-        x + y;
-    };
-    let result = add(five, ten); `,
-        [let, ident(five), assign, int(5), semicolon, let, ident(ten), assign, int(10), semicolon, let, ident(add), assign, function, lparen, ident(x), comma, ident(y), rparen, lsquirly, ident(x), plus, ident(y), semicolon, rsquirly, semicolon, let, ident(result), assign, ident(add), lparen, ident(five), comma, ident(ten), rparen, semicolon, eof]).
+    test_lexer(`
+      let five = 5;
+      let ten = 10;
+      let add = fn(x, y) {
+          x + y;
+      };
+      let result = add(five, ten); `, [let, ident(five), assign, int(5), semicolon, let, ident(ten), assign, int(10), semicolon, let, ident(add), assign, function, lparen, ident(x), comma, ident(y), rparen, lsquirly, ident(x), plus, ident(y), semicolon, rsquirly, semicolon, let, ident(result), assign, ident(add), lparen, ident(five), comma, ident(ten), rparen, semicolon, eof]).
 
 test(lex_fullest) :-
-    lex(`
-    let five = 5;
-    let ten = 10;
-    let add = fn(x, y) {
-        x + y;
-    };
+    test_lexer(`
+      let five = 5;
+      let ten = 10;
+      let add = fn(x, y) {
+          x + y;
+      };
 
-    let result = add(five, ten);
-    !-/ *5;
-    5 < 10 > 5;
+      let result = add(five, ten);
+      !-/ *5;
+      5 < 10 > 5;
 
-    if (5 < 10) {
-        return true;
-    } else {
-        return false;
-    }
+      if (5 < 10) {
+          return true;
+      } else {
+          return false;
+      }
 
-    10 == 100;
-    10 != 9; `,
-        [let, ident(five), assign, int(5), semicolon, let, ident(ten), assign, int(10), semicolon, let, ident(add), assign, function, lparen, ident(x), comma, ident(y), rparen, lsquirly, ident(x), plus, ident(y), semicolon, rsquirly, semicolon, let, ident(result), assign, ident(add), lparen, ident(five), comma, ident(ten), rparen, semicolon, bang, dash, fslash, asterisk, int(5), semicolon, int(5), lt, int(10), gt, int(5), semicolon, if, lparen, int(5), lt, int(10), rparen, lsquirly, return, true, semicolon, rsquirly, else, lsquirly, return, false, semicolon, rsquirly, int(10), eq, int(100), semicolon, int(10), neq, int(9), semicolon, eof]).
+      10 == 100;
+      10 != 9; `, [let, ident(five), assign, int(5), semicolon, let, ident(ten), assign, int(10), semicolon, let, ident(add), assign, function, lparen, ident(x), comma, ident(y), rparen, lsquirly, ident(x), plus, ident(y), semicolon, rsquirly, semicolon, let, ident(result), assign, ident(add), lparen, ident(five), comma, ident(ten), rparen, semicolon, bang, dash, fslash, asterisk, int(5), semicolon, int(5), lt, int(10), gt, int(5), semicolon, if, lparen, int(5), lt, int(10), rparen, lsquirly, return, true, semicolon, rsquirly, else, lsquirly, return, false, semicolon, rsquirly, int(10), eq, int(100), semicolon, int(10), neq, int(9), semicolon, eof]).
 
+test(lex_fullestiest) :-
+    test_lexer(`
+      let five = 5;
+      let ten = 10;
+      let add = fn(x, y) {
+          x + y;
+      };
+
+      let result = add(five, ten);
+      !-/ *5;
+      5 < 10 > 5;
+
+      if (5 < 10) {
+          return true;
+      } else {
+          return false;
+      }
+
+      10 == 100;
+      10 != 9; 
+      "foobar"
+      "foo bar"
+      [1, 2];`, [let, ident(five), assign, int(5), semicolon, let, ident(ten), assign, int(10), semicolon, let, ident(add), assign, function, lparen, ident(x), comma, ident(y), rparen, lsquirly, ident(x), plus, ident(y), semicolon, rsquirly, semicolon, let, ident(result), assign, ident(add), lparen, ident(five), comma, ident(ten), rparen, semicolon, bang, dash, fslash, asterisk, int(5), semicolon, int(5), lt, int(10), gt, int(5), semicolon, if, lparen, int(5), lt, int(10), rparen, lsquirly, return, true, semicolon, rsquirly, else, lsquirly, return, false, semicolon, rsquirly, int(10), eq, int(100), semicolon, int(10), neq, int(9), semicolon, string("foobar"), string("foo bar"), lbracket, int(1), comma, int(2), rbracket, semicolon, eof]).
+
+
+test_lexer(StringCodes, Tokens) :-
+    once(lex(StringCodes, Tokens)).
 
 test(evaluate_integer) :-
     test_evaluator(`5`, 5),
@@ -167,6 +191,70 @@ test(evaluate_function) :-
         }
       };
       counter(0);`, true).
+
+test(evaluate_string) :-
+    test_evaluator(`
+      let makeGreeter = fn(greeting) { fn(name) { greeting + " " + name + "!" } }; 
+      let hello = makeGreeter("Hello"); 
+      hello("Thorsten");`, "Hello Thorsten!").
+
+test(evaluate_string_builtin) :-
+    test_evaluator(`len("")`, 0),
+    test_evaluator(`len("four")`, 4),
+    test_evaluator(`len("hello world")`, 11).
+
+test(evaluate_list_index) :-
+    test_evaluator(`[1, 2, 3][0]`, 1),
+    test_evaluator(`[1, 2, 3][1]`, 2),
+    test_evaluator(`[1, 2, 3][2]`, 3),
+    test_evaluator(`let i = 0; [1][i];`, 1),
+    test_evaluator(`[1, 2, 3][1 + 1];`, 3),
+    test_evaluator(`let mylist = [1, 2, 3]; mylist[2];`, 3),
+    test_evaluator(`let mylist = [1, 2, 3]; mylist[0] + mylist[1] + mylist[2];`, 6),
+    test_evaluator(`let mylist = [1, 2, 3]; let i = mylist[0]; mylist[i]`, 2),
+    test_evaluator(`[1, 2, 3][3]`, nil),
+    test_evaluator(`[1, 2, 3][-1]`, nil).
+
+test(evaluate_list_builtin) :-
+    test_evaluator(`let a = [1, 2, 3, 4]; rest(a)`, [2, 3, 4]),
+    test_evaluator(`let a = [1, 2, 3, 4]; first(rest(a))`, 2),
+    test_evaluator(`let a = [1, 2, 3, 4]; rest(rest(a))`, [3, 4]),
+    test_evaluator(`let a = [1, 2, 3, 4]; rest(rest(rest(a)))`, [4]),
+    test_evaluator(`let a = [1, 2, 3, 4]; rest(rest(rest(rest(a))))`, []),
+    test_evaluator(`let a = [1, 2, 3, 4]; rest(rest(rest(rest(rest(a)))))`, nil).
+
+test(evaluate_hash_index) :-
+    test_evaluator(`
+      let two = "two";
+      let hash = { "one": 10 - 9, two: 1 + 1, "thr" + "ee": 6 / 2, 4: 4, true: 5, false: 6 }
+      hash["one"]`, 1), 
+    test_evaluator(`
+      let two = "two";
+      let hash = { "one": 10 - 9, two: 1 + 1, "thr" + "ee": 6 / 2, 4: 4, true: 5, false: 6 }
+      hash["two"]`, 2), 
+    test_evaluator(`
+      let two = "two";
+      let hash = { "one": 10 - 9, two: 1 + 1, "thr" + "ee": 6 / 2, 4: 4, true: 5, false: 6 }
+      hash["three"]`, 3), 
+    test_evaluator(`
+      let two = "two";
+      let hash = { "one": 10 - 9, two: 1 + 1, "thr" + "ee": 6 / 2, 4: 4, true: 5, false: 6 }
+      hash[4]`, 4), 
+    test_evaluator(`
+      let two = "two";
+      let hash = { "one": 10 - 9, two: 1 + 1, "thr" + "ee": 6 / 2, 4: 4, true: 5, false: 6 }
+      hash[true]`, 5), 
+    test_evaluator(`
+      let two = "two";
+      let hash = { "one": 10 - 9, two: 1 + 1, "thr" + "ee": 6 / 2, 4: 4, true: 5, false: 6 }
+      hash[false]`, 6), 
+    test_evaluator(`{"foo": 5}["foo"]`, 5),
+    test_evaluator(`{"foo": 5}["bar"]`, nil),
+    test_evaluator(`let key = "foo"; {"foo": 5}[key]`, 5),
+    test_evaluator(`{}["foo"]`, nil),
+    test_evaluator(`{5: 5}[5]`, 5),
+    test_evaluator(`{true: 5}[true]`, 5),
+    test_evaluator(`{false: 5}[false]`, 5).
 
 test_evaluator(StringCodes, Value) :-
     once(lex(StringCodes, Token)), 
