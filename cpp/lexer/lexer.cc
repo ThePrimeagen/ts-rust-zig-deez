@@ -1,92 +1,165 @@
 #include "lexer.hh"
+#include <cctype>
 
 
-#include <exception>
+const std::unordered_map<std::string, token_type, lexer::string_hash, std::equal_to<>> lexer::keywords {
+       {"fn",token_type::Function},
+       {"let",token_type::Let},
+       {"if",token_type::If},
+       {"else",token_type::Else},
+       {"return",token_type::Return},
+       {"true",token_type::True},
+       {"false",token_type::False}
+};
 
 
-lexer::lexer(std::string_view input)
-  : input_{input},
-    position_{0},
-    read_position_{1},
-    byte_{input[0]}
-{
-    if (input.empty()) {
-        throw std::exception();
-    }
-
-    return;
-}
+lexer::lexer(std::string &&input_)
+  : input{std::move(input_)}
+  , ch{input.begin()}
+{}
 
 void
 lexer::read_char(void) noexcept
 {
-    if (this->read_position_ >= this->input_.length()) {
-        this->byte_ = '\0';
-    } else [[likely]] {
-        this->byte_ = this->input_[this->read_position_];
+    if (ch == input.end()) {
+        return;
     }
-
-    this->position_ = this->read_position_;
-    this->read_position_ += 1;
-
+    else [[likely]] {
+     ch++;
+    }
     return;
+}
+
+char
+lexer::peek(void) noexcept
+{
+    if (ch + 1 == input.end()) {
+        return '\0';
+    }
+    else [[likely]] {
+     return *(ch + 1);
+    }
+}
+
+void 
+lexer::skip_whitespace() noexcept
+{
+    while (ch!=input.end() && std::isspace(*ch)) read_char();
+}
+
+std::string_view
+lexer::read_ident() noexcept
+{
+    const std::string::iterator pos = ch;
+    while (std::isalpha(*ch) || *ch == '_')
+    {
+        read_char();
+    }
+    return std::string_view(pos, ch);
+}
+
+std::string_view
+lexer::read_int() noexcept
+{
+    const std::string::iterator pos = ch;
+    while (std::isdigit(*ch))
+    {
+        read_char();
+    }
+    return std::string_view(pos, ch);
 }
 
 void
 lexer::next_token(token &t) noexcept
 {
-    switch (this->byte_) {
-      case '=':
-        t.type = token_type::assign;
-        t.literal = this->byte_;
-        break;
-
-      case ';':
-        t.type = token_type::semicolon;
-        t.literal = this->byte_;
-        break;
-
-      case '(':
-        t.type = token_type::lparen;
-        t.literal = this->byte_;
-        break;
-
-      case ')':
-        t.type = token_type::rparen;
-        t.literal = this->byte_;
-        break;
-
-      case ',':
-        t.type = token_type::comma;
-        t.literal = this->byte_;
-        break;
-
-      case '+':
-        t.type = token_type::plus;
-        t.literal = this->byte_;
-        break;
-
-      case '{':
-        t.type = token_type::lsquirly;
-        t.literal = this->byte_;
-        break;
-
-      case '}':
-        t.type = token_type::rsquirly;
-        t.literal = this->byte_;
-        break;
-
-      case '\0':
-        t.type = token_type::eof;
-        t.literal = this->byte_;
-        break;
-
-      default:
-        t.type = token_type::illegal;
-        t.literal = this->byte_;
+    skip_whitespace();
+    if (ch == input.end() || *ch == '\0')
+    {
+        t.set(token_type::Eof, "\0");
+        return;
     }
+    switch (*ch) {
+    case '{':
+        t.set(token_type::LSquirly, ch);
+        break;
+    case '}':
+        t.set(token_type::RSquirly, ch);
+        break;
+    case '(':
+        t.set(token_type::LParen, ch);
+        break;
+    case ')':
+        t.set(token_type::RParen, ch);
+        break;
+    case ',':
+        t.set(token_type::Comma, ch);
+        break;
+    case ';':
+        t.set(token_type::Semicolon, ch);
+        break;
+    case '+':
+        t.set(token_type::Plus, ch);
+        break;
+    case '-':
+        t.set(token_type::Dash, ch);
+        break;
+    case '!':
+        if (peek() == '=')
+        {
+            read_char();
+            t.set(token_type::NotEqual, "!=");
+        }
+        else
+            t.set(token_type::Bang, ch);
+        break;
 
-    this->read_char();
-
+    case '>':
+        t.set(token_type::GreaterThan, ch);
+        break;
+    case '<':
+        t.set(token_type::LessThan, ch);
+        break;
+    case '*':
+        t.set(token_type::Asterisk, ch);
+        break;
+    case '/':
+        t.set(token_type::ForwardSlash, ch);
+        break;
+    case '=':
+        if (peek() == '=')
+        {
+            read_char();
+            t.set(token_type::Equal, "==");
+        }
+        else
+            t.set(token_type::Assign, ch);
+        break;
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+        t.set(token_type::Integer, read_int());
+        return;
+    default:
+        if (std::isalpha(*ch) || *ch == '_')
+        {
+            std::string_view word = read_ident();
+            auto iter = keywords.find(word);
+            if (iter != keywords.end())
+                t.set(iter->second, word);
+            else
+                t.set(token_type::Identifier, word);
+            return;
+        }
+        else
+            t.set(token_type::Illegal, ch);
+    }
+    read_char();
     return;
 }
