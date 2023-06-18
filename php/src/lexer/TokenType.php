@@ -1,9 +1,6 @@
 <?php
 
-require 'vendor/autoload.php';
-
-enum TokenType
-{
+enum TokenType {
     case Illegal;
     case Eof;
     case Identifier;
@@ -22,6 +19,9 @@ enum TokenType
     case RightParen;
     case LeftBrace;
     case RightBrace;
+    case LeftBracket;
+    case RightBracket;
+    case Colon;
     case Function;
     case Let;
     case True;
