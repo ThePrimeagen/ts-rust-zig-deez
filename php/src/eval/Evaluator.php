@@ -32,6 +32,7 @@ readonly class Evaluator {
             $node instanceof ArrayLiteral => $this->evaluateArrayLiteral($node, $scope),
             $node instanceof IndexExpression => $this->evaluateIndexExpression($node, $scope),
             $node instanceof HashLiteral => $this->evaluateHashLiteral($node, $scope),
+            $node instanceof ReassignStatement => $this->evaluateReassignStatement($node, $scope),
 
             default => null,
         };
@@ -107,6 +108,22 @@ readonly class Evaluator {
         $scope->set($node->identifier->value, $value);
 
         return $value;
+    }
+
+    private function evaluateReassignStatement(ReassignStatement $node, Scope $scope): Value | ErrorValue {
+        $value = $this->evaluate($node->value, $scope);
+
+        if ($value instanceof ErrorValue) {
+            return $value;
+        }
+
+        $assignedValue = $scope->reassign($node->identifier->value, $value);
+
+        if ($assignedValue === null) {
+            return new ErrorValue("Identifier not found: {$node->identifier->value}");
+        }
+
+        return $assignedValue;
     }
 
     private function evaluatePrefixExpression(PrefixExpression $node, Scope $scope): Value {
@@ -211,7 +228,7 @@ readonly class Evaluator {
         };
     }
 
-    private function evaluateStringInfixExpression(TokenType $type, StringValue $left, StringValue $right): StringValue|ErrorValue {
+    private function evaluateStringInfixExpression(TokenType $type, StringValue $left, StringValue $right): StringValue|BooleanValue|ErrorValue {
         return match ($type) {
             TokenType::Plus => new StringValue($left->value . $right->value),
             TokenType::Equals => BooleanValue::fromBool($left->value === $right->value),
@@ -304,7 +321,7 @@ readonly class Evaluator {
         return new ArrayValue($elements);
     }
 
-    private function evaluateIndexExpression(IndexExpression $node, Scope $scope) {
+    private function evaluateIndexExpression(IndexExpression $node, Scope $scope): Value | ErrorValue {
         $left = $this->evaluate($node->left, $scope);
 
         if ($left instanceof ErrorValue) {

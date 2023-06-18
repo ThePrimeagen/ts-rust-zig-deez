@@ -22,4 +22,17 @@ class Scope {
         $this->store[$name] = $value;
         return $value;
     }
+
+    public function reassign(string $name, Value $value): ?Value {
+        if (isset($this->store[$name])) {
+            $this->store[$name] = $value;
+            return $value;
+        }
+
+        if (isset($this->outer)) {
+            return $this->outer->reassign($name, $value);
+        } else {
+            return null;
+        }
+    }
 }

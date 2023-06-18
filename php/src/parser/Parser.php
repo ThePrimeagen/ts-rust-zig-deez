@@ -33,9 +33,10 @@ class Parser {
         $this->registerPrefix(TokenType::If, fn() => $this->parseIfExpression());
         $this->registerPrefix(TokenType::Function, fn() => $this->parseFunctionLiteral());
         $this->registerPrefix(TokenType::String, fn() => $this->parseStringLiteral());
-        $this->registerPrefix(TokenType::UnterminatedString, fn() => $this->handleUnterminatedString());
         $this->registerPrefix(TokenType::LeftBracket, fn() => $this->parseArrayLiteral());
         $this->registerPrefix(TokenType::LeftBrace, fn() => $this->parseHashLiteral());
+
+        $this->registerPrefix(TokenType::UnterminatedString, fn() => $this->handleUnterminatedString());
 
         $this->registerInfix(TokenType::Plus, fn(Expression $left) => $this->parseInfixExpression($left));
         $this->registerInfix(TokenType::Minus, fn(Expression $left) => $this->parseInfixExpression($left));
@@ -88,6 +89,14 @@ class Parser {
     }
 
     private function parseStatement(): ?Statement {
+
+        if (
+            $this->currentToken->type === TokenType::Identifier &&
+            $this->peekToken->type === TokenType::Assign
+        ) {
+            return $this->parseReassignStatement();
+        }
+
         return match ($this->currentToken->type) {
             TokenType::Let => $this->parseLetStatement(),
             TokenType::Return => $this->parseReturnStatement(),
@@ -125,6 +134,19 @@ class Parser {
         $this->expectPeek(TokenType::Semicolon);
 
         return new LetStatement($letToken, $identifier, $letExpression);
+    }
+
+    private function parseReassignStatement(): ?ReassignStatement {
+        $identifier = new Identifier($this->currentToken, $this->currentToken->literal);
+
+        $this->nextToken();
+        $this->nextToken();
+
+        $reassignExpression = $this->parseExpression(Precedence::Lowest);
+
+        $this->expectPeek(TokenType::Semicolon);
+
+        return new ReassignStatement($identifier, $reassignExpression);
     }
 
     private function parseReturnStatement(): ?ReturnStatement {

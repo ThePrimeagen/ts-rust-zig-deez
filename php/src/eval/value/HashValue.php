@@ -1,6 +1,6 @@
 <?php
 
-readonly class HashValue implements Value {
+class HashValue implements Value {
 
     /**
      * @param Value[] $stringKeyPairs
@@ -65,5 +65,29 @@ readonly class HashValue implements Value {
         }
 
         return NullValue::$NULL;
+    }
+
+    public function set(Value $key, Value $value): bool {
+        if ($key instanceof StringValue) {
+            if ($this->stringKeyPairs === null) {
+                $this->stringKeyPairs = [];
+            }
+            $this->stringKeyPairs[$key->value] = $value;
+            return true;
+        } else if ($key instanceof IntegerValue) {
+            if ($this->intKeyPairs === null) {
+                $this->intKeyPairs = [];
+            }
+            $this->intKeyPairs[$key->value] = $value;
+            return true;
+        } else if ($key instanceof BooleanValue) {
+            if ($key->value) {
+                $this->true = $value;
+            } else {
+                $this->false = $value;
+            }
+            return true;
+        }
+        return false;
     }
 }
