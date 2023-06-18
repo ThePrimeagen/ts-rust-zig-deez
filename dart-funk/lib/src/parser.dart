@@ -2,7 +2,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:meta/meta.dart';
 import 'package:monkeydart/monkeydart.dart';
 
-// final logger = Logger();
+final logger = Logger(level: Level.verbose);
 
 final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.int: _parseIntegerLiteral,
@@ -16,6 +16,14 @@ final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.ne: _parsePrefixExpression,
   TokenType.lt: _parsePrefixExpression,
   TokenType.gt: _parsePrefixExpression,
+  TokenType.lParen: _parseGroupedExpression,
+  TokenType.if_: _parseIfExpression,
+  TokenType.function: _parseFunctionLiteral,
+  // TokenType.string: _parseStringLiteral,
+  // TokenType.lSquirly: _parseArrayLiteral,
+  // TokenType.lSquirly: _parseHashLiteral,
+  TokenType.true_: _parseBoolean,
+  TokenType.false_: _parseBoolean,
 };
 
 final _infixParseFns =
@@ -167,36 +175,73 @@ Program parse(Parser parser) {
 }
 
 (Parser parser, Statement statement) _parseStatement(Parser parser) {
-  return switch (parser.currToken.type) {
+  final retVal = switch (parser.currToken.type) {
     TokenType.let => _parseLetStatement(parser),
     TokenType.return_ => _parseReturnStatement(parser),
+    TokenType.illegal => (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Encountered an unexpected token in statement',
+              parser,
+              [],
+            )
+          ],
+        ),
+        const NullStatement()
+      ),
+    TokenType.eof => (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Unexpected end of input',
+              parser,
+              [],
+            )
+          ],
+        ),
+        const NullStatement()
+      ),
     _ => _parseExpressionStatement(parser),
   };
+  // make sure we're at the end of the statement
+  return retVal;
 }
 
 (Parser parser, Statement statement) _parseExpressionStatement(Parser parser) {
+  var newParser = parser;
+
   final (exprParser, expression) = _parseExpression(parser, Precedence.lowest);
-  final newParser = _eatNextSemicolon(exprParser);
+  if (_peekTokenIs(exprParser, TokenType.semicolon) ||
+      _peekTokenIs(exprParser, TokenType.eof)) {
+    newParser = advanceParser(advanceParser(exprParser));
+    return (newParser, ExpressionStatement(expression));
+  }
+  newParser = _currTokenIs(exprParser, TokenType.eof)
+      ? exprParser
+      : _finishStatement(exprParser, recurse: true);
+
   return (newParser, ExpressionStatement(expression));
 }
 
 (Parser parser, Statement statement) _parseLetStatement(Parser parser) {
   final (letParser, ok) = _expectPeek(parser, TokenType.ident);
   if (!ok) {
-    final newParser = _eatNextSemicolon(letParser);
+    final newParser = _finishStatement(letParser);
     return (newParser, const NullStatement());
   }
   final (idParser, identifier as Identifier) = _parseIdentifier(letParser);
   final (assParser, assOk) = _expectPeek(idParser, TokenType.assign);
   if (!assOk) {
-    final newParser = _eatNextSemicolon(assParser);
+    final newParser = _finishStatement(assParser, recurse: true);
     return (newParser, const NullStatement());
   }
   final exprParser = advanceParser(assParser);
-  final (remainderParser, expression) =
+  final (postExprParser, expression) =
       _parseExpression(exprParser, Precedence.lowest);
-  final newParser = _eatNextSemicolon(remainderParser);
-  return (newParser, LetStatement(identifier, expression));
+  final returnParser = _finishStatement(postExprParser, recurse: true);
+  // make sure we're at the end of the statement
+  return (returnParser, LetStatement(identifier, expression));
 }
 
 (Parser parser, Statement statement) _parseReturnStatement(Parser parser) {
@@ -204,7 +249,11 @@ Program parse(Parser parser) {
   final (exprParser, expression) =
       _parseExpression(retParser, Precedence.lowest);
   final stmt = ReturnStatement(expression);
-  final newParser = _eatNextSemicolon(exprParser);
+  if (_peekTokenIs(exprParser, TokenType.semicolon)) {
+    final newParser = advanceParser(advanceParser(exprParser));
+    return (newParser, stmt);
+  }
+  final newParser = _finishStatement(exprParser);
   return (newParser, stmt);
 }
 
@@ -233,10 +282,12 @@ Program parse(Parser parser) {
   Parser parser,
   Precedence precedence,
 ) {
+  logger.detail('Parsing expression ${parser.currToken.value}');
   final prefix = _prefixParseFns[parser.currToken.type];
   if (prefix == null) {
+    final errParser = _finishStatement(parser, recurse: true);
     return (
-      parser.copyWith(
+      errParser.copyWith(
         errors: [
           ParserException(
             'No prefix parse function for ${parser.currToken.type}',
@@ -259,6 +310,7 @@ Program parse(Parser parser) {
   Expression leftExp, {
   Precedence precedence = Precedence.lowest,
 }) {
+  logger.detail('_Parsing expression ${parser.currToken.value}');
   if (_peekTokenIs(parser, TokenType.semicolon) ||
       precedence >= peekPrecedence(parser)) {
     return (parser, leftExp);
@@ -299,13 +351,37 @@ Program parse(Parser parser) {
 }
 
 (Parser parser, Expression expression) _parseIdentifier(Parser parser) {
-  return (parser, Identifier(parser.currToken.value));
+  return switch (parser.currToken.type) {
+    TokenType.ident => (parser, Identifier(parser.currToken.value)),
+    _ => (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Expected token to be ${TokenType.ident}, '
+              'got ${parser.currToken.type} instead',
+              parser,
+              [],
+              // line: parser.peekToken.line,
+              // column: parser.peekToken.column,
+            )
+          ],
+        ),
+        const NullExpression() as Identifier
+      ),
+  };
 }
 
-Parser _eatNextSemicolon(Parser parser) {
+Parser _finishStatement(Parser parser, {bool recurse = false}) {
   return switch (parser.currToken.type) {
-    TokenType.semicolon => advanceParser(parser),
-    TokenType.eof => parser.copyWith(
+    // a block may end with a ';}'
+    TokenType.semicolon when parser.peekToken.type == TokenType.rSquirly =>
+      advanceParser(advanceParser(parser)),
+    TokenType.rSquirly ||
+    // TokenType.rParen ||
+    // TokenType.comma ||
+    TokenType.semicolon =>
+      advanceParser(parser),
+    TokenType.eof => advanceParser(parser).copyWith(
         errors: [
           ParserException(
             'Unexpected end of input',
@@ -327,7 +403,8 @@ Parser _eatNextSemicolon(Parser parser) {
           )
         ],
       ),
-    _ => _eatNextSemicolon(advanceParser(parser)),
+    _ when recurse => _finishStatement(advanceParser(parser)),
+    _ => parser,
   };
 }
 
@@ -346,12 +423,315 @@ Parser _eatNextSemicolon(Parser parser) {
   final precedence = currentPrecedence(parser);
   final advParser = advanceParser(parser);
   final (exprParser, right) = _parseExpression(advParser, precedence);
-  return (
-    exprParser,
-    InfixExpression(parser.currToken, left, operator, right, precedence)
-  );
+  return (exprParser, InfixExpression(parser.currToken, left, operator, right));
 }
 
 bool _peekTokenIs(Parser parser, TokenType type) {
   return parser.peekToken.type == type;
+}
+
+bool _currTokenIs(Parser parser, TokenType type) {
+  return parser.currToken.type == type;
+}
+
+(Parser, Expression) _parseBoolean(Parser parser) {
+  return (parser, BooleanLiteral(value: _currTokenIs(parser, TokenType.true_)));
+}
+
+(Parser, Expression) _parseGroupedExpression(Parser parser) {
+  final advParser = advanceParser(parser);
+  final (exprParser, expression) =
+      _parseExpression(advParser, Precedence.lowest);
+  final (newParser, ok) = _expectPeek(exprParser, TokenType.rParen);
+  if (!ok) {
+    return (
+      newParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.rParen}, '
+            'got ${newParser.peekToken.type} instead',
+            newParser,
+            [],
+            // line: newParser.peekToken.line,
+            // column: newParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression()
+    );
+  }
+  return (newParser, expression);
+  // return (advanceParser(newParser), expression);
+}
+
+(Parser, Expression) _parseIfExpression(Parser parse) {
+  logger.detail('Parsing if expression');
+  final (expectParser, ok) = _expectPeek(parse, TokenType.lParen);
+  if (!ok) {
+    return (
+      expectParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.lParen}, '
+            'got ${expectParser.peekToken.type} instead',
+            expectParser,
+            [],
+            // line: expectParser.peekToken.line,
+            // column: expectParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression()
+    );
+  }
+
+  // gather the condition
+  final jumpLParendParser = advanceParser(expectParser);
+  final (conditionPasrer, condition) =
+      _parseExpression(jumpLParendParser, Precedence.lowest);
+
+  final (jumpRParenParser, okEndCond) =
+      _expectPeek(conditionPasrer, TokenType.rParen);
+  if (!okEndCond) {
+    return (
+      jumpRParenParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.rParen}, '
+            'got ${jumpRParenParser.peekToken.type} instead',
+            jumpRParenParser,
+            [],
+            // line: jumpBraceParser.peekToken.line,
+            // column: jumpBraceParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression()
+    );
+  }
+
+  final (jumpLSquirly, okCons) =
+      _expectPeek(jumpRParenParser, TokenType.lSquirly);
+  if (!okCons) {
+    return (
+      jumpLSquirly.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.lSquirly}, '
+            'got ${jumpLSquirly.peekToken.type} instead',
+            jumpLSquirly,
+            [],
+            // line: jumpLBraceParser.peekToken.line,
+            // column: jumpLBraceParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression()
+    );
+  }
+
+  // gather the consequence
+  final (consequenceParser, consequence) = _parseBlockStatement(jumpLSquirly);
+
+  // gather the alternative, if any
+  if (_currTokenIs(consequenceParser, TokenType.else_)) {
+    final (jumpLBraceParser, okAlt) =
+        _expectPeek(consequenceParser, TokenType.lSquirly);
+    if (!okAlt) {
+      return (
+        jumpLBraceParser.copyWith(
+          errors: [
+            ParserException(
+              'Expected next token to be ${TokenType.lSquirly}, '
+              'got ${jumpLBraceParser.peekToken.type} instead',
+              jumpLBraceParser,
+              [],
+              // line: jumpLBraceParser.peekToken.line,
+              // column: jumpLBraceParser.peekToken.column,
+            )
+          ],
+        ),
+        const NullExpression()
+      );
+    }
+    final (alternativeParser, alternative) =
+        _parseBlockStatement(jumpLBraceParser);
+    return (
+      alternativeParser,
+      IfExpression(
+        condition: condition,
+        consequence: consequence,
+        alternative: alternative,
+      )
+    );
+  } else {
+    return (
+      consequenceParser,
+      IfExpression(condition: condition, consequence: consequence)
+    );
+  }
+}
+
+(Parser, BlockStatement) _parseBlockStatement(Parser parser) {
+  logger.detail('Parsing block statement: ${parser.currToken.value}');
+  final skipParser = advanceParser(parser);
+  final (blockParser, statements) = __parseBlockStatement(skipParser, []);
+
+  return (blockParser, BlockStatement(statements));
+}
+
+(Parser, List<Statement>) __parseBlockStatement(
+  Parser parser,
+  List<Statement> statements,
+) {
+  logger.detail('_Parsing block statement: ${parser.currToken.value}');
+
+  switch (parser.currToken.type) {
+    case TokenType.semicolon:
+    case TokenType.rSquirly:
+      return (advanceParser(parser), statements);
+    case TokenType.else_:
+      return (parser, statements);
+    case TokenType.eof:
+      return (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Unexpected end of input',
+              parser,
+              [],
+              // line: parser.peekToken.line,
+              // column: parser.peekToken.column,
+            )
+          ],
+        ),
+        statements,
+      );
+    case _:
+      {
+        final (newParser, statement) = _parseStatement(parser);
+        return __parseBlockStatement(
+          newParser,
+          [...statements, statement],
+        );
+      }
+  }
+}
+
+(Parser, FunctionLiteral) _parseFunctionLiteral(Parser parser) {
+  final (jumpLParenParser, ok) = _expectPeek(parser, TokenType.lParen);
+  if (!ok) {
+    return (
+      jumpLParenParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.lParen}, '
+            'got ${jumpLParenParser.peekToken.type} instead',
+            jumpLParenParser,
+            [],
+            // line: jumpLParenParser.peekToken.line,
+            // column: jumpLParenParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression() as FunctionLiteral
+    );
+  }
+
+  final (paramsParser, parameters) = _parseFnParameters(jumpLParenParser, []);
+
+  final (jumpRParenParser, okEndParams) =
+      _expectPeek(paramsParser, TokenType.rParen);
+  if (!okEndParams) {
+    return (
+      jumpRParenParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.rParen}, '
+            'got ${jumpRParenParser.peekToken.type} instead',
+            jumpRParenParser,
+            [],
+            // line: jumpRParenParser.peekToken.line,
+            // column: jumpRParenParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression() as FunctionLiteral
+    );
+  }
+
+  final (jumpLBraceParser, okCons) =
+      _expectPeek(jumpRParenParser, TokenType.lSquirly);
+  if (!okCons) {
+    return (
+      jumpLBraceParser.copyWith(
+        errors: [
+          ParserException(
+            'Expected next token to be ${TokenType.lSquirly}, '
+            'got ${jumpLBraceParser.peekToken.type} instead',
+            jumpLBraceParser,
+            [],
+            // line: jumpLBraceParser.peekToken.line,
+            // column: jumpLBraceParser.peekToken.column,
+          )
+        ],
+      ),
+      const NullExpression() as FunctionLiteral
+    );
+  }
+
+  final (bodyParser, body) = _parseBlockStatement(jumpLBraceParser);
+
+  return (
+    bodyParser,
+    FunctionLiteral(parameters: parameters, body: body),
+  );
+}
+
+/// The initial call to [_parseFnParameters] should be made with an empty list
+/// of parameters. The [parser] should be at the opening parenthesis of the fn
+(Parser, List<Identifier>) _parseFnParameters(
+  Parser parser,
+  List<Identifier> parameters,
+) {
+  return switch (parser.peekToken.type) {
+    TokenType.rParen => (parser, parameters),
+    TokenType.ident => _parseFnParameters(
+        advanceParser(parser),
+        [...parameters, Identifier(parser.peekToken.value)],
+      ),
+    TokenType.comma => _parseFnParameters(
+        advanceParser(parser),
+        parameters,
+      ),
+    TokenType.eof => (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Unexpected end of input',
+              parser,
+              [],
+              // line: parser.peekToken.line,
+              // column: parser.peekToken.column,
+            )
+          ],
+        ),
+        parameters,
+      ),
+    _ => (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Expected next token to be ${TokenType.ident}, '
+              'got ${parser.peekToken.type} instead',
+              parser,
+              [],
+              // line: parser.peekToken.line,
+              // column: parser.peekToken.column,
+            )
+          ],
+        ),
+        parameters,
+      ),
+  };
 }

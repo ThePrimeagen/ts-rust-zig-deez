@@ -11,8 +11,7 @@ docker-build:
 	docker build --no-cache . -t deez_$(notdir $(shell pwd))
 
 docker-ready: docker-build
-	docker run -t deez_$(notdir $(shell pwd))
+	docker run -v $(shell pwd)/lexer:/deez/lexer -t deez_$(notdir $(shell pwd))
 
 test:
-	cp lexer/* $(threedays)/. && \
-	cd $(threedays) && ./3d_loader -t $(threedays)/T -c TestsExit.HC
+	cd $(threedays) && ./3d_loader -t $(threedays)/T -c Run.HC

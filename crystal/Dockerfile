@@ -4,6 +4,7 @@ RUN apt-get install -y crystal
 COPY . /app
 WORKDIR /app
 
+RUN shards install
 RUN crystal spec
 RUN shards build
 
