@@ -29,7 +29,7 @@ public class ParserTest {
 
         var index = 0;
         for (var statement : program.getStatements()) {
-            testStatement(statement, expectedIdentifiers.get(index++));
+            testLetStatement(statement, expectedIdentifiers.get(index++));
         }
     }
 
@@ -240,7 +240,7 @@ public class ParserTest {
             Assertions.assertEquals(expectedValue, integerLiteralExpression.getValue());
             Assertions.assertEquals(expectedValue.toString(), integerLiteralExpression.tokenLiteral());
         } else {
-            throw new AssertionError(expression.getClass().getSimpleName() + " is not IntegerLiteralExpression");
+            throw new AssertionError(expression.getClass().getSimpleName() + " is not instance of IntegerLiteralExpression");
         }
     }
 
@@ -254,14 +254,14 @@ public class ParserTest {
         return program;
     }
 
-    private void testStatement(Statement statement, String name) {
+    private void testLetStatement(Statement statement, String name) {
         Assertions.assertEquals(TokenType.LET.token().literal(), statement.tokenLiteral());
 
         if (statement instanceof LetStatement letStatement) {
             Assertions.assertEquals(name, letStatement.getName().getValue());
             Assertions.assertEquals(name, letStatement.getName().tokenLiteral());
         } else {
-            throw new AssertionError("statement not instance of LetStatement");
+            throw new AssertionError(statement.getClass().getSimpleName() + " is not instance of LetStatement");
         }
     }
 
