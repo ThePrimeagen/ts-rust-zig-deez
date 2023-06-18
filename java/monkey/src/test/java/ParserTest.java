@@ -1,14 +1,11 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import root.ast.expressions.Expression;
-import root.ast.expressions.IntegerLiteralExpression;
-import root.ast.expressions.PrefixExpression;
+import root.ast.expressions.*;
 import root.ast.statements.ExpressionStatement;
 import root.lexer.Lexer;
 import root.parser.Parser;
 import root.TokenType;
 import root.ast.*;
-import root.ast.expressions.IdentifierExpression;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
@@ -133,6 +130,108 @@ public class ParserTest {
 
             var right = prefix.getRight();
             testIntegerLiteral(right, integerValue);
+        }
+    }
+
+    private record InfixTestRecord(String input, long leftValue, String operator, long rightValue) {
+    }
+
+    @Test
+    void testParsingInfixExpressions() {
+        var infixTests = List.of(
+                new InfixTestRecord("5 + 5;", 5, "+", 5),
+                new InfixTestRecord("3 + 10", 3, "+", 10),
+                new InfixTestRecord("5 - 5;", 5, "-", 5),
+                new InfixTestRecord("5 * 5;", 5, "*", 5),
+                new InfixTestRecord("5 / 5;", 5, "/", 5),
+                new InfixTestRecord("5 > 5;", 5, ">", 5),
+                new InfixTestRecord("5 < 5;", 5, "<", 5),
+                new InfixTestRecord("0 < 83", 0, "<", 83),
+                new InfixTestRecord("5 == 5;", 5, "==", 5),
+                new InfixTestRecord("5 != 5;", 5, "!=", 5)
+        );
+
+        for (InfixTestRecord(String input, long leftValue, String operator, long rightValue) : infixTests) {
+            var program = buildProgram(input);
+
+            Assertions.assertEquals(1, program.getStatements().size());
+
+            Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+            var statement = (ExpressionStatement) program.getStatements().get(0);
+
+            Assertions.assertInstanceOf(InfixExpression.class, statement.getExpression());
+            var infix = (InfixExpression) statement.getExpression();
+            Assertions.assertEquals(operator, infix.getOperator());
+
+            var left = infix.getLeft();
+            testIntegerLiteral(left, leftValue);
+
+            var right = infix.getRight();
+            testIntegerLiteral(right, rightValue);
+        }
+    }
+
+    @Test
+    void testOperatorPrecedenceParsing() {
+        var tests = List.of(
+                List.of(
+                        "-a * b",
+                        "((-a) * b)"
+                ),
+                List.of(
+                        "!-a",
+                        "(!(-a))"
+                ),
+                List.of(
+                        "a + b + c",
+                        "((a + b) + c)"
+                ),
+                List.of(
+                        "a + b - c",
+                        "((a + b) - c)"
+                ),
+                List.of(
+                        "a * b * c",
+                        "((a * b) * c)"
+                ),
+                List.of(
+                        "a * b / c",
+                        "((a * b) / c)"
+                ),
+                List.of(
+                        "a + b / c",
+                        "(a + (b / c))"
+                ),
+                List.of(
+                        "a + b * c + d / e - f",
+                        "(((a + (b * c)) + (d / e)) - f)"
+                ),
+                List.of(
+                        "3 + 4; -5 * 5",
+                        "(3 + 4)\n((-5) * 5)" // TODO Here, we are inserting a \n since there are two Statements. Should we stick to the book?
+                ),
+                List.of(
+                        "5 > 4 == 3 < 4",
+                        "((5 > 4) == (3 < 4))"
+                ),
+                List.of(
+                        "5 < 4 != 3 > 4",
+                        "((5 < 4) != (3 > 4))"
+                ),
+                List.of(
+                        "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+                ),
+                List.of(
+                        "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+                )
+        );
+
+        for (List<String> test : tests) {
+            var program = buildProgram(test.get(0));
+
+            Assertions.assertEquals(test.get(1), program.toString());
         }
     }
 
