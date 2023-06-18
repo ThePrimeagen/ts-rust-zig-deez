@@ -1,0 +1,376 @@
+let null = rest([]);
+
+let for = fn(low, high, callback) {
+    if (low < high) {
+        callback(low);
+        for(low + 1, high, callback);
+    }
+};
+
+let forEach = fn(array, callback) {
+    let count = len(array);
+
+    for(0, count, fn(i, acc) {
+        callback(array[i]);
+    });
+};
+
+let while = fn(condition, callback) {
+    if (condition()) {
+        callback();
+        while(condition, callback);
+    }
+};
+
+
+let is_letter = fn(ch) {
+    if (ch == "a") {
+        return true;
+    }
+    if (ch == "b") {
+        return true;
+    }
+    if (ch == "c") {
+        return true;
+    }
+    if (ch == "d") {
+        return true;
+    }
+    if (ch == "e") {
+        return true;
+    }
+    if (ch == "f") {
+        return true;
+    }
+    if (ch == "g") {
+        return true;
+    }
+    if (ch == "h") {
+        return true;
+    }
+    if (ch == "i") {
+        return true;
+    }
+    if (ch == "j") {
+        return true;
+    }
+    if (ch == "k") {
+        return true;
+    }
+    if (ch == "l") {
+        return true;
+    }
+    if (ch == "m") {
+        return true;
+    }
+    if (ch == "n") {
+        return true;
+    }
+    if (ch == "o") {
+        return true;
+    }
+    if (ch == "p") {
+        return true;
+    }
+    if (ch == "q") {
+        return true;
+    }
+    if (ch == "r") {
+        return true;
+    }
+    if (ch == "s") {
+        return true;
+    }
+    if (ch == "t") {
+        return true;
+    }
+    if (ch == "u") {
+        return true;
+    }
+    if (ch == "v") {
+        return true;
+    }
+    if (ch == "w") {
+        return true;
+    }
+    if (ch == "x") {
+        return true;
+    }
+    if (ch == "y") {
+        return true;
+    }
+    if (ch == "z") {
+        return true;
+    }
+    if (ch == "A") {
+        return true;
+    }
+    if (ch == "B") {
+        return true;
+    }
+    if (ch == "C") {
+        return true;
+    }
+    if (ch == "D") {
+        return true;
+    }
+    if (ch == "E") {
+        return true;
+    }
+    if (ch == "F") {
+        return true;
+    }
+    if (ch == "G") {
+        return true;
+    }
+    if (ch == "H") {
+        return true;
+    }
+    if (ch == "I") {
+        return true;
+    }
+    if (ch == "J") {
+        return true;
+    }
+    if (ch == "K") {
+        return true;
+    }
+    if (ch == "L") {
+        return true;
+    }
+    if (ch == "M") {
+        return true;
+    }
+    if (ch == "N") {
+        return true;
+    }
+    if (ch == "O") {
+        return true;
+    }
+    if (ch == "P") {
+        return true;
+    }
+    if (ch == "Q") {
+        return true;
+    }
+    if (ch == "R") {
+        return true;
+    }
+    if (ch == "S") {
+        return true;
+    }
+    if (ch == "T") {
+        return true;
+    }
+    if (ch == "U") {
+        return true;
+    }
+    if (ch == "V") {
+        return true;
+    }
+    if (ch == "W") {
+        return true;
+    }
+    if (ch == "X") {
+        return true;
+    }
+    if (ch == "Y") {
+        return true;
+    }
+    if (ch == "Z") {
+        return true;
+    }
+    if (ch == "_") {
+        return true;
+    }
+    return false;
+};
+
+let is_digit = fn(ch) {
+    if (ch == "0") {
+        return true;
+    }
+    if (ch == "1") {
+        return true;
+    }
+    if (ch == "2") {
+        return true;
+    }
+    if (ch == "3") {
+        return true;
+    }
+    if (ch == "4") {
+        return true;
+    }
+    if (ch == "5") {
+        return true;
+    }
+    if (ch == "6") {
+        return true;
+    }
+    if (ch == "7") {
+        return true;
+    }
+    if (ch == "8") {
+        return true;
+    }
+    if (ch == "9") {
+        return true;
+    }
+    return false;
+};
+
+let keyWords = {
+    "fn": "FUNCTION",
+    "let": "LET",
+};
+
+let Token_create = fn(tokenType, literal) {
+    return {
+        "type": tokenType,
+        "literal": literal,
+    };
+};
+
+let Tokenizer_create = fn(input) {
+    let tokenizer = {
+        "input": input,
+        "position": 0,
+        "readPosition": 0,
+        "length": len(input),
+        "ch": "\u0000",
+    };
+
+    Tokenizer_readNextChar(tokenizer);
+
+    return tokenizer;
+};
+
+
+let Tokenizer_readNextChar = fn(tokenizer) {
+    if (tokenizer["readPosition"] + 1 > tokenizer["length"]) {
+        object_set(tokenizer, "ch", "\u0000");
+    } else {
+        object_set(tokenizer, "ch", char_at(tokenizer["input"], tokenizer["readPosition"]));
+    }
+
+    object_set(tokenizer, "position", tokenizer["readPosition"]);
+    object_set(tokenizer, "readPosition", tokenizer["readPosition"] + 1);
+};
+
+let Tokenizer_nextToken = fn(tokenizer) {
+    Tokenizer_skipWhitespace(tokenizer);
+
+    let ch = tokenizer["ch"];
+    let token = null;
+    if (ch == "=") {
+        token = Token_create("ASSIGN", ch);
+    }
+    if (ch == ";") {
+        token = Token_create("SEMICOLON", ch);
+    }
+    if (ch == "(") {
+        token = Token_create("LPAREN", ch);
+    }
+    if (ch == "(") {
+        token = Token_create("RPAREN", ch);
+    }
+    if (ch == ",") {
+        token = Token_create("COMMA", ch);
+    }
+    if (ch == "+") {
+        token = Token_create("PLUS", ch);
+    }
+    if (ch == "{") {
+        token = Token_create("LBRACE", ch);
+    }
+    if (ch == "}") {
+        token = Token_create("RBRACE", ch);
+    }
+    if (ch == "\u0000") {
+        token = Token_create("EOF", "");
+    }
+
+    if (is_null(token)) {
+        if (is_letter(ch)) {
+            let literal = Tokenizer_readIdentifier(tokenizer);
+            let type = keyWords[literal];
+            if (is_null(type)) {
+                type = "IDENT";
+            }
+            return Token_create(type, literal);
+        } else {
+            if (is_digit(ch)) {
+                let literal = Tokenizer_readNumber(tokenizer);
+                return Token_create("INT", literal);
+            } else {
+                token = Token_create("ILLEGAL", ch);
+            }
+        }
+    }
+
+    Tokenizer_readNextChar(tokenizer);
+
+    return token;
+};
+
+let Tokenizer_skipWhitespace = fn(tokenizer) {
+    while(fn () {
+        let ch = tokenizer["ch"];
+        if (ch == " ") {
+            return true;
+        }
+        if (ch == "\t") {
+            return true;
+        }
+        if (ch == "\n") {
+            return true;
+        }
+        if (ch == "\r") {
+            return true;
+        }
+        return false;
+    }, fn () {
+        Tokenizer_readNextChar(tokenizer);
+    });
+};
+
+let Tokenizer_readIdentifier = fn(tokenizer) {
+    let position = tokenizer["position"];
+    let identifier = "";
+    while(fn () {
+        let ch = tokenizer["ch"];
+        return is_letter(ch);
+    }, fn () {
+        identifier = identifier + tokenizer["ch"];
+        Tokenizer_readNextChar(tokenizer);
+    });
+    return identifier;
+};
+
+let Tokenizer_readNumber = fn(tokenizer) {
+    let position = tokenizer["position"];
+    let number = "";
+    while(fn () {
+        let ch = tokenizer["ch"];
+        return is_digit(ch);
+    }, fn () {
+        number = number + tokenizer["ch"];
+        Tokenizer_readNextChar(tokenizer);
+    });
+    return number;
+};
+
+
+let tokenizer = Tokenizer_create("let five = 5; let ten = 10; let add = fn(x, y) { x + y; }; let result = add(five, ten);");
+let token = Tokenizer_nextToken(tokenizer);
+while(fn () {
+    if (is_null(token)) {
+        return true;
+    }
+
+    return token["type"] != "EOF";
+}, fn () {
+    puts(token);
+    token = Tokenizer_nextToken(tokenizer);
+});
