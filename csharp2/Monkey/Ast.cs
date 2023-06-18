@@ -2,8 +2,7 @@
 
 namespace Monkey;
 
-interface INode
-{
+interface INode {
     Token Token { get; set; }
 }
 
@@ -11,14 +10,12 @@ interface IStatement : INode { }
 
 interface IExpression : INode { }
 
-class LetStatement : IStatement
-{
+class LetStatement : IStatement {
     public required Token Token { get; set; }
     public required Identifier Name { get; set; }
     public required IExpression Value { get; set; }
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var builder = new StringBuilder($"{Token.Literal} {Name.Token.Literal} = ");
         if (Value is not null)
             builder.Append(Value.ToString());
@@ -28,13 +25,11 @@ class LetStatement : IStatement
     }
 }
 
-class ReturnStatement : IStatement
-{
+class ReturnStatement : IStatement {
     public required Token Token { get; set; }
     public required IExpression Expression { get; set; }
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var builder = new StringBuilder($"{Token.Literal} ");
         if (Expression is not null)
             builder.Append(Expression.ToString());
@@ -44,38 +39,33 @@ class ReturnStatement : IStatement
     }
 }
 
-class ExpressionStatement : IStatement
-{
+class ExpressionStatement : IStatement {
     public required Token Token { get; set; }
     public required IExpression Expression { get; set; }
 
     public override string ToString() => Expression?.ToString() ?? "";
 }
 
-class Identifier : IExpression
-{
+class Identifier : IExpression {
     public required Token Token { get; set; }
     public required string Value { get; set; }
 
     public override string ToString() => Value;
 }
 
-class IntegerLiteral : IExpression
-{
+class IntegerLiteral : IExpression {
     public required Token Token { get; set; }
     public required long Value { get; set; }
 
     public override string ToString() => Value.ToString();
 }
 
-class PrefixExpression : IExpression
-{
+class PrefixExpression : IExpression {
     public required Token Token { get; set; }
     public required string Operator { get; set; }
     public required IExpression Right { get; set; }
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var builder = new StringBuilder();
         builder.Append('(');
         builder.Append(Operator);
@@ -85,15 +75,13 @@ class PrefixExpression : IExpression
     }
 }
 
-class InfixExpression : IExpression
-{
+class InfixExpression : IExpression {
     public required Token Token { get; set; }
     public required string Operator { get; set; }
     public required IExpression Left { get; set; }
     public required IExpression Right { get; set; }
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var builder = new StringBuilder();
         builder.Append('(');
         builder.Append(Left.ToString());
@@ -104,19 +92,17 @@ class InfixExpression : IExpression
     }
 }
 
-class Ast
-{
+class Ast {
     public List<IStatement> Statements { get; private set; } = new();
 
-    public Ast(IEnumerable<IStatement>? statements = null)
-    {
+    public Ast(IEnumerable<IStatement>? statements = null) {
         if (statements is not null)
             Statements.AddRange(statements);
     }
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var builder = new StringBuilder();
+
         foreach (var statement in Statements)
             builder.Append(statement.ToString());
 

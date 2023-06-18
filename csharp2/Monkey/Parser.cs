@@ -1,10 +1,9 @@
 namespace Monkey;
 
-using PrefixFn = Func<IExpression>;
 using InfixFn = Func<IExpression, IExpression>;
+using PrefixFn = Func<IExpression>;
 
-enum Precedence
-{
+enum Precedence {
     Lowest,      // starting
     Equality,    // ==
     Comparison,  // > or <
@@ -14,8 +13,7 @@ enum Precedence
     Call         // func(X)
 }
 
-class Parser
-{
+class Parser {
     readonly Lexer _lexer;
     readonly List<string> _errors = new();
 
@@ -24,8 +22,7 @@ class Parser
 
     readonly Dictionary<TokenType, PrefixFn> _prefixFns = new();
     readonly Dictionary<TokenType, InfixFn> _infixFns = new();
-    static readonly Dictionary<TokenType, Precedence> Precedences = new()
-    {
+    static readonly Dictionary<TokenType, Precedence> Precedences = new() {
         [TokenType.Equal] = Precedence.Equality,
         [TokenType.NotEqual] = Precedence.Equality,
         [TokenType.LessThan] = Precedence.Comparison,
@@ -36,8 +33,7 @@ class Parser
         [TokenType.Slash] = Precedence.Product,
     };
 
-    public Parser(Lexer lexer)
-    {
+    public Parser(Lexer lexer) {
         _lexer = lexer;
         NextToken();
         NextToken();
@@ -57,15 +53,12 @@ class Parser
         _infixFns.Add(TokenType.GreaterThan, ParseInfixExpression);
     }
 
-    public Ast ParseProgram()
-    {
+    public Ast ParseProgram() {
         var statements = new List<IStatement>();
-        while (_curToken.Type is not TokenType.Eof)
-        {
-            IStatement? statement = _curToken switch
-            {
-                { Type: TokenType.Let } => ParseLetStatement(),
-                { Type: TokenType.Return } => ParseReturnStatement(),
+        while (_curToken.Type is not TokenType.Eof) {
+            IStatement? statement = _curToken.Type switch {
+                TokenType.Let => ParseLetStatement(),
+                TokenType.Return => ParseReturnStatement(),
                 _ => ParseExpressionStatement(),
             };
 
@@ -81,8 +74,7 @@ class Parser
     public IEnumerable<string> Errors
         => _errors.ToList();
 
-    LetStatement? ParseLetStatement()
-    {
+    LetStatement? ParseLetStatement() {
         var token = _curToken;
         if (!ExpectPeek(TokenType.Ident))
             return null;
@@ -97,16 +89,14 @@ class Parser
         return new() { Token = token, Name = ident, Value = null! };
     }
 
-    ReturnStatement? ParseReturnStatement()
-    {
+    ReturnStatement? ParseReturnStatement() {
         while (_curToken.Type is not TokenType.Semicolon)
             NextToken();
 
         return new() { Token = Token.Return, Expression = null! };
     }
 
-    ExpressionStatement? ParseExpressionStatement()
-    {
+    ExpressionStatement? ParseExpressionStatement() {
         var token = _curToken;
         var expression = ParseExpression(Precedence.Lowest);
 
@@ -116,14 +106,12 @@ class Parser
         return new() { Token = token, Expression = expression };
     }
 
-    IExpression? ParseExpression(Precedence precedence)
-    {
+    IExpression? ParseExpression(Precedence precedence) {
         if (!_prefixFns.TryGetValue(_curToken.Type, out var prefix))
             return null;
 
         var expression = prefix();
-        while (_peekToken.Type is not TokenType.Semicolon && PeekPrecedence() > precedence)
-        {
+        while (_peekToken.Type is not TokenType.Semicolon && PeekPrecedence() > precedence) {
             if (!_infixFns.TryGetValue(_peekToken.Type, out var infix))
                 return expression;
 
@@ -137,24 +125,21 @@ class Parser
     Identifier ParseIdentifierExpression()
       => new() { Token = _curToken, Value = _curToken.Literal };
 
-    IntegerLiteral ParseIntegerExpression()
-    {
+    IntegerLiteral ParseIntegerExpression() {
         if (!long.TryParse(_curToken.Literal, out var value))
             _errors.Add($"Couldn't parse {_curToken.Literal} as an integer");
 
         return new() { Token = _curToken, Value = value };
     }
 
-    PrefixExpression ParsePrefixExpression()
-    {
+    PrefixExpression ParsePrefixExpression() {
         var token = _curToken;
         NextToken();
         var right = ParseExpression(Precedence.Prefix);
         return new() { Token = token, Operator = token.Literal, Right = right };
     }
 
-    InfixExpression ParseInfixExpression(IExpression left)
-    {
+    InfixExpression ParseInfixExpression(IExpression left) {
         var token = _curToken;
         var precedence = CurPrecedence();
         NextToken();
@@ -162,16 +147,13 @@ class Parser
         return new() { Token = token, Operator = token.Literal, Left = left, Right = right };
     }
 
-    void NextToken()
-    {
+    void NextToken() {
         _curToken = _peekToken;
         _peekToken = _lexer.NextToken();
     }
 
-    bool ExpectPeek(TokenType type)
-    {
-        if (_peekToken.Type == type)
-        {
+    bool ExpectPeek(TokenType type) {
+        if (_peekToken.Type == type) {
             NextToken();
             return true;
         }

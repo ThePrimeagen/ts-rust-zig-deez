@@ -4,11 +4,10 @@ using Xunit;
 
 namespace MonkeyTests;
 
-public class AstTests
-{
+public class AstTests {
+
     [Fact]
-    public void ProgramString_Matches_LiteralString()
-    {
+    public void ProgramString_Matches_LiteralString() {
         var statements = new IStatement[]
         {
             new LetStatement

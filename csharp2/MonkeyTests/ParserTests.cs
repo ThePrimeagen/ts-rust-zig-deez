@@ -4,14 +4,13 @@ using Xunit;
 
 namespace MonkeyTests;
 
-public class ParserTests
-{
+public class ParserTests {
+
     [Theory]
     [InlineData("let x = 5;", "x")]
     [InlineData("let y = 5;", "y")]
     [InlineData("let foobar = 838383;", "foobar")]
-    public void Parsing_LetStatements(string input, string expected)
-    {
+    public void Parsing_LetStatements(string input, string expected) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -32,8 +31,7 @@ public class ParserTests
     [InlineData("return 5;")]
     [InlineData("return 10;")]
     [InlineData("return 993322;")]
-    public void Parsing_LetReturnStatements(string input)
-    {
+    public void Parsing_LetReturnStatements(string input) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -49,8 +47,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void Parsing_IdentifierExpression()
-    {
+    public void Parsing_IdentifierExpression() {
         // Arrange & Act
         var (ast, errors) = ParseProgram("foobar;");
 
@@ -70,8 +67,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void Parsing_IntegerLiteralExpression()
-    {
+    public void Parsing_IntegerLiteralExpression() {
         // Arrange & Act
         var (ast, errors) = ParseProgram("5;");
 
@@ -93,8 +89,7 @@ public class ParserTests
     [Theory]
     [InlineData("!5", "!", 5)]
     [InlineData("-15", "-", 15)]
-    public void Parsing_PrefixExpression(string input, string op, long value)
-    {
+    public void Parsing_PrefixExpression(string input, string op, long value) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -113,8 +108,7 @@ public class ParserTests
         IntegerLiteralTest(stmt.Right, value);
     }
 
-    static void IntegerLiteralTest(IExpression expression, long value)
-    {
+    static void IntegerLiteralTest(IExpression expression, long value) {
         var stmt = expression.Should()
             .BeAssignableTo<IntegerLiteral>().Subject;
 
@@ -131,8 +125,7 @@ public class ParserTests
     [InlineData("5 < 5;", 5, "<", 5)]
     [InlineData("5 == 5;", 5, "==", 5)]
     [InlineData("5 != 5;", 5, "!=", 5)]
-    public void Parsing_InfixExpression(string input, long left, string op, long right)
-    {
+    public void Parsing_InfixExpression(string input, long left, string op, long right) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -166,8 +159,7 @@ public class ParserTests
     [InlineData("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))")]
     [InlineData("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))")]
     [InlineData("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))")]
-    public void Parsing_OperatorPrecedence(string input, string expected)
-    {
+    public void Parsing_OperatorPrecedence(string input, string expected) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -176,8 +168,7 @@ public class ParserTests
         ast.ToString().Should().Be(expected);
     }
 
-    static (Ast ast, IEnumerable<string> errors) ParseProgram(string input)
-    {
+    static (Ast ast, IEnumerable<string> errors) ParseProgram(string input) {
         var lexer = new Lexer(input);
         var parser = new Parser(lexer);
         return (parser.ParseProgram(), parser.Errors);
