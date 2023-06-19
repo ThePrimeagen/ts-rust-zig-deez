@@ -1439,6 +1439,21 @@ unittest
     validateParseProgram(expected, lexer, parser);
 }
 
+/// Function def and call parameter test
+unittest
+{
+    const auto input = "fn(x, y) { x + y; }(2, 3);";
+    const auto expected = "fn(x, y) { (x + y); }(2, 3);";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
 /// Call expression test
 unittest
 {
