@@ -1,5 +1,5 @@
 interface Eval
-    exposes [eval, evalWithEnv, newEnv, printValue]
+    exposes [eval, evalWithEnvs, newEnv, printValue]
     imports [Lexer, Parser.{ Program, Node }]
 
 Value : [
@@ -52,28 +52,28 @@ printValue = \value ->
         _ -> "Invalid ret value"
 
 Env : {
+    rc : U32,
     inner : Dict Str Value,
     outer : Result Nat [IsRoot],
 }
 
 newEnv : {} -> Env
-newEnv = \{} -> { inner: Dict.empty {}, outer: Err IsRoot }
+newEnv = \{} -> { rc: 1, inner: Dict.empty {}, outer: Err IsRoot }
 
 Evaluator : {
-    # TODO: This setup never frees old envs.
     envs : List Env,
     currentEnv : Nat,
 }
 
 setVar : Evaluator, Str, Value -> (Evaluator, Value)
 setVar = \{ envs: envs0, currentEnv }, ident, val ->
-    { list: envs1, value: { inner, outer } } = List.replace envs0 currentEnv (newEnv {})
+    { list: envs1, value: { rc, inner, outer } } = List.replace envs0 currentEnv (newEnv {})
     nextInner = Dict.insert inner ident val
-    ({ currentEnv, envs: List.set envs1 currentEnv { inner: nextInner, outer } }, val)
+    ({ currentEnv, envs: List.set envs1 currentEnv { rc, inner: nextInner, outer } }, val)
 
 getVar : List Env, Nat, Str -> Value
 getVar = \envs, currentEnv, ident ->
-    { inner, outer } = okOrUnreachable (List.get envs currentEnv) "bad env index"
+    { inner, outer } = List.get envs currentEnv |> okOrUnreachable "bad env index"
     when Dict.get inner ident is
         Ok v -> v
         Err _ ->
@@ -84,21 +84,77 @@ getVar = \envs, currentEnv, ident ->
                 Err _ ->
                     Err "identifier not found: \(ident)"
 
+incEnv : Evaluator, Nat -> Evaluator
+incEnv = \{ envs, currentEnv }, i ->
+    { rc, inner, outer } = List.get envs i |> okOrUnreachable "bad env index"
+    when outer is
+        Ok nextI ->
+            nextRc = Num.addSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Ok nextI }
+            { envs: nextEnvs, currentEnv }
+            |> incEnv nextI
+
+        _ ->
+            nextRc = Num.addSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Err IsRoot }
+            { envs: nextEnvs, currentEnv }
+
+decEnv : Evaluator, Nat -> Evaluator
+decEnv = \{ envs, currentEnv }, i ->
+    { rc, inner, outer } = List.get envs i |> okOrUnreachable "bad env index"
+    when outer is
+        Ok nextI ->
+            nextRc = Num.subSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Ok nextI }
+            { envs: nextEnvs, currentEnv }
+            |> decEnv nextI
+            |> maybeFreeEnv i
+
+        _ ->
+            nextRc = Num.subSaturated rc 1
+            nextEnvs = List.set envs (Num.toNat i) { rc: nextRc, inner, outer: Err IsRoot }
+            { envs: nextEnvs, currentEnv }
+            |> maybeFreeEnv i
+
+maybeFreeEnv = \{ envs, currentEnv }, i ->
+    when List.get envs (Num.toNat i) is
+        Ok { rc: 0, inner } ->
+            e0, _, val <- Dict.walk inner { envs, currentEnv }
+            when val is
+                Fn { envIndex } ->
+                    e0
+                    |> decEnv envIndex
+
+                _ ->
+                    e0
+
+        _ ->
+            { envs, currentEnv }
+
 wrapAndSetEnv : Evaluator, Nat -> Evaluator
 wrapAndSetEnv = \{ envs }, i ->
-    newIndex = List.len envs
-    nextEnvs = List.append envs { inner: Dict.empty {}, outer: Ok i }
-    { envs: nextEnvs, currentEnv: newIndex }
+    # First pick unused envs
+    when List.findLastIndex envs (\{ rc } -> rc == 0) is
+        Ok newIndex ->
+            nextEnvs = List.set envs newIndex { rc: 1, inner: Dict.empty {}, outer: Ok i }
+            { envs: nextEnvs, currentEnv: newIndex }
+            |> incEnv i
 
-eval : Program -> (Env, Value)
+        Err _ ->
+            newIndex = List.len envs
+            nextEnvs = List.append envs { rc: 1, inner: Dict.empty {}, outer: Ok i }
+            { envs: nextEnvs, currentEnv: newIndex }
+            |> incEnv i
+
+eval : Program -> (List Env, Value)
 eval = \program ->
-    evalWithEnv program (newEnv {})
+    evalWithEnvs program [newEnv {}]
 
-evalWithEnv : Program, Env -> (Env, Value)
-evalWithEnv = \program, env ->
-    e0 = { envs: [env], currentEnv: 0 }
+evalWithEnvs : Program, List Env -> (List Env, Value)
+evalWithEnvs = \program, envs ->
+    e0 = { envs, currentEnv: 0 }
     ({ envs: outEnvs }, outVal) = evalProgram e0 program
-    (okOrUnreachable (List.get outEnvs 0) "failed to load root env", outVal)
+    (outEnvs, outVal)
 
 evalProgram : Evaluator, List Node -> (Evaluator, Value)
 evalProgram = \e0, statements ->
@@ -282,7 +338,8 @@ evalNode = \e0, node ->
             (e0, getVar e0.envs e0.currentEnv ident)
 
         Fn { params, body } ->
-            (e0, Fn { params, body, envIndex: e0.currentEnv })
+            e1 = incEnv e0 e0.currentEnv
+            (e1, Fn { params, body, envIndex: e1.currentEnv })
 
         Call { fn, args } ->
             (e1, fnVal) = evalNode e0 fn
@@ -292,17 +349,22 @@ evalNode = \e0, node ->
                 (_, Err e) -> (e2, Err e)
                 (_, Fn { params, body: Block body, envIndex }) ->
                     if List.len params == List.len argVals then
-                        e2Index = e2.currentEnv
+                        oldIndex = e2.currentEnv
                         e3 = wrapAndSetEnv e2 envIndex
+                        newIndex = e3.currentEnv
 
                         (e6, _) =
                             List.walk params (e3, 0) \(e4, i), param ->
-                                (e5, _) = setVar e4 param (okOrUnreachable (List.get argVals i) "size checked")
+                                (e5, _) =
+                                    List.get argVals i
+                                    |> okOrUnreachable "size checked"
+                                    |> \argVal -> setVar e4 param argVal
                                 (e5, i + 1)
 
                         (e7, val) = evalProgram e6 body
                         # reset environment back to before the function was run.
-                        ({ e7 & currentEnv: e2Index }, val)
+                        e8 = decEnv e7 newIndex
+                        ({ e8 & currentEnv: oldIndex }, val)
                     else
                         (e2, Err "FUNCTION applied with wrong number of args")
 
@@ -500,8 +562,7 @@ expect
         "let identity = fn(x) { return x; 12; }; identity(5);",
         "let double = fn(x) { 2 * x;  }; double(5);",
         "fn(x) {x} (5)",
-        # TODO: why does this cause freeing a a pointer that wasn't allocated?
-        # "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
     ]
     out = List.map inputs runFromSource
 
@@ -510,7 +571,7 @@ expect
         Int 5,
         Int 10,
         Int 5,
-        # Int 20,
+        Int 20,
     ]
     out == expected
 

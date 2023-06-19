@@ -1,0 +1,143 @@
+
+unique type Precedence = LOWEST | EQUALS | LESSGREATER | SUM | PRODUCT | PREFIX | CALL
+
+Parser.parseProgram : [Token] -> {Exception}[Statement]
+Parser.parseProgram tks = 
+    loop tks stm = let
+        match List.uncons tks with
+            Some(tk, list)
+                | Eof === tk -> stm 
+                | otherwise ->
+                    (st, res) = parseStatement tk list
+                    loop res (stm :+ st)
+            None -> Exception.raise (Failure (typeLink Generic) "parseProgram: failed to match" (Any None))
+    loop tks []
+
+Parser.parseStatement : Token -> [Token] -> {Exception}(Statement, [Token])
+Parser.parseStatement tk tks = 
+    match tk with
+        Let -> parseLet tks
+        Return -> parseReturn tks
+        _ -> parseExpression tk tks
+
+
+
+Parser.parseLet : [Token] -> {Exception}(Statement, [Token])
+Parser.parseLet tokens = 
+    (name, remain1) = grabIdent tokens
+    match name with
+        Token.Error _ _  -> handleError name remain1
+        _ -> let
+    (assign, remain2) = grabAssign remain1
+    match assign with 
+        Token.Error _ _  -> handleError name remain2
+        _ -> let
+    (expression, remain3) = parseLoop remain2
+    match List.uncons remain3 with
+        Some (h, tail)
+            | h === Semicolon -> (LetStatement name expression, tail)
+            | otherwise  -> (ErrorStatement expression Return, remain3)
+        None -> Exception.raise (Failure (typeLink Generic) "parseLet: let statement incorret format" (Any Return))    
+
+Parser.parseReturn : [Token] -> {Exception}(Statement, [Token])
+Parser.parseReturn tokens = 
+    (expression, remain) = parseLoop tokens
+    match List.uncons remain with
+        Some (h, tail)
+            | h === Semicolon -> (ReturnStatement expression, tail)
+            | otherwise  -> (ErrorStatement expression Return, remain)
+        None -> Exception.raise (Failure (typeLink Generic) "parseReturn: let statement incorret format" (Any Return))    
+
+Parser.parseLoop: [Token] -> {Exception}([Token], [Token])
+Parser.parseLoop tks =
+    loop exp tks = 
+        match List.uncons tks with
+            Some(tk, rem) ->
+                match tk with
+                    Eof -> (exp, tks)
+                    Semicolon -> (exp, tks)
+                    Let -> (exp, tks)
+                    Return -> (exp, tks)
+                    _ -> loop (exp :+ tk) rem
+            None -> Exception.raise (Failure (typeLink Generic) "parseLoop: let statement incorret format" (Any(take 1 tks)))    
+    loop [] tks
+
+--TODO move parsing funtions to here once done
+
+Parser.grabNext : [Token] -> {Exception}(Token, [Token])
+Parser.grabNext tks =
+    match List.uncons tks with
+        None -> Exception.raise (Failure (typeLink Generic) "grabNext: let statement incorret format" (Any(take 1 tks)))
+        Some res -> res
+
+
+Parser.grabIdent : [Token] -> {Exception}(Token, [Token])
+Parser.grabIdent tks =
+    match List.uncons tks with
+        Some (tk, res) 
+            | isIdent tk -> (tk, res)
+            | otherwise -> (Error "Ident Token not found" tk, res)
+        None -> Exception.raise (Failure (typeLink Generic) "grabIdnt: let statement incorret format" (Any(take 1 tks)) )
+
+
+Parser.grabAssign : [Token] -> {Exception}(Token, [Token])
+Parser.grabAssign tks =
+    match List.uncons tks with
+        Some (tk, res) 
+            | tk === Assign -> (tk, res)
+            | otherwise -> (Error "Assign Token not found" tk, res)
+        _ -> Exception.raise (Failure (typeLink Generic) "gradAssign: let statement incorret format" (Any(take 1 tks)))
+                
+
+Parser.handleError: Token -> [Token] -> (Statement, [Token])
+Parser.handleError tk tks =
+    loop tks err =
+        match List.uncons tks with
+            Some(t, rem)
+                | t === Let -> (ErrorStatement err tk, tks)
+                | t === Semicolon -> (ErrorStatement (err :+ t) tk, rem)
+                | t === Eof -> (ErrorStatement (err :+ t) tk, tks)
+                | otherwise -> loop rem (err :+ t)
+            None -> Exception.raise (Failure (typeLink Generic) "handleError: let statement incorret format" (Any(take 1 tks)))
+    loop tks []
+
+
+Test.testParser : '{IO, Exception}[Statement]
+Test.testParser = do
+    path = FilePath "parTest.txt"
+    tokens = lexer << getText <| open path Read
+    program = tokens :+ Eof
+    parseProgram program
+
+Test.testTokens : '{IO, Exception}[Token]
+Test.testTokens = do
+    path = FilePath "parTest.txt"
+    tokens = lexer << getText <| open path Read
+    tokens :+ Eof
+
+
+Parser.prefixParse : [Token] -> [Token]
+Parser.prefixParse tks =
+    tks
+
+Parser.infixParse : [Token] -> [Token]
+Parser.infixParse tks =
+    tks
+
+Parser.infixFunc : Token -> Optional Statement
+Parser.infixFunc = cases
+    _ -> None
+
+Parser.prefixFunc : Token -> Optional Statement
+Parser.prefixFunc = cases
+    _ -> None
+
+Parser.parseExpression : Token -> [Token] -> {Exception}(Statement, [Token]) -- todo might have to return a statement
+Parser.parseExpression token tokens = 
+    (expression, remain) = parseLoop tokens 
+    match List.uncons tokens with
+        None -> Exception.raise (Failure (typeLink Generic) "parseExpression: let statement incorret format" (Any token))
+        Some (tk, rem) -> let
+    match prefixFunc tk with
+        None -> (ExpressionStatement [], rem)
+        Some x -> (ExpressionStatement [], rem)

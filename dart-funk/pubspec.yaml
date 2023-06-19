@@ -10,7 +10,7 @@ dependencies:
   args: ^2.4.1
   cli_completion: ^0.3.0
   equatable: ^2.0.5
-  fpdart: ^0.6.0
+  # fpdart: ^0.6.0
   mason_logger: ^0.2.5
   meta: ^1.9.1
   pub_updater: ^0.3.0

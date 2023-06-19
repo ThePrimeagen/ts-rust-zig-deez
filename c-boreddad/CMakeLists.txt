@@ -14,7 +14,7 @@ add_compile_options(-Wall -Wextra -Wfloat-equal -Wundef -Wshadow -Wpointer-arith
 
 add_subdirectory(tests)
 
-add_executable(${PROJECT_NAME} monkey.c lexer.c token.c repl.c)
+add_executable(${PROJECT_NAME} monkey.c lexer.c token.c repl.c parser.c)
 
 target_include_directories(monkey PUBLIC
     "${PROJECT_BINARY_DIR}")

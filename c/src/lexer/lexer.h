@@ -10,8 +10,16 @@ typedef enum {
   TokenTypeEof,
   TokenTypeIdent,
   TokenTypeInt,
-  TokenTypeEqual,
+  TokenTypeAssign,
   TokenTypePlus,
+  TokenTypeMinus,
+  TokenTypeBang,
+  TokenTypeAsterisk,
+  TokenTypeSlash,
+  TokenTypeLT,
+  TokenTypeGT,
+  TokenTypeEqual,
+  TokenTypeNotEqual,
   TokenTypeComma,
   TokenTypeSemicolon,
   TokenTypeLParen,
@@ -20,21 +28,26 @@ typedef enum {
   TokenTypeRSquirly,
   TokenTypeFunction,
   TokenTypeLet,
+  TokenTypeTrue,
+  TokenTypeFalse,
+  TokenTypeIf,
+  TokenTypeElse,
+  TokenTypeReturn,
 } TokenType;
 
 typedef struct SToken {
   TokenType type;
   char *literal;
-} *Token;
+} Token;
 
-typedef struct SLexer *Lexer;
-Lexer lexerCreate(const char *input);
+typedef struct SLexer Lexer;
+Lexer *lexerCreate(const char *input);
 
-Token lexerNext(Lexer lexer);
-void lexerCleanup(Lexer *pLexer);
+Token *lexerNext(Lexer *lexer);
+void lexerCleanup(Lexer **lexer);
 
-Token tokenCreate(TokenType type, char *literal);
-void tokenCleanup(Token *pToken);
+Token *tokenCreate(TokenType type, char *literal);
+void tokenCleanup(Token **token);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,16 @@
+[workspace]
+members = ["lexer"]
+
+[package]
+name = "monkeylang"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lexer = { path = "lexer" }
+
+[[bin]]
+name = "monkeylang-repl"
+path = "src/bin/repl/main.rs"

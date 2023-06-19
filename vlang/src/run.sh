@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# Install V
-echo "Installing V..."
-git clone https://github.com/vlang/v
-cd v
-make
-sudo ./v symlink
-cd ..
-rm -rf v
-
 # Run tests
 echo "Running tests..."
 v -o lexer_test lexer_test.v

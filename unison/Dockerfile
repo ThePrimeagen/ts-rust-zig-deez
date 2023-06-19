@@ -2,7 +2,7 @@
 FROM ubuntu:latest
 
 # Make a working directory
-RUN mkdir unison 
+# WORKDIR /Unison 
 
 # Basic system-level dependencies
 RUN apt-get update && \
@@ -13,19 +13,13 @@ RUN apt-get update && \
 
 # Extra dependencies
 # TODO: add yours
-Run mkdir unisonlanguage && \
+RUN mkdir unisonlanguage && \
     curl -L https://github.com/unisonweb/unison/releases/download/release%2FM4i/ucm-linux.tar.gz --output unisonlanguage/ucm.tar.gz && \
     tar -xzf unisonlanguage/ucm.tar.gz -C unisonlanguage
 
-
-WORKDIR /unison
-RUN ~/./unisonlanguage/ucm
-
-# has to be run inside of the unison terminal 
-RUN fork .base lib.base
-RUN add
-RUN compile test test
-RUN compile testFile testFile
+COPY . / 
+RUN ./unisonlanguage/ucm
+RUN ./unisonlanguage/ucm transcript Compile.md
 
 # offically site showing how to compile files `https://www.unison-lang.org/learn/at-a-glance/`
 # RUN ucm run.compiled test.uc

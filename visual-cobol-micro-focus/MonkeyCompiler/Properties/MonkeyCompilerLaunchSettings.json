@@ -1,0 +1,10 @@
+{
+  "Profiles": {
+    "MonkeyCompiler": {
+      "commandName": "Project",
+      "otherSettings": {
+        "RedirectStdOut": "False"
+      }
+    }
+  }
+}

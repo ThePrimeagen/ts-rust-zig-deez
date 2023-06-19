@@ -1,7 +1,12 @@
-name: ts-rust-zig-crystal-deez
+name: crystal-deez
 version: 0.1.0
 crystal: 1.8.2
 
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.4.3
+
 targets:
   deez:
-    main: src/main.cr
+    main: ./main.cr

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use anyhow::Result;
 
 #[allow(dead_code)]
@@ -37,6 +39,40 @@ pub enum Token {
     False,
 }
 
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return match self {
+            Token::Ident(x) => write!(f, "Ident({})", x),
+            Token::Int(x) => write!(f, "Int({})", x),
+            Token::Illegal => write!(f, "Illegal"),
+            Token::Eof => write!(f, "Eof"),
+            Token::Assign => write!(f, "Assign"),
+            Token::Bang => write!(f, "Bang"),
+            Token::Dash => write!(f, "Dash"),
+            Token::ForwardSlash => write!(f, "ForwardSlash"),
+            Token::Asterisk => write!(f, "Asterisk"),
+            Token::Equal => write!(f, "Equal"),
+            Token::NotEqual => write!(f, "NotEqual"),
+            Token::LessThan => write!(f, "LessThan"),
+            Token::GreaterThan => write!(f, "GreaterThan"),
+            Token::Plus => write!(f, "Plus"),
+            Token::Comma => write!(f, "Comma"),
+            Token::Semicolon => write!(f, "Semicolon"),
+            Token::Lparen => write!(f, "Lparen"),
+            Token::Rparen => write!(f, "Rparen"),
+            Token::LSquirly => write!(f, "LSquirly"),
+            Token::RSquirly => write!(f, "RSquirly"),
+            Token::Function => write!(f, "Function"),
+            Token::Let => write!(f, "Let"),
+            Token::If => write!(f, "If"),
+            Token::Else => write!(f, "Else"),
+            Token::Return => write!(f, "Return"),
+            Token::True => write!(f, "True"),
+            Token::False => write!(f, "False"),
+        }
+    }
+}
+
 pub struct Lexer {
     position: usize,
     read_position: usize,
@@ -45,7 +81,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    fn new(input: String) -> Lexer {
+    pub fn new(input: String) -> Lexer {
         let mut lex = Lexer {
             position: 0,
             read_position: 0,
@@ -104,7 +140,7 @@ impl Lexer {
             },
             b'0'..=b'9' => return Ok(Token::Int(self.read_int())),
             0 => Token::Eof,
-            _ => todo!("we need to implement this....")
+            _ => unreachable!("no monkey program should contain these characters and you should feel bad about yourself")
         };
 
         self.read_char();

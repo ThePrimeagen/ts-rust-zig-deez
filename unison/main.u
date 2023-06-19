@@ -1,6 +1,6 @@
 
-test : '{IO, Exception} Boolean
-test = do
+Test.test : '{IO, Exception} Boolean
+Test.test = do
     result = lexer """let five = 5;
         let ten = 10;
         let add = fn(x, y) {
@@ -45,8 +45,8 @@ test = do
     result === expect
 
 
-testFile : '{IO, Exception} [Token]
-testFile = do
-    path = FilePath !readLine
+Test.testFile : '{IO, Exception} [Token]
+Test.testFile = do
+    path = FilePath "test.txt"
     tokens = lexer << getText <| open path Read
     tokens :+ Eof
