@@ -1,29 +1,24 @@
 ﻿namespace Monkey;
 
-class Lexer
-{
+class Lexer {
     readonly string _input;
     int _position;
     int _readPosition;
     char _ch;
 
-    public Lexer(string input)
-    {
+    public Lexer(string input) {
         _input = input;
         ReadChar();
     }
 
-    public Token NextToken()
-    {
+    public Token NextToken() {
         SkipWhiteSpace();
 
         if (char.IsAsciiDigit(_ch))
             return new(TokenType.Int, ReadInt().ToString());
 
-        if (char.IsAsciiLetter(_ch) || _ch == '_')
-        {
-            return ReadIdent() switch
-            {
+        if (char.IsAsciiLetter(_ch) || _ch == '_') {
+            return ReadIdent() switch {
                 "fn" => Token.Function,
                 "let" => Token.Let,
                 "if" => Token.If,
@@ -35,8 +30,7 @@ class Lexer
             };
         }
 
-        Token token = _ch switch
-        {
+        Token token = _ch switch {
             '{' => Token.LSquirly,
             '}' => Token.RSquirly,
             '(' => Token.LParen,
@@ -45,8 +39,7 @@ class Lexer
             ';' => Token.Semicolon,
             '+' => Token.Plus,
             '-' => Token.Minus,
-            '!' => Peek() switch
-            {
+            '!' => Peek() switch {
                 '=' => Token.NotEqual,
                 _ => Token.Bang,
             },
@@ -54,8 +47,7 @@ class Lexer
             '<' => Token.LessThan,
             '*' => Token.Asterisk,
             '/' => Token.Slash,
-            '=' => Peek() switch
-            {
+            '=' => Peek() switch {
                 '=' => Token.Equal,
                 _ => Token.Assign,
             },
@@ -70,29 +62,25 @@ class Lexer
         return token;
     }
 
-    char Peek()
-    {
+    char Peek() {
         if (_readPosition >= _input.Length)
             return '\0';
 
         return _input[_readPosition];
     }
 
-    void ReadChar()
-    {
+    void ReadChar() {
         _ch = _readPosition >= _input.Length ? '\0' : _input[_readPosition];
         _position = _readPosition;
         _readPosition += 1;
     }
 
-    void SkipWhiteSpace()
-    {
+    void SkipWhiteSpace() {
         while (char.IsWhiteSpace(_ch))
             ReadChar();
     }
 
-    ReadOnlySpan<char> ReadIdent()
-    {
+    ReadOnlySpan<char> ReadIdent() {
         var pos = _position;
         while (char.IsAsciiLetter(_ch) || _ch == '_')
             ReadChar();
@@ -100,8 +88,7 @@ class Lexer
         return _input.AsSpan()[pos.._position];
     }
 
-    ReadOnlySpan<char> ReadInt()
-    {
+    ReadOnlySpan<char> ReadInt() {
         var pos = _position;
         while (char.IsAsciiDigit(_ch))
             ReadChar();
