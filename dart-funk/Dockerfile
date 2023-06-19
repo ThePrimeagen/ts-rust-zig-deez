@@ -8,7 +8,7 @@ RUN dart pub get
 COPY . .
 
 RUN dart pub get --offline
-# RUN dart test
+RUN dart test
 RUN dart compile exe binny/main.dart -o binny/main
 
 FROM scratch
