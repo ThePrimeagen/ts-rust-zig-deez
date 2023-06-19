@@ -5,32 +5,31 @@
 #define TOKEN_ASSIGN        ( 2)
 #define TOKEN_IDENT         ( 3)
 #define TOKEN_INT           ( 4)
-#define TOKEN_EQUAL         ( 5)
-#define TOKEN_PLUS          ( 6)
-#define TOKEN_COMMA         ( 7)
-#define TOKEN_SEMICOLON     ( 8)
-#define TOKEN_L_PAREN       ( 9)
-#define TOKEN_R_PAREN       (10)
-#define TOKEN_L_SQUIRLY     (11)
-#define TOKEN_R_SQUIRLY     (12)
-#define TOKEN_FUNCTION      (13)
+#define TOKEN_PLUS          ( 5)
+#define TOKEN_COMMA         ( 6)
+#define TOKEN_SEMICOLON     ( 7)
+#define TOKEN_L_PAREN       ( 8)
+#define TOKEN_R_PAREN       ( 9)
+#define TOKEN_L_SQUIRLY     (10)
+#define TOKEN_R_SQUIRLY     (11)
+#define TOKEN_FUNCTION      (12)
 
-#define TOKEN_BANG          (14)
-#define TOKEN_DASH          (15)
-#define TOKEN_FORWARD_SLASH (16)
-#define TOKEN_ASTERISK      (17)
-#define TOKEN_LESS_THAN     (18)
-#define TOKEN_GREATER_THAN  (19)
+#define TOKEN_BANG          (13)
+#define TOKEN_DASH          (14)
+#define TOKEN_FORWARD_SLASH (15)
+#define TOKEN_ASTERISK      (16)
+#define TOKEN_LESS_THAN     (17)
+#define TOKEN_GREATER_THAN  (18)
 
-#define TOKEN_EQUAL         (20)
-#define TOKEN_NOT_EQUAL     (21)
+#define TOKEN_EQUAL         (19)
+#define TOKEN_NOT_EQUAL     (20)
 
-#define TOKEN_LET           (22)
-#define TOKEN_IF            (23)
-#define TOKEN_ELSE          (24)
-#define TOKEN_RETURN        (25)
-#define TOKEN_FALSE         (26)
-#define TOKEN_TRUE          (27)
+#define TOKEN_LET           (21)
+#define TOKEN_IF            (22)
+#define TOKEN_ELSE          (23)
+#define TOKEN_RETURN        (24)
+#define TOKEN_FALSE         (25)
+#define TOKEN_TRUE          (26)
 
 class Lexer {
 	U8 *input;
@@ -44,6 +43,42 @@ class Token {
 	U64 type;
 	U8 *literal;
 };
+
+U8 *TokenPretty(Token *token)
+{
+	switch (token->type) {
+		case TOKEN_ILLEGAL:       return "TOKEN_ILLEGAL";
+		case TOKEN_EOF:           return "TOKEN_EOF";
+		case TOKEN_ASSIGN:        return "TOKEN_ASSIGN";
+		case TOKEN_IDENT:         return "TOKEN_IDENT";
+		case TOKEN_INT:           return "TOKEN_INT";
+		case TOKEN_EQUAL:         return "TOKEN_EQUAL";
+		case TOKEN_PLUS:          return "TOKEN_PLUS";
+		case TOKEN_COMMA:         return "TOKEN_COMMA";
+		case TOKEN_SEMICOLON:     return "TOKEN_SEMICOLON";
+		case TOKEN_L_PAREN:       return "TOKEN_L_PAREN";
+		case TOKEN_R_PAREN:       return "TOKEN_R_PAREN";
+		case TOKEN_L_SQUIRLY:     return "TOKEN_L_SQUIRLY";
+		case TOKEN_R_SQUIRLY:     return "TOKEN_R_SQUIRLY";
+		case TOKEN_FUNCTION:      return "TOKEN_FUNCTION";
+		case TOKEN_BANG:          return "TOKEN_BANG";
+		case TOKEN_DASH:          return "TOKEN_DASH";
+		case TOKEN_FORWARD_SLASH: return "TOKEN_FORWARD_SLASH";
+		case TOKEN_ASTERISK:      return "TOKEN_ASTERISK";
+		case TOKEN_LESS_THAN:     return "TOKEN_LESS_THAN";
+		case TOKEN_GREATER_THAN:  return "TOKEN_GREATER_THAN";
+		case TOKEN_NOT_EQUAL:     return "TOKEN_NOT_EQUAL";
+		case TOKEN_LET:           return "TOKEN_LET";
+		case TOKEN_IF:            return "TOKEN_IF";
+		case TOKEN_ELSE:          return "TOKEN_ELSE";
+		case TOKEN_RETURN:        return "TOKEN_RETURN";
+		case TOKEN_FALSE:         return "TOKEN_FALSE";
+		case TOKEN_TRUE:          return "TOKEN_TRUE";
+		default: break;
+	}
+
+	return "UNKNOWN";
+}
 
 U8 *StrNewN(U8 *buf, U64 sz)
 {
