@@ -108,8 +108,9 @@ public class ParserTests {
         IntegerLiteralTest(stmt.Right, value);
     }
 
-    static void IntegerLiteralTest(IExpression expression, long value) {
+    static void IntegerLiteralTest(IExpression? expression, long value) {
         var stmt = expression.Should()
+            .NotBeNull().And
             .BeAssignableTo<IntegerLiteral>().Subject;
 
         stmt.Value.Should().Be(value);

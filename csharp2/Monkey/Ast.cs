@@ -13,7 +13,7 @@ interface IExpression : INode { }
 class LetStatement : IStatement {
     public required Token Token { get; set; }
     public required Identifier Name { get; set; }
-    public required IExpression Value { get; set; }
+    public IExpression? Value { get; set; }
 
     public override string ToString() {
         var builder = new StringBuilder($"{Token.Literal} {Name.Token.Literal} = ");
@@ -27,7 +27,7 @@ class LetStatement : IStatement {
 
 class ReturnStatement : IStatement {
     public required Token Token { get; set; }
-    public required IExpression Expression { get; set; }
+    public IExpression? Expression { get; set; }
 
     public override string ToString() {
         var builder = new StringBuilder($"{Token.Literal} ");
@@ -41,7 +41,7 @@ class ReturnStatement : IStatement {
 
 class ExpressionStatement : IStatement {
     public required Token Token { get; set; }
-    public required IExpression Expression { get; set; }
+    public IExpression? Expression { get; set; }
 
     public override string ToString() => Expression?.ToString() ?? "";
 }
@@ -63,13 +63,13 @@ class IntegerLiteral : IExpression {
 class PrefixExpression : IExpression {
     public required Token Token { get; set; }
     public required string Operator { get; set; }
-    public required IExpression Right { get; set; }
+    public IExpression? Right { get; set; }
 
     public override string ToString() {
-        var builder = new StringBuilder();
-        builder.Append('(');
-        builder.Append(Operator);
-        builder.Append(Right.ToString());
+        var builder = new StringBuilder($"({Operator}");
+        if (Right is not null)
+            builder.Append(Right.ToString());
+
         builder.Append(')');
         return builder.ToString();
     }
@@ -78,15 +78,18 @@ class PrefixExpression : IExpression {
 class InfixExpression : IExpression {
     public required Token Token { get; set; }
     public required string Operator { get; set; }
-    public required IExpression Left { get; set; }
-    public required IExpression Right { get; set; }
+    public IExpression? Left { get; set; }
+    public IExpression? Right { get; set; }
 
     public override string ToString() {
-        var builder = new StringBuilder();
-        builder.Append('(');
-        builder.Append(Left.ToString());
+        var builder = new StringBuilder("(");
+        if (Left is not null)
+            builder.Append(Left.ToString());
+
         builder.Append($" {Operator} ");
-        builder.Append(Right.ToString());
+        if (Right is not null)
+            builder.Append(Right.ToString());
+
         builder.Append(')');
         return builder.ToString();
     }

@@ -86,14 +86,14 @@ class Parser {
         while (_curToken.Type is not TokenType.Semicolon)
             NextToken();
 
-        return new() { Token = token, Name = ident, Value = null! };
+        return new() { Token = token, Name = ident };
     }
 
     ReturnStatement? ParseReturnStatement() {
         while (_curToken.Type is not TokenType.Semicolon)
             NextToken();
 
-        return new() { Token = Token.Return, Expression = null! };
+        return new() { Token = Token.Return };
     }
 
     ExpressionStatement? ParseExpressionStatement() {

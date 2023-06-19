@@ -2,10 +2,10 @@
 using BenchmarkDotNet.Running;
 using Monkey;
 
-BenchmarkRunner.Run<LexerBench>();
+BenchmarkRunner.Run<Bench>();
 
 [MemoryDiagnoser]
-public class LexerBench {
+public class Bench {
     const string Input = """
     let five = 5;
     let ten = 10;
