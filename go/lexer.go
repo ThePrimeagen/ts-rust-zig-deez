@@ -77,7 +77,7 @@ func (tokenizer *Tokenizer) GetNextToken() Token {
 	tokenizer.skipWhitespace()
 
 	var tok Token
-	var tokNil bool = true
+	var tokNil = true
 	switch tokenizer.ch {
 	case '{':
 		tok = CreateToken(LSquirly, string(tokenizer.ch))
@@ -108,7 +108,7 @@ func (tokenizer *Tokenizer) GetNextToken() Token {
 		tokNil = false
 	}
 
-	if isLetter((tokenizer.ch)) {
+	if isLetter(tokenizer.ch) {
 		var ident = tokenizer.readIdent()
 		var keyword, exists = Keyword[ident]
 		if exists {
@@ -116,7 +116,7 @@ func (tokenizer *Tokenizer) GetNextToken() Token {
 		} else {
 			return CreateToken(Ident, ident)
 		}
-	} else if isNumber((tokenizer.ch)) {
+	} else if isNumber(tokenizer.ch) {
 		return CreateToken(Int, tokenizer.readInt())
 	} else if tokNil {
 		return CreateToken(Illegal, string(tokenizer.ch))
