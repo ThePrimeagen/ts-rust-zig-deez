@@ -99,7 +99,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'let five = 5;';
     });
 
@@ -203,7 +203,7 @@ void main() {
     late Logger logger;
     late Map<String, ({int start, int end})> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         // should all be EOF
         'let ten = 10;': (start: 1, end: 6),
@@ -250,7 +250,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'let five = 5;';
     });
     test(
@@ -344,7 +344,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'let five = 5;';
     });
     test(
@@ -389,7 +389,7 @@ void main() {
     late String input;
     late Parser parser;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'let five = 5;';
       parser = Parser.fromSource(input);
     });
@@ -435,7 +435,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'let five = 5;'
           'let ten = 10;'
           'let result = add;';
@@ -659,7 +659,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'return 5;'
           'return 10;'
           // 'return add(15);'
@@ -688,7 +688,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'foobar;';
     });
     test(
@@ -750,7 +750,7 @@ void main() {
     late Logger logger;
     late List<Record> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = [
         (input: '-5;', rator: '-', rand: '5'),
         (input: '!5;', rator: '!', rand: '5'),
@@ -804,7 +804,7 @@ void main() {
     late Logger logger;
     late List<Record> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = [
         (input: '5 + 5;', lrand: '5', op: '+', rrand: '5'),
         (input: '5 - 5;', lrand: '5', op: '-', rrand: '5'),
@@ -924,7 +924,7 @@ void main() {
     late Logger logger;
     late Map<String, String> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         '!true': '(!true)',
         '1 + 2 + 3;': '((1 + 2) + 3)',
@@ -987,7 +987,7 @@ void main() {
     late String input;
     late String inputElse;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'if (x < y) { x };';
       inputElse = 'if (x < y) { xone } else { yone };';
     });
@@ -1101,11 +1101,11 @@ void main() {
       () async {
         // arrange
         final parser = Parser.fromSource(inputElse);
-        logger.info('Tokens: ${parser.tokens.join('\n\t')}');
+        logger.detail('Tokens: ${parser.tokens.join('\n\t')}');
 
         // act
         final program = parse(parser);
-        logger.info('Program: $program');
+        logger.detail('Program: $program');
 
         // assert
         expect(program.statements.length, equals(1));
@@ -1212,7 +1212,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'fn(x, y) { x + y; }';
     });
     // test(
@@ -1356,7 +1356,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'add(1, 2 * 3, 4 + 5);';
     });
     test(

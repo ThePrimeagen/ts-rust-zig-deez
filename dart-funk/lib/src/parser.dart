@@ -2,7 +2,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:meta/meta.dart';
 import 'package:monkeydart/monkeydart.dart';
 
-final logger = Logger(level: Level.verbose);
+final logger = Logger(level: Level.warning);
 
 final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.int: _parseIntegerLiteral,

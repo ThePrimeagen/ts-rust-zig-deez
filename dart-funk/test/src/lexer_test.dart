@@ -241,7 +241,7 @@ void main() {
         '10 != 9;';
     late final Logger logger;
     setUp(() {
-      logger = Logger();
+      logger = Logger(level: Level.warning);
     });
     test(
       'should return something when calling genLexSync',
