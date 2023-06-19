@@ -7,9 +7,8 @@ main :- repeat, process_line.
 
 process_line :-
     read_line_to_codes(user_input, StringCodes),
-    once(lex(StringCodes, Tokens)),
-    once(parse(Tokens, Ast)),
-    once(evaluate(Ast, Value)),
-    Value \= nil,
+    lex(StringCodes, Tokens),
+    parse(Tokens, Ast),
+    evaluate(Ast, Value),
     write("-> "), write(Value), nl,
     !, fail.
