@@ -2,11 +2,8 @@
 
 require 'vendor/autoload.php';
 
-readonly class BlockStatement implements Statement
-{
-
+readonly class BlockStatement implements Statement {
     /**
-     * @param Token $token
      * @param Statement[] $statements
      */
     public function __construct(
@@ -15,17 +12,14 @@ readonly class BlockStatement implements Statement
     ) {
     }
 
-    public function statementNode(): void
-    {
+    public function __toString(): string {
+        return '{'.implode('', $this->statements).'}';
     }
 
-    public function tokenLiteral(): string
-    {
+    public function statementNode(): void {
+    }
+
+    public function tokenLiteral(): string {
         return $this->token->literal;
-    }
-
-    public function __toString(): string
-    {
-        return "{" . implode("", $this->statements) . "}";
     }
 }

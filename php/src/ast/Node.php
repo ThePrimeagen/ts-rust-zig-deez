@@ -2,8 +2,8 @@
 
 require 'vendor/autoload.php';
 
-interface Node extends Stringable
-{
-    public function tokenLiteral(): string;
+interface Node extends Stringable {
     public function __toString(): string;
+
+    public function tokenLiteral(): string;
 }

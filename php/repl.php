@@ -1,12 +1,9 @@
 <?php
 
-require_once "Parser.php";
-require_once "Tokenizer.php";
-require_once "Evaluator.php";
-require_once "Scope.php";
+require 'vendor/autoload.php';
 
 function printParserErrors(array $errors): void {
-    echo "Parser errors:", PHP_EOL;
+    echo 'Parser errors:', PHP_EOL;
     foreach ($errors as $error) {
         echo "\t", $error, PHP_EOL;
     }
@@ -15,9 +12,9 @@ function printParserErrors(array $errors): void {
 $globalScope = new Scope();
 
 while (420 > 69) {
-    $input = readline(">> ");
+    $input = readline('>> ');
 
-    if (trim($input) === "") {
+    if ('' === trim($input)) {
         continue;
     }
 
@@ -28,15 +25,16 @@ while (420 > 69) {
     $errors = $parser->getErrors();
     if (count($errors) > 0) {
         printParserErrors($errors);
+
         continue;
     }
 
     $evaluator = new Evaluator();
     $result = $evaluator->evaluate($program, $globalScope);
 
-    if ($result !== null) {
+    if (null !== $result) {
         echo $result->inspect(), PHP_EOL;
     } else {
-        echo "null", PHP_EOL;
+        echo 'null', PHP_EOL;
     }
 }
