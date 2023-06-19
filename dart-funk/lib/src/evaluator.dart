@@ -83,7 +83,6 @@ Thing applyFunction(Thing function, List<Thing> args) {
   // switch (function.runtimeType) {
   //   case Fun:
   //     final function = Fun();
-      
 
   //   // case Builtin:
   //   //   final fn = function as Builtin;

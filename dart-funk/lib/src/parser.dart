@@ -503,10 +503,7 @@ Parser finishStatement(Parser parser, {bool recurse = false}) {
     final (jumpLBraceParser, okAlt) =
         expectPeek(elseParser, TokenType.lSquirly);
     if (!okAlt) {
-      return (
-        jumpLBraceParser,
-        const NullExpression()
-      );
+      return (jumpLBraceParser, const NullExpression());
     }
     final (alternativeParser, alternative) =
         _parseBlockStatement(jumpLBraceParser);
