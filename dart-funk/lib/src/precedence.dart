@@ -1,4 +1,7 @@
+import 'package:mason_logger/mason_logger.dart';
 import 'package:monkeydart/monkeydart.dart';
+
+final pLogger = Logger(level: Level.debug);
 
 enum Precedence {
   // ignore: unused_field
@@ -42,4 +45,11 @@ extension PrecedenceExt on Precedence {
   bool operator <(Precedence other) {
     return index < other.index;
   }
+}
+
+bool isCurrGtePeek(Parser parser, Precedence currPrec) {
+  // pLogger.detail(
+  //   'isCurrGtePeek: $currPrec >= ${peekPrecedence(parser)}',
+  // );
+  return currPrec >= peekPrecedence(parser);
 }

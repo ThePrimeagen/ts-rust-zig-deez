@@ -116,7 +116,7 @@ class ReturnStatement extends Statement {
 
   @override
   String toString() {
-    return '${token.value} ${returnValue.token.value};';
+    return '${token.value} $returnValue;';
   }
 }
 

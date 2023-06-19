@@ -21,6 +21,7 @@ const monkeyFace = r'''
            '-----'
 ''';
 
+// ignore: camel_case_types
 sealed class R_E_P_L {
   R_E_P_L({
     Logger? logger,
@@ -131,6 +132,8 @@ class REPL extends R_E_P_L {
     super.stdIn,
   });
 
+  final env = Environment.create();
+
   @override
   Future<void> evalLine(String? line) async {
     switch (line?.trim().toLowerCase()) {
@@ -148,8 +151,10 @@ class REPL extends R_E_P_L {
             _logger.alert(error.toString());
           }
         }
-        final evaluation = eval(program);
+        final evaluation = eval(program, env);
+        // if (evaluation is! Let) {
         _logger.info(evaluation.inspect());
+      // }
       // if (evaluation is! NullThing) {
       //   _logger.info(evaluation.inspect());
       // }

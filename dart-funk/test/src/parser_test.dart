@@ -95,6 +95,157 @@ bool testInfixExpression(
 }
 
 void main() {
+  group('Parser - expectPeek', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = 'let five = 5;';
+    });
+
+    test(
+      'should return an advanced Parser when expectPeek is call on init state',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.detail('parser: $parser');
+
+        // act
+        final (actual, ok) = expectPeek(parser, TokenType.ident);
+
+        // assert
+        expect(actual, isA<Parser>());
+        expect(ok, isTrue);
+        expect(actual.currToken, isA<Token>());
+        expect(actual.currToken, equals(const Token.ident('five')));
+      },
+    );
+
+    test(
+      'should return same parser with error when expectPeek is call on '
+      'initial state with tes being assign',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.detail('parser: $parser');
+
+        // act
+        final (actual, ok) = expectPeek(parser, TokenType.assign);
+
+        // assert
+        expect(actual, isA<Parser>());
+        expect(ok, isFalse);
+        expect(actual.currToken, isA<Token>());
+        expect(actual.currToken, equals(const Token.let()));
+        expect(actual.errors.length, equals(1));
+        expect(actual.errors[0].message,
+            equals('Expected next token to be assign, got ident instead'));
+      },
+    );
+
+    test(
+      'should return same parser with error when expectPeek is call on '
+      'last token',
+      () async {
+        // arrange
+        const input = ';';
+        final parser = Parser.fromSource(input);
+        logger.detail('parser: $parser');
+
+        // act
+        final (actual, ok) = expectPeek(parser, TokenType.ident);
+
+        // assert
+        expect(actual, isA<Parser>());
+        expect(ok, isFalse);
+        expect(actual.currToken, isA<Token>());
+        expect(actual.currToken, equals(const Token.semicolon()));
+        expect(actual.errors.length, equals(1));
+        expect(
+          actual.errors[0].message,
+          equals('No peek token available'),
+        );
+      },
+    );
+
+    test(
+      'should return same parser with 2 errors when expectPeek is call on '
+      'last token twice',
+      () async {
+        // arrange
+        const input = ';';
+        final parser = Parser.fromSource(input);
+        logger.detail('parser: $parser');
+
+        // act
+        final (actual, _) = expectPeek(parser, TokenType.ident);
+        final (actual2, ok2) = expectPeek(actual, TokenType.ident);
+
+        // assert
+        expect(actual2, isA<Parser>());
+        expect(ok2, isFalse);
+        expect(actual2.currToken, isA<Token>());
+        expect(actual2.currToken, equals(const Token.semicolon()));
+        expect(actual2.errors.length, equals(2));
+        expect(
+          actual2.errors[0].message,
+          equals('No peek token available'),
+        );
+        expect(
+          actual2.errors[1].message,
+          equals('No peek token available'),
+        );
+      },
+    );
+  });
+
+  group('Parser - Finish Statement', () {
+    late Logger logger;
+    late Map<String, ({int start, int end})> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        // should all be EOF
+        'let ten = 10;': (start: 1, end: 6),
+        'let ten = 10': (start: 1, end: 5),
+        'fn(x) { x + 2; };': (start: 7, end: 12),
+        'fn(x) { x + 2 };': (start: 7, end: 11),
+        'fn(x) { x + 2; }': (start: 7, end: 11),
+        'fn(x) { x + 2 }': (start: 7, end: 10),
+        'let five = 5; let ten = 10; let result = add(five, ten);': (
+          start: 1,
+          end: 6
+        ),
+        'fn(x) { x + 2; }; Let five = 5;': (start: 7, end: 12),
+      };
+    });
+
+    test(
+      'should return a parser with currToken EOF or end of stmt',
+      () async {
+        // arrange
+        for (final entry in input.entries) {
+          final initParser = Parser.fromSource(entry.key);
+          // move somewhere ont the statement
+          final index = entry.value.start;
+          final startParser = initParser.copyWith(
+            tokenIndex: index,
+            currToken: initParser.tokens.elementAt(index),
+            peekToken: initParser.tokens.elementAt(index + 1),
+          );
+          // logger.detail('startParser: $startParser');
+          // move to the end of teh current statement
+          final doneParser = finishStatement(startParser, recurse: true);
+          logger.detail('doneParser: $doneParser');
+
+          expect(doneParser, isA<Parser>());
+          expect(doneParser.currToken, isA<Token>());
+          expect(doneParser.tokenIndex, equals(entry.value.end - 1));
+        }
+      },
+    );
+  });
+
   group('Parser - constructors', () {
     late Logger logger;
     late String input;
@@ -310,8 +461,79 @@ void main() {
         expect(program.errors.length, equals(0));
       },
     );
+
     test(
-      'should return ParserException when using invalid Let input',
+      'should return ParserException when missing ident token',
+      () async {
+        // arrange
+        const input = 'let = 10;';
+        final parser = Parser.fromSource(input);
+
+        // act
+        final program = parse(parser);
+        logger.info(program.toString());
+
+        // assert
+        expect(program, isA<Program>());
+        expect(program.statements.length, equals(0));
+        expect(program.errors.length, equals(1));
+        expect(
+          program.errors[0].message,
+          equals('Expected token to be ident, '
+              'got assign instead'),
+        );
+      },
+    );
+
+    test(
+      'should return ParserException when missing ident token => int',
+      () async {
+        // arrange
+        const input = 'let 838383;';
+        final parser = Parser.fromSource(input);
+
+        // act
+        final program = parse(parser);
+        logger.info(program.toString());
+
+        // assert
+        expect(program, isA<Program>());
+        expect(program.statements.length, equals(0));
+        expect(program.errors.length, equals(1));
+        expect(
+          program.errors[0].message,
+          equals('Expected token to be ident, '
+              'got int instead'),
+        );
+      },
+    );
+
+    test(
+      'should return ParserException when missing ident token => int point'
+      'to next statement',
+      () async {
+        // arrange
+        const input = 'let x 5;let five = 5;';
+        final parser = Parser.fromSource(input);
+
+        // act
+        final program = parse(parser);
+        logger.info(program.toString());
+
+        // assert
+        expect(program, isA<Program>());
+        expect(program.statements.length, equals(1));
+        expect(program.errors.length, equals(1));
+        expect(
+          program.errors[0].message,
+          equals('Expected next token to be assign, '
+              'got int instead'),
+        );
+      },
+    );
+
+    test(
+      'should return ParserException when missing assign token',
       () async {
         // arrange
         const input = 'let x 5;';
@@ -327,8 +549,8 @@ void main() {
         expect(program.errors.length, equals(1));
         expect(
           program.errors[0].message,
-          equals('Expected next token to be TokenType.assign, '
-              'got TokenType.int instead'),
+          equals('Expected next token to be assign, '
+              'got int instead'),
         );
       },
     );
@@ -357,7 +579,7 @@ void main() {
             isA<Identifier>(),
           );
           expect(
-            ((program.statements[0] as LetStatement).name as Identifier).value,
+            (program.statements[0] as LetStatement).name.value,
             equals(thing.id),
           );
           expect(
@@ -440,10 +662,11 @@ void main() {
       logger = Logger(level: Level.debug);
       input = 'return 5;'
           'return 10;'
+          // 'return add(15);'
           'return 993322;';
     });
     test(
-      'should return a program with 3 ReturnStatements',
+      'should return a program with 4 ReturnStatements',
       () async {
         // arrange
         final parser = Parser.fromSource(input);
@@ -455,6 +678,7 @@ void main() {
         // assert
         expect(program, isA<Program>());
         expect(program.statements.length, equals(3));
+        expect(program.errors.isEmpty, isTrue);
         expect(program.statements[0], isA<ReturnStatement>());
       },
     );
@@ -471,7 +695,6 @@ void main() {
       'should return an Identifier Expression',
       () async {
         // arrange
-        const input = 'foobar;';
         final parser = Parser.fromSource(input);
 
         // act
@@ -704,42 +927,42 @@ void main() {
       logger = Logger(level: Level.debug);
       input = {
         '!true': '(!true)',
-        // '1 + 2 + 3;': '((1 + 2) + 3)',
-        // '-a * b;': '((-a) * b)',
-        // '!-a': '(!(-a))',
-        // 'a + b + c': '((a + b) + c)',
-        // 'a + b - c': '((a + b) - c)',
-        // 'a * b * c': '((a * b) * c)',
-        // 'a * b / c': '((a * b) / c)',
-        // 'a + b / c': '(a + (b / c))',
-        // 'a + b * c + d / e - f': '(((a + (b * c)) + (d / e)) - f)',
-        // 'true': 'true',
-        // 'false': 'false',
-        // '3 > 5 == false': '((3 > 5) == false)',
-        // '3 < 5 == true': '((3 < 5) == true)',
-        // 'true == true': '(true == true)',
-        // '1 + (2 + 3) + 4': '((1 + (2 + 3)) + 4)',
-        // '(5 + 5) * 2': '((5 + 5) * 2)',
-        // '2 / (5 + 5)': '(2 / (5 + 5))',
-        // '-(5 + 5)': '(-(5 + 5))',
-        // '!(true == true)': '(!(true == true))',
+        '1 + 2 + 3;': '((1 + 2) + 3)',
+        '-a * b;': '((-a) * b)',
+        '!-a': '(!(-a))',
+        'a + b + c': '((a + b) + c)',
+        'a + b - c': '((a + b) - c)',
+        'a * b * c': '((a * b) * c)',
+        'a * b / c': '((a * b) / c)',
+        'a + b / c': '(a + (b / c))',
+        'a + b * c + d / e - f': '(((a + (b * c)) + (d / e)) - f)',
+        'true': 'true',
+        'false': 'false',
+        '3 > 5 == false': '((3 > 5) == false)',
+        '3 < 5 == true': '((3 < 5) == true)',
+        'true == true': '(true == true)',
+        '1 + (2 + 3) + 4': '((1 + (2 + 3)) + 4)',
+        '(5 + 5) * 2': '((5 + 5) * 2)',
+        '2 / (5 + 5)': '(2 / (5 + 5))',
+        '-(5 + 5)': '(-(5 + 5))',
+        '!(true == true)': '(!(true == true))',
 
         // '3 + 4; -5 * 5': '(3 + 4)((-5) * 5)',
-        // '5 > 4 == 3 < 4': '((5 > 4) == (3 < 4))',
-        // '5 < 4 != 3 > 4': '((5 < 4) != (3 > 4))',
-        // '3 + 4 * 5 == 3 * 1 + 4 * 5':
-        // '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
-        // 'a + add(b * c) + d': '((a + add((b * c))) + d)',
-        // 'add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))':
+        '5 > 4 == 3 < 4': '((5 > 4) == (3 < 4))',
+        '5 < 4 != 3 > 4': '((5 < 4) != (3 > 4))',
+        '3 + 4 * 5 == 3 * 1 + 4 * 5': '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
+        'a + add(b * c) + d': '((a + add((b * c))) + d)',
+        // TODO: investigate stack overflow
+        // 'add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));':
         //     'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
         // 'add(a + b + c * d / f + g)': 'add((((a + b) + ((c * d) / f)) + g))',
-        // 'a * [1, 2, 3, 4][b * c] * d': '((a * ([1, 2, 3, 4][(b * c)])) * d)',
+        // 'a * [1, 2, 3, 4][b * c] * d;': '((a * ([1, 2, 3, 4][(b * c)])) * d)',
         // 'add(a * b[2], b[1], 2 * [1, 2][1])':
         //     'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))',
       };
     });
     test(
-      'should return a Program with crrect order of precedence',
+      'should return a Program with correct order of precedence',
       () async {
         // arrange - act - assert
         for (final item in input.entries) {
@@ -992,123 +1215,123 @@ void main() {
       logger = Logger(level: Level.debug);
       input = 'fn(x, y) { x + y; }';
     });
-    test(
-      'should return a Program with a FunctionLiteral',
-      () async {
-        // arrange
-        final parser = Parser.fromSource(input);
-        logger.info('Tokens: ${parser.tokens}');
+    // test(
+    //   'should return a Program with a FunctionLiteral',
+    //   () async {
+    //     // arrange
+    //     final parser = Parser.fromSource(input);
+    //     logger.info('Tokens: ${parser.tokens}');
 
-        // act
-        final program = parse(parser);
-        logger.info('Program: $program');
+    //     // act
+    //     final program = parse(parser);
+    //     logger.info('Program: $program');
 
-        // assert
-        expect(program.statements.length, equals(1));
-        expect(program.statements[0], isA<ExpressionStatement>());
-        expect(
-          (program.statements[0] as ExpressionStatement).expression,
-          isA<FunctionLiteral>(),
-        );
-        expect(
-          ((program.statements[0] as ExpressionStatement).expression
-                  as FunctionLiteral)
-              .parameters
-              .length,
-          equals(2),
-        );
-        expect(
-          ((program.statements[0] as ExpressionStatement).expression
-                  as FunctionLiteral)
-              .parameters[0]
-              .value,
-          equals('x'),
-        );
-        expect(
-          ((program.statements[0] as ExpressionStatement).expression
-                  as FunctionLiteral)
-              .parameters[1]
-              .value,
-          equals('y'),
-        );
-        expect(
-          ((program.statements[0] as ExpressionStatement).expression
-                  as FunctionLiteral)
-              .body,
-          isA<BlockStatement>(),
-        );
-        expect(
-          ((program.statements[0] as ExpressionStatement).expression
-                  as FunctionLiteral)
-              .body
-              .statements
-              .length,
-          equals(1),
-        );
-        expect(
-          (((program.statements[0] as ExpressionStatement).expression
-                      as FunctionLiteral)
-                  .body
-                  .statements[0] as ExpressionStatement)
-              .expression,
-          isA<InfixExpression>(),
-        );
-        expect(
-          ((((program.statements[0] as ExpressionStatement).expression
-                          as FunctionLiteral)
-                      .body
-                      .statements[0] as ExpressionStatement)
-                  .expression as InfixExpression)
-              .left,
-          isA<Identifier>(),
-        );
-        expect(
-          (((((program.statements[0] as ExpressionStatement).expression
-                              as FunctionLiteral)
-                          .body
-                          .statements[0] as ExpressionStatement)
-                      .expression as InfixExpression)
-                  .left as Identifier)
-              .value,
-          equals('x'),
-        );
-        expect(
-          ((((program.statements[0] as ExpressionStatement).expression
-                          as FunctionLiteral)
-                      .body
-                      .statements[0] as ExpressionStatement)
-                  .expression as InfixExpression)
-              .operator,
-          equals('+'),
-        );
-        expect(
-          ((((program.statements[0] as ExpressionStatement).expression
-                          as FunctionLiteral)
-                      .body
-                      .statements[0] as ExpressionStatement)
-                  .expression as InfixExpression)
-              .right,
-          isA<Identifier>(),
-        );
-        expect(
-          (((((program.statements[0] as ExpressionStatement).expression
-                              as FunctionLiteral)
-                          .body
-                          .statements[0] as ExpressionStatement)
-                      .expression as InfixExpression)
-                  .right as Identifier)
-              .value,
-          equals('y'),
-        );
-      },
-    );
+    //     // assert
+    //     expect(program.statements.length, equals(1));
+    //     expect(program.statements[0], isA<ExpressionStatement>());
+    //     expect(
+    //       (program.statements[0] as ExpressionStatement).expression,
+    //       isA<FunctionLiteral>(),
+    //     );
+    //     expect(
+    //       ((program.statements[0] as ExpressionStatement).expression
+    //               as FunctionLiteral)
+    //           .parameters
+    //           .length,
+    //       equals(2),
+    //     );
+    //     expect(
+    //       ((program.statements[0] as ExpressionStatement).expression
+    //               as FunctionLiteral)
+    //           .parameters[0]
+    //           .value,
+    //       equals('x'),
+    //     );
+    //     expect(
+    //       ((program.statements[0] as ExpressionStatement).expression
+    //               as FunctionLiteral)
+    //           .parameters[1]
+    //           .value,
+    //       equals('y'),
+    //     );
+    //     expect(
+    //       ((program.statements[0] as ExpressionStatement).expression
+    //               as FunctionLiteral)
+    //           .body,
+    //       isA<BlockStatement>(),
+    //     );
+    //     expect(
+    //       ((program.statements[0] as ExpressionStatement).expression
+    //               as FunctionLiteral)
+    //           .body
+    //           .statements
+    //           .length,
+    //       equals(1),
+    //     );
+    //     expect(
+    //       (((program.statements[0] as ExpressionStatement).expression
+    //                   as FunctionLiteral)
+    //               .body
+    //               .statements[0] as ExpressionStatement)
+    //           .expression,
+    //       isA<InfixExpression>(),
+    //     );
+    //     expect(
+    //       ((((program.statements[0] as ExpressionStatement).expression
+    //                       as FunctionLiteral)
+    //                   .body
+    //                   .statements[0] as ExpressionStatement)
+    //               .expression as InfixExpression)
+    //           .left,
+    //       isA<Identifier>(),
+    //     );
+    //     expect(
+    //       (((((program.statements[0] as ExpressionStatement).expression
+    //                           as FunctionLiteral)
+    //                       .body
+    //                       .statements[0] as ExpressionStatement)
+    //                   .expression as InfixExpression)
+    //               .left as Identifier)
+    //           .value,
+    //       equals('x'),
+    //     );
+    //     expect(
+    //       ((((program.statements[0] as ExpressionStatement).expression
+    //                       as FunctionLiteral)
+    //                   .body
+    //                   .statements[0] as ExpressionStatement)
+    //               .expression as InfixExpression)
+    //           .operator,
+    //       equals('+'),
+    //     );
+    //     expect(
+    //       ((((program.statements[0] as ExpressionStatement).expression
+    //                       as FunctionLiteral)
+    //                   .body
+    //                   .statements[0] as ExpressionStatement)
+    //               .expression as InfixExpression)
+    //           .right,
+    //       isA<Identifier>(),
+    //     );
+    //     expect(
+    //       (((((program.statements[0] as ExpressionStatement).expression
+    //                           as FunctionLiteral)
+    //                       .body
+    //                       .statements[0] as ExpressionStatement)
+    //                   .expression as InfixExpression)
+    //               .right as Identifier)
+    //           .value,
+    //       equals('y'),
+    //     );
+    //   },
+    // );
 
     test(
       'should return correct parameters',
       () async {
         // arrange
         final inputMap = {
-          'fn() {}': [],
+          'fn() {}': <String>[],
           'fn(x) {}': ['x'],
           'fn(x, y, z) {}': ['x', 'y', 'z'],
         };

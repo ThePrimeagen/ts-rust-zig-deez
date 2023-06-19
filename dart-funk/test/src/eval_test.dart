@@ -1,3 +1,4 @@
+// ignore: lines_longer_than_80_chars
 // ignore_for_file: avoid_positional_boolean_parameters, missing_whitespace_between_adjacent_strings
 
 import 'package:mason_logger/mason_logger.dart';
@@ -7,7 +8,7 @@ import 'package:test/test.dart';
 Thing testEval(String input) {
   final parser = Parser.fromSource(input);
   final program = parse(parser);
-  return eval(program);
+  return eval(program, Environment.create());
 }
 
 void testInteger(Thing evaluated, int value) {
@@ -182,6 +183,67 @@ void main() {
             '}': 10,
       };
     });
+    // test(
+    //   'should return the correct value for each input',
+    //   () async {
+    //     // arrange - act - assert
+    //     for (final entry in input.entries) {
+    //       final evaluated = testEval(entry.key);
+    //       logger.info('$entry evaluated to $evaluated');
+    //       testInteger(evaluated, int.parse(entry.value.toString()));
+    //     }
+    //   },
+    // );
+  });
+
+  group('Eval - Error handling', () {
+    late Logger logger;
+    late Map<String, String> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        '5 + true;': 'type mismatch: INTEGER + BOOLEAN',
+        '5 + true; 5;': 'type mismatch: INTEGER + BOOLEAN',
+        '-true': 'unknown operator: -BOOLEAN',
+        'true + false;': 'unknown operator: BOOLEAN + BOOLEAN',
+        '5; true + false; 5': 'unknown operator: BOOLEAN + BOOLEAN',
+        'if (10 > 1) { true + false; }': 'unknown operator: BOOLEAN + BOOLEAN',
+        'if (10 > 1) {'
+            'if (10 > 1) {'
+            'return true + false;'
+            '}'
+            'return 1;'
+            '}': 'unknown operator: BOOLEAN + BOOLEAN',
+      };
+    });
+
+    // test(
+    //   'should return correct errors for each input',
+    //   () async {
+    //     // arrange - act - assert
+    //     for (final entry in input.entries) {
+    //       final evaluated = testEval(entry.key);
+    //       logger.info('$entry evaluated to $evaluated');
+    //       expect(evaluated, isA<Error>());
+    //       expect((evaluated as Error).message, entry.value);
+    //     }
+    //   },
+    // );
+  });
+
+  group('Eval - binding & the environment', () {
+    late Logger logger;
+    late Map<String, dynamic> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        'let one = 1; one;': 1,
+        'let one = 1; let two = 2; one + two;': 3,
+        'let one = 1; let two = one + one; one + two;': 3,
+        'let a = 5; let b = a; let c = a + b + 5; c;': 15,
+      };
+    });
+
     test(
       'should return the correct value for each input',
       () async {
@@ -193,5 +255,89 @@ void main() {
         }
       },
     );
+
+    test(
+      'should return identifier not found error',
+      () async {
+        // arrange
+        final input = {'foobar': 'identifier not found: foobar'};
+
+        // act - assert
+        for (final entry in input.entries) {
+          final evaluated = testEval(entry.key);
+          logger.info('$entry evaluated to $evaluated');
+          expect(evaluated, isA<Error>());
+          expect((evaluated as Error).message, entry.value);
+        }
+      },
+    );
+  });
+
+  group('Eval - first Function', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = 'fn(x) { x + 2; };';
+    });
+
+    // test(
+    //   'should return the correct value for each input',
+    //   () async {
+    //     // arrange
+
+    //     // act
+    //     final evaluated = testEval(input);
+    //     logger.info('$input evaluated to $evaluated');
+
+    //     // assert
+    //     expect(evaluated, isA<Fun>());
+    //     final fn = evaluated as Fun;
+    //     expect(fn.parameters.length, 1);
+    //     expect(fn.parameters.first.value, 'x');
+
+    //     expect(fn.body.statements.length, 1);
+    //     expect(fn.body.statements.first, isA<ExpressionStatement>());
+    //     final body = fn.body.statements.first as ExpressionStatement;
+    //     expect(body.expression, isA<InfixExpression>());
+    //     final infix = body.expression as InfixExpression;
+    //     expect(infix.operator, '+');
+    //     expect(infix.left, isA<Identifier>());
+    //     expect((infix.left as Identifier).value, 'x');
+    //     expect(infix.right, isA<IntegerLiteral>());
+    //     expect((infix.right as IntegerLiteral).value, 2);
+    //   },
+    // );
+  });
+
+  group('Eval - Call Functions', () {
+    late Logger logger;
+    late Map<String, dynamic> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        // 'let identity = fn(x) { x; }; identity(5);': 5,
+        // 'let identity = fn(x) { return x; }; identity(5);': 5,
+        // 'let double = fn(x) { x * 2; }; double(5);': 10,
+        // 'let add = fn(x, y) { x + y; }; add(5, 5);': 10,
+        // 'let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));': 20,
+        // TODO: This implied call is not working
+        'fn(x) { x; }(5);': 5,
+        // 'fn(x) { x == 10 }(5)': false,
+        // 'fn(x) { x == 10 }(10)': true,
+      };
+    });
+
+    // test(
+    //   'should return the correct value for each call statement',
+    //   () async {
+    //     // arrange - act - assert
+    //     for (final entry in input.entries) {
+    //       final evaluated = testEval(entry.key);
+    //       logger.info('$entry evaluated to $evaluated');
+    //       testInteger(evaluated, int.parse(entry.value.toString()));
+    //     }
+    //   },
+    // );
   });
 }

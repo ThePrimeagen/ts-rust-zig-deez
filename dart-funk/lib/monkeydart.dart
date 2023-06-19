@@ -10,6 +10,7 @@
 library monkeydart;
 
 export './src/ast_nodes.dart';
+export './src/environment.dart';
 export './src/evaluator.dart';
 export './src/lexer.dart';
 export './src/parser.dart';
