@@ -90,4 +90,14 @@ struct Lexer {
                 return .illegal(String(currentChar))
         }
     }
+
+    mutating func evaluate() -> [Token] {
+        var tokens = [Token]()
+        var token: Token
+        repeat {
+            token = nextToken()
+            tokens += [token]
+        } while token != .eof
+        return tokens
+    }
 }
