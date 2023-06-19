@@ -5,8 +5,7 @@
         ]
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.1",
-        "friendsofphp/php-cs-fixer": "^3.17"
+        "phpunit/phpunit": "^10.1"
     },
     "scripts": {
         "format": "vendor/bin/php-cs-fixer fix",

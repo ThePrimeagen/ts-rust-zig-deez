@@ -1,26 +1,20 @@
 <?php
 
-require 'vendor/autoload.php';
-
-readonly class PrefixExpression implements Expression
-{
+readonly class PrefixExpression implements Expression {
     public function __construct(
-        public Token $token,
+        public Token      $token,
         public Expression $right
     ) {
     }
 
-    public function expressionNode(): void
-    {
+    public function expressionNode(): void {
     }
 
-    public function tokenLiteral(): string
-    {
+    public function tokenLiteral(): string {
         return $this->token->literal;
     }
 
-    public function __toString(): string
-    {
+    public function __toString(): string {
         $operator = match ($this->token->type) {
             TokenType::Not => "!",
             TokenType::Minus => "-",

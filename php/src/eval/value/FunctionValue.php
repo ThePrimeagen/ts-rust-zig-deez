@@ -1,9 +1,6 @@
 <?php
 
-require 'vendor/autoload.php';
-
-readonly class FunctionValue implements Value
-{
+readonly class FunctionValue implements Value {
 
     /**
      * @param Identifier[] $parameters
@@ -11,24 +8,21 @@ readonly class FunctionValue implements Value
      * @param Scope $scope
      */
     public function __construct(
-        public array $parameters,
+        public array          $parameters,
         public BlockStatement $body,
-        public Scope $scope
+        public Scope          $scope
     ) {
     }
 
-    public function type(): string
-    {
+    public function type(): string {
         return "FUNCTION";
     }
 
-    public function inspect(): string
-    {
+    public function inspect(): string {
         return "fn(" . implode(", ", $this->parameters) . ") {\n" . $this->body . "\n}";
     }
 
-    public function createChildScope(array $arguments): Scope
-    {
+    public function createChildScope(array $arguments): Scope {
         $childScope = new Scope($this->scope);
 
         foreach ($this->parameters as $index => $parameter) {
