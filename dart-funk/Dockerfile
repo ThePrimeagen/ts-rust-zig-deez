@@ -1,4 +1,4 @@
-FROM dart:3.0.0 AS build
+FROM dart:stable AS build
 
 WORKDIR /app
 
@@ -6,11 +6,14 @@ COPY pubspec.* ./
 RUN dart pub get
 
 COPY . .
+COPY bin/ bin/ 
+COPY bin/ /app/bin/ 
+COPY bin/main.dart /app/bin/main.dart 
 
 RUN dart pub get --offline
 
 RUN dart test
-RUN dart compile exe /app/bin/main.dart -o bin/main
+RUN dart compile exe bin/main.dart -o bin/main
 
 FROM scratch
 
