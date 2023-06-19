@@ -47,6 +47,58 @@ class IntegerLiteral extends Expression {
   }
 }
 
+class BooleanLiteral extends Expression {
+  const BooleanLiteral({required this.value})
+      : super(value ? const Token.true_() : const Token.false_());
+  final bool value;
+
+  @override
+  String toString() {
+    return token.value;
+  }
+}
+
+class IfExpression extends Expression {
+  const IfExpression({
+    required this.condition,
+    required this.consequence,
+    this.alternative,
+  }) : super(const Token.if_());
+  final Expression condition;
+  final BlockStatement consequence;
+  final BlockStatement? alternative;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer(token.value)
+      ..write('($condition) ')
+      ..write(consequence);
+    if (alternative != null) {
+      retVal.write(' else $alternative');
+    }
+    return retVal.toString();
+  }
+}
+
+class FunctionLiteral extends Expression {
+  const FunctionLiteral({
+    required this.parameters,
+    required this.body,
+  }) : super(const Token.function());
+  final List<Identifier> parameters;
+  final BlockStatement body;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer(token.value)
+      ..write('(')
+      ..write(parameters.join(', '))
+      ..write(') ')
+      ..write(body);
+    return retVal.toString();
+  }
+}
+
 class LetStatement extends Statement {
   const LetStatement(this.name, this.value) : super(const Token.let());
   final Identifier name;
@@ -79,6 +131,21 @@ class ExpressionStatement extends Statement {
   }
 }
 
+class BlockStatement extends Statement {
+  const BlockStatement(this.statements) : super(const Token.lSquirly());
+  final List<Statement> statements;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer('${token.value} ');
+    for (final statement in statements) {
+      retVal.write(statement);
+    }
+    retVal.write(' ${const Token.rSquirly().value}');
+    return retVal.toString();
+  }
+}
+
 class PrefixExpression extends Expression {
   const PrefixExpression(super.token, this.operator, this.right);
   final String operator;
@@ -96,12 +163,10 @@ class InfixExpression extends Expression {
     this.left,
     this.operator,
     this.right,
-    this.precedence, //TODO: remove this
   );
   final Expression left;
   final String operator;
   final Expression right;
-  final Precedence precedence;
 
   @override
   String toString() {
@@ -118,8 +183,16 @@ class Program extends Node {
 
   @override
   String toString() {
-    return 'Program:\n\t ${statements.join('\n\t')}'
-        '${errors.isEmpty ? "" : "\nErrors:\n\t ${errors.join('\n\t')}"}';
+    final retVal = StringBuffer('Program:');
+    if (statements.isNotEmpty) {
+      retVal.write('\n\t${statements.join('\n\t')}');
+    } else {
+      retVal.write('\n\t\tNo statements found');
+    }
+    if (errors.isNotEmpty) {
+      retVal.write('\n\tErrors:\n\t${errors.join('\n\t')}');
+    }
+    return retVal.toString();
   }
 }
 
@@ -132,7 +205,6 @@ class NullStatement extends Statement {
   }
 }
 
-// TODO:
 class NullExpression extends Expression {
   const NullExpression() : super(const Token.illegal());
 

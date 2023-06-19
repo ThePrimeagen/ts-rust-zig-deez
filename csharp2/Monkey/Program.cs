@@ -1,7 +1,6 @@
 ﻿using Monkey;
 
-while (true)
-{
+while (true) {
     Console.Write(">> ");
     var line = Console.ReadLine();
     if (line is null)
@@ -9,8 +8,7 @@ while (true)
 
     var lexer = new Lexer(line);
     var token = lexer.NextToken();
-    while (token.Type != TokenType.Eof)
-    {
+    while (token.Type != TokenType.Eof) {
         Console.WriteLine($" {token}");
         token = lexer.NextToken();
     }

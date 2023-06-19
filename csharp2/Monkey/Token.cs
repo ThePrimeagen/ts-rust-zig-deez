@@ -1,7 +1,6 @@
 ﻿namespace Monkey;
 
-enum TokenType
-{
+enum TokenType {
     Illegal,
     Eof,
 
@@ -39,8 +38,7 @@ enum TokenType
     False,
 }
 
-readonly record struct Token(TokenType Type, string Literal)
-{
+readonly record struct Token(TokenType Type, string Literal) {
     internal static Token Illegal = new(TokenType.Illegal, "ILLEGAL");
     internal static Token Eof = new(TokenType.Eof, "EOF");
 
