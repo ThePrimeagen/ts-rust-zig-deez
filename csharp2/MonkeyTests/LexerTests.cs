@@ -4,11 +4,10 @@ using Xunit;
 
 namespace MonkeyTests;
 
-public class LexerTests
-{
+public class LexerTests {
+
     [Fact]
-    public void Get_NextToken_Complete()
-    {
+    public void Get_NextToken_Complete() {
         const string testInput = """
             let five = 5;
                 let ten = 10;
@@ -109,8 +108,7 @@ public class LexerTests
             new(TokenType.Eof,"EOF"),
         };
 
-        foreach (var token in tokens)
-        {
+        foreach (var token in tokens) {
             var nextToken = lexer.NextToken();
             token.Should().Be(nextToken);
         }
