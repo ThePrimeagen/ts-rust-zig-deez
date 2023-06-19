@@ -28,27 +28,14 @@ func CreateToken(type_ TokenType, literal string) Token {
 	return Token{type_: type_, literal: literal}
 }
 
-const _0 = int('0')
-const _9 = int('9')
-
-const a = int('a')
-const z = int('z')
-
-const A = int('A')
-const Z = int('Z')
-
-const __ = int('_')
-
 func isLetter(character rune) bool {
-	var char = int(character)
-	return a <= char && z >= char ||
-		A <= char && Z >= char ||
-		char == __
+	return 'a' <= character && 'z' >= character ||
+		'A' <= character && 'Z' >= character ||
+		character == '_'
 }
 
 func isNumber(character rune) bool {
-	var char = int(character)
-	return _0 <= char && _9 >= char
+	return '0' <= character && '9' >= character
 }
 
 var Keyword = map[string]Token{
