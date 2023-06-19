@@ -89,7 +89,7 @@ readonly class BuiltinFunctions {
                 return new ErrorValue("argument to `rest` must be ARRAY, got " . $argument->type());
             }),
 
-            "push" => new BuiltinFunctionValue(function (array $arguments): Value | ErrorValue {
+            "push" => new BuiltinFunctionValue(function (array $arguments): ArrayValue | ErrorValue {
                 if (count($arguments) !== 2) {
                     return new ErrorValue("wrong number of arguments. got=" . count($arguments) . ", want=2");
                 }
