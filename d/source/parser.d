@@ -69,7 +69,8 @@ shared static this()
         TokenTag.Ident: &parseIdent, TokenTag.Minus: &parseUnary,
         TokenTag.Bang: &parseUnary, TokenTag.Int: &parseInt,
         TokenTag.True: &parseBoolean, TokenTag.False: &parseBoolean,
-        TokenTag.LParen: &parseGroupedExpression, TokenTag.If: &parseIfExpression
+        TokenTag.LParen: &parseGroupedExpression, TokenTag.If: &parseIfExpression,
+        TokenTag.Function: &parseFunctionLiteral
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
@@ -81,8 +82,10 @@ shared static this()
         TokenTag.NotEq: InfixRule(&parseBinary, Precedence.Equals),
         TokenTag.Lt: InfixRule(&parseBinary, Precedence.LessGreater),
         TokenTag.Gt: InfixRule(&parseBinary, Precedence.LessGreater),
+        TokenTag.LParen: InfixRule(&parseCallExpression, Precedence.Call),
         TokenTag.RParen: InfixRule(null, Precedence.Lowest),
         TokenTag.RSquirly: InfixRule(null, Precedence.Lowest),
+        TokenTag.Comma: InfixRule(null, Precedence.Lowest),
         TokenTag.Semicolon: InfixRule(null, Precedence.Lowest),
         TokenTag.Eof: InfixRule(null, Precedence.Lowest),
     ];
@@ -194,7 +197,6 @@ ExpressionNode parseIfExpression(ref Parser parser)
     }
 
     parser.skipTokens(2);
-
     auto expr = parser.parseExpression();
 
     // Expect rparen & lsquirly and skip both before consequence block statement
@@ -235,6 +237,51 @@ ExpressionNode parseIfExpression(ref Parser parser)
     auto falseBranch = parser.parseBlockStatement();
 
     return new IfExpressionNode(start, expr, trueBranch, falseBranch);
+}
+
+/// Parse function literals
+ExpressionNode parseFunctionLiteral(ref Parser parser)
+{
+    const auto start = parser.position;
+    const TokenTag[] tokenTags = parser.tokenTags[];
+
+    // expect lparen and skip before function parameters
+    if (parser.peek() != TokenTag.LParen)
+    {
+        parser.skipToken();
+
+        parser.errors.put(format("Expected '(' at position %d; got %s instead",
+                parser.position, tokenTags[parser.position]));
+
+        return null;
+    }
+
+    parser.skipTokens(2);
+    auto params = parser.parseFunctionParameters();
+
+    // expect lsquirly and skip before block statement
+    if (tokenTags[parser.position] != TokenTag.LSquirly)
+    {
+        parser.errors.put(format("Expected '{' at position %d; got %s instead",
+                parser.position, tokenTags[parser.position]));
+
+        return null;
+    }
+
+    auto functionBlock = parser.parseBlockStatement();
+
+    return new FunctionLiteralNode(start, params, functionBlock);
+}
+
+/// Parse call expressions
+ExpressionNode parseCallExpression(ref Parser parser, ref ExpressionNode functionBody, Precedence _)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+
+    auto args = parser.parseCallArguments();
+
+    return new CallExpressionNode(start, functionBody, args);
 }
 
 /// Most fundamental node
@@ -419,7 +466,8 @@ class BlockStatement : StatementNode
             }
         }
 
-        return "{ " ~ reprBuilder[].joiner("\n").to!string ~ " }";
+        const auto blockRepr = reprBuilder[].joiner("\n").to!string;
+        return (blockRepr != "") ? "{ " ~ blockRepr ~ " }" : "{}";
     }
 }
 
@@ -559,7 +607,7 @@ class IfExpressionNode : ExpressionNode
     BlockStatement falseBranch; /// Alternative expression
 
     /**
-     * Constructs the binary operator expression
+     * Constructs the if expression
      * Params:
      * mainIdx = the index of the operator tag
      * expr = the main expression
@@ -586,6 +634,110 @@ class IfExpressionNode : ExpressionNode
         return format("if %s %s%s", (this.expr !is null) ? expr.show(lexer) : "",
                 (this.trueBranch !is null) ? trueBranch.show(lexer) : "",
                 (this.falseBranch !is null) ? " else " ~ falseBranch.show(lexer) : "");
+    }
+}
+
+/// Expression node for function literals
+class FunctionLiteralNode : ExpressionNode
+{
+    IdentifierNode[] parameters; /// Function parameters
+    BlockStatement functionBody; /// Main function body
+
+    /**
+     * Constructs the function literal expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * parameters = the function parameters
+     * functionBody = the body of the function
+     */
+    this(ulong mainIdx, IdentifierNode[] parameters, ref BlockStatement functionBody)
+    {
+        super(mainIdx);
+        this.parameters = parameters;
+        this.functionBody = functionBody;
+    }
+
+    /// Show the if keyword
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.Function);
+    }
+
+    /// Create expression string
+    override string show(ref Lexer lexer)
+    {
+        string paramListing = "";
+        if (this.parameters !is null && this.parameters.length)
+        {
+            auto paramsBuilder = appender!(string[]);
+            paramsBuilder.reserve(this.parameters.length);
+
+            foreach (param; this.parameters)
+            {
+                auto repr = param.show(lexer);
+                if (repr !is null && repr != "")
+                {
+                    paramsBuilder.put(repr);
+                }
+            }
+
+            paramListing = paramsBuilder[].joiner(", ").to!string;
+        }
+
+        return format("fn(%s) %s", paramListing, (this.functionBody !is null)
+                ? functionBody.show(lexer) : "{}");
+    }
+}
+
+/// Expression node for calls
+class CallExpressionNode : ExpressionNode
+{
+    ExpressionNode functionBody; /// Ident | FunctionLiteral
+    ExpressionNode[] args; /// Arguments for call expression
+
+    /**
+     * Constructs the binary operator expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * functionBody = the main function body
+     * args = the expressions as parameter inputs
+     */
+    this(ulong mainIdx, ExpressionNode functionBody, ExpressionNode[] args)
+    {
+        super(mainIdx);
+        this.functionBody = functionBody;
+        this.args = args;
+    }
+
+    /// Show the left parenthesis
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.LParen);
+    }
+
+    /// Create call expression string
+    override string show(ref Lexer lexer)
+    {
+        string argsListing = "";
+        if (!this.args.empty())
+        {
+            auto argsBuilder = appender!(string[]);
+            argsBuilder.reserve(this.args.length);
+
+            foreach (arg; this.args)
+            {
+                auto repr = arg.show(lexer);
+                if (repr !is null && repr != "")
+                {
+                    argsBuilder.put(repr);
+                }
+            }
+
+            argsListing = argsBuilder[].joiner(", ").to!string;
+        }
+
+        return format("%s(%s)", (this.functionBody !is null)
+                ? functionBody.show(lexer) : "", argsListing);
     }
 }
 
@@ -630,10 +782,12 @@ struct Program
     /// Entire program representation for debugging purposes
     string show(ref Lexer lexer)
     {
-        auto reprBuilder = appender!(string[]);
-        reprBuilder.reserve(16);
+        auto statementList = this.statements[];
 
-        foreach (statement; this.statements[])
+        auto reprBuilder = appender!(string[]);
+        reprBuilder.reserve(statementList.length);
+
+        foreach (statement; statementList)
         {
             auto repr = statement.show(lexer);
             if (repr !is null && repr != "")
@@ -697,6 +851,28 @@ public:
     }
 
     /**
+     * Seek ahead a certain number of tokens in the parser.
+     * Params: count = the number of tokens to seek towards
+     */
+    TokenTag seekToken(ulong count)
+    {
+        if (count < 1)
+        {
+            return this.tokenTags[this.position];
+        }
+
+        const auto seekPosition = this.position + count;
+        if (seekPosition < this.tokenCount)
+        {
+            return this.tokenTags[seekPosition];
+        }
+        else
+        {
+            return TokenTag.Eof;
+        }
+    }
+
+    /**
      * Seeks a token ahead of the current position.
      * Returns: the token ahead of the current position
      */
@@ -723,7 +899,7 @@ public:
         TokenTag token = tokenTags[this.position];
         if (token !in prefixRules)
         {
-            errors.put(format("Expected expression, but got %s token", token));
+            this.errors.put(format("Expected expression, but got %s token", token));
             this.skipToken();
             return null;
         }
@@ -736,7 +912,7 @@ public:
             token = tokenTags[this.position];
             if (token !in infixRules)
             {
-                errors.put(format("Invalid token %s for infix expression", token));
+                this.errors.put(format("Invalid token %s for infix expression", token));
                 break;
             }
 
@@ -776,7 +952,7 @@ public:
 
         if (sliceEnd > tokenTags.length)
         {
-            errors.put("Not enough tokens for Let statement");
+            this.errors.put("Not enough tokens for Let statement");
             return null;
         }
 
@@ -786,7 +962,7 @@ public:
         {
             if (tag != tokenSlice[i])
             {
-                errors.put(format("Expected next token to be %s in %s statement, got %s instead",
+                this.errors.put(format("Expected next token to be %s in %s statement, got %s instead",
                         tag, TokenTag.Let, tokenSlice[i]));
 
                 this.skipTokens(i);
@@ -820,7 +996,7 @@ public:
         const auto start = this.position;
         this.skipToken();
 
-        // Parse expression as part of let statement
+        // Parse expression as part of return statement
         auto value = this.parseExpression();
 
         if (tokenTags[this.position] == TokenTag.Semicolon)
@@ -858,7 +1034,7 @@ public:
     /// Parse statements
     StatementNode parseStatement()
     {
-        const auto token = tokenTags[this.position];
+        const auto token = this.tokenTags[this.position];
         switch (token) with (TokenTag)
         {
         case Let:
@@ -873,6 +1049,86 @@ public:
         default:
             return this.parseExpressionStatement();
         }
+    }
+
+    /// Parse function parameter comma separated list
+    IdentifierNode[] parseFunctionParameters()
+    {
+        auto paramsBuilder = appender!(IdentifierNode[])();
+        TokenTag token = this.tokenTags[this.position];
+
+        while (this.position < this.tokenCount)
+        {
+            // Expect rparen at end of paren list
+            if (token == TokenTag.RParen)
+            {
+                this.skipToken();
+                return paramsBuilder[];
+            }
+
+            // Get next identifier if possible
+            if (token == TokenTag.Ident)
+            {
+                paramsBuilder.put(new IdentifierNode(this.position));
+            }
+            else
+            {
+                this.errors.put(format("Expected identifier, ')' or ',' at position %d; got %s instead",
+                        this.position, token));
+
+                return null;
+            }
+
+            const auto nextToken = this.peek();
+            if (nextToken == TokenTag.Comma)
+            {
+                token = this.seekToken(2);
+                this.skipTokens(2);
+            }
+            else
+            {
+                token = nextToken;
+                this.skipToken();
+            }
+        }
+
+        // Escape hatch for invalid parameter list
+        return null;
+    }
+
+    /// Parse parameter input comma separated list
+    ExpressionNode[] parseCallArguments()
+    {
+        auto argsBuilder = appender!(ExpressionNode[])();
+        TokenTag token = this.tokenTags[this.position];
+
+        while (this.position < this.tokenCount)
+        {
+            // Expect rparen at end of paren list
+            if (token == TokenTag.RParen)
+            {
+                this.skipToken();
+                return argsBuilder[];
+            }
+
+            // Get next expression if possible
+            auto expr = this.parseExpression(Precedence.Lowest);
+            argsBuilder.put(expr);
+
+            const auto nextToken = this.tokenTags[this.position];
+            if (nextToken == TokenTag.Comma)
+            {
+                token = this.peek();
+                this.skipToken();
+            }
+            else
+            {
+                token = nextToken;
+            }
+        }
+
+        // Escape hatch for invalid parameter list
+        return null;
     }
 
     /// Parse token list to create statement AST nodes
@@ -1082,6 +1338,119 @@ unittest
 {
     const auto input = "if ((x * 7) < 5 - y) { x + 4 } else { y - 2 }";
     const auto expected = "if ((x * 7) < (5 - y)) { (x + 4); } else { (y - 2); };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Function without parameters test
+unittest
+{
+    const auto input = "fn() { return foobar + barfoo; }";
+    const auto expected = "fn() { return (foobar + barfoo); };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Function literal test
+unittest
+{
+    const auto input = "fn(x, y) { return x + y; }";
+    const auto expected = "fn(x, y) { return (x + y); };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Function returning function test
+unittest
+{
+    const auto input = "fn() { return fn(x, y) { return x + y; }}";
+    const auto expected = "fn() { return fn(x, y) { return (x + y); }; };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Function as variable test
+unittest
+{
+    const auto input = "let myFunction = fn(x, y) { return x + y; }";
+    const auto expected = "let myFunction = fn(x, y) { return (x + y); };";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Function parameter test
+unittest
+{
+    const auto input = "fn() {};
+fn(x) {};
+fn(x, y, z) {};";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(input, lexer, parser);
+}
+
+/// Function as function parameter test
+unittest
+{
+    const auto input = "myFunc(x, y, fn(x, y) { return x + y; });";
+    const auto expected = "myFunc(x, y, fn(x, y) { return (x + y); });";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Call expression test
+unittest
+{
+    const auto input = "add(1, 2 * 3, 4 + 5);
+a + add(b * c) + d;
+add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));
+add(a + b + c * d / f + g);";
+
+    const auto expected = "add(1, (2 * 3), (4 + 5));
+((a + add((b * c))) + d);
+add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)));
+add((((a + b) + ((c * d) / f)) + g));";
 
     auto lexer = Lexer(input);
     lexer.tokenize();
