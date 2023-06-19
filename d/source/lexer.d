@@ -391,6 +391,11 @@ public:
         {
             this.nextToken();
         }
+
+        // Tack on EOF at the end to help parser
+        this.tokens.start.put(this.input.length);
+        this.tokens.tag.put(TokenTag.Eof);
+
         endPosition.rehash;
     }
 }
@@ -435,8 +440,9 @@ unittest
     auto lexer = Lexer(input);
     lexer.tokenize();
 
-    assert(lexer.tokens.start[].length == 0 && lexer.tokens.tag[].length == 0,
-            "Token list must be empty for empty string");
+    assert(lexer.tokens.start[].length == 1 && lexer.tokens.tag[].length == 1
+            && lexer.tokens.tag[][0] == TokenTag.Eof,
+            "Token list must only be EOF for empty string");
 }
 
 /// Empty input lexer test
@@ -447,21 +453,22 @@ unittest
     auto lexer = Lexer(input);
     lexer.tokenize();
 
-    assert(lexer.tokens.start[].length == 0 && lexer.tokens.tag[].length == 0,
-            "Token list must be empty for empty string");
+    assert(lexer.tokens.start[].length == 1 && lexer.tokens.tag[].length == 1
+            && lexer.tokens.tag[][0] == TokenTag.Eof,
+            "Token list must only be EOF for empty string");
 }
 
 /// Basic lexer test
 unittest
 {
     const auto input = "=+(){},;";
+    const ulong[] expectedStart = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
     with (TokenTag)
     {
-        const ulong[] expectedStart = [0, 1, 2, 3, 4, 5, 6, 7];
-
         const auto expectedTag = [
-            Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon
+            Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon,
+            Eof
         ];
 
         auto lexer = Lexer(input);
@@ -482,20 +489,20 @@ let add = fn(x, y) {
 let result = add(five, ten);
 ";
 
+    const ulong[] expectedStart = [
+        0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42, 44,
+        45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87, 88,
+        input.length
+    ];
+
     with (TokenTag)
     {
-        const ulong[] expectedStart = [
-            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
-            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
-            88
-        ];
-
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
             RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
             Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
-            RParen, Semicolon
+            RParen, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);
@@ -518,21 +525,21 @@ let result = add(five, ten);
 5 < 10 > 5;
 ";
 
+    const ulong[] expectedStart = [
+        0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42, 44,
+        45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
+        88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107, input.length
+    ];
+
     with (TokenTag)
     {
-        const ulong[] expectedStart = [
-            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
-            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
-            84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107
-        ];
-
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
             RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
             Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
             RParen, Semicolon, Bang, Minus, Slash, Asterisk, Int, Semicolon,
-            Int, Lt, Int, Gt, Int, Semicolon
+            Int, Lt, Int, Gt, Int, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);
@@ -561,16 +568,16 @@ if (5 < 10) {
 }
 ";
 
+    const ulong[] expectedStart = [
+        0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42, 44,
+        45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
+        88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107, 110, 113, 114,
+        116, 118, 120, 122, 126, 133, 137, 139, 141, 146, 150, 157, 162, 164,
+        input.length
+    ];
+
     with (TokenTag)
     {
-        const ulong[] expectedStart = [
-            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
-            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
-            84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107,
-            110, 113, 114, 116, 118, 120, 122, 126, 133, 137, 139, 141, 146, 150,
-            157, 162, 164
-        ];
-
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
@@ -579,7 +586,7 @@ if (5 < 10) {
             RParen, Semicolon, Bang, Minus, Slash, Asterisk, Int, Semicolon,
             Int, Lt, Int, Gt, Int, Semicolon, If, LParen, Int, Lt, Int, RParen,
             LSquirly, Return, True, Semicolon, RSquirly, Else, LSquirly,
-            Return, False, Semicolon, RSquirly
+            Return, False, Semicolon, RSquirly, Eof
         ];
 
         auto lexer = Lexer(input);
@@ -611,16 +618,16 @@ if (5 < 10) {
 10 != 9;
 ";
 
+    const ulong[] expectedStart = [
+        0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42, 44,
+        45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
+        88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107, 110, 113, 114,
+        116, 118, 120, 122, 126, 133, 137, 139, 141, 146, 150, 157, 162, 164,
+        167, 170, 173, 175, 177, 180, 183, 184, input.length
+    ];
+
     with (TokenTag)
     {
-        const ulong[] expectedStart = [
-            0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42,
-            44, 45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82,
-            84, 87, 88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107,
-            110, 113, 114, 116, 118, 120, 122, 126, 133, 137, 139, 141, 146,
-            150, 157, 162, 164, 167, 170, 173, 175, 177, 180, 183, 184
-        ];
-
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
@@ -630,7 +637,7 @@ if (5 < 10) {
             Int, Lt, Int, Gt, Int, Semicolon, If, LParen, Int, Lt, Int, RParen,
             LSquirly, Return, True, Semicolon, RSquirly, Else, LSquirly,
             Return, False, Semicolon, RSquirly, Int, Eq, Int, Semicolon, Int,
-            NotEq, Int, Semicolon,
+            NotEq, Int, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);

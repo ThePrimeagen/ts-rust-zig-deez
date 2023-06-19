@@ -8,16 +8,21 @@
  */
 
 import lexer;
+import parser;
 import deimos.linenoise : linenoise;
 import std.conv : to;
 import std.range : enumerate;
 import std.stdio : writefln;
+
+private static const string PROMPT = "Hello! This is the Monkey programming language!
+Feel free to type in commands";
 
 /**
  * Example repl for language.
  */
 void repl()
 {
+    writefln("%s", PROMPT);
 
     char* line;
 
@@ -28,10 +33,22 @@ void repl()
             auto lexer = Lexer(to!string(line));
             lexer.tokenize();
 
-            foreach (i, tag; lexer.tokens.tag.opSlice().enumerate(0))
+            auto parser = Parser(lexer);
+            parser.parseProgram();
+
+            if (parser.errors[].length != 0)
             {
-                writefln("{Type:%s Literal:%s}", tag, lexer.tagRepr(i));
+                writefln("Whoops! We ran into some monkey business here!\nParser errors:");
+
+                foreach (error; parser.errors[])
+                {
+                    writefln("\t%s", error);
+                }
+
+                continue;
             }
+
+            writefln("%s", parser.program.show(lexer));
         }
     }
 }
