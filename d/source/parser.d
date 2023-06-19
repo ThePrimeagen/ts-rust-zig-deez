@@ -169,8 +169,8 @@ ExpressionNode parseGroupedExpression(ref Parser parser)
 
     if (parser.tokenTags[][parser.position] != TokenTag.RParen)
     {
-        parser.errors.put(format("Expected ')' at position %d; got %s instead",
-                parser.position, parser.tokenTags[][parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.RParen], parser.tokenTags[][parser.position]));
 
         return null;
     }
@@ -190,8 +190,8 @@ ExpressionNode parseIfExpression(ref Parser parser)
     {
         parser.skipToken();
 
-        parser.errors.put(format("Expected '(' at position %d; got %s instead",
-                parser.position, tokenTags[parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LParen], tokenTags[parser.position]));
 
         return null;
     }
@@ -202,8 +202,8 @@ ExpressionNode parseIfExpression(ref Parser parser)
     // Expect rparen & lsquirly and skip both before consequence block statement
     if (tokenTags[parser.position] != TokenTag.RParen)
     {
-        parser.errors.put(format("Expected ')' at position %d; got %s instead",
-                parser.position, tokenTags[parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.RParen], tokenTags[parser.position]));
 
         return null;
     }
@@ -211,8 +211,8 @@ ExpressionNode parseIfExpression(ref Parser parser)
     parser.skipToken();
     if (tokenTags[parser.position] != TokenTag.LSquirly)
     {
-        parser.errors.put(format("Expected '{' at position %d; got %s instead",
-                parser.position, tokenTags[parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
 
         return null;
     }
@@ -228,8 +228,8 @@ ExpressionNode parseIfExpression(ref Parser parser)
     parser.skipToken();
     if (tokenTags[parser.position] != TokenTag.LSquirly)
     {
-        parser.errors.put(format("Expected '{' at position %d; got %s instead",
-                parser.position, tokenTags[parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
 
         return null;
     }
@@ -250,8 +250,8 @@ ExpressionNode parseFunctionLiteral(ref Parser parser)
     {
         parser.skipToken();
 
-        parser.errors.put(format("Expected '(' at position %d; got %s instead",
-                parser.position, tokenTags[parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LParen], tokenTags[parser.position]));
 
         return null;
     }
@@ -262,8 +262,8 @@ ExpressionNode parseFunctionLiteral(ref Parser parser)
     // expect lsquirly and skip before block statement
     if (tokenTags[parser.position] != TokenTag.LSquirly)
     {
-        parser.errors.put(format("Expected '{' at position %d; got %s instead",
-                parser.position, tokenTags[parser.position]));
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
 
         return null;
     }
@@ -899,7 +899,7 @@ public:
         TokenTag token = tokenTags[this.position];
         if (token !in prefixRules)
         {
-            this.errors.put(format("Expected expression, but got %s token", token));
+            this.errors.put(format("Expected expression, but got %s instead", token));
             this.skipToken();
             return null;
         }
@@ -950,7 +950,7 @@ public:
         const auto start = this.position;
         const auto sliceEnd = start + expectedTags.length;
 
-        if (sliceEnd > tokenTags.length)
+        if (sliceEnd > tokenCount)
         {
             this.errors.put("Not enough tokens for Let statement");
             return null;
@@ -962,8 +962,8 @@ public:
         {
             if (tag != tokenSlice[i])
             {
-                this.errors.put(format("Expected next token to be %s in %s statement, got %s instead",
-                        tag, TokenTag.Let, tokenSlice[i]));
+                this.errors.put(format("Expected next token to be '%s'; got %s instead",
+                        (tag in tagReprs) ? tagReprs[tag] : to!string(tag), tokenSlice[i]));
 
                 this.skipTokens(i);
 
@@ -1073,8 +1073,8 @@ public:
             }
             else
             {
-                this.errors.put(format("Expected identifier, ')' or ',' at position %d; got %s instead",
-                        this.position, token));
+                this.errors.put(format("Expected next token to be identifier; got %s instead",
+                        token));
 
                 return null;
             }
