@@ -29,6 +29,16 @@
                    set z to type MonkeyCompiler.lib.TokenType::FUNCTION
                when "let"
                    set z to type MonkeyCompiler.lib.TokenType::LET
+               when "TRUE"
+                   set z to type MonkeyCompiler.lib.TokenType::TRUE
+               when "FALSE"
+                   set z to type MonkeyCompiler.lib.TokenType::FALSE
+               when "IF"
+                   set z to type MonkeyCompiler.lib.TokenType::IF
+               when "ELSE"
+                   set z to type MonkeyCompiler.lib.TokenType::ELSE
+               when "RETURN"
+                   set z to type MonkeyCompiler.lib.TokenType::RETURN
                when other
                    set z to type MonkeyCompiler.lib.TokenType::IDENT
            end-evaluate.
@@ -57,18 +67,31 @@
        end class.
 
        enum-id MonkeyCompiler.lib.TokenType.
-       78 #ILLEGAL.
-       78 #EOF.
-       78 #IDENT.
-       78 #INT.
-       78 #ASSIGN.
-       78 #PLUS.
-       78 #COMMA.
-       78 #SEMICOLON.
-       78 #LPAREN.
-       78 #RPAREN.
-       78 #LBRACE.
-       78 #RBRACE.
-       78 #FUNCTION.
-       78 #LET.
+           78 #ILLEGAL.
+           78 #EOF.
+           78 #IDENT.
+           78 #INT.
+           78 #ASSIGN.
+           78 #PLUS.
+           78 #MINUS.
+           78 #BANG.
+           78 #ASTERISK.
+           78 #SLASH.
+           78 #LT.
+           78 #GT.
+           78 #COMMA.
+           78 #SEMICOLON.
+           78 #LPAREN.
+           78 #RPAREN.
+           78 #LBRACE.
+           78 #RBRACE.
+           78 #FUNCTION.
+           78 #LET.
+           78 #TRUE.
+           78 #FALSE.
+           78 #IF.
+           78 #ELSE.
+           78 #RETURN.
+           78 #EQ.
+           78 #NOT_EQ.
        end enum.

@@ -11,6 +11,7 @@
     <Compile Include="CompilerTester.cbl" />
     <Compile Include="lib\Lexer.cbl" />
     <Compile Include="lib\Token.cbl" />
+    <Compile Include="repl.cbl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="global.json" />

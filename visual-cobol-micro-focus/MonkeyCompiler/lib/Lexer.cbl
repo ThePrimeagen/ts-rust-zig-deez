@@ -25,6 +25,15 @@
            set read-pos to read-pos + 1.
        end method.
 
+       method-id peek-char returning z as character.
+       procedure division.
+           if read-pos >= input-string::Length
+               set z to 0
+           else
+               set z to input-string[read-pos]
+           end-if.
+       end method.
+
        method-id is-letter (x as character)
            returning z as condition-value.
        procedure division.
@@ -108,14 +117,40 @@
        01 tok type MonkeyCompiler.lib.Token.
        01 is-letter-var condition-value.
        01 is-number-var condition-value.
+       01 peek-ahead character.
        procedure division.
            invoke self::skip-whitespace.
 
+           set peek-ahead to self::peek-char().
            set is-letter-var to self::is-letter(cur-ch).
            set is-number-var to self::is-number(cur-ch).
            evaluate cur-ch
                when "="
-                   set tok to new MonkeyCompiler.lib.Token(type TokenType::ASSIGN, "=")
+                   if peek-ahead = "="
+                       invoke self::read-char
+                       set tok to new MonkeyCompiler.lib.Token(type TokenType::EQ, "==")
+                   else
+                       set tok to new MonkeyCompiler.lib.Token(type TokenType::ASSIGN, "=")
+                   end-if
+               when "+"
+                   set tok to new MonkeyCompiler.lib.Token(type TokenType::PLUS, "+")
+               when "-"
+                   set tok to new MonkeyCompiler.lib.Token(type TokenType::MINUS, "-")
+               when "!"
+                   if peek-ahead = "="
+                       invoke self::read-char
+                       set tok to new MonkeyCompiler.lib.Token(type TokenType::NOT_EQ, "!=")
+                   else
+                       set tok to new MonkeyCompiler.lib.Token(type TokenType::BANG, "!")
+                   end-if
+               when "/"
+                   set tok to new MonkeyCompiler.lib.Token(type TokenType::SLASH, "/")
+               when "*"
+                   set tok to new MonkeyCompiler.lib.Token(type TokenType::ASTERISK, "*")
+               when "<"
+                   set tok to new MonkeyCompiler.lib.Token(type TokenType::LT, "<")
+               when ">"
+                   set tok to new MonkeyCompiler.lib.Token(type TokenType::GT, ">")
                when ";"
                    set tok to new MonkeyCompiler.lib.Token(type TokenType::SEMICOLON, ";")
                when "("
