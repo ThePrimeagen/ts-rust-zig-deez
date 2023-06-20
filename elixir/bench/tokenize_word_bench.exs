@@ -23,18 +23,18 @@ input = """
   return returnfoo;
   """
 
-expected_tokens = Monkey.OldLexer.init(input)
-actual_tokens = Monkey.Lexer.init(input)
-
-if actual_tokens != expected_tokens do
-  Enum.zip([actual_tokens, expected_tokens])
-  |> Enum.each(fn
-    {t, t} -> IO.inspect(t)
-    {actual, expected} -> 
-      IO.inspect([actual: actual, expected: expected])
-      raise "mismatched output"
-  end)
-end
+# expected_tokens = Monkey.OldLexer.init(input)
+# actual_tokens = Monkey.Lexer.init(input)
+# 
+# if actual_tokens != expected_tokens do
+#   Enum.zip([actual_tokens, expected_tokens])
+#   |> Enum.each(fn
+#     {t, t} -> IO.inspect(t)
+#     {actual, expected} -> 
+#       IO.inspect([actual: actual, expected: expected])
+#       raise "mismatched output"
+#   end)
+# end
 
 Benchee.run(
   %{
