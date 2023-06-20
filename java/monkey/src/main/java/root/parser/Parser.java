@@ -107,15 +107,11 @@ public class Parser {
         return statement;
     }
 
-    private void noPrefixParseFnError(TokenType type) throws ParserException {
-        throw new ParserException("No prefix parse function found for " + type);
-    }
-
     private Expression parseExpression(OperatorPrecedence precedence) throws ParserException {
         ParserSupplier<Expression> prefixFn = prefixParseFn();
 
         if (prefixFn == null) {
-            noPrefixParseFnError(currentToken.type());
+            throw new ParserException("No prefix parse function found for " + currentToken.type());
         }
         Expression leftExpression = prefixFn.get();
 
