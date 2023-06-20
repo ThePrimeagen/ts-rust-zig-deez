@@ -58,7 +58,7 @@ nextToken =
         , Asterisk <$ symbol "*"
         , Slash <$ symbol "/"
         , try (Equal <$ symbol "==") <|> (Assign <$ symbol "=") -- Again, when we find = we branch.
-        , identToken <$> identP -- <$> means apply function identToken within the parser identP. Hence conver fn to FunctionToken, etc...
+        , identToken <$> identP -- <$> means apply function identToken within the parser identP. Hence convert fn to FunctionToken, etc...
         , Int <$> intP
         , Illegal <$ lexeme anySingle -- anySingle returns the next lexeme in the string. At this point we now it is an invalid lexeme.
         ]
