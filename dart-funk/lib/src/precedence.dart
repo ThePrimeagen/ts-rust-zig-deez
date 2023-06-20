@@ -1,7 +1,7 @@
 import 'package:mason_logger/mason_logger.dart';
 import 'package:monkeydart/monkeydart.dart';
 
-final pLogger = Logger(level: Level.debug);
+final pLogger = Logger(level: Level.warning);
 
 enum Precedence {
   // ignore: unused_field

@@ -1286,7 +1286,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'add(1, 2 * 3, 4 + 5);';
     });
     test(
@@ -1396,7 +1396,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = '[1, 2 * 2, 3 + 3]';
     });
 
@@ -1429,7 +1429,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'myArray[1 + 1]';
     });
 

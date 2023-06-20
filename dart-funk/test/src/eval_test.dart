@@ -26,7 +26,7 @@ void main() {
     late Logger logger;
     late Map<String, bool> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         'true': true,
         '!true': false,
@@ -165,7 +165,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         'if (10 > 1) {'
             'if (10 > 1) {'
@@ -277,7 +277,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = 'fn(x) { x + 2; };';
     });
 
@@ -314,7 +314,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         'let identity = fn(x) { x; }; identity(5);': 5,
         'let identity = fn(x) { return x; }; identity(5);': 5,
@@ -360,7 +360,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         '"Hello World!"': 'Hello World!',
         '"Hello" + " " + "World!"': 'Hello World!',
@@ -385,7 +385,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         'len("")': 0,
         'len("four")': 4,
@@ -418,7 +418,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = '[1, 2 * 2, 3 + 3]';
     });
 
@@ -444,7 +444,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         '[1, 2, 3][0]': 1,
         '[1, 2, 3][1]': 2,
@@ -481,7 +481,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         'cdr([1, 2, 3, 4, 5])': [2, 3, 4, 5],
         'cdr([1])': [],
@@ -522,7 +522,7 @@ void main() {
     late Logger logger;
     late Map<String, dynamic> input;
     setUp(() {
-      logger = Logger(level: Level.debug);
+      logger = Logger(level: Level.warning);
       input = {
         'push([1, 2, 3], 4)': [1, 2, 3, 4],
         'push([], 1)': [1],
