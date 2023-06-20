@@ -2,6 +2,7 @@ using Monkey.Lexing;
 
 namespace Monkey.Parsing;
 
+// This is the exact same approach we took in ../Lexing/Tokens.cs
 public static class Expressions
 {
     public static IExpression Error(string message, IToken token) => new ErrorExpression(message, token);
