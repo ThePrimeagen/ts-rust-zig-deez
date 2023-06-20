@@ -81,16 +81,16 @@ bool testInfixExpression(
       'expression.operator is not $operator. got=${expression.operator}',
     );
   }
-  // if (testLiteralExpression(expression.left, left)) {
-  //   throw Exception(
-  //     'expression.left is not $left. got=${expression.left}',
-  //   );
-  // }
-  // if (testLiteralExpression(expression.right, right)) {
-  //   throw Exception(
-  //     'expression.right is not $right. got=${expression.right}',
-  //   );
-  // }
+  if (!testLiteralExpression(expression.left, left)) {
+    throw Exception(
+      'expression.left is not $left. got=${expression.left}',
+    );
+  }
+  if (!testLiteralExpression(expression.right, right)) {
+    throw Exception(
+      'expression.right is not $right. got=${expression.right}',
+    );
+  }
   return true;
 }
 
@@ -195,53 +195,6 @@ void main() {
           actual2.errors[1].message,
           equals('No peek token available'),
         );
-      },
-    );
-  });
-
-  group('Parser - Finish Statement', () {
-    late Logger logger;
-    late Map<String, ({int start, int end})> input;
-    setUp(() {
-      logger = Logger(level: Level.warning);
-      input = {
-        // should all be EOF
-        'let ten = 10;': (start: 1, end: 6),
-        'let ten = 10': (start: 1, end: 5),
-        'fn(x) { x + 2; };': (start: 7, end: 12),
-        'fn(x) { x + 2 };': (start: 7, end: 11),
-        'fn(x) { x + 2; }': (start: 7, end: 11),
-        'fn(x) { x + 2 }': (start: 7, end: 10),
-        'let five = 5; let ten = 10; let result = add(five, ten);': (
-          start: 1,
-          end: 6
-        ),
-        'fn(x) { x + 2; }; Let five = 5;': (start: 7, end: 12),
-      };
-    });
-
-    test(
-      'should return a parser with currToken EOF or end of stmt',
-      () async {
-        // arrange
-        for (final entry in input.entries) {
-          final initParser = Parser.fromSource(entry.key);
-          // move somewhere ont the statement
-          final index = entry.value.start;
-          final startParser = initParser.copyWith(
-            tokenIndex: index,
-            currToken: initParser.tokens.elementAt(index),
-            peekToken: initParser.tokens.elementAt(index + 1),
-          );
-          // logger.detail('startParser: $startParser');
-          // move to the end of teh current statement
-          final doneParser = finishStatement(startParser, recurse: true);
-          logger.detail('doneParser: $doneParser');
-
-          expect(doneParser, isA<Parser>());
-          expect(doneParser.currToken, isA<Token>());
-          expect(doneParser.tokenIndex, equals(entry.value.end - 1));
-        }
       },
     );
   });
@@ -509,30 +462,6 @@ void main() {
     );
 
     test(
-      'should return ParserException when missing ident token => int point'
-      'to next statement',
-      () async {
-        // arrange
-        const input = 'let x 5;let five = 5;';
-        final parser = Parser.fromSource(input);
-
-        // act
-        final program = parse(parser);
-        logger.info(program.toString());
-
-        // assert
-        expect(program, isA<Program>());
-        expect(program.statements.length, equals(1));
-        expect(program.errors.length, equals(1));
-        expect(
-          program.errors[0].message,
-          equals('Expected next token to be assign, '
-              'got int instead'),
-        );
-      },
-    );
-
-    test(
       'should return ParserException when missing assign token',
       () async {
         // arrange
@@ -637,6 +566,7 @@ void main() {
         );
       },
     );
+    
     test(
       'should return an error when using invalid Let input',
       () async {
@@ -1356,7 +1286,7 @@ void main() {
     late Logger logger;
     late String input;
     setUp(() {
-      logger = Logger(level: Level.warning);
+      logger = Logger(level: Level.debug);
       input = 'add(1, 2 * 3, 4 + 5);';
     });
     test(
@@ -1415,6 +1345,32 @@ void main() {
     );
 
     test(
+     'should return a StringExpression for hello world',
+     () async {
+     // arrange
+     input = '"hello world";';
+    
+     // act
+      final parser = Parser.fromSource(input);
+      final program = parse(parser);
+      logger.info('Program: $program');
+    
+     // assert
+      expect(program.statements.length, equals(1));
+      expect(program.statements[0], isA<ExpressionStatement>());
+      expect(
+        (program.statements[0] as ExpressionStatement).expression,
+        isA<StringLiteral>(),
+      );
+      expect(
+        ((program.statements[0] as ExpressionStatement).expression
+                as StringLiteral)
+            .value,
+        equals('hello world'),
+      );
+     },
+    );
+    test(
       'should return a list of arguments',
       () async {
         // arrange
@@ -1435,4 +1391,5 @@ void main() {
       },
     );
   });
+
 }

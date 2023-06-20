@@ -58,6 +58,16 @@ class BooleanLiteral extends Expression {
   }
 }
 
+class StringLiteral extends Expression {
+  StringLiteral(this.value) : super(Token.string(value));
+  final String value;
+
+  @override
+  String toString() {
+    return token.value;
+  }
+}
+
 class IfExpression extends Expression {
   const IfExpression({
     required this.condition,

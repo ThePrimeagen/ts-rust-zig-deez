@@ -35,10 +35,7 @@ class Lexer {
   switch (innerLexer.ch) {
     case stringNull:
       // no need to advance the position; we're done here
-      retVal = (
-        innerLexer,
-        const Token.eof(),
-      );
+      retVal = (innerLexer, const Token.eof());
     case '{':
       retVal = (advanceLexer(innerLexer), const Token.lSquirly());
     case '}':
@@ -71,6 +68,9 @@ class Lexer {
       retVal = (advanceLexer(advanceLexer(innerLexer)), const Token.notEqual());
     case '!':
       retVal = (advanceLexer(innerLexer), const Token.bang());
+    case '"':
+      final read = readString(innerLexer);
+      retVal = (read.$1, read.$2);
     case _ when alphas.contains(innerLexer.ch):
       final read = readIdentifier(innerLexer);
       retVal = (read.$1, read.$2);
@@ -84,6 +84,14 @@ class Lexer {
       );
   }
 
+  return retVal;
+}
+
+// TODO: can we detect escape chars?
+(Lexer, Token) readString(Lexer lexer) {
+  final jumpStart = advanceLexer(lexer);
+  final read = readWhile(jumpStart, (ch) => ch != '"');
+  final retVal = (advanceLexer(read.$1), Token.string(read.$2));
   return retVal;
 }
 

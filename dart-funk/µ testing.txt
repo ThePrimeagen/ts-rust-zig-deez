@@ -18,3 +18,4 @@ dart pub global run coverage:format_coverage --packages=.dart_tool/package_confi
 dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o ./coverage/lcov.info -i ./coverage --check-ignore && dart run test --coverage=./coverage && genhtml -o ./coverage/report ./coverage/lcov.info && open ./coverage/report/index.html
 
 
+let counter = fn(x) { if (x > 100) { return true; } else { let foobar = 9999; counter(x + 1); } };

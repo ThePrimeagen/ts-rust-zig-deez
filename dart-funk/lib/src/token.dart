@@ -8,6 +8,7 @@ class Token extends Equatable {
   // variable values
   const Token.ident(this.value) : type = TokenType.ident;
   const Token.int(this.value) : type = TokenType.int;
+  const Token.string(this.value) : type = TokenType.string;
 
   // keywords
   const Token.let()
@@ -148,4 +149,5 @@ enum TokenType {
   return_,
   ne,
   eq,
+  string,
 }

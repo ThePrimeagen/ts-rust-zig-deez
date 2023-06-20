@@ -13,6 +13,8 @@ Thing eval(Node node, Environment env) {
       return evalProgram(node as Program, env);
     case ExpressionStatement:
       return eval((node as ExpressionStatement).expression, env);
+    case StringLiteral:
+      return StringThing((node as StringLiteral).value);
     case IntegerLiteral:
       return Integer((node as IntegerLiteral).value);
     case BooleanLiteral:
@@ -161,6 +163,9 @@ Thing evalInfixExpression(String operator, Thing left, Thing right) {
   if (left.type == ThingType.boolean && right.type == ThingType.boolean) {
     return evalBooleanInfixExpression(operator, left, right);
   }
+  if (left.type == ThingType.string && right.type == ThingType.string) {
+    return evalStringInfixExpression(operator, left, right);
+  }
   if (left.type != right.type) {
     return newError(
       'type mismatch: ${left.type.name.toUpperCase()} '
@@ -169,6 +174,17 @@ Thing evalInfixExpression(String operator, Thing left, Thing right) {
   }
   return newError('unknown operator: ${left.type.name.toUpperCase()} '
       '$operator ${right.type.name.toUpperCase()}');
+}
+
+Thing evalStringInfixExpression(String operator, Thing left, Thing right) {
+  if (operator != '+') {
+    return newError('unknown operator: '
+        '${left.type.name.toUpperCase()} $operator '
+        '${right.type.name.toUpperCase()}');
+  }
+  final leftVal = (left as StringThing).value;
+  final rightVal = (right as StringThing).value;
+  return StringThing(leftVal + rightVal);
 }
 
 Thing evalBooleanInfixExpression(String operator, Thing left, Thing right) {

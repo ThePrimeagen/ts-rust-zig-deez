@@ -8,6 +8,7 @@ enum ThingType {
   boolean,
   retval,
   function,
+  string,
   error,
   _let,
 }
@@ -75,6 +76,15 @@ class Let extends Thing {
 
   @override
   String inspect() => value.inspect();
+}
+
+class StringThing extends Thing {
+  const StringThing(this.value) : super(ThingType.string);
+
+  final String value;
+
+  @override
+  String inspect() => value;
 }
 
 class Error extends Thing {

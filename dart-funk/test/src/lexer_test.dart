@@ -101,7 +101,9 @@ void main() {
             'return false;'
             '}'
             '10 == 10;'
-            '10 != 9;';
+            '10 != 9;'
+            '"foobar"'
+            '"foo bar"';
         const expected = [
           Token.let(),
           Token.ident('five'),
@@ -178,6 +180,9 @@ void main() {
           Token.notEqual(),
           Token.int('9'),
           Token.semicolon(),
+          // and strings
+          Token.string('foobar'),
+          Token.string('foo bar'),
           Token.eof(),
         ];
 

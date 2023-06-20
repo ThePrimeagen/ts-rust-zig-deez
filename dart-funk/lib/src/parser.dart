@@ -19,7 +19,7 @@ final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.lParen: _parseGroupedExpression,
   TokenType.if_: _parseIfExpression,
   TokenType.function: _parseFunctionLiteral,
-  // TokenType.string: _parseStringLiteral,
+  TokenType.string: _parseStringLiteral,
   // TokenType.lSquirly: _parseArrayLiteral,
   // TokenType.lSquirly: _parseHashLiteral,
   TokenType.true_: _parseBoolean,
@@ -202,8 +202,9 @@ Program parse(Parser parser) {
     case _:
       final (newParser, statement) = _parseStatement(parser);
       return switch (statement) {
-        const NullStatement() => _parse(newParser, statements),
-        _ => _parse(newParser, [...statements, statement]),
+        // Bail on first error
+        const NullStatement() => (newParser, statements),
+        _ => _parse(advanceParser(newParser), [...statements, statement]),
       };
   }
 }
@@ -240,14 +241,14 @@ Program parse(Parser parser) {
   var newParser = parser;
 
   final (exprParser, expression) = _parseExpression(parser, Precedence.lowest);
-  if (_peekTokenIs(exprParser, TokenType.semicolon) ||
-      _peekTokenIs(exprParser, TokenType.eof)) {
-    newParser = advanceParser(advanceParser(exprParser));
+  if (_peekTokenIs(exprParser, TokenType.semicolon)) {
+    newParser = eatLastSemicolon(exprParser);
+    // newParser = advanceParser(advanceParser(exprParser));
     return (newParser, ExpressionStatement(expression));
   }
   newParser = _currTokenIs(exprParser, TokenType.eof)
       ? exprParser
-      : finishStatement(exprParser);
+      : eatLastSemicolon(exprParser);
 
   return (newParser, ExpressionStatement(expression));
 }
@@ -255,18 +256,18 @@ Program parse(Parser parser) {
 (Parser parser, Statement statement) _parseLetStatement(Parser parser) {
   final (idParser, identifier) = _parseIdentifier(parser);
   if (identifier == const NullExpression()) {
-    final nextStmtParser = finishStatement(idParser, recurse: true);
-    return (nextStmtParser, const NullStatement());
+    // final nextStmtParser = eatLastSemicolon(idParser, recurse: true);
+    return (idParser, const NullStatement());
   }
   final (assParser, assOk) = expectPeek(idParser, TokenType.assign);
   if (!assOk) {
-    final newParser = finishStatement(assParser, recurse: true);
-    return (newParser, const NullStatement());
+    // final newParser = eatLastSemicolon(assParser);
+    return (assParser, const NullStatement());
   }
   final exprParser = advanceParser(assParser);
   final (postExprParser, expression) =
       _parseExpression(exprParser, Precedence.lowest);
-  final returnParser = finishStatement(postExprParser, recurse: true);
+  final returnParser = eatLastSemicolon(postExprParser);
   // make sure we're at the end of the statement
   return (returnParser, LetStatement(identifier as Identifier, expression));
 }
@@ -277,7 +278,7 @@ Program parse(Parser parser) {
       _parseExpression(retParser, Precedence.lowest);
   final stmt = ReturnStatement(expression);
 
-  final newParser = finishStatement(exprParser, recurse: true);
+  final newParser = eatLastSemicolon(exprParser);
   return (newParser, stmt);
 }
 
@@ -288,7 +289,7 @@ Program parse(Parser parser) {
   logger.detail('Parsing expression ${parser.currToken.value}');
   final prefix = _prefixParseFns[parser.currToken.type];
   if (prefix == null) {
-    final errParser = finishStatement(parser, recurse: true);
+    final errParser = eatLastSemicolon(parser);
     return (
       errParser.copyWith(
         errors: [
@@ -396,42 +397,9 @@ Program parse(Parser parser) {
   };
 }
 
-Parser finishStatement(Parser parser, {bool recurse = false}) {
-  return switch (parser.currToken.type) {
-    // a block may end with a ';}' or ';};' but I can only see 2 tokens ahead
-    TokenType.semicolon when parser.peekToken.type == TokenType.rSquirly =>
-      // advance once and retest the rsquirly
-      finishStatement(advanceParser(parser), recurse: recurse),
-    TokenType.rSquirly when parser.peekToken.type == TokenType.semicolon =>
-      advanceParser(advanceParser(parser)),
-    TokenType.rSquirly ||
-    // TokenType.rParen ||
-    // TokenType.comma ||
-    TokenType.semicolon =>
-      advanceParser(parser),
-    TokenType.eof => advanceParser(parser).copyWith(
-        errors: [
-          ParserException(
-            'Unexpected end of input',
-            parser,
-            [],
-            // line: parser.peekToken.line,
-            // column: parser.peekToken.column,
-          )
-        ],
-      ),
-    TokenType.illegal => parser.copyWith(
-        errors: [
-          ParserException(
-            'Encountered an illegal token in statement',
-            parser,
-            [],
-            // line: parser.peekToken.line,
-            // column: parser.peekToken.column,
-          )
-        ],
-      ),
-    _ when recurse => finishStatement(advanceParser(parser), recurse: recurse),
+Parser eatLastSemicolon(Parser parser) {
+  return switch (parser.peekToken.type) {
+    TokenType.semicolon => advanceParser(parser),
     _ => parser,
   };
 }
@@ -538,6 +506,7 @@ Parser finishStatement(Parser parser, {bool recurse = false}) {
   logger.detail('_Parsing block statement: ${parser.currToken.value}');
 
   switch (parser.currToken.type) {
+    case TokenType.eof:
     case TokenType.rParen:
     case TokenType.rSquirly:
       return (parser, statements);
@@ -620,6 +589,10 @@ Parser finishStatement(Parser parser, {bool recurse = false}) {
           _parseExpression(advanceParser(parser), Precedence.lowest);
       return parseCallArguments(newParser, [...args, arg]);
   }
+}
+
+(Parser, StringLiteral) _parseStringLiteral(Parser parser) {
+  return (parser, StringLiteral(parser.currToken.value));
 }
 
 (Parser, FunctionLiteral) _parseFunctionLiteral(Parser parser) {
