@@ -10,7 +10,7 @@
     (char-whitespace? c)))
 
 (define (numeric? s) (number? (string->number s)))
-;; (define (letter? s) (char-alphabetic? (car (string->list s))))
+
 (define (letter? s)
   (cond
     [(eq? 0 (string-length s)) #f]
@@ -50,7 +50,6 @@
     [(list ">" xs ...)          (lex xs (cons 'greater-than tokens))]
     [(list "<" xs ...)          (lex xs (cons 'less-than tokens))]
     [(list "<" xs ...)          (lex xs (cons 'less-than tokens))]
-
 
     ;; Identifiers
     [(list x xs ...) #:when (letter? x)
