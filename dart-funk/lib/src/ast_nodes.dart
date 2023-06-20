@@ -81,6 +81,22 @@ class ArrayLiteral extends Expression {
   }
 }
 
+class IndexExpression extends Expression {
+  const IndexExpression(this.left, this.index) : super(const Token.lCrochet());
+  final Expression left;
+  final Expression index;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer('(')
+      ..write(left)
+      ..write('[')
+      ..write(index)
+      ..write('])');
+    return retVal.toString();
+  }
+}
+
 class IfExpression extends Expression {
   const IfExpression({
     required this.condition,

@@ -882,13 +882,13 @@ void main() {
         '5 < 4 != 3 > 4': '((5 < 4) != (3 > 4))',
         '3 + 4 * 5 == 3 * 1 + 4 * 5': '((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))',
         'a + add(b * c) + d': '((a + add((b * c))) + d)',
-        // TODO: investigate stack overflow
-        // 'add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));':
-        //     'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
-        // 'add(a + b + c * d / f + g)': 'add((((a + b) + ((c * d) / f)) + g))',
-        // 'a * [1, 2, 3, 4][b * c] * d;': '((a * ([1, 2, 3, 4][(b * c)])) * d)',
-        // 'add(a * b[2], b[1], 2 * [1, 2][1])':
-        //     'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))',
+        // Nested & Array Indecies
+        'add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));':
+            'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
+        'add(a + b + c * d / f + g)': 'add((((a + b) + ((c * d) / f)) + g))',
+        'a * [1, 2, 3, 4][b * c] * d;': '((a * ([1, 2, 3, 4][(b * c)])) * d)',
+        'add(a * b[2], b[1], 2 * [1, 2][1])':
+            'add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))',
       };
     });
     test(
@@ -1421,6 +1421,41 @@ void main() {
         testLiteralExpression(array.elements[0], 1);
         testInfixExpression(array.elements[1], 2, '*', 2);
         testInfixExpression(array.elements[2], 3, '+', 3);
+      },
+    );
+  });
+
+  group('Parser - Index Expressions', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = 'myArray[1 + 1]';
+    });
+
+    test(
+      'should return an index expression',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<IndexExpression>());
+        final index = stmt.expression as IndexExpression;
+        expect(index.left, isA<Identifier>());
+        expect((index.left as Identifier).value, equals('myArray'));
+        expect(index.index, isA<InfixExpression>());
+        expect((index.index as InfixExpression).left, isA<IntegerLiteral>());
+        expect((index.index as InfixExpression).operator, equals('+'));
+        expect((index.index as InfixExpression).right, isA<IntegerLiteral>());
       },
     );
   });

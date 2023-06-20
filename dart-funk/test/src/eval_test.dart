@@ -374,8 +374,8 @@ void main() {
         for (final entry in input.entries) {
           final evaluated = testEval(entry.key);
           logger.info('$entry evaluated to $evaluated');
-          expect(evaluated, isA<StringThing>());
-          expect((evaluated as StringThing).value, entry.value);
+          expect(evaluated, isA<Stringy>());
+          expect((evaluated as Stringy).value, entry.value);
         }
       },
     );
@@ -408,6 +408,69 @@ void main() {
           } else {
             expect(evaluated, isA<Error>());
             expect((evaluated as Error).message, entry.value);
+          }
+        }
+      },
+    );
+  });
+
+  group('Eval - Array Literals', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = '[1, 2 * 2, 3 + 3]';
+    });
+
+    test(
+      'should return the correct value for each array eval statement',
+      () async {
+        // arrange - act
+        final evaluated = testEval(input);
+        logger.info('$input evaluated to $evaluated');
+
+        // assert
+        expect(evaluated, isA<Array>());
+        final array = evaluated as Array;
+        expect(array.elements.length, 3);
+        testInteger(array.elements[0], 1);
+        testInteger(array.elements[1], 4);
+        testInteger(array.elements[2], 6);
+      },
+    );
+  });
+
+  group('Eval - Array Index Accessor', () {
+    late Logger logger;
+    late Map<String, dynamic> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        '[1, 2, 3][0]': 1,
+        '[1, 2, 3][1]': 2,
+        '[1, 2, 3][2]': 3,
+        'let i = 0; [1][i];': 1,
+        '[1, 2, 3][1 + 1];': 3,
+        'let myArray = [1, 2, 3]; myArray[2];': 3,
+        'let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];': 6,
+        'let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]': 2,
+        '[1, 2, 3][3]': null,
+        '[1, 2, 3][-1]': null,
+      };
+    });
+
+    test(
+      'should return the correct value for each array index accessor statement',
+      () async {
+        // arrange - act - assert
+        for (final entry in input.entries) {
+          final evaluated = testEval(entry.key);
+          logger.info('$entry evaluated to $evaluated');
+
+          if (entry.value == null) {
+            expect(evaluated, isA<NullThing>());
+          } else {
+            testInteger(evaluated, int.parse(entry.value.toString()));
           }
         }
       },

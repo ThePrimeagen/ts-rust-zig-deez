@@ -10,6 +10,7 @@ enum ThingType {
   retval,
   function,
   string,
+  array,
   error,
   _let,
 }
@@ -24,6 +25,21 @@ sealed class Thing extends Equatable {
 
   @override
   List<Object?> get props => [type, inspect()];
+}
+
+class Array extends Thing {
+  const Array(this.elements) : super(ThingType.array);
+
+  final List<Thing> elements;
+
+  @override
+  String inspect() {
+    final buffer = StringBuffer()
+      ..write('[')
+      ..writeAll(elements, ', ')
+      ..write(']');
+    return buffer.toString();
+  }
 }
 
 class Integer extends Thing {
@@ -90,8 +106,8 @@ class Let extends Thing {
   String inspect() => value.inspect();
 }
 
-class StringThing extends Thing {
-  const StringThing(this.value) : super(ThingType.string);
+class Stringy extends Thing {
+  const Stringy(this.value) : super(ThingType.string);
 
   final String value;
 

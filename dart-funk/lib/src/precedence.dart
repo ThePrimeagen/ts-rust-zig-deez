@@ -13,6 +13,7 @@ enum Precedence {
   product, // *
   prefix, // -X or !X
   call, // myFunction(X)
+  indecks, // array[index]
 }
 
 Map<TokenType, Precedence> precedences() {
@@ -26,6 +27,7 @@ Map<TokenType, Precedence> precedences() {
     TokenType.slash: Precedence.product,
     TokenType.asterisk: Precedence.product,
     TokenType.lParen: Precedence.call,
+    TokenType.lCrochet: Precedence.indecks,
   };
 }
 

@@ -20,8 +20,7 @@ Thing binLen(List<Thing> args) {
   return switch (args) {
     _ when args.length != 1 =>
       newError('wrong number of monkeys. got=${args.length}, want=1'),
-    _ when args[0] is StringThing =>
-      Integer((args[0] as StringThing).value.length),
+    _ when args[0] is Stringy => Integer((args[0] as Stringy).value.length),
     // _ when args[0] is Array =>
     //   Integer((args[0] as StringThing).value.length),
     _ => newError('invalid argument type; len accepts strings and arrays')
@@ -35,11 +34,17 @@ Thing eval(Node node, Environment env) {
     case ExpressionStatement:
       return eval((node as ExpressionStatement).expression, env);
     case StringLiteral:
-      return StringThing((node as StringLiteral).value);
+      return Stringy((node as StringLiteral).value);
     case IntegerLiteral:
       return Integer((node as IntegerLiteral).value);
     case BooleanLiteral:
       return nativeBoolToBoolean((node as BooleanLiteral).value);
+    case ArrayLiteral:
+      final elements = evalExpressions((node as ArrayLiteral).elements, env);
+      if (elements.length == 1 && isError(elements[0])) {
+        return elements[0];
+      }
+      return Array(elements);
     case PrefixExpression:
       final n = node as PrefixExpression;
       final right = eval(n.right, env);
@@ -49,6 +54,16 @@ Thing eval(Node node, Environment env) {
       return evalPrefixExpression(n.operator, right);
     case Identifier:
       return evalIdentifier(node as Identifier, env);
+    case IndexExpression:
+      final left = eval((node as IndexExpression).left, env);
+      if (isError(left)) {
+        return left;
+      }
+      final index = eval(node.index, env);
+      if (isError(index)) {
+        return index;
+      }
+      return evalIndexExpression(left, index);
     case InfixExpression:
       final n = node as InfixExpression;
       final left = eval(n.left, env);
@@ -94,6 +109,26 @@ Thing eval(Node node, Environment env) {
     default:
       return const NullThing();
   }
+}
+
+Thing evalIndexExpression(Thing left, Thing index) {
+  switch (left.runtimeType) {
+    case Array:
+      return evalArrayIndexExpression(left as Array, index);
+    // case Hash:
+    //   return evalHashIndexExpression(left as Hash, index);
+    default:
+      return newError('index operator not supported: ${left.type.name}');
+  }
+}
+
+Thing evalArrayIndexExpression(Array left, Thing index) {
+  final i = (index as Integer).value;
+  final max = left.elements.length - 1;
+  if (i < 0 || i > max) {
+    return NULL;
+  }
+  return left.elements[i];
 }
 
 Thing applyFunction(Thing function, List<Thing> args) {
@@ -201,9 +236,9 @@ Thing evalStringInfixExpression(String operator, Thing left, Thing right) {
         '${left.type.name.toUpperCase()} $operator '
         '${right.type.name.toUpperCase()}');
   }
-  final leftVal = (left as StringThing).value;
-  final rightVal = (right as StringThing).value;
-  return StringThing(leftVal + rightVal);
+  final leftVal = (left as Stringy).value;
+  final rightVal = (right as Stringy).value;
+  return Stringy(leftVal + rightVal);
 }
 
 Thing evalBooleanInfixExpression(String operator, Thing left, Thing right) {

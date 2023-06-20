@@ -37,6 +37,7 @@ final _infixParseFns =
   TokenType.lt: _parseInfixExpression,
   TokenType.gt: _parseInfixExpression,
   TokenType.lParen: _parseCallExpression,
+  TokenType.lCrochet: _parseIndexExpression,
 };
 
 (Parser parser, bool ok) expectPeek(Parser parser, TokenType type) {
@@ -531,6 +532,16 @@ Parser eatLastSemicolon(Parser parser) {
         statements,
       );
   }
+}
+
+(Parser, Expression) _parseIndexExpression(Parser parser, Expression left) {
+  final advParser = advanceParser(parser);
+  final (indexParser, index) = _parseExpression(advParser, Precedence.lowest);
+  final (jumpRBracketParser, ok) = expectPeek(indexParser, TokenType.rCrochet);
+  if (!ok) {
+    return (jumpRBracketParser, const NullExpression());
+  }
+  return (jumpRBracketParser, IndexExpression(left, index));
 }
 
 (Parser, CallExpression) _parseCallExpression(
