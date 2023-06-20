@@ -11,4 +11,4 @@ RUN mv monkey/target/monkey-1.0-SNAPSHOT.jar ./monkey.jar
 FROM eclipse-temurin:${JAVA_VERSION}-alpine
 WORKDIR /jmonkey
 COPY --from=build /jmonkey/monkey.jar .
-CMD ["java","--enable-preview","-jar", "monkey.jar"]
+CMD ["java", "--enable-preview", "-jar", "monkey.jar", "let var = 20 + 3 *5;"]
