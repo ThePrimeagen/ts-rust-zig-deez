@@ -89,6 +89,12 @@ class Token extends Equatable {
   const Token.rSquirly()
       : type = TokenType.rSquirly,
         value = '}';
+  const Token.lCrochet()
+      : type = TokenType.lCrochet,
+        value = '[';
+  const Token.rCrochet()
+      : type = TokenType.rCrochet,
+        value = ']';
 
   final String value;
   final TokenType type;
@@ -150,4 +156,6 @@ enum TokenType {
   ne,
   eq,
   string,
+  lCrochet,
+  rCrochet,
 }

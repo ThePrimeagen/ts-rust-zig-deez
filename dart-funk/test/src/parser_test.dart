@@ -1391,4 +1391,37 @@ void main() {
       },
     );
   });
+
+  group('Parser - Array Literal', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = '[1, 2 * 2, 3 + 3]';
+    });
+
+    test(
+      'should return an array literal',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<ArrayLiteral>());
+        final array = stmt.expression as ArrayLiteral;
+        expect(array.elements.length, equals(3));
+        testLiteralExpression(array.elements[0], 1);
+        testInfixExpression(array.elements[1], 2, '*', 2);
+        testInfixExpression(array.elements[2], 3, '+', 3);
+      },
+    );
+  });
 }

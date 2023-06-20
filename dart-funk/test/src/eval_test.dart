@@ -380,4 +380,37 @@ void main() {
       },
     );
   });
+
+  group('Eval - BuiltIns len()', () {
+    late Logger logger;
+    late Map<String, dynamic> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        'len("")': 0,
+        'len("four")': 4,
+        'len("hello world")': 11,
+        'len(1)': 'invalid argument type; len accepts strings and arrays',
+        'len("one", "two")': 'wrong number of monkeys. got=2, want=1',
+      };
+    });
+
+    test(
+      'should return the correct value for each eval statement',
+      () async {
+        // arrange - act - assert
+        for (final entry in input.entries) {
+          final evaluated = testEval(entry.key);
+          logger.info('$entry evaluated to $evaluated');
+
+          if (entry.value is int) {
+            testInteger(evaluated, int.parse(entry.value.toString()));
+          } else {
+            expect(evaluated, isA<Error>());
+            expect((evaluated as Error).message, entry.value);
+          }
+        }
+      },
+    );
+  });
 }

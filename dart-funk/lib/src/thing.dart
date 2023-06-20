@@ -6,12 +6,15 @@ import 'package:monkeydart/monkeydart.dart';
 enum ThingType {
   integer,
   boolean,
+  builtin,
   retval,
   function,
   string,
   error,
   _let,
 }
+
+typedef BuiltinFunction = Thing Function(List<Thing> args);
 
 sealed class Thing extends Equatable {
   const Thing(this.type);
@@ -39,6 +42,15 @@ class Boolean extends Thing {
 
   @override
   String inspect() => value.toString();
+}
+
+class BuiltIn extends Thing {
+  const BuiltIn(this.fn) : super(ThingType.builtin);
+
+  final BuiltinFunction fn;
+
+  @override
+  String inspect() => 'builtin function';
 }
 
 class RetVal extends Thing {

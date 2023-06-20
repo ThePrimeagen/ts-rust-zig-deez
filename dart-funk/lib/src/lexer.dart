@@ -44,6 +44,10 @@ class Lexer {
       retVal = (advanceLexer(innerLexer), const Token.lParen());
     case ')':
       retVal = (advanceLexer(innerLexer), const Token.rParen());
+    case '[':
+      retVal = (advanceLexer(innerLexer), const Token.lCrochet());
+    case ']':
+      retVal = (advanceLexer(innerLexer), const Token.rCrochet());
     case ',':
       retVal = (advanceLexer(innerLexer), const Token.comma());
     case ';':

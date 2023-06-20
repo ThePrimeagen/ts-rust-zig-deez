@@ -7,6 +7,27 @@ const TRUE = Boolean(true);
 const FALSE = Boolean(false);
 const NULL = NullThing();
 
+final builtins = <String, BuiltinFunction>{
+  'len': (args) => const BuiltIn(binLen),
+  // 'first': (args) => first(args),
+  // 'last': (args) => last(args),
+  // 'rest': (args) => rest(args),
+  // 'push': (args) => push(args),
+  // 'puts': (args) => puts(args),
+};
+
+Thing binLen(List<Thing> args) {
+  return switch (args) {
+    _ when args.length != 1 =>
+      newError('wrong number of monkeys. got=${args.length}, want=1'),
+    _ when args[0] is StringThing =>
+      Integer((args[0] as StringThing).value.length),
+    // _ when args[0] is Array =>
+    //   Integer((args[0] as StringThing).value.length),
+    _ => newError('invalid argument type; len accepts strings and arrays')
+  };
+}
+
 Thing eval(Node node, Environment env) {
   switch (node.runtimeType) {
     case Program:
@@ -76,22 +97,16 @@ Thing eval(Node node, Environment env) {
 }
 
 Thing applyFunction(Thing function, List<Thing> args) {
-  if (function is! Fun) {
-    return newError('not a function: ${function.type.name}');
+  switch (function.runtimeType) {
+    case BuiltIn:
+      return (function as BuiltIn).fn(args);
+    case Fun:
+      final extendedEnv = extendFunctionEnv(function as Fun, args);
+      final evaluated = eval(function.body, extendedEnv);
+      return unwrapReturnValue(evaluated);
+    default:
+      return newError('not a function: ${function.type.name}');
   }
-  final extendedEnv = extendFunctionEnv(function as Fun, args);
-  final evaluated = eval(function.body, extendedEnv);
-  return unwrapReturnValue(evaluated);
-  // switch (function.runtimeType) {
-  //   case Fun:
-  //     final function = Fun();
-
-  //   // case Builtin:
-  //   //   final fn = function as Builtin;
-  //   //   return fn.fn(args);
-  //   default:
-  //     return newError('not a function: ${function.type.name}');
-  // }
 }
 
 Thing unwrapReturnValue(Thing evaluated) {
@@ -125,6 +140,10 @@ Thing evalIdentifier(Identifier node, Environment env) {
   final (val, ok) = env.get(node.value);
   if (ok) {
     return val;
+  }
+  final bltIn = builtins[node.value];
+  if (bltIn != null) {
+    return bltIn([]);
   }
   return newError('identifier not found: ${node.value}');
 }

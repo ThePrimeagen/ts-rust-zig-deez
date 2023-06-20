@@ -68,6 +68,19 @@ class StringLiteral extends Expression {
   }
 }
 
+class ArrayLiteral extends Expression {
+  const ArrayLiteral(this.elements) : super(const Token.lCrochet());
+  final List<Expression> elements;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer(token.value)
+      ..write(elements.join(', '))
+      ..write(const Token.rCrochet().value);
+    return retVal.toString();
+  }
+}
+
 class IfExpression extends Expression {
   const IfExpression({
     required this.condition,

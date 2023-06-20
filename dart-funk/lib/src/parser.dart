@@ -20,7 +20,7 @@ final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.if_: _parseIfExpression,
   TokenType.function: _parseFunctionLiteral,
   TokenType.string: _parseStringLiteral,
-  // TokenType.lSquirly: _parseArrayLiteral,
+  TokenType.lCrochet: _parseArrayLiteral,
   // TokenType.lSquirly: _parseHashLiteral,
   TokenType.true_: _parseBoolean,
   TokenType.false_: _parseBoolean,
@@ -562,10 +562,11 @@ Parser eatLastSemicolon(Parser parser) {
 
 (Parser, List<Expression>) parseCallArguments(
   Parser parser,
-  List<Expression> args,
-) {
+  List<Expression> args, {
+  TokenType terminus = TokenType.rParen,
+}) {
   switch (parser.peekToken.type) {
-    case TokenType.rParen:
+    case _ when parser.peekToken.type == terminus:
       return (advanceParser(parser), args);
     case TokenType.eof:
       return (
@@ -583,16 +584,27 @@ Parser eatLastSemicolon(Parser parser) {
         args,
       );
     case TokenType.comma:
-      return parseCallArguments(advanceParser(parser), args);
+      return parseCallArguments(
+        advanceParser(parser),
+        args,
+        terminus: terminus,
+      );
     case _:
       final (newParser, arg) =
           _parseExpression(advanceParser(parser), Precedence.lowest);
-      return parseCallArguments(newParser, [...args, arg]);
+      return parseCallArguments(newParser, [...args, arg], terminus: terminus);
   }
 }
 
 (Parser, StringLiteral) _parseStringLiteral(Parser parser) {
   return (parser, StringLiteral(parser.currToken.value));
+}
+
+(Parser, ArrayLiteral) _parseArrayLiteral(Parser parser) {
+  final (arrParser, elements) =
+      parseCallArguments(parser, [], terminus: TokenType.rCrochet);
+  final retVal = ArrayLiteral(elements);
+  return (arrParser, retVal);
 }
 
 (Parser, FunctionLiteral) _parseFunctionLiteral(Parser parser) {
