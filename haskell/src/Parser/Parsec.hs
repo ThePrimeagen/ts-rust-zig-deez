@@ -1,6 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Parser.Parsec where
+{-
+   Notice that we use the same megaparsec library as in src/Lexer/Parsec.hs to build the Parser.
+   This is the power of megaparsec. Converting from Text to [Token] is the lexer, and converting
+   from [Token] -> Program is the Parser. We use the same underliying type and combinators.
+-}
 
 import AST
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
@@ -57,7 +62,7 @@ termP =
         ]
 
 expressionP :: Parser Expression
-expressionP = makeExprParser termP table
+expressionP = makeExprParser termP table -- megaparsec utility to parse operators with precedence
   where
     table =
         [
@@ -83,8 +88,9 @@ expressionP = makeExprParser termP table
             ]
         ]
 
-blockP :: Parser Block
+blockP :: Parser Block 
 blockP = Block <$> between (tokenP LSquirly) (tokenP RSquirly) (statementP `sepEndBy` tokenP Semicolon)
+-- simple a block is a bunch of statemts separated by Semicolon between tokens LSquirly and RSquirly, 
 
 tokenP :: Token -> Parser Token
 tokenP t = satisfy (== t)

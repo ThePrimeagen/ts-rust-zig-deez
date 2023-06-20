@@ -2,15 +2,15 @@ module AST where
 
 import Token
 
-type Ast = [Token] -> Program
+type Ast = [Token] -> Program             -- type synonym. 
 
-newtype Program = Program [Statement]
-    deriving (Show, Eq)
+newtype Program = Program [Statement]     -- _newtype_ keyword is similar to _type_ but with better compile time guarantees
+    deriving (Show, Eq)                   -- It is used for structs with only one field.
 
-data Statement
-    = LetStatement Identifier Expression
-    | ReturnStatement Expression
-    | ExpressionStatement Expression
+data Statement                            -- enum Statement {
+    = LetStatement Identifier Expression  --  LetStament(Identifier, Expression)
+    | ReturnStatement Expression          --  ReturnStatement(Expression)
+    | ExpressionStatement Expression      --  ...
     | BlockStatement Block
     | IllegalStatement
     deriving (Show, Eq)
