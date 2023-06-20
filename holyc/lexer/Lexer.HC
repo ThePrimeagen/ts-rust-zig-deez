@@ -1,35 +1,57 @@
 // "Entertain God and your ass will follow." - Terry A. Davis
 
-#define TOKEN_ILLEGAL       ( 0)
-#define TOKEN_EOF           ( 1)
-#define TOKEN_ASSIGN        ( 2)
-#define TOKEN_IDENT         ( 3)
-#define TOKEN_INT           ( 4)
-#define TOKEN_PLUS          ( 5)
-#define TOKEN_COMMA         ( 6)
-#define TOKEN_SEMICOLON     ( 7)
-#define TOKEN_L_PAREN       ( 8)
-#define TOKEN_R_PAREN       ( 9)
-#define TOKEN_L_SQUIRLY     (10)
-#define TOKEN_R_SQUIRLY     (11)
-#define TOKEN_FUNCTION      (12)
+class Token {
+	U64 type;
+	U8 *literal;
+};
 
-#define TOKEN_BANG          (13)
-#define TOKEN_DASH          (14)
-#define TOKEN_FORWARD_SLASH (15)
-#define TOKEN_ASTERISK      (16)
-#define TOKEN_LESS_THAN     (17)
-#define TOKEN_GREATER_THAN  (18)
+U8 *TOKEN_STR = "ILLEGAL\0"
+	"EOF\0"
+	"ASSIGN\0"
+	"IDENT\0"
+	"INT\0"
+	"PLUS\0"
+	"COMMA\0"
+	"SEMICOLON\0"
+	"L_PAREN\0"
+	"R_PAREN\0"
+	"L_SQUIRLY\0"
+	"R_SQUIRLY\0"
+	"FUNCTION\0"
+	"BANG\0"
+	"DASH\0"
+	"FORWARD_SLASH\0"
+	"ASTERISK\0"
+	"LESS_THAN\0"
+	"GREATER_THAN\0"
+	"EQUAL\0"
+	"NOT_EQUAL\0"
+	"LET\0"
+	"IF\0"
+	"ELSE\0"
+	"RETURN\0"
+	"FALSE\0"
+	"TRUE\0";
 
-#define TOKEN_EQUAL         (19)
-#define TOKEN_NOT_EQUAL     (20)
+#exe {
+	I64 offset;
+	I64 i = 0;
+	for (offset=0;TOKEN_STR[offset+1];offset+=StrLen(TOKEN_STR+offset)+1)
+		StreamPrint("#define TOKEN_%s (%d)\n", TOKEN_STR+offset, i++);
+};
 
-#define TOKEN_LET           (21)
-#define TOKEN_IF            (22)
-#define TOKEN_ELSE          (23)
-#define TOKEN_RETURN        (24)
-#define TOKEN_FALSE         (25)
-#define TOKEN_TRUE          (26)
+U8 *TokenPretty(Token *tok)
+{
+	switch (tok->type) {
+#exe {
+	I64 offset;
+	for (offset=0;TOKEN_STR[offset+1];offset+=StrLen(TOKEN_STR+offset)+1)
+		StreamPrint("\tcase TOKEN_%s: return \"%s\";\n", TOKEN_STR+offset, TOKEN_STR+offset);
+}
+	}
+	return "ERROR";
+}
+
 
 class Lexer {
 	U8 *input;
@@ -38,47 +60,6 @@ class Lexer {
 	U64 read_position;
 	U8 ch;
 };
-
-class Token {
-	U64 type;
-	U8 *literal;
-};
-
-U8 *TokenPretty(Token *token)
-{
-	switch (token->type) {
-		case TOKEN_ILLEGAL:       return "TOKEN_ILLEGAL";
-		case TOKEN_EOF:           return "TOKEN_EOF";
-		case TOKEN_ASSIGN:        return "TOKEN_ASSIGN";
-		case TOKEN_IDENT:         return "TOKEN_IDENT";
-		case TOKEN_INT:           return "TOKEN_INT";
-		case TOKEN_EQUAL:         return "TOKEN_EQUAL";
-		case TOKEN_PLUS:          return "TOKEN_PLUS";
-		case TOKEN_COMMA:         return "TOKEN_COMMA";
-		case TOKEN_SEMICOLON:     return "TOKEN_SEMICOLON";
-		case TOKEN_L_PAREN:       return "TOKEN_L_PAREN";
-		case TOKEN_R_PAREN:       return "TOKEN_R_PAREN";
-		case TOKEN_L_SQUIRLY:     return "TOKEN_L_SQUIRLY";
-		case TOKEN_R_SQUIRLY:     return "TOKEN_R_SQUIRLY";
-		case TOKEN_FUNCTION:      return "TOKEN_FUNCTION";
-		case TOKEN_BANG:          return "TOKEN_BANG";
-		case TOKEN_DASH:          return "TOKEN_DASH";
-		case TOKEN_FORWARD_SLASH: return "TOKEN_FORWARD_SLASH";
-		case TOKEN_ASTERISK:      return "TOKEN_ASTERISK";
-		case TOKEN_LESS_THAN:     return "TOKEN_LESS_THAN";
-		case TOKEN_GREATER_THAN:  return "TOKEN_GREATER_THAN";
-		case TOKEN_NOT_EQUAL:     return "TOKEN_NOT_EQUAL";
-		case TOKEN_LET:           return "TOKEN_LET";
-		case TOKEN_IF:            return "TOKEN_IF";
-		case TOKEN_ELSE:          return "TOKEN_ELSE";
-		case TOKEN_RETURN:        return "TOKEN_RETURN";
-		case TOKEN_FALSE:         return "TOKEN_FALSE";
-		case TOKEN_TRUE:          return "TOKEN_TRUE";
-		default: break;
-	}
-
-	return "UNKNOWN";
-}
 
 U8 *StrNewN(U8 *buf, U64 sz)
 {

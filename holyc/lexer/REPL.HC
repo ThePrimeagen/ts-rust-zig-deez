@@ -12,7 +12,10 @@ while (TRUE) {
 	lex = LexerInit(str);
 	do {
 		tok = LexerNextToken(lex);
-		"%s\n", TokenPretty(tok);
+		"%s", TokenPretty(tok);
+		if (tok->type == TOKEN_IDENT || tok->type == TOKEN_INT)
+			" (%s)", tok->literal;
+		"\n";
 	} while (tok->type != TOKEN_EOF);
 
 	Free(lex);
