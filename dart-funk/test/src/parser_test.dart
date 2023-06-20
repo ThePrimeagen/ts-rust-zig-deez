@@ -566,7 +566,7 @@ void main() {
         );
       },
     );
-    
+
     test(
       'should return an error when using invalid Let input',
       () async {
@@ -1345,30 +1345,30 @@ void main() {
     );
 
     test(
-     'should return a StringExpression for hello world',
-     () async {
-     // arrange
-     input = '"hello world";';
-    
-     // act
-      final parser = Parser.fromSource(input);
-      final program = parse(parser);
-      logger.info('Program: $program');
-    
-     // assert
-      expect(program.statements.length, equals(1));
-      expect(program.statements[0], isA<ExpressionStatement>());
-      expect(
-        (program.statements[0] as ExpressionStatement).expression,
-        isA<StringLiteral>(),
-      );
-      expect(
-        ((program.statements[0] as ExpressionStatement).expression
-                as StringLiteral)
-            .value,
-        equals('hello world'),
-      );
-     },
+      'should return a StringExpression for hello world',
+      () async {
+        // arrange
+        input = '"hello world";';
+
+        // act
+        final parser = Parser.fromSource(input);
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        expect(program.statements[0], isA<ExpressionStatement>());
+        expect(
+          (program.statements[0] as ExpressionStatement).expression,
+          isA<StringLiteral>(),
+        );
+        expect(
+          ((program.statements[0] as ExpressionStatement).expression
+                  as StringLiteral)
+              .value,
+          equals('hello world'),
+        );
+      },
     );
     test(
       'should return a list of arguments',
@@ -1391,5 +1391,4 @@ void main() {
       },
     );
   });
-
 }
