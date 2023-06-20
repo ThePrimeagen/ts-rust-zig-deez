@@ -25,11 +25,14 @@ declare -gA  CURSOR=(
 #                             constructors & utils
 #-------------------------------------------------------------------------------
 function location_new {
-   # Using "object" here to hold location information so it can be later
-   # transferred to the AST node. E.g., the binary expression `1 + 2` would
-   # contain a 'start location' of the 1's .location, and an 'end location' of
-   # the 2's .location. Allows for significantly better error reporting with
-   # insignificant overhead in the lexer.
+   # Using an "object" here to hold location information, later copied AST
+   # node. Example, given the expression:
+   #> foo + bar;
+   #
+   # The identifiers `foo` and `bar` have start & end location information, and
+   # the overall binary expression inherits foo's start, and bar's end. Allows
+   # for significantly better error reporting with insignificant overhead in
+   # the lexer.
 
    local loc="LOC_$(( ++_LOC_NUM ))"
    declare -gA "$loc"
@@ -67,10 +70,9 @@ function token_new {
 
 
 function lexer_advance {
-   # As the index is initially primed to `-1' prior to the lexer starting, the
-   # first increment sets it to `0'. In an arithmetic context, that evaluates
-   # to a non-0 exit code. This is a silly way to ensure the increment always
-   # returns a successful status.
+   # As the index is initialized to `-1', the first increment sets it to `0'.
+   # In an arithmetic context, only non-0 numbers are considered `true`. The
+   # `, 1' prevents unexpected silent exits when using `set -e'.
    (( ++CURSOR['index'] , 1 ))
    (( ++CURSOR['colno']     ))
    local -i idx="${CURSOR[index]}"
@@ -97,8 +99,8 @@ function lexer_scan {
       CHARRAY+=( "$char" )
    done <<< "$input"
 
-   while (( "${CURSOR[index]}" < ${#CHARRAY[@]} )) ; do
-      lexer_advance ; [[ ! "$CHAR" ]] && break
+   while (( CURSOR[index] < ${#CHARRAY[@]}-1 )) ; do
+      lexer_advance
 
       # Start of token cursor information.
       FREEZE['index']=${CURSOR['index']}
