@@ -476,4 +476,88 @@ void main() {
       },
     );
   });
+
+  group('Eval - Array cdr', () {
+    late Logger logger;
+    late Map<String, dynamic> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        'cdr([1, 2, 3, 4, 5])': [2, 3, 4, 5],
+        'cdr([1])': [],
+        'cdr([])': const NullThing(),
+        'cdr(1)': 'invalid argument type; cdr accepts arrays',
+        'cdr([1], [2])': 'wrong number of monkeys. got=2, want=1',
+      };
+    });
+
+    test(
+      'should return the correct value for each array cdr statement',
+      () async {
+        // arrange - act - assert
+        for (final entry in input.entries) {
+          final evaluated = testEval(entry.key);
+          logger.info('$entry evaluated to ${evaluated.inspect()}');
+
+          if (entry.value is List) {
+            final expected = entry.value as List;
+            expect(evaluated, isA<Array>());
+            final array = evaluated as Array;
+            expect(array.elements.length, expected.length);
+            // for (var i = 0; i < expected.length; i++) {
+            //   testInteger(array.elements[i], expected[i]);
+            // }
+          } else if (entry.value is NullThing) {
+            expect(evaluated, isA<NullThing>());
+          } else {
+            expect(evaluated, isA<Error>());
+            expect((evaluated as Error).message, entry.value);
+          }
+        }
+      },
+    );
+  });
+
+  group('Eval - Array push', () {
+    late Logger logger;
+    late Map<String, dynamic> input;
+    setUp(() {
+      logger = Logger(level: Level.debug);
+      input = {
+        'push([1, 2, 3], 4)': [1, 2, 3, 4],
+        'push([], 1)': [1],
+        'push([1, 2], fn(x){ x * x;})': [1, 2, 'fn(x){ x * x;})'],
+        'push([1, 2], "fred")': [1, 2, 'fred'],
+        // 'push(1, 1)':
+        //     'invalid argument type; push accepts arrays and new element',
+        // 'push([1, 2, 3], 1, 2)': 'wrong number of monkeys. got=3, want=2',
+      };
+    });
+
+    test(
+      'should return the correct value for each array push statement',
+      () async {
+        // arrange - act - assert
+        for (final entry in input.entries) {
+          final evaluated = testEval(entry.key);
+          logger.info('$entry evaluated to ${evaluated.inspect()}');
+
+          if (entry.value is List) {
+            final expected = entry.value as List;
+            expect(evaluated, isA<Array>());
+            final array = evaluated as Array;
+            expect(array.elements.length, expected.length);
+            // for (var i = 0; i < expected.length; i++) {
+            //   testInteger(array.elements[i], expected[i]);
+            // }
+          } else if (entry.value is NullThing) {
+            expect(evaluated, isA<NullThing>());
+          } else {
+            expect(evaluated, isA<Error>());
+            expect((evaluated as Error).message, entry.value);
+          }
+        }
+      },
+    );
+  });
 }

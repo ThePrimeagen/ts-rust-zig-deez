@@ -19,3 +19,4 @@ dart pub global run coverage:format_coverage --packages=.dart_tool/package_confi
 
 
 let counter = fn(x) { if (x > 100) { return true; } else { let foobar = 9999; counter(x + 1); } };
+let map = fn(arr, f) { let iter = fn(arr, accumulated) { if (len(arr) == 0) { accumulated } else { iter(rest(arr), push(accumulated, f(first(arr)))); } }; iter(arr, []); };

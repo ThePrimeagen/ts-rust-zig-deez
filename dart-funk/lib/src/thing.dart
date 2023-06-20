@@ -34,10 +34,15 @@ class Array extends Thing {
 
   @override
   String inspect() {
-    final buffer = StringBuffer()
-      ..write('[')
-      ..writeAll(elements, ', ')
-      ..write(']');
+    final buffer = StringBuffer()..write('[');
+    for (final element in elements) {
+      if (element == elements.last) {
+        buffer.write(element.inspect());
+        break;
+      }
+      buffer.write('${element.inspect()}, ');
+    }
+    buffer.write(']');
     return buffer.toString();
   }
 }

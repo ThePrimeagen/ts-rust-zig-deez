@@ -9,20 +9,72 @@ const NULL = NullThing();
 
 final builtins = <String, BuiltinFunction>{
   'len': (args) => const BuiltIn(binLen),
-  // 'first': (args) => first(args),
-  // 'last': (args) => last(args),
-  // 'rest': (args) => rest(args),
-  // 'push': (args) => push(args),
+  'car': (args) => const BuiltIn(binFirst),
+  'first': (args) => const BuiltIn(binFirst),
+  'last': (args) => const BuiltIn(binLast),
+  'rest': (args) => const BuiltIn(binCdr),
+  'cdr': (args) => const BuiltIn(binCdr),
+  'push': (args) => const BuiltIn(binPush),
   // 'puts': (args) => puts(args),
 };
+
+Thing push(Array array, Thing thing) {
+  return Array([...array.elements, thing]);
+}
+
+Thing binPush(List<Thing> args) {
+  return switch (args) {
+    _ when args.length != 2 =>
+      newError('wrong number of monkeys. got=${args.length}, want=2'),
+    _ when args[0] is Array => push(args[0] as Array, args[1]),
+    _ => newError('invalid argument type; push accepts arrays and new element')
+  };
+}
+
+Thing cdr(Array array) {
+  if (array.elements.isEmpty) {
+    return const NullThing();
+  }
+  return Array(array.elements.sublist(1));
+}
+
+Thing binCdr(List<Thing> args) {
+  return switch (args) {
+    _ when args.length != 1 =>
+      newError('wrong number of monkeys. got=${args.length}, want=1'),
+    _ when args[0] is Array => cdr(args[0] as Array),
+    _ => newError('invalid argument type; cdr accepts arrays')
+  };
+}
+
+Thing binFirst(List<Thing> args) {
+  return switch (args) {
+    _ when args.length != 1 =>
+      newError('wrong number of monkeys. got=${args.length}, want=1'),
+    _ when args[0] is Array => (args[0] as Array).elements.isNotEmpty
+        ? (args[0] as Array).elements[0]
+        : newError('array is empty'),
+    _ => newError('invalid argument type; first accepts arrays')
+  };
+}
+
+Thing binLast(List<Thing> args) {
+  return switch (args) {
+    _ when args.length != 1 =>
+      newError('wrong number of monkeys. got=${args.length}, want=1'),
+    _ when args[0] is Array => (args[0] as Array).elements.isNotEmpty
+        ? (args[0] as Array).elements[(args[0] as Array).elements.length - 1]
+        : newError('array is empty'),
+    _ => newError('invalid argument type; last accepts arrays')
+  };
+}
 
 Thing binLen(List<Thing> args) {
   return switch (args) {
     _ when args.length != 1 =>
       newError('wrong number of monkeys. got=${args.length}, want=1'),
     _ when args[0] is Stringy => Integer((args[0] as Stringy).value.length),
-    // _ when args[0] is Array =>
-    //   Integer((args[0] as StringThing).value.length),
+    _ when args[0] is Array => Integer((args[0] as Array).elements.length),
     _ => newError('invalid argument type; len accepts strings and arrays')
   };
 }
