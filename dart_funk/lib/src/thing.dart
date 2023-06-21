@@ -160,19 +160,3 @@ extension MapThingThingExt on Map<Thing, Thing> {
     };
   }
 }
-
-extension ThingExt on Thing {
-  bool isTruthy() {
-    if (this is Boolean) {
-      return (this as Boolean).value;
-    }
-    return true;
-  }
-
-  bool isFalsy() {
-    if (this is Boolean) {
-      return !(this as Boolean).value;
-    }
-    return false;
-  }
-}
