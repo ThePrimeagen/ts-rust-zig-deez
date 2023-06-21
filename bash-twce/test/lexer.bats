@@ -35,7 +35,10 @@ function setup {
         'R_BRACKET'
         'L_BRACE'
         'R_BRACE'
+        'EOF'
     )
+
+    (( ${#TOKENS[@]} == ${#expected[@]} ))
 
     for idx in "${!expected[@]}" ; do
         local exp="${expected[idx]}"
@@ -58,6 +61,8 @@ function setup {
         'EOF'
     )
 
+    (( ${#TOKENS[@]} == ${#expected[@]} ))
+
     for idx in "${TOKENS[@]}" ; do
         local exp="${expected[idx]}"
         local token="${TOKENS[idx]}"
@@ -72,6 +77,9 @@ function setup {
     lexer_scan '
         foo bar fn let
     '
+
+    # Quick n' dirty test for expected number of tokens.
+    (( ${#TOKENS[@]} == 5 ))
 
     local -A EXP_0=( [type]='IDENTIFIER'   [value]='foo' )
     local -A EXP_1=( [type]='IDENTIFIER'   [value]='bar' )
@@ -160,12 +168,11 @@ function setup {
 
 
 @test "fixed dumb issue with floats" {
-    skip "Don't yet know if this is an error."
+    skip "Don't yet know where to handle/report this error."
     source "${SRC}/lexer.sh"
 
     # Don't know if this should be a syntax error here, or throw error during
-    # semantic analysis. Latter would allow for methods on ints if applicable?
-    # Iunno.
+    # semantic analysis.
     run lexer_scan '
         10.0
         10. 0
