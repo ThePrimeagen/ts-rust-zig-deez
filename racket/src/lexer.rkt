@@ -1,5 +1,7 @@
 #lang racket
 
+(provide init l:int l:identifier)
+
 ;; Data types
 (struct l:int (value) #:transparent)
 (struct l:identifier (value) #:transparent)
@@ -49,7 +51,6 @@
     [(list "*" xs ...)          (lex xs (cons 'asterisk tokens))]
     [(list ">" xs ...)          (lex xs (cons 'greater-than tokens))]
     [(list "<" xs ...)          (lex xs (cons 'less-than tokens))]
-    [(list "<" xs ...)          (lex xs (cons 'less-than tokens))]
 
     ;; Identifiers
     [(list x xs ...) #:when (letter? x)
@@ -73,13 +74,11 @@
 
 (define (tokenize-identifier identifier)
   (match identifier
-    ["fn" 'fn]
-    ["let" 'let]
-    ["if" 'if]
-    ["else" 'else]
-    ["true" 'true]
-    ["false" 'false]
+    ["fn"     'fn]
+    ["let"    'let]
+    ["if"     'if]
+    ["else"   'else]
+    ["true"   'true]
+    ["false"  'false]
     ["return" 'return]
     [x (l:identifier x)]))
-
-;; (init "fn f x = x * x")

@@ -37,7 +37,7 @@ test: test-lexer test-ast test-parser
 
 test-lexer:
 	@echo "===> Testing lexer"
-	# TODO: replace this line with your lexer testing commands
+	racket ./src/test_lexer.rkt
 
 test-ast:
 	@echo "===> Testing AST"
