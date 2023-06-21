@@ -27,6 +27,22 @@ sealed class Thing extends Equatable {
   List<Object?> get props => [type, inspect()];
 }
 
+class Hash extends Thing {
+  const Hash(this.pairs) : super(ThingType._let);
+
+  final Map<Thing, Thing> pairs;
+
+  @override
+  String inspect() {
+    final buffer = StringBuffer()..write('{');
+    for (final key in pairs.keys) {
+      buffer.write('${key.inspect()}: ${pairs[key]!.inspect()}, ');
+    }
+    buffer.write('}');
+    return buffer.toString();
+  }
+}
+
 class Array extends Thing {
   const Array(this.elements) : super(ThingType.array);
 
@@ -134,4 +150,29 @@ class NullThing extends Thing {
 
   @override
   String inspect() => 'not my 🙈-🙉-🙊, not my circus';
+}
+
+extension MapThingThingExt on Map<Thing, Thing> {
+  Thing? get(Thing key) {
+    return switch (key.type) {
+      ThingType.integer || ThingType.boolean || ThingType.string => this[key],
+      _ => Error('unusable as hash key: ${key.type}'),
+    };
+  }
+}
+
+extension ThingExt on Thing {
+  bool isTruthy() {
+    if (this is Boolean) {
+      return (this as Boolean).value;
+    }
+    return true;
+  }
+
+  bool isFalsy() {
+    if (this is Boolean) {
+      return !(this as Boolean).value;
+    }
+    return false;
+  }
 }

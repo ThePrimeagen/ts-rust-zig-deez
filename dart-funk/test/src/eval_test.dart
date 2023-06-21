@@ -560,4 +560,46 @@ void main() {
       },
     );
   });
+
+  group('Eval - Hash tables', () {
+    test(
+      'should return the correct value for each hash table statement',
+      () async {
+        // arrange
+        const input = 'let two = "two";'
+            '{'
+            '"one": 10 - 9,'
+            '"two": 1 + 1,'
+            '"thr" + "ee": 6 / 2,'
+            '"four": 4 * 1,'
+            '"five": 5,'
+            '"six": 6'
+            '}';
+
+        // act
+        final evaluated = testEval(input);
+
+        // assert
+        expect(evaluated, isA<Hash>());
+        final hash = evaluated as Hash;
+        expect(hash.pairs.length, 6);
+        final expected = {
+          // 99: 'nine',
+          'one': 1,
+          'two': 2,
+          'three': 3,
+          'four': 4,
+          'five': 5,
+          'six': 6,
+        };
+        for (final key in expected.keys) {
+          final value = expected[key];
+          final pairValue = hash.pairs.get(Stringy(key));
+          expect(pairValue, isNotNull);
+          expect(pairValue, isA<Integer>());
+          testInteger(pairValue!, value!);
+        }
+      },
+    );
+  });
 }

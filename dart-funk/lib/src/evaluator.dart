@@ -1,6 +1,8 @@
 // ignore: lines_longer_than_80_chars
 // ignore_for_file: constant_identifier_names, avoid_positional_boolean_parameters
 
+import 'dart:io';
+
 import 'package:monkeydart/monkeydart.dart';
 
 const TRUE = Boolean(true);
@@ -15,11 +17,18 @@ final builtins = <String, BuiltinFunction>{
   'rest': (args) => const BuiltIn(binCdr),
   'cdr': (args) => const BuiltIn(binCdr),
   'push': (args) => const BuiltIn(binPush),
-  // 'puts': (args) => puts(args),
+  'puts': (args) => const BuiltIn(binPuts),
 };
 
 Thing push(Array array, Thing thing) {
   return Array([...array.elements, thing]);
+}
+
+Thing binPuts(List<Thing> args) {
+  for (final arg in args) {
+    stdout.writeln(arg.inspect());
+  }
+  return const NullThing();
 }
 
 Thing binPush(List<Thing> args) {
@@ -91,6 +100,8 @@ Thing eval(Node node, Environment env) {
       return Integer((node as IntegerLiteral).value);
     case BooleanLiteral:
       return nativeBoolToBoolean((node as BooleanLiteral).value);
+    case HashLiteral:
+      return evalHashLiteral(node as HashLiteral, env);
     case ArrayLiteral:
       final elements = evalExpressions((node as ArrayLiteral).elements, env);
       if (elements.length == 1 && isError(elements[0])) {
@@ -163,15 +174,45 @@ Thing eval(Node node, Environment env) {
   }
 }
 
+Thing evalHashLiteral(HashLiteral node, Environment env) {
+  final pairs = <Thing, Thing>{};
+
+  for (var i = 0; i < node.pairs.length; i++) {
+    final key = node.pairs.keys.elementAt(i);
+    final value = node.pairs.values.elementAt(i);
+    final keyThing = eval(key, env);
+    if (isError(keyThing)) {
+      return keyThing;
+    }
+
+    final valueThing = eval(value, env);
+    if (isError(valueThing)) {
+      return valueThing;
+    }
+
+    pairs[keyThing] = valueThing;
+  }
+
+  return Hash(pairs);
+}
+
 Thing evalIndexExpression(Thing left, Thing index) {
   switch (left.runtimeType) {
     case Array:
       return evalArrayIndexExpression(left as Array, index);
-    // case Hash:
-    //   return evalHashIndexExpression(left as Hash, index);
+    case Hash:
+      return evalHashIndexExpression(left as Hash, index);
     default:
       return newError('index operator not supported: ${left.type.name}');
   }
+}
+
+Thing evalHashIndexExpression(Hash left, Thing index) {
+  final pair = left.pairs[index];
+  if (pair == null) {
+    return NULL;
+  }
+  return pair;
 }
 
 Thing evalArrayIndexExpression(Array left, Thing index) {

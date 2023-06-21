@@ -4,6 +4,8 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:monkeydart/monkeydart.dart';
 import 'package:test/test.dart';
 
+import 'eval_test.dart';
+
 bool testLiteralExpression(Expression exp, dynamic expected) {
   if (expected is int) {
     return testIntegerLiteral(exp, expected);
@@ -1456,6 +1458,215 @@ void main() {
         expect((index.index as InfixExpression).left, isA<IntegerLiteral>());
         expect((index.index as InfixExpression).operator, equals('+'));
         expect((index.index as InfixExpression).right, isA<IntegerLiteral>());
+      },
+    );
+  });
+
+  group('Parser - Hash literal', () {
+    late Logger logger;
+    late String input;
+    setUp(() {
+      logger = Logger(level: Level.warning);
+      input = '{"one": 1, "two": 2, "three": 3}';
+    });
+
+    test(
+      'should return a hash literal w/ string keys',
+      () async {
+        // arrange
+        final parser = Parser.fromSource(input);
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<HashLiteral>());
+        final hash = stmt.expression as HashLiteral;
+        expect(hash.pairs.length, equals(3));
+        final expected = {
+          'one': 1,
+          'two': 2,
+          'three': 3,
+        };
+        for (final pair in hash.pairs.entries) {
+          expect(pair.value, isA<IntegerLiteral>());
+          expect(
+            (pair.value as IntegerLiteral).value,
+            equals(expected[pair.key.toString()]),
+          );
+        }
+      },
+    );
+
+    test(
+      'should return a hash literal empty hash',
+      () async {
+        // arrange
+        final parser = Parser.fromSource('{}');
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<HashLiteral>());
+        final hash = stmt.expression as HashLiteral;
+        expect(hash.pairs.length, equals(0));
+      },
+    );
+
+    test(
+      'should return a hash literal w/ boolean keys',
+      () async {
+        // arrange
+        final parser = Parser.fromSource('{true: 1, false: 2}');
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<HashLiteral>());
+        final hash = stmt.expression as HashLiteral;
+        expect(hash.pairs.length, equals(2));
+        final expected = {
+          'true': 1,
+          'false': 2,
+        };
+        for (final pair in hash.pairs.entries) {
+          expect(pair.value, isA<IntegerLiteral>());
+          expect(
+            (pair.value as IntegerLiteral).value,
+            equals(expected[pair.key.toString()]),
+          );
+        }
+      },
+    );
+
+    test(
+      'should return a hash literal w/ integer keys',
+      () async {
+        // arrange
+        final parser = Parser.fromSource('{1: 1, 2: 2}');
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<HashLiteral>());
+        final hash = stmt.expression as HashLiteral;
+        expect(hash.pairs.length, equals(2));
+        final expected = {
+          '1': 1,
+          '2': 2,
+        };
+        for (final pair in hash.pairs.entries) {
+          expect(pair.value, isA<IntegerLiteral>());
+          expect(
+            (pair.value as IntegerLiteral).value,
+            equals(expected[pair.key.toString()]),
+          );
+        }
+      },
+    );
+
+    test(
+      'should return a hash literal w/ expressions as values',
+      () async {
+        // arrange
+        final parser =
+            Parser.fromSource('{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}');
+        logger.info('Tokens: ${parser.tokens}');
+
+        // act
+        final program = parse(parser);
+        logger.info('Program: $program');
+
+        // assert
+        expect(program.statements.length, equals(1));
+        final stmt = program.statements[0] as ExpressionStatement;
+        expect(stmt, isA<ExpressionStatement>());
+        expect(stmt.expression, isA<HashLiteral>());
+        final hash = stmt.expression as HashLiteral;
+        expect(hash.pairs.length, equals(3));
+        final expected = <String, bool Function(Expression)>{
+          'one': (Expression e) => testInfixExpression(e, 0, '+', 1),
+          'two': (Expression e) => testInfixExpression(e, 10, '-', 8),
+          'three': (Expression e) => testInfixExpression(e, 15, '/', 5),
+        };
+        for (final pair in hash.pairs.entries) {
+          expect(pair.value, isA<Expression>());
+          expect(
+            expected[pair.key.toString()]!(pair.value),
+            isTrue,
+          );
+        }
+      },
+    );
+  });
+
+  group('Eval - HashKey checks', () {
+    test(
+      'should return correct HashKey results',
+      () async {
+        // arrange
+        const hello1 = Stringy('Hello World');
+        const hello2 = Stringy('Hello World');
+        const diff1 = Stringy('My name is johnny');
+        const diff2 = Stringy('My name is johnny');
+
+        // act
+        expect(hello1.hashCode, equals(hello2.hashCode));
+        expect(diff1.hashCode, equals(diff2.hashCode));
+        expect(hello1.hashCode, isNot(equals(diff1.hashCode)));
+
+        // assert
+      },
+    );
+  });
+
+  group('Hash - Index Expressions', () {
+    test(
+      'should return correct HashKey results given the input',
+      () async {
+        // arrange
+        final input = {
+          '{"foo": 5}["foo"]': 5,
+          '{"foo": 5}["bar"]': null,
+          'let key = "foo"; {"foo": 5}[key]': 5,
+          '{}["foo"]': null,
+          '{5: 5}[5]': 5,
+          '{true: 5}[true]': 5,
+          '{false: 5}[false]': 5,
+        };
+
+        // act - assert
+        for (final item in input.entries) {
+          final result = testEval(item.key);
+          if (item.value == null) {
+            expect(result, isA<NullThing>());
+          } else {
+            testInteger(result, item.value!);
+          }
+        }
       },
     );
   });

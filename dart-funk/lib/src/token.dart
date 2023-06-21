@@ -77,6 +77,9 @@ class Token extends Equatable {
   const Token.semicolon()
       : type = TokenType.semicolon,
         value = ';';
+  const Token.colon()
+      : type = TokenType.colon,
+        value = ':';
   const Token.lParen()
       : type = TokenType.lParen,
         value = '(';
@@ -137,6 +140,7 @@ enum TokenType {
   plus,
   comma,
   semicolon,
+  colon,
   lParen,
   rParen,
   lSquirly,

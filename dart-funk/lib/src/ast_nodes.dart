@@ -68,6 +68,23 @@ class StringLiteral extends Expression {
   }
 }
 
+class HashLiteral extends Expression {
+  const HashLiteral(this.pairs) : super(const Token.lSquirly());
+  final Map<Expression, Expression> pairs;
+
+  @override
+  String toString() {
+    final pairStrings = <String>[];
+    for (final pair in pairs.entries) {
+      pairStrings.add('${pair.key}: ${pair.value}');
+    }
+    final retVal = StringBuffer(token.value)
+      ..write(pairStrings.join(', '))
+      ..write(const Token.rSquirly().value);
+    return retVal.toString();
+  }
+}
+
 class ArrayLiteral extends Expression {
   const ArrayLiteral(this.elements) : super(const Token.lCrochet());
   final List<Expression> elements;

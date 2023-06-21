@@ -104,7 +104,8 @@ void main() {
             '10 != 9;'
             '"foobar"'
             '"foo bar"'
-            '[1, 2];';
+            '[1, 2];'
+            '{"foo": "bar"}';
         const expected = [
           Token.let(),
           Token.ident('five'),
@@ -191,6 +192,12 @@ void main() {
           Token.int('2'),
           Token.rCrochet(),
           Token.semicolon(),
+          // and hashes {}
+          Token.lSquirly(),
+          Token.string('foo'),
+          Token.colon(),
+          Token.string('bar'),
+          Token.rSquirly(),
 
           Token.eof(),
         ];

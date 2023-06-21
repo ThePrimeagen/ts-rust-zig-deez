@@ -21,7 +21,7 @@ final _prefixParseFns = <TokenType, (Parser, Expression) Function(Parser)>{
   TokenType.function: _parseFunctionLiteral,
   TokenType.string: _parseStringLiteral,
   TokenType.lCrochet: _parseArrayLiteral,
-  // TokenType.lSquirly: _parseHashLiteral,
+  TokenType.lSquirly: _parseHashLiteral,
   TokenType.true_: _parseBoolean,
   TokenType.false_: _parseBoolean,
 };
@@ -609,6 +609,57 @@ Parser eatLastSemicolon(Parser parser) {
 
 (Parser, StringLiteral) _parseStringLiteral(Parser parser) {
   return (parser, StringLiteral(parser.currToken.value));
+}
+
+(Parser, HashLiteral) _parseHashLiteral(Parser parser) {
+  final (hashParser, pairs) = parseHashPairs(parser, {});
+  // TODO suspicious that the current is rSquirly
+  // final (jumpRBraceParser, ok) = expectPeek(hashParser, TokenType.rSquirly);
+  // if (!ok) {
+  //   return (jumpRBraceParser, const NullExpression() as HashLiteral);
+  // }
+  return (hashParser, HashLiteral(pairs));
+}
+
+(Parser, Map<Expression, Expression>) parseHashPairs(
+  Parser parser,
+  Map<Expression, Expression> pairs,
+) {
+  switch (parser.peekToken.type) {
+    case TokenType.rSquirly:
+      return (advanceParser(parser), pairs);
+    case TokenType.comma:
+      return parseHashPairs(advanceParser(parser), pairs);
+    case TokenType.eof:
+      return (
+        parser.copyWith(
+          errors: [
+            ParserException(
+              'Unexpected end of input',
+              parser,
+              [],
+              // line: parser.peekToken.line,
+              // column: parser.peekToken.column,
+            )
+          ],
+        ),
+        pairs,
+      );
+    case _:
+      final (keyParser, key) =
+          _parseExpression(advanceParser(parser), Precedence.lowest);
+      final (jumpOnColonParser, ok) = expectPeek(keyParser, TokenType.colon);
+      if (!ok) {
+        return (jumpOnColonParser, pairs);
+      }
+      final jumpOffColonParser = advanceParser(jumpOnColonParser);
+      final (valueParser, value) =
+          _parseExpression(jumpOffColonParser, Precedence.lowest);
+      return parseHashPairs(
+        valueParser,
+        {...pairs, key: value},
+      );
+  }
 }
 
 (Parser, ArrayLiteral) _parseArrayLiteral(Parser parser) {

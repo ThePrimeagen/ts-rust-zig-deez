@@ -50,6 +50,8 @@ class Lexer {
       retVal = (advanceLexer(innerLexer), const Token.rCrochet());
     case ',':
       retVal = (advanceLexer(innerLexer), const Token.comma());
+    case ':':
+      retVal = (advanceLexer(innerLexer), const Token.colon());
     case ';':
       retVal = (advanceLexer(innerLexer), const Token.semicolon());
     case '+':
