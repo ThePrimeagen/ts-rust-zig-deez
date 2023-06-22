@@ -89,7 +89,9 @@ public class ParserTests {
     [Theory]
     [InlineData("!5", "!", 5)]
     [InlineData("-15", "-", 15)]
-    public void Parsing_PrefixExpression(string input, string op, long value) {
+    [InlineData("!true", "!", true)]
+    [InlineData("!false", "!", false)]
+    public void Parsing_PrefixExpression(string input, string op, object value) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -105,16 +107,7 @@ public class ParserTests {
                 .BeAssignableTo<PrefixExpression>().Subject;
 
         stmt.Operator.Should().Be(op);
-        IntegerLiteralTest(stmt.Right, value);
-    }
-
-    static void IntegerLiteralTest(IExpression? expression, long value) {
-        var stmt = expression.Should()
-            .NotBeNull().And
-            .BeAssignableTo<IntegerLiteral>().Subject;
-
-        stmt.Value.Should().Be(value);
-        stmt.ToString().Should().Be(value.ToString());
+        LiteralExpressionTest(stmt.Right, value);
     }
 
     [Theory]
@@ -126,7 +119,10 @@ public class ParserTests {
     [InlineData("5 < 5;", 5, "<", 5)]
     [InlineData("5 == 5;", 5, "==", 5)]
     [InlineData("5 != 5;", 5, "!=", 5)]
-    public void Parsing_InfixExpression(string input, long left, string op, long right) {
+    [InlineData("true == true", true, "==", true)]
+    [InlineData("true != false", true, "!=", false)]
+    [InlineData("false != false", false, "!=", false)]
+    public void Parsing_InfixExpression(string input, object left, string op, object right) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
 
@@ -141,11 +137,10 @@ public class ParserTests {
                 .NotBeNull().And
                 .BeAssignableTo<InfixExpression>().Subject;
 
-        IntegerLiteralTest(stmt.Left, left);
+        LiteralExpressionTest(stmt.Left, left);
         stmt.Operator.Should().Be(op);
-        IntegerLiteralTest(stmt.Right, right);
+        LiteralExpressionTest(stmt.Right, right);
     }
-
 
     [Theory]
     [InlineData("-a * b", "((-a) * b)")]
@@ -160,6 +155,15 @@ public class ParserTests {
     [InlineData("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))")]
     [InlineData("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))")]
     [InlineData("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))")]
+    [InlineData("true", "true")]
+    [InlineData("false", "false")]
+    [InlineData("3 > 5 == false", "((3 > 5) == false)")]
+    [InlineData("3 < 5 == true", "((3 < 5) == true)")]
+    [InlineData("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)")]
+    [InlineData("(5 + 5) * 2", "((5 + 5) * 2)")]
+    [InlineData("2 / (5 + 5)", "(2 / (5 + 5))")]
+    [InlineData("-(5 + 5)", "(-(5 + 5))")]
+    [InlineData("!(true == true)", "(!(true == true))")]
     public void Parsing_OperatorPrecedence(string input, string expected) {
         // Arrange & Act
         var (ast, errors) = ParseProgram(input);
@@ -173,5 +177,54 @@ public class ParserTests {
         var lexer = new Lexer(input);
         var parser = new Parser(lexer);
         return (parser.ParseProgram(), parser.Errors);
+    }
+
+    static void LiteralExpressionTest(IExpression? expression, object value) {
+        expression.Should().NotBeNull();
+
+        switch (value) {
+            case int x:
+                IntegerLiteralTest(expression, x);
+                break;
+            case long x:
+                IntegerLiteralTest(expression, x);
+                break;
+            case string x:
+                IdentifierTest(expression, x);
+                break;
+            case bool x:
+                BooleanTest(expression, x);
+                break;
+            default:
+                Assert.Fail($"Type of expression not handled: {expression!.GetType().Name}");
+                break;
+        };
+    }
+
+    static void IdentifierTest(IExpression? expression, string value) {
+        var stmt = expression.Should()
+            .NotBeNull().And
+            .BeAssignableTo<Identifier>().Subject;
+
+        stmt.Value.Should().Be(value);
+        stmt.ToString().Should().Be(value.ToString());
+    }
+
+    static void IntegerLiteralTest(IExpression? expression, long value) {
+        var stmt = expression.Should()
+            .NotBeNull().And
+            .BeAssignableTo<IntegerLiteral>().Subject;
+
+        stmt.Value.Should().Be(value);
+        stmt.ToString().Should().Be(value.ToString());
+    }
+
+    static void BooleanTest(IExpression? expression, bool value) {
+        var stmt = expression.Should()
+            .NotBeNull().And
+            .BeAssignableTo<BooleanExpression>().Subject;
+
+        stmt.Value.Should().Be(value);
+        stmt.ToString().Should().Be(value.ToString().ToLower());
     }
 }
