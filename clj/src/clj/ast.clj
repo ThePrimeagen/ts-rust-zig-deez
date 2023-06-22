@@ -1,85 +1,117 @@
 (ns clj.ast
   (:refer-clojure :exclude [let if int fn])
-  (:require [clj.util :refer [third]]))
+  (:require [clj.util :refer [third fourth]]
+            [clojure.string :as str]))
 
-  ;; statements
-(def stmt-kind first)
+;; statements
+(def kind first)
 
 (defmacro let [ident value]
-  `(list :let ~ident ~value))
+  `(vector :let ~ident ~value))
 
 (def let-ident second)
 (def let-value third)
 
 
 (defmacro expr [expr]
-  `(list :expr ~expr))
+  `(vector :expr ~expr))
 
 (def expr-expr second)
 
 
 (defmacro block [stmts]
-  `(list :block ~stmts))
+  `(vector :block ~stmts))
 
 (def block-stmts second)
 
 
 (defmacro return [expr]
-  `(list :return ~expr))
+  `(vector :return ~expr))
 
 (def return-expr second)
 
+
 ;; expressions
 (defmacro ident [literal]
-  `(list :ident ~literal))
+  `(vector :ident ~literal))
 
 (def ident-literal second)
 
 
 (defmacro int [val]
-  `(list :int ~val))
+  `(vector :int ~val))
 
 (def int-value second)
 
 
 (defmacro prefix [op right]
-  `(list :prefix ~op ~right))
+  `(vector :prefix ~op ~right))
 
-(def prefix-op    first)
-(def prefix-right second)
+(def prefix-op    second)
+(def prefix-right third)
 
 
 (defmacro infix [left op right]
-  `(list :infix ~left ~op ~right))
+  `(vector :infix ~left ~op ~right))
 
-(def infix-left  first)
-(def infix-op    second)
-(def infix-right third)
+(def infix-left  second)
+(def infix-op    third)
+(def infix-right fourth)
 
 
 (defmacro bool [val]
-  `(list :bool ~val))
+  `(vector :bool ~val))
 
 (def bool-value second)
 
 
 (defmacro if [condition consequence alternative]
-  `(list :if ~condition ~consequence ~alternative))
+  `(vector :if ~condition ~consequence ~alternative))
 
-(def if-condition   first)
-(def if-consequence second)
-(def if-alternative third)
+(def if-condition   second)
+(def if-consequence third)
+(def if-alternative fourth)
 
 
 (defmacro fn [params block]
-  `(list :fn ~params ~block))
+  `(vector :fn ~params ~block))
 
-(def fn-params first)
-(def fn-block  second)
+(def fn-params second)
+(def fn-block  third)
 
 
 (defmacro call [fn args]
-  `(list :call ~fn ~args))
+  `(vector :call ~fn ~args))
 
-(def call-fn   first)
-(def call-args second)
+(def call-fn   second)
+(def call-args third)
+
+
+(defmacro program [stmts]
+  `(vector :program ~stmts))
+
+(def program-stmts second)
+
+(defn to-str [ast]
+  (case (kind ast)
+    :program (str/join (mapv to-str (program-stmts ast)))
+    ;; statements
+    :let    (println-str "let" (let-ident ast) (to-str (let-value ast)) ";")
+    :expr   (println-str (to-str (expr-expr ast)) ";")
+    :block  (println-str "{" \newline (str/join (mapv to-str (block-stmts ast))) "}")
+    :return (println-str (to-str (return-expr ast)) ";")
+    ;; expressions
+    :prefix (str "(" (prefix-op ast) (to-str (prefix-right ast)) ")")
+    :infix  (str "(" (to-str (infix-left ast)) \space (infix-op ast) \space (to-str (infix-right)))
+    :if     (str "if" \space "(" (to-str (if-condition ast)) ")"
+                  (to-str (if-consequence ast))
+                  (when-not (empty? (if-alternative ast))
+                    (str " else " (to-str (if-alternative ast)))))
+    :fn     (str "fn(" (str/join ", " (mapv to-str (fn-params ast))) ")" \space
+                 (to-str (fn-block ast)))
+    :call   (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
+    ;; literals
+    :ident (str (ident-literal ast))
+    :int   (str (int-value ast))
+    :bool  (str (bool-value ast))
+    (assert ast "ast/to-str not implemented")))
