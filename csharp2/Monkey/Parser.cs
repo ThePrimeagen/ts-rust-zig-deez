@@ -42,6 +42,9 @@ class Parser {
         _prefixFns.Add(TokenType.Int, ParseIntegerExpression);
         _prefixFns.Add(TokenType.Bang, ParsePrefixExpression);
         _prefixFns.Add(TokenType.Minus, ParsePrefixExpression);
+        _prefixFns.Add(TokenType.True, ParseBooleanExpression);
+        _prefixFns.Add(TokenType.False, ParseBooleanExpression);
+        _prefixFns.Add(TokenType.LParen, ParseGroupedExpression);
 
         _infixFns.Add(TokenType.Plus, ParseInfixExpression);
         _infixFns.Add(TokenType.Minus, ParseInfixExpression);
@@ -107,8 +110,10 @@ class Parser {
     }
 
     IExpression? ParseExpression(Precedence precedence) {
-        if (!_prefixFns.TryGetValue(_curToken.Type, out var prefix))
+        if (!_prefixFns.TryGetValue(_curToken.Type, out var prefix)) {
+            _errors.Add($"No prefix for parse for {_curToken.Type}");
             return null;
+        }
 
         var expression = prefix();
         while (_peekToken.Type is not TokenType.Semicolon && PeekPrecedence() > precedence) {
@@ -123,7 +128,7 @@ class Parser {
     }
 
     Identifier ParseIdentifierExpression()
-      => new() { Token = _curToken, Value = _curToken.Literal };
+        => new() { Token = _curToken, Value = _curToken.Literal };
 
     IntegerLiteral ParseIntegerExpression() {
         if (!long.TryParse(_curToken.Literal, out var value))
@@ -145,6 +150,15 @@ class Parser {
         NextToken();
         var right = ParseExpression(precedence);
         return new() { Token = token, Operator = token.Literal, Left = left, Right = right };
+    }
+
+    BooleanExpression ParseBooleanExpression()
+        => new() { Token = _curToken, Value = _curToken.Type == TokenType.True };
+
+    IExpression? ParseGroupedExpression() {
+        NextToken();
+        var expression = ParseExpression(Precedence.Lowest);
+        return ExpectPeek(TokenType.RParen) ? expression : null;
     }
 
     void NextToken() {
