@@ -1,31 +1,74 @@
 (ns clj.lexer
-  (:require [clj.util :refer [digit? letter? space? to-str]]
-        [clj.token :as token :refer [chr-token? two-op?]]))
+  (:refer-clojure :exclude [next peek])  
+  (:require [jdsl.combinator  :as jc]
+            [jdsl.basic       :as jb]
+            [jdsl.char-stream :as cs]
+            [jdsl.char-parser :as jp]
+            [clj.token        :as token]))
 
-(defn lex
+(def single-char
+  (-> token/create (jc/map (jp/any-of "=+-!*/<>,;(){}"))))
+
+(def double-char
+  (let [parsers (-> jp/string (map ["<=" ">=" "==" "!="]))] 
+  (-> token/create (jc/map (jc/choice parsers)))))
+
+(def string
+  (let [parser (-> (jc/many* (jp/none-of "\""))
+                   (jc/between (jp/char \") (jp/char \")))]
+  (-> (partial token/create :string) (jc/map parser))))
+
+(def integer
+  (-> (partial token/create :int) (jc/map (jc/many+ jp/digit))))
+
+(def keywords
+  (let [parsers (-> jp/string (map ["fn" "let" "true" "false" "if" "else" "return"]))]
+  (-> token/create (jc/map (jc/choice parsers)))))
+
+(def identifier
+  (-> (partial token/create :ident) (jc/map (jc/many+ jp/alpha-num))))
+
+(def EOF
+  (-> token/create (jc/map jp/eof)))
+
+(def illegal
+  (-> token/create (jc/map jp/any-char)))
+
+(def tokens
+  (jc/choice [double-char 
+              single-char 
+              string 
+              integer 
+              keywords 
+              identifier
+              EOF
+              illegal]))
+
+(def lexer
+  (-> jp/skip-spaces* (jc/>> tokens)))
+
+(def next lexer)
+
+(def peek (jc/peek next))
+
+(defn expect [kind]
+  (jb/do
+    (token <- peek)
+    (if-not (= kind (token/kind token))
+      (jc/fail-with (jb/error "Expected: " kind))
+    (-> next))))
+
+(defn run 
   ([input]
-    (lex 0 input))
-  ([pos [ch pk & rst :as input]]
-    (let [op (str ch pk)]
-    (cond (empty? input)  (list (token/create :eof nil pos))
-          (space? ch)     (recur (inc pos) (next input)) ;; skips whitespaces
-          (two-op? op)    (cons (token/create (token/chr->kind op) op pos)
-                                (lazy-seq (lex (+ 2 pos) rst)))
-          (chr-token? ch) (cons (token/create (token/chr->kind ch) ch pos)
-                                (lazy-seq (lex (inc pos) (next input))))
-          (digit? ch)     (lex digit? pos input :int)
-          (letter? ch)    (lex letter? pos input nil)
-          :else           (list (token/create :illegal ch pos)))))
-  ([pred pos input kind]
-    (let [[chrs rst] (split-with pred input)
-          ident      (to-str chrs)
-          npos       (+ pos (count chrs))
-          kind       (or kind (token/ident->kind ident))]
-    (cons (token/create kind ident pos)
-          (lazy-seq (lex npos rst))))))
+    (run lexer (cs/create input)))
+  ([parser cs]
+    (let [[token cs] (jb/run parser cs)]
+    (if (= :eof (token/kind token))
+      (list token)
+    (cons token (lazy-seq (run parser cs)))))))
 
 (comment
-  (lex "=+(){},;")
-  (lex "== != <= >= < > = /")
-  (lex (slurp "./test/clj/input.monkey"))
+  (run "=+(){},;|")
+  (run "== != <= >= < > = /")
+  (run (slurp "./test/clj/input.monkey"))
   ())

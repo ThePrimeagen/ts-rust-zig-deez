@@ -1,55 +1,41 @@
 (ns clj.token
-  (:refer-clojure :exclude [next])
-  (:require [clj.util :refer [third]]
-            [clojure.pprint :refer [pprint]]))
+  (:require [clj.util :as util]))
 
-(defn chr->kind [chr]
-  (case chr 
-    \=   :assign
-    \+   :plus
-    \-   :minus
-    \!   :bang
-    \*   :astrisk
-    \/   :slash
-    \<   :lt
-    \>   :gt
-    \,   :comma
-    \;   :semicolon
-    \(   :l_paren
-    \)   :r_paren
-    \{   :l_squirly
-    \}   :r_squirly
-    "<=" :lteq
-    ">=" :gteq
-    "==" :eq
-    "!=" :noteq
-         nil))
+(def lit->kind
+  {"="  :assign
+   "+"  :plus
+   "-"  :minus
+   "!"  :bang
+   "*"  :astrisk
+   "/"  :slash
+   "<"  :lt
+   ">"  :gt
+   ","  :comma
+   ";"  :semicolon
+   "("  :l_paren
+   ")"  :r_paren
+   "{"  :l_squirly
+   "}"  :r_squirly
+   "<=" :lteq
+   ">=" :gteq
+   "==" :eq
+   "!=" :noteq
+   ""   :eof
+   ;; keywords
+   "fn"     :fn
+   "let"    :let
+   "true"   :true
+   "false"  :false
+   "if"     :if
+   "else"   :else
+   "return" :return})
 
-(def chr-token? chr->kind)
-
-(def two-op? #{">=" "<=" "==" "!="})
-
-(defn ident->kind [ident]
-  (case ident
-    "fn"     :fn
-    "let"    :let
-    "true"   :true
-    "false"  :false
-    "if"     :if
-    "else"   :else
-    "return" :return
-             :ident))
-
-(defmacro create [kind literal position]
-  `(list ~kind ~literal ~position))
+(defn create 
+  ([literal]
+    (let [literal (util/to-str literal)]
+    (vector (-> (lit->kind literal) (or :illegal)) (util/to-str literal))))
+  ([kind literal]
+    (vector kind (util/to-str literal))))
 
 (def kind     first)
 (def literal  second)
-(def position third)
-
-(defn pp [token]
-  (-> (zipmap [:kind :literal :position] token)
-      (pprint)))
-
-(defmacro next [tokens]
-  `(first ~tokens))
