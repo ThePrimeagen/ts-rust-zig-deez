@@ -1,16 +1,14 @@
 (ns clj.parser
-  (:require [clj.token :as token]
-            [clj.ast   :as ast]
-            [clj.lexer :as lexer]))
+  {:clj-kondo/ignore [:unresolved-symbol]}
+  (:require [jdsl.combinator  :as jc]
+            [jdsl.basic       :as jb]
+            [jdsl.char-stream :as cs]
+            [jdsl.char-parser :as jp]
+            [clj.token        :as token]
+            [clj.ast          :as ast]
+            [clj.lexer        :as lexer]))
 
-(defmacro return [parsed rest-tokens]
-  `(list ~parsed ~rest-tokens))
-
-(declare parse-expr parse-block-stmt parse-stmt)
-
-(defn expect-peek [[cur :as tokens] expected-kind]
-  (when (= expected-kind (token/kind cur))
-    (rest tokens)))
+(declare parse-expr parse-block-stmts parse-stmt)
 
 ;; precedence
 (def ^:const LOWEST  0)
@@ -21,8 +19,8 @@
 (def ^:const PREFIX  5)
 (def ^:const CALL    6)
 
-(defn precedence [token-type]
-  (case token-type
+(defn precedence [token]
+  (case (token/kind token)
     (:eq
      :noteq)   EQUALS
     (:lt
@@ -36,88 +34,87 @@
      :l_paren  CALL
                LOWEST))
 
-(defn chomp-semicolon [tokens]
-  (drop-while #(= :semicolon (token/kind %)) tokens))
+(def chomp-semicolon
+  (jc/skip-many* (lexer/expect :semicolon)))
 
-(defn parse-ident [[ident :as tokens]]
-  (return (ast/ident (token/literal ident)) (rest tokens)))
+(def parse-ident
+  (jb/do
+    (ident <- (lexer/expect :ident))
+    (jc/return (ast/ident (token/literal ident)))))
 
-(defn parse-int [[int :as tokens]]
-  (return (ast/int (Integer/parseInt (token/literal int))) (rest tokens)))
+(def parse-int
+  (jb/do
+    (integer <- (lexer/expect :int))
+    (let [parsed-int (Integer/parseInt (token/literal integer))]
+    (jc/return (ast/int parsed-int)))))
 
-(defn parse-prefix [[prefix :as tokens]]
-  (when-let [[right-expr rest-tokens] (parse-expr PREFIX (rest tokens))]
-    (return (ast/prefix (token/literal prefix) right-expr) rest-tokens)))
+(def parse-prefix
+  (jb/do
+    (prefix     <- (-> lexer/next (jc/label "Expected: prefix function")))
+    (right-expr <- (parse-expr PREFIX))
+    (jc/return (ast/prefix (token/literal prefix) right-expr))))
 
-(defn parse-infix [left-expr [infix :as tokens]]
-  (when-let [[right-expr rest-tokens] (parse-expr (precedence (token/kind infix)) (rest tokens))]
-    (return (ast/infix left-expr (token/literal infix) right-expr) rest-tokens)))
+(defn parse-infix [lexpr]
+  (jb/do
+    (infix      <- (-> lexer/next (jc/label "Expected: infix function")))
+    (right-expr <- (parse-expr (precedence infix)))
+    (jc/return (ast/infix lexpr (token/literal infix) right-expr))))
 
-(defn parse-bool [[bool :as tokens]]
-  (return (ast/bool (= :true (token/kind bool))) (rest tokens)))
+(def parse-bool
+  (jb/do
+    (bool <- (-> (lexer/expect :true) (jc/<|> (lexer/expect :false))))
+    (jc/return (ast/bool (= :true (token/kind bool))))))
 
-(defn parse-group [tokens]
-  (when-let [[expr rest-tokens] (parse-expr LOWEST (rest tokens))]
-  (when-let [rest-tokens        (expect-peek rest-tokens :r_paren)]
-    (return expr rest-tokens))))
+(def parse-group
+  (jb/do
+    (lexer/expect :l_paren)
+    (expr <- (parse-expr LOWEST))
+    (lexer/expect :r_paren)
+    (jc/return expr)))
 
-(defn parse-if [tokens]
-  (when-let [rest-tokens         (expect-peek (rest tokens) :l_paren)]
-  (when-let [[condi rest-tokens] (parse-expr LOWEST rest-tokens)]
-  (when-let [rest-tokens         (expect-peek rest-tokens :r_paren)]
-  (when-let [rest-tokens         (expect-peek rest-tokens :l_squirly)]
-  (when-let [[conse rest-tokens] (parse-block-stmt rest-tokens)]
-  (when-let [rest-tokens         (expect-peek rest-tokens :r_squirly)]
-  (if-not   (= :else (token/kind (token/next rest-tokens)))
-    (return (ast/if condi conse nil) rest-tokens)
-  (when-let [rest-tokens         (expect-peek (rest rest-tokens) :l_squirly)]
-  (when-let [[alter rest-tokens] (parse-block-stmt rest-tokens)]
-  (when-let [rest-tokens         (expect-peek rest-tokens :r_squirly)]
-    (return (ast/if condi conse alter) rest-tokens))))))))))))
+(def parse-if
+  (jb/do
+    (lexer/expect :if)
+    (lexer/expect :l_paren)
+    (condi <- (parse-expr LOWEST)) ;; condition
+    (lexer/expect :r_paren)
+    (conse <- parse-block-stmts)   ;; consequence
+    (token <- lexer/peek)
+    (if-not (= :else (token/kind token))
+      (jc/return (ast/if condi conse nil))
+    (jb/do
+      (lexer/expect :else)
+      (altrn <- parse-block-stmts) ;; alternative
+      (jc/return (ast/if condi conse altrn))))))
 
-(defn parse-fn-params 
-  ([tokens]
-    (if (= :r_paren (token/kind (token/next tokens)))
-      (return [] tokens)
-    (when-let [[ident rest-tokens] (parse-ident tokens)]
-      (parse-fn-params rest-tokens [ident]))))
-  ([tokens idents]
-    (let [rest-tokens (expect-peek tokens :comma)]
-    (if-not rest-tokens
-      (return idents tokens)
-    (when-let [[ident rest-tokens] (parse-ident rest-tokens)]
-      (recur rest-tokens (conj idents ident)))))))
+(def parse-fn-params
+  (jb/do
+    (lexer/expect :l_paren)
+    (params <- (-> parse-ident (jc/sep-by* (lexer/expect :comma))))
+    (lexer/expect :r_paren)
+    (jc/return params)))
 
-(defn parse-fn [tokens]
-  (when-let [rest-tokens          (expect-peek (rest tokens) :l_paren)]
-  (when-let [[params rest-tokens] (parse-fn-params rest-tokens)]
-  (when-let [rest-tokens          (expect-peek rest-tokens :r_paren)]
-  (when-let [rest-tokens          (expect-peek rest-tokens :l_squirly)]
-  (when-let [[block rest-tokens]  (parse-block-stmt rest-tokens)]
-  (when-let [rest-tokens          (expect-peek rest-tokens :r_squirly)]
-    (return (ast/fn params block) rest-tokens))))))))
+(def parse-fn
+  (jb/do
+    (lexer/expect :fn)
+    (params <- parse-fn-params)
+    (block  <- parse-block-stmts)
+    (jc/return (ast/fn params block))))
 
-(defn parse-call-args 
-  ([tokens]
-    (if (= :r_paren (token/kind (token/next tokens)))
-      (return [] tokens)
-    (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
-      (parse-call-args rest-tokens [expr]))))
-  ([tokens exprs]
-    (let [rest-tokens (expect-peek tokens :comma)]
-    (if-not rest-tokens
-      (return exprs tokens)
-    (when-let [[expr rest-tokens] (parse-expr LOWEST rest-tokens)]
-      (recur rest-tokens (conj exprs expr)))))))
+(def parse-call-args
+  (jb/do
+    (lexer/expect :l_paren)
+    (exprs <- (-> (parse-expr LOWEST) (jc/sep-by* (lexer/expect :comma))))
+    (lexer/expect :r_paren)
+    (jc/return exprs)))
 
-#_{:clj-kondo/ignore [:unused-binding]}
-(defn parse-call [fn-expr [lparan :as tokens]]
-  (when-let [[args rest-tokens] (parse-call-args (rest tokens))]
-  (when-let [rest-tokens        (expect-peek rest-tokens :r_paren)]
-    (return (ast/call fn-expr args) rest-tokens))))
+(defn parse-fn-call [fn-expr]
+  (jb/do
+    (args <- parse-call-args)
+    (jc/return (ast/call fn-expr args))))
 
-(defn prefix-parse-fn [token-type]
-  (case token-type
+(defn prefix-parse-fn [token]
+  (case (token/kind token)
      :ident   parse-ident
      :int     parse-int
      :l_paren parse-group
@@ -127,10 +124,10 @@
      :minus)  parse-prefix
     (:true  
      :false)  parse-bool
-             nil))
+              (jc/fail-with (jb/error "No expression prefix function for " token))))
 
-(defn infix-parse-fn [token-type]
-  (case token-type
+(defn infix-parse-fn [token]
+  (case (token/kind token)
     (:eq
      :noteq
      :lt
@@ -141,86 +138,111 @@
      :minus
      :slash
      :astrisk) parse-infix
-     :l_paren  parse-call
-               nil))
+     :l_paren  parse-fn-call
+               nil)) ;; coz infix-parsers expect on argument
 
 (defn parse-expr 
-  ([prece [expr :as tokens]]
-    (when-let [prefix    (prefix-parse-fn (token/kind expr))]
-    (when-let [left-expr (prefix tokens)] ;; left-expr = [left-expr rest-tokens]
-      (apply parse-expr prece left-expr))))
-  ([prece left-expr [op :as rest-tokens]]
-    (if (or (= :semicolon (token/kind op))
-            (>= prece (precedence (token/kind op))))     (return left-expr rest-tokens)
-    (let [infix (infix-parse-fn (token/kind op))]
-    (if-not infix                                        (return left-expr rest-tokens)
-    (when-let [left-expr (infix left-expr rest-tokens)]  (apply parse-expr prece left-expr)))))))
+  ([prece]
+    (jb/do
+      (token <- lexer/peek)
+      (lexpr <- (prefix-parse-fn token))
+      (parse-expr prece lexpr)))
+  ([prece lexpr]
+    (jb/do
+      (token <- lexer/peek)
+      (if (or (= :semicolon (token/kind token))
+              (>= prece (precedence token))
+              (not (infix-parse-fn token)))
+        (jc/return lexpr)
+      (jb/do
+        (lexpr <- ((infix-parse-fn token) lexpr))
+        (parse-expr prece lexpr))))))
 
-(defn parse-let [[ident :as tokens]]
-  (when-let [rest-tokens       (expect-peek tokens :ident)]
-  (when-let [rest-tokens       (expect-peek rest-tokens :assign)]
-  (when-let [[val rest-tokens] (parse-expr LOWEST rest-tokens)]
-    (return (ast/let (token/literal ident) val) 
-            (chomp-semicolon rest-tokens))))))
+(def parse-let-stmt
+  (jb/do
+    (lexer/expect :let)
+    (ident <- (lexer/expect :ident))
+    (lexer/expect :assign)
+    (value <- (parse-expr LOWEST))
+    (_     <- chomp-semicolon)
+    (jc/return (ast/let (token/literal ident) value))))
 
-(defn parse-return [tokens]
-  (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
-    (return (ast/return expr) (chomp-semicolon rest-tokens))))
+(def parse-return-stmt
+  (jb/do
+    (lexer/expect :return)
+    (expr <- (parse-expr LOWEST))
+    (_    <- chomp-semicolon)
+    (jc/return (ast/return expr))))
 
-(defn parse-expr-stmt [tokens]
-  (when-let [[expr rest-tokens] (parse-expr LOWEST tokens)]
-    (return (ast/expr expr) (chomp-semicolon rest-tokens))))
+(def parse-expr-stmt 
+  (jb/do
+    (expr <- (parse-expr LOWEST))
+    (_    <- chomp-semicolon)
+    (jc/return (ast/expr expr))))
 
-(defn parse-block-stmt
-  ([tokens]
-    (parse-block-stmt tokens []))
-  ([[cur :as rest-tokens] stmts]
-    (if (or (= :r_squirly (token/kind cur))
-            (= :eof       (token/kind cur)))
-      (return (ast/block stmts) rest-tokens)
-    (when-let [[stmt rest-tokens] (parse-stmt rest-tokens)]
-      (recur rest-tokens (conj stmts stmt))))))
+(def parse-block-stmts
+  (jb/do
+    (lexer/expect :l_squirly)
+    (stmts <- (jc/many* parse-stmt))
+    (lexer/expect :r_squirly)
+    (jc/return (ast/block stmts))))
 
-(defn parse-stmt [[cur :as tokens]]
-  (case (token/kind cur)
-    :let    (parse-let (rest tokens))
-    :return (parse-return (rest tokens))
-            (parse-expr-stmt tokens)))
+(def parse-stmt
+  (jb/do
+    (token <- lexer/peek)
+    (case (token/kind token)
+      :let    parse-let-stmt
+      :return parse-return-stmt
+              parse-expr-stmt)))
 
-(defn parse-program [[cur :as tokens]]
-  (when-not (= :eof (token/kind cur))
-  (when-let [[stmt rest-tokens] (parse-stmt tokens)]
-    (cons stmt (lazy-seq (parse-program rest-tokens))))))
+(def parse-program
+  (jb/do
+    (stmts <- (jc/many+ parse-stmt))
+    (lexer/expect :eof)
+    (jc/return (ast/program stmts))))
+
+(defn print-error [e]
+  (let [ex-data (ex-data e)
+        ex-msg  (ex-message e)
+        [_ ts]  (jb/run jp/skip-spaces* (:ts ex-data))
+        [found] (jb/run lexer/peek ts)]
+  (println ex-msg \newline 
+           (or (:msg ex-data) "Expected: ") \newline
+           "   Found:" found)))
+
+(defn run [input]
+  (first (jb/run parse-program (cs/create input))))
 
 (comment
-  (parse-program (lexer/lex "foobar;"))
-  (parse-program (lexer/lex "5;"))
-  (parse-program (lexer/lex "!5;"))
-  (parse-program (lexer/lex "-15;"))
-  (parse-program (lexer/lex "5 + 5;"))
-  (parse-program (lexer/lex "5 != 5;"))
-  (parse-expr LOWEST (lexer/lex "5 != 5;"))
-  (parse-expr LOWEST (lexer/lex "5 !=;"))
-  (parse-program (lexer/lex "let hello = 5;"))
-  (parse-program (lexer/lex "true;"))
-  (parse-program (lexer/lex "let barfoo = false;"))
-  (parse-program (lexer/lex "3 < 5 == true"))
-  (parse-program (lexer/lex "!true;"))
-  (parse-program (lexer/lex "2 / (5 + 5)"))
-  (parse-program (lexer/lex "!(true == true)"))
-  (parse-program (lexer/lex "1 + (2 + 3) + 4"))
-  (parse-program (lexer/lex "if (x < y) { x }"))
-  (parse-program (lexer/lex "if (x < y) { x } else { y }"))
-  (parse-program (lexer/lex "if (x < y) { x; 1; } else { y; 0; }"))
-  (parse-program (lexer/lex "fn(x, y) { x + y; };"))
-  (parse-program (lexer/lex "fn(x, y) { x + y; y + 1 + x };"))
-  (parse-program (lexer/lex "fn() {};"))
-  (parse-program (lexer/lex "fn(x, y) {};"))
-  (parse-program (lexer/lex "fn(x, y) { x + y; }(2, 3)"))
-  (parse-program (lexer/lex "callsFunction(2, 3, fn(x, y) { x + y; });"))
-  (parse-program (lexer/lex "add(1, 2 * 3, 4 + 5);"))
-  (parse-program (lexer/lex "if (x < y) { return 5 } else { return 7 };"))
-  (parse-program (lexer/lex "if (x < y) { return 5 };"))
-  (parse-program (lexer/lex "3 + 4 * 5 == 3 * 1 + 4 * 5"))
+  (run "foobar; 5;")
+  (run "5;")
+  (run "!5;")
+  (run "-15;")
+  (run "5 + 5;")
+  (run "5 != 5;")
+  (run "let hello | 5;")
+  (run "true;")
+  (run "let barfoo = false;")
+  (run "3 < 5 == true")
+  (run "!true;")
+  (run "2 / (5 + 5)")
+  (run "!(true == true)")
+  (run "1 + (2 + 3) + 4")
+  (run "if (x < y) { x }")
+  (run "if (x < y) { } else { }")
+  (run "if (x < y) { x } else { y }")
+  (run "if (x < y) { x; 1; }")
+  (run "if (x < y) { x; 1; } else { y; 0; }")
+  (run "fn(x, y) { x + y; };")
+  (run "fn(x, y) { x + y; y + 1 + x };")
+  (run "fn(x, y) x + y; y + 1 + x };")
+  (run "fn() {};")
+  (run "fn(x, y) {};")
+  (run "fn(x, y) { x + y; }(2, 3)")
+  (run "callsFunction(2, 3, fn(x, y) x + y; });")
+  (run "callsFunction(2, 3, fn(x, y) { x + y; });")
+  (run "add(1, 2 * 3, 4 + 5);")
+  (run "if (x < y) { return 5 } else { return 7 };")
+  (run "if (x < y) { return 5 };")
+  (run "3 + 4 * 5 == 3 * 1 + 4 * 5")
   ())
-
