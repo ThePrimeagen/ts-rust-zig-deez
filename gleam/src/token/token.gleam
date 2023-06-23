@@ -1,5 +1,5 @@
 pub type Token {
-  Illegal
+  Illegal(String)
   Eof
 
   // Items 
@@ -39,4 +39,18 @@ pub type Token {
   If
   Else
   Return
+}
+
+pub fn lookup_ident(str) {
+  case str {
+    "fn" -> Function
+    "let" -> Let
+    "true" -> True
+    "false" -> False
+    "if" -> If
+    "else" -> Else
+    "return" -> Return
+    "macro" -> Macro
+    _ -> Ident(str)
+  }
 }
