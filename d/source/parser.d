@@ -7,6 +7,7 @@
  * Version: 0.0.1
  */
 
+import atom;
 import lexer;
 import std.algorithm.iteration : joiner;
 import std.array : appender, Appender;
@@ -66,22 +67,26 @@ shared static this()
     import std.exception : assumeUnique;
 
     PrefixParseFn[TokenTag] tempPrefixRules = [
-        TokenTag.Ident: &parseIdent, TokenTag.Minus: &parseUnary,
-        TokenTag.Bang: &parseUnary, TokenTag.Int: &parseInt,
+        TokenTag.Ident: &parseIdent,
+        TokenTag.Minus: &parsePrefix!(NegateExpressionNode),
+        TokenTag.Bang: &parsePrefix!(BangExpressionNode), TokenTag.Int: &parseInt,
         TokenTag.True: &parseBoolean, TokenTag.False: &parseBoolean,
         TokenTag.LParen: &parseGroupedExpression, TokenTag.If: &parseIfExpression,
         TokenTag.Function: &parseFunctionLiteral
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
-        TokenTag.Plus: InfixRule(&parseBinary, Precedence.Term),
-        TokenTag.Minus: InfixRule(&parseBinary, Precedence.Term),
-        TokenTag.Asterisk: InfixRule(&parseBinary, Precedence.Factor),
-        TokenTag.Slash: InfixRule(&parseBinary, Precedence.Factor),
-        TokenTag.Eq: InfixRule(&parseBinary, Precedence.Equals),
-        TokenTag.NotEq: InfixRule(&parseBinary, Precedence.Equals),
-        TokenTag.Lt: InfixRule(&parseBinary, Precedence.LessGreater),
-        TokenTag.Gt: InfixRule(&parseBinary, Precedence.LessGreater),
+        TokenTag.Plus: InfixRule(&parseBinary!(PlusExpressionNode), Precedence.Term),
+        TokenTag.Minus: InfixRule(&parseBinary!(MinusExpressionNode), Precedence.Term),
+        TokenTag.Asterisk: InfixRule(&parseBinary!(AsteriskExpressionNode),
+                Precedence.Factor),
+        TokenTag.Slash: InfixRule(&parseBinary!(SlashExpressionNode),
+                Precedence.Factor),
+        TokenTag.Eq: InfixRule(&parseBinary!(EqExpressionNode), Precedence.Equals),
+        TokenTag.NotEq: InfixRule(&parseBinary!(NotEqExpressionNode),
+                Precedence.Equals),
+        TokenTag.Lt: InfixRule(&parseBinary!(LtExpressionNode), Precedence.LessGreater),
+        TokenTag.Gt: InfixRule(&parseBinary!(GtExpressionNode), Precedence.LessGreater),
         TokenTag.LParen: InfixRule(&parseCallExpression, Precedence.Call),
         TokenTag.RParen: InfixRule(null, Precedence.Lowest),
         TokenTag.RSquirly: InfixRule(null, Precedence.Lowest),
@@ -123,13 +128,13 @@ ExpressionNode parseBoolean(ref Parser parser)
  * Params: parser = the parser iterating through tokens
  * Returns: the unary expression node
  */
-ExpressionNode parseUnary(ref Parser parser)
+T parsePrefix(T : PrefixExpressionNode)(ref Parser parser)
 {
     const auto start = parser.position;
     parser.skipToken();
 
     auto expr = parser.parseExpression(Precedence.Unary);
-    return new PrefixExpressionNode(start, expr);
+    return new T(start, expr);
 }
 
 /**
@@ -152,13 +157,13 @@ ExpressionNode parseInt(ref Parser parser)
  * prec = the current operator precedence
  * Returns: the binary expression node
  */
-ExpressionNode parseBinary(ref Parser parser, ref ExpressionNode lhs, Precedence prec)
+T parseBinary(T : InfixExpressionNode)(ref Parser parser, ref ExpressionNode lhs, Precedence prec)
 {
     const auto start = parser.position;
     parser.skipToken();
 
     auto rhs = parser.parseExpression(cast(int)(prec) + 1);
-    return new InfixExpressionNode(start, lhs, rhs);
+    return new T(start, lhs, rhs);
 }
 
 /// Parse expressions grouped by parentheses
@@ -167,10 +172,10 @@ ExpressionNode parseGroupedExpression(ref Parser parser)
     parser.skipToken();
     auto expr = parser.parseExpression(Precedence.Lowest);
 
-    if (parser.tokenTags[][parser.position] != TokenTag.RParen)
+    if (parser.tokenTags[parser.position] != TokenTag.RParen)
     {
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
-                tagReprs[TokenTag.RParen], parser.tokenTags[][parser.position]));
+                tagReprs[TokenTag.RParen], parser.tokenTags[parser.position]));
 
         return null;
     }
@@ -183,7 +188,7 @@ ExpressionNode parseGroupedExpression(ref Parser parser)
 ExpressionNode parseIfExpression(ref Parser parser)
 {
     const auto start = parser.position;
-    const TokenTag[] tokenTags = parser.tokenTags[];
+    const auto tokenTags = parser.tokenTags;
 
     // expect lparen and skip before block statement
     if (parser.peek() != TokenTag.LParen)
@@ -243,7 +248,7 @@ ExpressionNode parseIfExpression(ref Parser parser)
 ExpressionNode parseFunctionLiteral(ref Parser parser)
 {
     const auto start = parser.position;
-    const TokenTag[] tokenTags = parser.tokenTags[];
+    const auto tokenTags = parser.tokenTags;
 
     // expect lparen and skip before function parameters
     if (parser.peek() != TokenTag.LParen)
@@ -308,6 +313,16 @@ class ParseNode
     {
         return lexer.tagRepr(mainIdx);
     }
+
+    /**
+     * Evaluate the current node.
+     * Params: parser = the parser context for evaluation
+     * Returns: the result atom from the evaluation
+     */
+    //Atom eval(ref Parser parser)
+    //{
+    //    return null;
+    //}
 }
 
 /// Statement parse node
@@ -347,41 +362,41 @@ class ExpressionNode : ParseNode
 /// Wrapper for ExpressionNodes
 class ExpressionStatement : StatementNode
 {
-    ExpressionNode value; /// Expression node reference
+    ExpressionNode expr; /// Expression node reference
 
     /**
      * Constructs expression statement.
      * Params:
      * mainIdx = the starting index of the expression
-     * value = The expression creating the value
+     * expr = The main expression creating the value
      */
-    this(ulong mainIdx, ref ExpressionNode value)
+    this(ulong mainIdx, ref ExpressionNode expr)
     {
         super(mainIdx);
-        this.value = value;
+        this.expr = expr;
     }
 
     override string show(ref Lexer lexer)
     {
-        return (this.value !is null) ? value.show(lexer) ~ ";" : "";
+        return (this.expr !is null) ? expr.show(lexer) ~ ";" : "";
     }
 }
 
 /// Node for let statements
 class LetStatement : StatementNode
 {
-    ExpressionNode value; /// Expression node reference
+    ExpressionNode expr; /// Expression node reference
 
     /**
      * Constructs let statement.
      * Params:
      * mainIdx = the index of the variable initialized
-     * value = The expression initializing the variable
+     * expr = The main expression creating the value
      */
-    this(ulong mainIdx, ref ExpressionNode value)
+    this(ulong mainIdx, ref ExpressionNode expr)
     {
         super(mainIdx);
-        this.value = value;
+        this.expr = expr;
     }
 
     /// Show the let statement's main identifier
@@ -394,25 +409,25 @@ class LetStatement : StatementNode
     override string show(ref Lexer lexer)
     {
         return format("let %s = %s;", super.tokenLiteral(lexer),
-                (this.value !is null) ? this.value.show(lexer) : "");
+                (this.expr !is null) ? this.expr.show(lexer) : "");
     }
 }
 
 /// Node for return statements
 class ReturnStatement : StatementNode
 {
-    ExpressionNode value; /// Expression node reference
+    ExpressionNode expr; /// Expression node reference
 
     /**
      * Constructs return statement.
      * Params:
      * mainIdx = the index of the statement start
-     * value = The expression describing the value
+     * expr = The main expression creating the value
      */
-    this(ulong mainIdx, ref ExpressionNode value)
+    this(ulong mainIdx, ref ExpressionNode expr)
     {
         super(mainIdx);
-        this.value = value;
+        this.expr = expr;
     }
 
     /// Show the return statement's main identifier
@@ -424,7 +439,7 @@ class ReturnStatement : StatementNode
     /// Create statement string
     override string show(ref Lexer lexer)
     {
-        return format("return%s;", (this.value !is null) ? ' ' ~ this.value.show(lexer) : "");
+        return format("return%s;", (this.expr !is null) ? ' ' ~ this.expr.show(lexer) : "");
     }
 }
 
@@ -519,6 +534,13 @@ class IntNode : ExpressionNode
     {
         return lexer.tagRepr(mainIdx);
     }
+
+    /// Represent integer literal value
+    //override Atom eval(ref Parser parser)
+    //{
+    //    const auto val = parser.getInt64Value(mainIdx);
+    //    return new IntegerAtom(val);
+    //}
 }
 
 /// Boolean node for expressions
@@ -568,7 +590,26 @@ class PrefixExpressionNode : ExpressionNode
     {
         return format("%s%s", lexer.tagRepr(mainIdx), (this.expr !is null) ? expr.show(lexer) : "");
     }
+}
 
+/// Prefix expression specialized for '-'
+class NegateExpressionNode : PrefixExpressionNode
+{
+    /// Constructs prefix expression for '-'
+    this(ulong mainIdx, ref ExpressionNode expr)
+    {
+        super(mainIdx, expr);
+    }
+}
+
+/// Prefix expression specialized for '!'
+class BangExpressionNode : PrefixExpressionNode
+{
+    /// Constructs prefix expression for '!'
+    this(ulong mainIdx, ref ExpressionNode expr)
+    {
+        super(mainIdx, expr);
+    }
 }
 
 /// Infix binary operator node for expressions
@@ -596,6 +637,86 @@ class InfixExpressionNode : ExpressionNode
     {
         return format("(%s%s%s)", (this.lhs !is null) ? lhs.show(lexer) ~ " " : "",
                 lexer.tagRepr(mainIdx), (this.rhs !is null) ? " " ~ rhs.show(lexer) : "");
+    }
+}
+
+/// Infix expression specialized for '+'
+class PlusExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '+'
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '-'
+class MinusExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '-'
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '*'
+class AsteriskExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '*'
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '/'
+class SlashExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '/'
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '=='
+class EqExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '=='
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '!='
+class NotEqExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '!='
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '<'
+class LtExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '<'
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
+    }
+}
+
+/// Infix expression specialized for '>'
+class GtExpressionNode : InfixExpressionNode
+{
+    /// Constructs infix expression for '>'
+    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    {
+        super(mainIdx, lhs, rhs);
     }
 }
 
@@ -806,11 +927,11 @@ struct Parser
 private:
     ulong position = 0; /// Current token cursor
     ulong peekPosition = 1; /// Lookahead cursor (after current token)
-    Lexer lexer; /// Lexer instance with token list
     const TokenTag[] tokenTags; /// Alias for tokens in lexer
     const ulong tokenCount; /// Cached token length
 
 public:
+    Lexer lexer; /// Lexer instance with token list
     Appender!(string[]) errors; /// List of parse errors
     Program program; /// Container for program statements
 

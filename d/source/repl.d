@@ -7,6 +7,8 @@
  * Version: 0.0.1
  */
 
+import atom;
+import evaluator;
 import lexer;
 import parser;
 import deimos.linenoise : linenoise;
@@ -25,6 +27,7 @@ void repl()
     writefln("%s", PROMPT);
 
     char* line;
+    //auto env = new Environment();
 
     while ((line = linenoise(">> ")) !is null)
     {
