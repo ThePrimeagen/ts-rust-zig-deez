@@ -96,14 +96,16 @@
   (case (kind ast)
     :program (str/join (mapv to-str (program-stmts ast)))
     ;; statements
-    :let    (println-str "let" (let-ident ast) (to-str (let-value ast)) ";")
-    :expr   (println-str (to-str (expr-expr ast)) ";")
-    :block  (println-str "{" \newline (str/join (mapv to-str (block-stmts ast))) "}")
-    :return (println-str (to-str (return-expr ast)) ";")
+    :let    (str "let " (let-ident ast) " = " (to-str (let-value ast)) ";" \newline)
+    :expr   (str (to-str (expr-expr ast)) ";" \newline)
+    :block  (if (empty? (block-stmts ast))
+              (str "{ }")  
+            (str "{" \newline (str/join (mapv (comp #(str \tab %) to-str) (block-stmts ast))) "}"))
+    :return (str (to-str (return-expr ast)) ";")
     ;; expressions
     :prefix (str "(" (prefix-op ast) (to-str (prefix-right ast)) ")")
-    :infix  (str "(" (to-str (infix-left ast)) \space (infix-op ast) \space (to-str (infix-right)))
-    :if     (str "if" \space "(" (to-str (if-condition ast)) ")"
+    :infix  (str "(" (to-str (infix-left ast)) \space (infix-op ast) \space (to-str (infix-right ast)) ")")
+    :if     (str "if" \space "(" (to-str (if-condition ast)) ")" \space
                   (to-str (if-consequence ast))
                   (when-not (empty? (if-alternative ast))
                     (str " else " (to-str (if-alternative ast)))))
@@ -115,3 +117,5 @@
     :int   (str (int-value ast))
     :bool  (str (bool-value ast))
     (assert ast "ast/to-str not implemented")))
+
+(def pprint (comp println to-str))
