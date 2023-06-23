@@ -164,20 +164,20 @@
     (ident <- (lexer/expect :ident))
     (lexer/expect :assign)
     (value <- (parse-expr LOWEST))
-    (_     <- chomp-semicolon)
+    (chomp-semicolon)
     (jc/return (ast/let (token/literal ident) value))))
 
 (def parse-return-stmt
   (jb/do
     (lexer/expect :return)
     (expr <- (parse-expr LOWEST))
-    (_    <- chomp-semicolon)
+    (chomp-semicolon)
     (jc/return (ast/return expr))))
 
 (def parse-expr-stmt 
   (jb/do
     (expr <- (parse-expr LOWEST))
-    (_    <- chomp-semicolon)
+    (chomp-semicolon)
     (jc/return (ast/expr expr))))
 
 (def parse-block-stmts
@@ -214,7 +214,7 @@
   (first (jb/run parse-program (cs/create input))))
 
 (comment
-  (run "foobar; 5;")
+  (println (ast/to-str (run "foobar; 5;")))
   (run "5;")
   (run "!5;")
   (run "-15;")
@@ -224,7 +224,7 @@
   (run "true;")
   (run "let barfoo = false;")
   (run "3 < 5 == true")
-  (run "!true;")
+  (println (ast/to-str (run "!true;")))
   (run "2 / (5 + 5)")
   (run "!(true == true)")
   (run "1 + (2 + 3) + 4")
@@ -233,16 +233,17 @@
   (run "if (x < y) { x } else { y }")
   (run "if (x < y) { x; 1; }")
   (run "if (x < y) { x; 1; } else { y; 0; }")
+  (println (ast/to-str (run "if (x < y) { x; 1; } else { y; 0; }")))
   (run "fn(x, y) { x + y; };")
   (run "fn(x, y) { x + y; y + 1 + x };")
-  (run "fn(x, y) x + y; y + 1 + x };")
+  (println (ast/to-str (run "fn(x, y) { x + y; y + 1 + x };")))
   (run "fn() {};")
-  (run "fn(x, y) {};")
+  (println (ast/to-str (run "fn(x, y) {};")))
   (run "fn(x, y) { x + y; }(2, 3)")
   (run "callsFunction(2, 3, fn(x, y) x + y; });")
-  (run "callsFunction(2, 3, fn(x, y) { x + y; });")
+  (println (ast/to-str (run "callsFunction(2, 3, fn(x, y) { x + y; });")))
   (run "add(1, 2 * 3, 4 + 5);")
   (run "if (x < y) { return 5 } else { return 7 };")
   (run "if (x < y) { return 5 };")
-  (run "3 + 4 * 5 == 3 * 1 + 4 * 5")
+  (println (ast/to-str (run "3 + 4 * 5 == 3 * 1 + 4 * 5")))
   ())

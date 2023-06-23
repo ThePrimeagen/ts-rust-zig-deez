@@ -1,8 +1,8 @@
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        jdsl/jdsl {:git/url "https://github.com/vikasg7/jdsl.git" 
-                   :git/sha "8ce5f4824553d6d5dddae24b2503d418a3b069bf"
-                   :deps/manifest :deps}}
+        io.github.vikasg7/jdsl {:git/url "https://github.com/vikasg7/jdsl.git" 
+                                :git/sha "26c4f58f877ea9bcc8a282d0f54b26fd9cdda3fe"
+                                :deps/manifest :deps}}
  :tasks {run  {:task (exec 'clj.core/-main)}
          test {:extra-paths ["test"]
                :extra-deps {io.github.cognitect-labs/test-runner 
