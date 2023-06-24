@@ -26,8 +26,8 @@ public class Parser {
     public Parser(Lexer lexer) {
         this.lexer = lexer;
 
-        this.nextToken();
-        this.nextToken();
+        this.proceedToNextToken();
+        this.proceedToNextToken();
     }
 
     public Program parseProgram() {
@@ -42,7 +42,7 @@ public class Parser {
             } catch (ParserException pe) {
                 this.errors.add(pe.getMessage());
             }
-            nextToken();
+            proceedToNextToken();
         }
 
         return program;
@@ -52,7 +52,7 @@ public class Parser {
         throw new ParserException("Expected next token to be %s, got %s".formatted(expected.name(), this.currentToken.type().name()));
     }
 
-    private void nextToken() {
+    private void proceedToNextToken() {
         this.currentToken = this.peekToken;
         this.peekToken = this.lexer.nextToken();
     }
@@ -68,11 +68,11 @@ public class Parser {
     private ReturnStatement parseReturnStatement() {
         ReturnStatement returnStatement = new ReturnStatement(this.currentToken);
 
-        this.nextToken();
+        this.proceedToNextToken();
 
         // TODO: We're skipping the expressions until we encounter a semicolon or EOF
         while (!this.curTokenIs(TokenType.SEMI) && !this.curTokenIs(TokenType.EOF)) {
-            this.nextToken();
+            this.proceedToNextToken();
         }
 
         return returnStatement;
@@ -89,7 +89,7 @@ public class Parser {
 
         // TODO: We're skipping the expressions until we encounter a semicolon or EOF
         while (!this.curTokenIs(TokenType.SEMI) && !this.curTokenIs(TokenType.EOF)) {
-            this.nextToken();
+            this.proceedToNextToken();
         }
 
         return letStatement;
@@ -101,7 +101,7 @@ public class Parser {
         statement.setExpression(this.parseExpression(OperatorPrecedence.LOWEST));
 
         if (this.peekTokenIs(TokenType.SEMI)) {
-            this.nextToken();
+            this.proceedToNextToken();
         }
 
         return statement;
@@ -122,7 +122,7 @@ public class Parser {
                 break;
             }
 
-            nextToken();
+            proceedToNextToken();
 
             leftExpression = infixFn.apply(leftExpression);
         }
@@ -143,7 +143,7 @@ public class Parser {
 
     private PrefixExpression parsePrefixExpression() throws ParserException {
         var expression = new PrefixExpression(currentToken, currentToken.literal());
-        nextToken();
+        proceedToNextToken();
         expression.setRight(parseExpression(OperatorPrecedence.PREFIX));
         return expression;
     }
@@ -159,7 +159,7 @@ public class Parser {
         var expression = new InfixExpression(currentToken, currentToken.literal(), left);
 
         var precedence = curPrecedence();
-        nextToken();
+        proceedToNextToken();
         expression.setRight(parseExpression(precedence));
 
         return expression;
@@ -183,7 +183,7 @@ public class Parser {
 
     private void expectPeek(TokenType type) throws ParserException {
         if (this.peekTokenIs(type)) {
-            this.nextToken();
+            this.proceedToNextToken();
         } else {
             this.peekError(type);
         }
