@@ -16,11 +16,11 @@ clean:
 
 fmt:
 	@echo "===> Formatting"
-	v fmt -w .
+	v fmt -w src/
 
 lint:
 	@echo "===> Linting"
-	v vet .
+	v vet src/
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"

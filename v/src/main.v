@@ -1,6 +1,7 @@
 module main
 
-import lexer { Token, new_lexer }
+import lexer { new_lexer }
+import token { TokenType }
 import os
 
 fn main() {
@@ -8,8 +9,8 @@ fn main() {
 		example := os.input('> ')
 		mut lex := new_lexer(example)
 
-		for t, v := lex.next_token(); t != Token.eof; t, v = lex.next_token() {
-			println('${t} ${v}')
+		for t := lex.next_token(); t.@type != TokenType.eof; t = lex.next_token() {
+			println('${t.@type} ${t.value}')
 		}
 	}
 }

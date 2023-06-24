@@ -1,34 +1,6 @@
 module lexer
 
-pub enum Token {
-	ident
-	int
-	illegal
-	eof
-	assign
-	bang
-	dash
-	forward_slash
-	asterisk
-	equal
-	not_equal
-	less_than
-	greater_than
-	plus
-	comma
-	semicolon
-	l_paren
-	r_paren
-	l_squirly
-	r_squirly
-	function
-	let
-	@if // @ escapes v keywords
-	@else
-	@return
-	@true
-	@false
-}
+import token { Token, TokenType }
 
 struct Lexer {
 	input string [required]
@@ -48,92 +20,104 @@ pub fn new_lexer(input string) Lexer {
 	return lexer
 }
 
-// next_token returns a Token and a string, which contains the tokens value
-pub fn (mut l Lexer) next_token() (Token, string) {
+// next_token returns a TokenType and a string, which contains the tokens value
+pub fn (mut l Lexer) next_token() Token {
 	l.skip_whitespace()
 
 	tok := match l.ch {
 		`{` {
-			Token.l_squirly
+			TokenType.l_squirly
 		}
 		`}` {
-			Token.r_squirly
+			TokenType.r_squirly
 		}
 		`(` {
-			Token.l_paren
+			TokenType.l_paren
 		}
 		`)` {
-			Token.r_paren
+			TokenType.r_paren
+		}
+		`[` {
+			TokenType.l_bracket
+		}
+		`]` {
+			TokenType.r_bracket
 		}
 		`,` {
-			Token.comma
+			TokenType.comma
 		}
 		`;` {
-			Token.semicolon
+			TokenType.semicolon
+		}
+		`:` {
+			TokenType.colon
 		}
 		`+` {
-			Token.plus
+			TokenType.plus
 		}
 		`-` {
-			Token.dash
+			TokenType.minus
 		}
 		`!` {
 			if l.peek() == `=` {
 				l.read_char()
 				l.read_char()
-				return Token.not_equal, '!='
+				return Token{.not_equal, '!='}
 			} else {
-				Token.bang
+				TokenType.bang
 			}
 		}
 		`>` {
-			Token.greater_than
+			TokenType.greater_than
 		}
 		`<` {
-			Token.less_than
+			TokenType.less_than
 		}
 		`*` {
-			Token.asterisk
+			TokenType.asterisk
 		}
 		`/` {
-			Token.forward_slash
+			TokenType.forward_slash
+		}
+		`"` {
+			return Token{.string, l.read_string()}
 		}
 		`=` {
 			if l.peek() == `=` {
 				l.read_char()
 				l.read_char()
-				return Token.equal, '=='
+				return Token{.equal, '=='}
 			} else {
-				Token.assign
+				TokenType.assign
 			}
 		}
 		`a`...`z`, `A`...`Z`, `_` {
 			ident := l.read_ident()
 			return match ident {
-				'fn' { Token.function, ident }
-				'let' { Token.let, ident }
-				'if' { Token.@if, ident }
-				'false' { Token.@false, ident }
-				'true' { Token.@true, ident }
-				'return' { Token.@return, ident }
-				'else' { Token.@else, ident }
-				else { Token.ident, ident }
+				'fn' { Token{.function, ident} }
+				'let' { Token{.let, ident} }
+				'true' { Token{.@true, ident} }
+				'false' { Token{.@false, ident} }
+				'if' { Token{.@if, ident} }
+				'else' { Token{.@else, ident} }
+				'return' { Token{.@return, ident} }
+				else { Token{.ident, ident} }
 			}
 		}
 		`0`...`9` {
-			return Token.int, l.read_int()
+			return Token{.int, l.read_int()}
 		}
 		`\0` {
-			Token.eof
+			TokenType.eof
 		}
 		else {
-			Token.illegal
+			TokenType.illegal
 		}
 	}
 
 	ret := l.ch.ascii_str()
 	l.read_char()
-	return tok, ret
+	return Token{tok, ret}
 }
 
 fn (mut l Lexer) read_char() {
@@ -178,6 +162,17 @@ fn (mut l Lexer) read_int() string {
 	for l.ch.is_digit() {
 		l.read_char()
 	}
+
+	return l.input[pos..l.position]
+}
+
+fn (mut l Lexer) read_string() string {
+	pos := l.position
+	l.read_char()
+	for l.ch != `"` {
+		l.read_char()
+	}
+	l.read_char()
 
 	return l.input[pos..l.position]
 }
