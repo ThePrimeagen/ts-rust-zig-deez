@@ -4,6 +4,14 @@
             [clj.token :as token]
             [clj.lexer :as lexer]))
 
+(def program 
+  "let five = 5;
+   let ten = 10;
+   let add = fn(x, y) {
+     x + y;
+   };
+   let result = add(five, ten);")
+
 (deftest lexer-test
   (testing "=+(){},;"
     (let [result [[:assign    "=" ]
@@ -17,15 +25,14 @@
                   [:eof       ""]]]
     (is (= (lexer/run "=+(){},;") result))))
 
-  (testing "input.monkey with literals only"
-    (let [input (slurp "./test/clj/input.monkey")
-          deez  (->> (lexer/run input)
+  (testing "program with literals only"
+    (let [deez  (->> (lexer/run program)
                      (mapv token/literal)
                      (mapv to-str)) ;; skipping eof chr
           nuts  ["let" "five" "=" "5" ";" "let" "ten" "=" "10" ";" "let" "add" "=" "fn" "(" "x" "," "y" ")" "{" "x" "+" "y" ";" "}" ";" "let" "result" "=" "add" "(" "five" "," "ten" ")" ";" ""]]
     (is (= deez nuts))))
 
-  (testing "input.monkey with position"
+  (testing "program with position"
     (let [result [[:let "let"] 
                   [:ident "five"] 
                   [:assign "="] 
@@ -63,4 +70,4 @@
                   [:r_paren ")"] 
                   [:semicolon ";"] 
                   [:eof ""]]]
-    (is (= (lexer/run (slurp "./test/clj/input.monkey")) result)))))
+    (is (= (lexer/run program) result)))))

@@ -100,8 +100,8 @@
     :expr   (str (to-str (expr-expr ast)) ";" \newline)
     :block  (if (empty? (block-stmts ast))
               (str "{ }")  
-            (str "{" \newline (str/join (mapv (comp #(str \tab %) to-str) (block-stmts ast))) "}"))
-    :return (str (to-str (return-expr ast)) ";")
+            (str "{" \newline (str/join (mapv (comp #(str \space \space %) to-str) (block-stmts ast))) "}"))
+    :return (str "return " (to-str (return-expr ast)) ";" \newline)
     ;; expressions
     :prefix (str "(" (prefix-op ast) (to-str (prefix-right ast)) ")")
     :infix  (str "(" (to-str (infix-left ast)) \space (infix-op ast) \space (to-str (infix-right ast)) ")")
@@ -109,7 +109,7 @@
                   (to-str (if-consequence ast))
                   (when-not (empty? (if-alternative ast))
                     (str " else " (to-str (if-alternative ast)))))
-    :fn     (str "fn(" (str/join ", " (mapv to-str (fn-params ast))) ")" \space
+    :fn     (str "fn (" (str/join ", " (mapv to-str (fn-params ast))) ")" \space
                  (to-str (fn-block ast)))
     :call   (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
     ;; literals

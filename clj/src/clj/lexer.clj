@@ -70,5 +70,5 @@
 (comment
   (run "=+(){},;|")
   (run "== != <= >= < > = /")
-  (run (slurp "./test/clj/input.monkey"))
+  (run (slurp "./test/clj/lexer.monkey"))
   ())
