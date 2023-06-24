@@ -12,19 +12,27 @@ public class REPL {
 
     private final InputStream inputStream;
     private final PrintStream printStream;
+    private final boolean shouldPrintPrompt;
 
-    public REPL(InputStream inputStream, PrintStream printStream) {
+    public REPL(InputStream inputStream, PrintStream printStream, boolean shouldPrintPrompt) {
         this.inputStream = inputStream;
         this.printStream = printStream;
+        this.shouldPrintPrompt = shouldPrintPrompt;
     }
 
     public void start() {
         var scanner = new Scanner(inputStream);
 
-        printStream.print(PROMPT);
+        printPrompt();
         while (scanner.hasNextLine()) {
             var line = scanner.nextLine();
             LexerIterable.fromString(line).forEachRemaining(this::printToken);
+            printPrompt();
+        }
+    }
+
+    private void printPrompt() {
+        if (shouldPrintPrompt) {
             printStream.print(PROMPT);
         }
     }

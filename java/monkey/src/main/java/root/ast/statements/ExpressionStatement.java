@@ -1,10 +1,15 @@
 package root.ast.statements;
 
+import root.Token;
 import root.ast.expressions.Expression;
 
 public class ExpressionStatement extends Statement {
 
     private Expression expression;
+
+    public ExpressionStatement(Token token) {
+        this.token = token;
+    }
 
     public Expression getExpression() {
         return expression;
