@@ -1,6 +1,7 @@
 // "Entertain God and your ass will follow." - Terry A. Davis
 
-class Token {
+class Token
+{
 	U64 type;
 	U8 *literal;
 };
@@ -40,9 +41,9 @@ U8 *TOKEN_STR = "ILLEGAL\0"
 		StreamPrint("#define TOKEN_%s (%d)\n", TOKEN_STR+offset, i++);
 };
 
-U8 *TokenPretty(Token *tok)
+U8 *TokenPretty(U64 type)
 {
-	switch (tok->type) {
+	switch (type) {
 #exe {
 	I64 offset;
 	for (offset=0;TOKEN_STR[offset+1];offset+=StrLen(TOKEN_STR+offset)+1)
@@ -51,7 +52,6 @@ U8 *TokenPretty(Token *tok)
 	}
 	return "ERROR";
 }
-
 
 class Lexer {
 	U8 *input;
@@ -209,7 +209,7 @@ Token *LexerNextToken(Lexer *l)
 	return tok;
 }
 
-Lexer *LexerInit(U8 *input)
+Lexer *LexerNew(U8 *input)
 {
 	Lexer *l = MAlloc(sizeof(Lexer));
 	l->input = input;
@@ -223,7 +223,8 @@ Lexer *LexerInit(U8 *input)
 	return l;
 }
 
-U0 TokenFree(Token **tok) {
+U0 TokenFree(Token **tok)
+{
 	if (*tok && (*tok)->literal)
 		Free((*tok)->literal);
 	Free(*tok);
