@@ -1,5 +1,5 @@
-(ns clj.token
-  (:require [clj.util :as util]))
+(ns monkey-lang.token
+  (:require [monkey-lang.util :as util]))
 
 (def lit->kind
   {"="  :assign

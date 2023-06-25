@@ -1,4 +1,4 @@
-(ns clj.util)
+(ns monkey-lang.util)
 
 (def third  #(nth % 2 nil))
 (def fourth #(nth % 3 nil))

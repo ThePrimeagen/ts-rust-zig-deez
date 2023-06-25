@@ -1,6 +1,6 @@
-(ns clj.repl 
-  (:require [clj.parser :as parser]
-            [clj.ast :as ast]))
+(ns monkey-lang.repl 
+  (:require [monkey-lang.parser :as parser]
+            [monkey-lang.ast :as ast]))
 
 (def ^:const welcome " 
               __,__          

@@ -1,10 +1,10 @@
-(ns clj.lexer
+(ns monkey-lang.lexer
   (:refer-clojure :exclude [next peek])  
   (:require [jdsl.combinator  :as jc]
             [jdsl.basic       :as jb]
             [jdsl.char-stream :as cs]
             [jdsl.char-parser :as jp]
-            [clj.token        :as token]))
+            [monkey-lang.token        :as token]))
 
 (def single-char
   (-> token/create (jc/map (jp/any-of "=+-!*/<>,;(){}"))))

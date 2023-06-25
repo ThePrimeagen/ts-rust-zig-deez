@@ -1,8 +1,8 @@
-(ns clj.lexer-test
+(ns monkey-lang.lexer-test
   (:require [clojure.test :refer [deftest is testing]]
-            [clj.util :refer [to-str]]
-            [clj.token :as token]
-            [clj.lexer :as lexer]))
+            [monkey-lang.util :refer [to-str]]
+            [monkey-lang.token :as token]
+            [monkey-lang.lexer :as lexer]))
 
 (def program 
   "let five = 5;

@@ -1,14 +1,14 @@
-(ns clj.parser
+(ns monkey-lang.parser
   {:clj-kondo/ignore [:unresolved-symbol]}
-  (:require [jdsl.combinator  :as jc]
-            [jdsl.basic       :as jb]
-            [jdsl.char-stream :as cs]
-            [jdsl.char-parser :as jp]
-            [clj.token        :as token]
-            [clj.ast          :as ast]
-            [clj.lexer        :as lexer]
-            [clojure.string   :as str]
-            [clj.util         :as util]))
+  (:require [jdsl.combinator   :as jc]
+            [jdsl.basic        :as jb]
+            [jdsl.char-stream  :as cs]
+            [jdsl.char-parser  :as jp]
+            [monkey-lang.token :as token]
+            [monkey-lang.ast   :as ast]
+            [monkey-lang.lexer :as lexer]
+            [clojure.string    :as str]
+            [monkey-lang.util  :as util]))
 
 (declare parse-expr parse-block-stmts parse-stmt)
 

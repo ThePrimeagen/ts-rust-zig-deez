@@ -3,7 +3,7 @@
         io.github.vikasg7/jdsl {:git/url "https://github.com/vikasg7/jdsl.git" 
                                 :git/sha "24d5570ab7d01a73bac32b76a4b3482bc816a410"
                                 :deps/manifest :deps}}
- :tasks {run  {:task (exec 'clj.core/-main)}
+ :tasks {run  {:task (exec 'monkey-lang.core/-main)}
          test {:extra-paths ["test"]
                :extra-deps {io.github.cognitect-labs/test-runner 
                            {:git/tag "v0.5.1" :git/sha "dfb30dd"}}

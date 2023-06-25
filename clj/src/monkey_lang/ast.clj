@@ -1,6 +1,6 @@
-(ns clj.ast
+(ns monkey-lang.ast
   (:refer-clojure :exclude [let if int fn])
-  (:require [clj.util :refer [third fourth]]
+  (:require [monkey-lang.util :refer [third fourth]]
             [clojure.string :as str]))
 
 ;; statements

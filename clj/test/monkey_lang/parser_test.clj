@@ -1,7 +1,7 @@
-(ns clj.parser-test
+(ns monkey-lang.parser-test
   (:require [clojure.test :refer [deftest is testing]]
-            [clj.parser :as parser]
-            [clj.ast :as ast]))
+            [monkey-lang.parser :as parser]
+            [monkey-lang.ast :as ast]))
 
 (deftest statement-test
   (testing "let"
@@ -33,7 +33,7 @@
 
 (deftest parse-error-test
   (testing "let error"
-    (is (= (println-str "ParseError \n Expected: :assign \n    Found: [:illegal |] \n Location: 1 : 10 (line : col) \n \n let hello | 5; \n           ^ \n")  
+    (is (= (with-out-str (println "ParseError \n Expected: :assign \n    Found: [:illegal |] \n Location: 1 : 10 (line : col) \n \n let hello | 5; \n           ^ \n")  )
            (with-out-str (parser/print-error (try (parser/run "let hello | 5;") (catch clojure.lang.ExceptionInfo e e))))))
-    (is (= (println-str "ParseError \n Expected: :l_squirly \n    Found: [:ident x] \n Location: 1 : 29 (line : col) \n \n callsFunction(2, 3, fn(x, y) x + y; }); \n                              ^ \n")  
+    (is (= (with-out-str (println "ParseError \n Expected: :l_squirly \n    Found: [:ident x] \n Location: 1 : 29 (line : col) \n \n callsFunction(2, 3, fn(x, y) x + y; }); \n                              ^ \n")  )
            (with-out-str (parser/print-error (try (parser/run "callsFunction(2, 3, fn(x, y) x + y; });") (catch clojure.lang.ExceptionInfo e e))))))))
