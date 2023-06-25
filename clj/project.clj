@@ -7,4 +7,5 @@
   :plugins [[lein-git-deps "0.0.2-SNAPSHOT"]]
   :git-dependencies {"https://github.com/vikasg7/jdsl.git" "master"}
   :global-vars {*warn-on-reflection* true}
-  :repl-options {:init-ns clj.core})
+  :repl-options {:init-ns clj.core}
+  :main ^:skip-aot clj.core)

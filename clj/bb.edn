@@ -1,7 +1,7 @@
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         io.github.vikasg7/jdsl {:git/url "https://github.com/vikasg7/jdsl.git" 
-                                :git/sha "26c4f58f877ea9bcc8a282d0f54b26fd9cdda3fe"
+                                :git/sha "24d5570ab7d01a73bac32b76a4b3482bc816a410"
                                 :deps/manifest :deps}}
  :tasks {run  {:task (exec 'clj.core/-main)}
          test {:extra-paths ["test"]

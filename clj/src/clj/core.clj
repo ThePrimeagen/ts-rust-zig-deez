@@ -1,6 +1,5 @@
-(ns clj.core)
+(ns clj.core
+  (:require [clj.repl :as repl]))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn -main [& args]
+  (repl/run))
