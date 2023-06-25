@@ -6,7 +6,9 @@
             [jdsl.char-parser :as jp]
             [clj.token        :as token]
             [clj.ast          :as ast]
-            [clj.lexer        :as lexer]))
+            [clj.lexer        :as lexer]
+            [clojure.string   :as str]
+            [clj.util         :as util]))
 
 (declare parse-expr parse-block-stmts parse-stmt)
 
@@ -205,10 +207,21 @@
   (let [ex-data (ex-data e)
         ex-msg  (ex-message e)
         [_ ts]  (jb/run jp/skip-spaces* (:ts ex-data))
-        [found] (jb/run lexer/peek ts)]
+        [found] (jb/run lexer/peek ts)
+        program (cs/string ts)
+        pos     (cs/position ts)
+        lines   (str/split-lines (subs program 0 (inc pos)))
+        lyn-num (count lines)
+        col-num (count (last lines))
+        err-lyn (nth (str/split-lines program) (dec lyn-num) 0)
+        padding (util/to-str (repeat (dec col-num) \space))
+        pointer "^"]
   (println ex-msg \newline 
            (or (:msg ex-data) "Expected: ") \newline
-           "   Found:" found)))
+           "   Found:" found \newline
+           "Location:" lyn-num ":" col-num "(line : col)" \newline \newline
+           err-lyn \newline
+           padding pointer \newline)))
 
 (defn run [input]
   (first (jb/run parse-program (cs/create input))))
@@ -223,6 +236,7 @@
   (run "let hello | 5;")
   (run "true;")
   (run "let barfoo = false;")
+  (jb/run parse-let-stmt (cs/create "let barfoo = false;"))
   (run "3 < 5 == true")
   (println (ast/to-str (run "!true;")))
   (run "2 / (5 + 5)")
