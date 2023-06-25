@@ -33,7 +33,7 @@
 
 (deftest parse-error-test
   (testing "let error"
-    (is (= (println-str "ParseError \n Expected: :assign \n    Found: [:illegal |]")  
-            (with-out-str (parser/print-error (try (parser/run "let hello | 5;") (catch clojure.lang.ExceptionInfo e e))))))
-    (is (= (println-str "ParseError \n Expected: :l_squirly \n    Found: [:ident x]")  
-            (with-out-str (parser/print-error (try (parser/run "callsFunction(2, 3, fn(x, y) x + y; });") (catch clojure.lang.ExceptionInfo e e))))))))
+    (is (= (println-str "ParseError \n Expected: :assign \n    Found: [:illegal |] \n Location: 1 : 10 (line : col) \n \n let hello | 5; \n           ^ \n")  
+           (with-out-str (parser/print-error (try (parser/run "let hello | 5;") (catch clojure.lang.ExceptionInfo e e))))))
+    (is (= (println-str "ParseError \n Expected: :l_squirly \n    Found: [:ident x] \n Location: 1 : 29 (line : col) \n \n callsFunction(2, 3, fn(x, y) x + y; }); \n                              ^ \n")  
+           (with-out-str (parser/print-error (try (parser/run "callsFunction(2, 3, fn(x, y) x + y; });") (catch clojure.lang.ExceptionInfo e e))))))))
