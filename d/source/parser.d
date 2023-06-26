@@ -15,6 +15,11 @@ import std.conv : to;
 import std.format : format;
 import std.range : empty, enumerate;
 
+import openmethods;
+import std.sumtype : match;
+
+mixin(registerMethods);
+
 import std.stdio : writefln;
 
 /// Function typedef for prefix Pratt parsing function
@@ -357,6 +362,111 @@ class ExpressionNode : ParseNode
      * Returns: the string representation of the node
      */
     abstract string show(ref Lexer lexer);
+}
+
+/// Translate any expression node to result value
+EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
+
+///
+@method EvalResult _eval(BooleanNode node, Lexer lexer, Environment _)
+{
+    auto val = to!bool(node.show(lexer));
+    writefln("Literally a bool ==> %s", val);
+
+    return EvalResult(val);
+    //return EvalResult(to!bool(node.show(lexer)));
+}
+
+///
+@method EvalResult _eval(IntNode node, Lexer lexer, Environment _)
+{
+    return EvalResult(to!long(node.show(lexer)));
+}
+
+///
+@method EvalResult _eval(IdentifierNode node, Lexer lexer, Environment env)
+{
+    string name = node.show(lexer);
+
+    if (name in env.items)
+    {
+        return env.items[name];
+    }
+    else
+    {
+        return EvalResult(format("Unknown symbol %s", name));
+    }
+}
+
+///
+@method EvalResult _eval(PrefixExpressionNode node, Lexer lexer, Environment env)
+{
+    EvalResult result = eval(node.expr, lexer, env);
+
+    return result.match!((bool val) {
+        writefln("prefixed bool ==> %s", val);
+        if (cast(BangExpressionNode)(node))
+            return EvalResult(!val);
+        else if (cast(NotEqExpressionNode)(node))
+            return EvalResult(-val);
+        else
+            return EvalResult(false);
+    }, (long val) {
+        writefln("prefixed long ==> %s", val);
+        if (cast(BangExpressionNode)(node))
+            return EvalResult(!val);
+        else if (cast(NotEqExpressionNode)(node))
+            return EvalResult(-val);
+        else
+            return EvalResult(0);
+    }, (string _) => EvalResult("Unhandled string prefix expression"), (Unit _) => EvalResult(
+            Unit()));
+}
+
+///
+@method EvalResult _eval(InfixExpressionNode node, Lexer lexer, Environment env)
+{
+    const EvalResult left = eval(node.lhs, lexer, env);
+    const EvalResult right = eval(node.rhs, lexer, env);
+
+    return left.match!((bool lVal) {
+        return right.match!((bool rVal) {
+            writefln("infixed bool ==> %s, %s", lVal, rVal);
+            if (cast(EqExpressionNode)(node))
+                return EvalResult(lVal == rVal);
+            else if (cast(NotEqExpressionNode)(node))
+                return EvalResult(lVal != rVal);
+            else if (cast(GtExpressionNode)(node))
+                return EvalResult(lVal > rVal);
+            else if (cast(LtExpressionNode)(node))
+                return EvalResult(lVal < rVal);
+            else
+                return EvalResult(false);
+        }, _ => EvalResult("Types in expression do not match"));
+    }, (long lVal) {
+        return right.match!((long rVal) {
+            writefln("infixed long ==> %s, %s", lVal, rVal);
+            if (cast(EqExpressionNode)(node))
+                return EvalResult(lVal == rVal);
+            else if (cast(NotEqExpressionNode)(node))
+                return EvalResult(lVal != rVal);
+            else if (cast(GtExpressionNode)(node))
+                return EvalResult(lVal > rVal);
+            else if (cast(LtExpressionNode)(node))
+                return EvalResult(lVal < rVal);
+            else if (cast(PlusExpressionNode)(node))
+                return EvalResult(lVal + rVal);
+            else if (cast(MinusExpressionNode)(node))
+                return EvalResult(lVal - rVal);
+            else if (cast(AsteriskExpressionNode)(node))
+                return EvalResult(lVal * rVal);
+            else if (cast(SlashExpressionNode)(node))
+                return EvalResult(lVal / rVal);
+            else
+                return EvalResult(0);
+        }, _ => EvalResult("Types in expression do not match"));
+    }, (string _) => EvalResult("String not supported in expression"), (Unit _) => EvalResult(
+            Unit()));
 }
 
 /// Wrapper for ExpressionNodes
