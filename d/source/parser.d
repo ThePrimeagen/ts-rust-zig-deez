@@ -12,15 +12,9 @@ import lexer;
 import std.algorithm.iteration : joiner;
 import std.array : appender, Appender;
 import std.conv : to;
+import std.functional : partial;
 import std.format : format;
 import std.range : empty, enumerate;
-
-import openmethods;
-import std.sumtype : match;
-
-mixin(registerMethods);
-
-import std.stdio : writefln;
 
 /// Function typedef for prefix Pratt parsing function
 alias PrefixParseFn = ExpressionNode function(ref Parser parser);
@@ -73,25 +67,30 @@ shared static this()
 
     PrefixParseFn[TokenTag] tempPrefixRules = [
         TokenTag.Ident: &parseIdent,
-        TokenTag.Minus: &parsePrefix!(NegateExpressionNode),
-        TokenTag.Bang: &parsePrefix!(BangExpressionNode), TokenTag.Int: &parseInt,
-        TokenTag.True: &parseBoolean, TokenTag.False: &parseBoolean,
-        TokenTag.LParen: &parseGroupedExpression, TokenTag.If: &parseIfExpression,
-        TokenTag.Function: &parseFunctionLiteral
+        TokenTag.Minus: &(partial!(parsePrefix, TokenTag.Minus)),
+        TokenTag.Bang: &(partial!(parsePrefix, TokenTag.Bang)),
+        TokenTag.Int: &parseInt, TokenTag.True: &parseBoolean,
+        TokenTag.False: &parseBoolean, TokenTag.LParen: &parseGroupedExpression,
+        TokenTag.If: &parseIfExpression, TokenTag.Function: &parseFunctionLiteral
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
-        TokenTag.Plus: InfixRule(&parseBinary!(PlusExpressionNode), Precedence.Term),
-        TokenTag.Minus: InfixRule(&parseBinary!(MinusExpressionNode), Precedence.Term),
-        TokenTag.Asterisk: InfixRule(&parseBinary!(AsteriskExpressionNode),
+        TokenTag.Plus: InfixRule(&(partial!(parseBinary, TokenTag.Plus)),
+                Precedence.Term),
+        TokenTag.Minus: InfixRule(&(partial!(parseBinary, TokenTag.Minus)),
+                Precedence.Term),
+        TokenTag.Asterisk: InfixRule(&(partial!(parseBinary,
+                TokenTag.Asterisk)), Precedence.Factor),
+        TokenTag.Slash: InfixRule(&(partial!(parseBinary, TokenTag.Slash)),
                 Precedence.Factor),
-        TokenTag.Slash: InfixRule(&parseBinary!(SlashExpressionNode),
-                Precedence.Factor),
-        TokenTag.Eq: InfixRule(&parseBinary!(EqExpressionNode), Precedence.Equals),
-        TokenTag.NotEq: InfixRule(&parseBinary!(NotEqExpressionNode),
+        TokenTag.Eq: InfixRule(&(partial!(parseBinary, TokenTag.Eq)),
                 Precedence.Equals),
-        TokenTag.Lt: InfixRule(&parseBinary!(LtExpressionNode), Precedence.LessGreater),
-        TokenTag.Gt: InfixRule(&parseBinary!(GtExpressionNode), Precedence.LessGreater),
+        TokenTag.NotEq: InfixRule(&(partial!(parseBinary, TokenTag.NotEq)),
+                Precedence.Equals),
+        TokenTag.Lt: InfixRule(&(partial!(parseBinary, TokenTag.Lt)),
+                Precedence.LessGreater),
+        TokenTag.Gt: InfixRule(&(partial!(parseBinary, TokenTag.Gt)),
+                Precedence.LessGreater),
         TokenTag.LParen: InfixRule(&parseCallExpression, Precedence.Call),
         TokenTag.RParen: InfixRule(null, Precedence.Lowest),
         TokenTag.RSquirly: InfixRule(null, Precedence.Lowest),
@@ -130,16 +129,18 @@ ExpressionNode parseBoolean(ref Parser parser)
 
 /**
  * Parse unary expression (prefix for now).
- * Params: parser = the parser iterating through tokens
+ * Params:
+ * op = the operation to perform on the expression
+ * parser = the parser iterating through tokens
  * Returns: the unary expression node
  */
-T parsePrefix(T : PrefixExpressionNode)(ref Parser parser)
+PrefixExpressionNode parsePrefix(TokenTag op, ref Parser parser)
 {
     const auto start = parser.position;
     parser.skipToken();
 
     auto expr = parser.parseExpression(Precedence.Unary);
-    return new T(start, expr);
+    return new PrefixExpressionNode(start, op, expr);
 }
 
 /**
@@ -158,17 +159,19 @@ ExpressionNode parseInt(ref Parser parser)
  * Parse binary expression.
  * Params:
  * parser = the parser iterating through tokens
+ * op = the operation to perform on the expressions
  * lhs = the left hand side expression
  * prec = the current operator precedence
  * Returns: the binary expression node
  */
-T parseBinary(T : InfixExpressionNode)(ref Parser parser, ref ExpressionNode lhs, Precedence prec)
+InfixExpressionNode parseBinary(TokenTag op, ref Parser parser,
+        ref ExpressionNode lhs, Precedence prec)
 {
     const auto start = parser.position;
     parser.skipToken();
 
     auto rhs = parser.parseExpression(cast(int)(prec) + 1);
-    return new T(start, lhs, rhs);
+    return new InfixExpressionNode(start, op, lhs, rhs);
 }
 
 /// Parse expressions grouped by parentheses
@@ -364,111 +367,6 @@ class ExpressionNode : ParseNode
     abstract string show(ref Lexer lexer);
 }
 
-/// Translate any expression node to result value
-EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
-
-///
-@method EvalResult _eval(BooleanNode node, Lexer lexer, Environment _)
-{
-    auto val = to!bool(node.show(lexer));
-    writefln("Literally a bool ==> %s", val);
-
-    return EvalResult(val);
-    //return EvalResult(to!bool(node.show(lexer)));
-}
-
-///
-@method EvalResult _eval(IntNode node, Lexer lexer, Environment _)
-{
-    return EvalResult(to!long(node.show(lexer)));
-}
-
-///
-@method EvalResult _eval(IdentifierNode node, Lexer lexer, Environment env)
-{
-    string name = node.show(lexer);
-
-    if (name in env.items)
-    {
-        return env.items[name];
-    }
-    else
-    {
-        return EvalResult(format("Unknown symbol %s", name));
-    }
-}
-
-///
-@method EvalResult _eval(PrefixExpressionNode node, Lexer lexer, Environment env)
-{
-    EvalResult result = eval(node.expr, lexer, env);
-
-    return result.match!((bool val) {
-        writefln("prefixed bool ==> %s", val);
-        if (cast(BangExpressionNode)(node))
-            return EvalResult(!val);
-        else if (cast(NotEqExpressionNode)(node))
-            return EvalResult(-val);
-        else
-            return EvalResult(false);
-    }, (long val) {
-        writefln("prefixed long ==> %s", val);
-        if (cast(BangExpressionNode)(node))
-            return EvalResult(!val);
-        else if (cast(NotEqExpressionNode)(node))
-            return EvalResult(-val);
-        else
-            return EvalResult(0);
-    }, (string _) => EvalResult("Unhandled string prefix expression"), (Unit _) => EvalResult(
-            Unit()));
-}
-
-///
-@method EvalResult _eval(InfixExpressionNode node, Lexer lexer, Environment env)
-{
-    const EvalResult left = eval(node.lhs, lexer, env);
-    const EvalResult right = eval(node.rhs, lexer, env);
-
-    return left.match!((bool lVal) {
-        return right.match!((bool rVal) {
-            writefln("infixed bool ==> %s, %s", lVal, rVal);
-            if (cast(EqExpressionNode)(node))
-                return EvalResult(lVal == rVal);
-            else if (cast(NotEqExpressionNode)(node))
-                return EvalResult(lVal != rVal);
-            else if (cast(GtExpressionNode)(node))
-                return EvalResult(lVal > rVal);
-            else if (cast(LtExpressionNode)(node))
-                return EvalResult(lVal < rVal);
-            else
-                return EvalResult(false);
-        }, _ => EvalResult("Types in expression do not match"));
-    }, (long lVal) {
-        return right.match!((long rVal) {
-            writefln("infixed long ==> %s, %s", lVal, rVal);
-            if (cast(EqExpressionNode)(node))
-                return EvalResult(lVal == rVal);
-            else if (cast(NotEqExpressionNode)(node))
-                return EvalResult(lVal != rVal);
-            else if (cast(GtExpressionNode)(node))
-                return EvalResult(lVal > rVal);
-            else if (cast(LtExpressionNode)(node))
-                return EvalResult(lVal < rVal);
-            else if (cast(PlusExpressionNode)(node))
-                return EvalResult(lVal + rVal);
-            else if (cast(MinusExpressionNode)(node))
-                return EvalResult(lVal - rVal);
-            else if (cast(AsteriskExpressionNode)(node))
-                return EvalResult(lVal * rVal);
-            else if (cast(SlashExpressionNode)(node))
-                return EvalResult(lVal / rVal);
-            else
-                return EvalResult(0);
-        }, _ => EvalResult("Types in expression do not match"));
-    }, (string _) => EvalResult("String not supported in expression"), (Unit _) => EvalResult(
-            Unit()));
-}
-
 /// Wrapper for ExpressionNodes
 class ExpressionStatement : StatementNode
 {
@@ -644,13 +542,6 @@ class IntNode : ExpressionNode
     {
         return lexer.tagRepr(mainIdx);
     }
-
-    /// Represent integer literal value
-    //override Atom eval(ref Parser parser)
-    //{
-    //    const auto val = parser.getInt64Value(mainIdx);
-    //    return new IntegerAtom(val);
-    //}
 }
 
 /// Boolean node for expressions
@@ -681,17 +572,20 @@ class BooleanNode : ExpressionNode
 /// Unary prefix operator node for expressions
 class PrefixExpressionNode : ExpressionNode
 {
+    const TokenTag op; /// Prefix operation
     ExpressionNode expr; /// Primary expression
 
     /**
      * Constructs the unary prefix expression
      * Params:
      * mainIdx = the index of the operator tag
+     * op = the operation performed on the expression
      * expr = the primary expression
      */
-    this(ulong mainIdx, ref ExpressionNode expr)
+    this(ulong mainIdx, TokenTag op, ref ExpressionNode expr)
     {
         super(mainIdx);
+        this.op = op;
         this.expr = expr;
     }
 
@@ -702,29 +596,10 @@ class PrefixExpressionNode : ExpressionNode
     }
 }
 
-/// Prefix expression specialized for '-'
-class NegateExpressionNode : PrefixExpressionNode
-{
-    /// Constructs prefix expression for '-'
-    this(ulong mainIdx, ref ExpressionNode expr)
-    {
-        super(mainIdx, expr);
-    }
-}
-
-/// Prefix expression specialized for '!'
-class BangExpressionNode : PrefixExpressionNode
-{
-    /// Constructs prefix expression for '!'
-    this(ulong mainIdx, ref ExpressionNode expr)
-    {
-        super(mainIdx, expr);
-    }
-}
-
 /// Infix binary operator node for expressions
 class InfixExpressionNode : ExpressionNode
 {
+    const TokenTag op; /// Infix operation
     ExpressionNode lhs; /// lhs expression
     ExpressionNode rhs; /// rhs expression
 
@@ -732,12 +607,14 @@ class InfixExpressionNode : ExpressionNode
      * Constructs the binary operator expression
      * Params:
      * mainIdx = the index of the operator tag
+     * op = the operation performed on the expressions
      * lhs = the left hand side expression
      * rhs = the right hand side expression
      */
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
+    this(ulong mainIdx, TokenTag op, ref ExpressionNode lhs, ref ExpressionNode rhs)
     {
         super(mainIdx);
+        this.op = op;
         this.lhs = lhs;
         this.rhs = rhs;
     }
@@ -747,86 +624,6 @@ class InfixExpressionNode : ExpressionNode
     {
         return format("(%s%s%s)", (this.lhs !is null) ? lhs.show(lexer) ~ " " : "",
                 lexer.tagRepr(mainIdx), (this.rhs !is null) ? " " ~ rhs.show(lexer) : "");
-    }
-}
-
-/// Infix expression specialized for '+'
-class PlusExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '+'
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '-'
-class MinusExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '-'
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '*'
-class AsteriskExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '*'
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '/'
-class SlashExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '/'
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '=='
-class EqExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '=='
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '!='
-class NotEqExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '!='
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '<'
-class LtExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '<'
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
-    }
-}
-
-/// Infix expression specialized for '>'
-class GtExpressionNode : InfixExpressionNode
-{
-    /// Constructs infix expression for '>'
-    this(ulong mainIdx, ref ExpressionNode lhs, ref ExpressionNode rhs)
-    {
-        super(mainIdx, lhs, rhs);
     }
 }
 

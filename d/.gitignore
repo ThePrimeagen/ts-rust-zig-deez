@@ -33,3 +33,4 @@ lib*.exe
 *.o
 *.obj
 *.lst
+mixins.txt

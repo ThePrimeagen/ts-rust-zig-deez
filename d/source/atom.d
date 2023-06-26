@@ -8,8 +8,9 @@
  */
 
 import std.format : format;
-import std.sumtype : SumType, match;
+import std.sumtype;
 
+/// Original source of expressions: https://dlang.org/library/std/sumtype.html
 /// Most fundamental type of "nothing" according to homotopy type theory
 struct Unit
 {

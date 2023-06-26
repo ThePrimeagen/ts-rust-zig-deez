@@ -8,7 +8,9 @@
  */
 
 import atom;
+import expression;
 import parser;
+import statement;
 
 import std.conv : to;
 import std.format : format;
@@ -34,12 +36,6 @@ public:
         this.env = env;
     }
 
-    /// Translate expression statement to result value
-    EvalResult evalStatement(ExpressionStatement node)
-    {
-        return eval(node.expr, this.parser.lexer, this.env);
-    }
-
     /// Evaluate the entire program
     void evalProgram()
     {
@@ -47,18 +43,13 @@ public:
         {
             writefln("%s", statement.classinfo.toString);
 
-            //if (is(typeof(statement) == ExpressionStatement))
-            //if (isInstanceOf!(ExpressionStatement, statement))
-            if (cast(ExpressionStatement)(statement))
-            {
-                auto res = this.evalStatement(cast(ExpressionStatement)(statement));
-                //auto res = this.evalStatement(statement);
-                writefln("LOLzy ;: %s", res);
-            }
+            auto res = evalStatement(statement, this.parser.lexer, this.env);
+            writefln("LOLzy ;: %s", res);
         }
     }
 }
 
+/// Helper function to parse program before evaluating its statements/expressions
 private Evaluator* prepareEvaluator(const string input)
 {
     import lexer : Lexer;
@@ -73,6 +64,7 @@ private Evaluator* prepareEvaluator(const string input)
     return new Evaluator(parser, env);
 }
 
+/// Most basic expression statement test
 unittest
 {
     const auto input = "3 < 5 == false;
