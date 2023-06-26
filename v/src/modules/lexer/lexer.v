@@ -167,12 +167,12 @@ fn (mut l Lexer) read_int() string {
 }
 
 fn (mut l Lexer) read_string() string {
-	pos := l.position
 	l.read_char()
+	pos := l.position
 	for l.ch != `"` {
 		l.read_char()
 	}
 	l.read_char()
 
-	return l.input[pos..l.position]
+	return l.input[pos..l.position-1]
 }
