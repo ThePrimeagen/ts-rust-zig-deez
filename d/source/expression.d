@@ -19,8 +19,6 @@ import std.conv : to;
 import std.format : format;
 import std.sumtype : match;
 
-import std.stdio : writefln;
-
 /// Rep of operators for expressions
 /// Duplicated from Lexer, but we need to only index tag enum, not special
 private const string[TokenTag.Return + 1] OPS_TAG = [
@@ -36,11 +34,7 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
 ///
 @method EvalResult _eval(BooleanNode node, Lexer lexer, Environment _)
 {
-    auto val = to!bool(node.show(lexer));
-    writefln("Literally a bool ==> %s", val);
-
-    return EvalResult(val);
-    //return EvalResult(to!bool(node.show(lexer)));
+    return EvalResult(to!bool(node.show(lexer)));
 }
 
 ///
@@ -52,7 +46,7 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
 ///
 @method EvalResult _eval(IdentifierNode node, Lexer lexer, Environment env)
 {
-    string name = node.show(lexer);
+    const string name = node.show(lexer);
 
     if (name in env.items)
     {
@@ -60,7 +54,7 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
     }
     else
     {
-        return EvalResult(format("Unknown symbol %s", name));
+        return EvalResult(ErrorValue(format("Unknown symbol %s", name)));
     }
 }
 
@@ -69,33 +63,31 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
 {
     EvalResult result = eval(node.expr, lexer, env);
 
-    return result.match!((bool val) {
-        writefln("prefixed bool ==> %s", val);
-        switch (node.op) with (TokenTag)
-        {
-
-            static foreach (op; [Minus, Bang])
-            {
-        case op:
-                return mixin("EvalResult(" ~ OPS_TAG[op] ~ "val)");
-            }
-        default:
-            assert(0);
-        }
-    }, (long val) {
-        writefln("prefixed long ==> %s", val);
+    return result.match!((bool value) {
         switch (node.op) with (TokenTag)
         {
             static foreach (op; [Minus, Bang])
             {
         case op:
-                return mixin("EvalResult(" ~ OPS_TAG[op] ~ "val)");
+                return mixin("(" ~ OPS_TAG[op] ~ "value) ? TRUE_ATOM : FALSE_ATOM");
             }
         default:
             assert(0);
         }
-    }, (string _) => EvalResult("Unhandled string prefix expression"), (Unit _) => EvalResult(
-            Unit()));
+    }, (long value) {
+        switch (node.op) with (TokenTag)
+        {
+            static foreach (op; [Minus, Bang])
+            {
+        case op:
+                return mixin("EvalResult(" ~ OPS_TAG[op] ~ "value)");
+            }
+        default:
+            assert(0);
+        }
+    }, (string _) => EvalResult("String not supported in prefix expression"),
+            (ReturnValue _) => EvalResult("Return value not supported in prefix expression"),
+            (ErrorValue err) => EvalResult(err), (Unit _) => UNIT_ATOM);
 }
 
 ///
@@ -104,38 +96,38 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
     const EvalResult left = eval(node.lhs, lexer, env);
     const EvalResult right = eval(node.rhs, lexer, env);
 
-    return left.match!((bool lVal) {
-        return right.match!((bool rVal) {
-            writefln("infixed bool ==> %s, %s", lVal, rVal);
-
+    return left.match!((bool lValue) {
+        return right.match!((bool rValue) {
             switch (node.op) with (TokenTag)
             {
                 static foreach (op; [Eq, NotEq, Gt, Lt])
                 {
             case op:
-                    return mixin("EvalResult(lVal" ~ OPS_TAG[op] ~ "rVal)");
+                    return mixin("(lValue" ~ OPS_TAG[op] ~ "rValue) ? TRUE_ATOM : FALSE_ATOM");
                 }
             default:
                 assert(0);
             }
         }, _ => EvalResult("Types in expression do not match"));
-    }, (long lVal) {
-        return right.match!((long rVal) {
-            writefln("infixed long ==> %s, %s", lVal, rVal);
-
+    }, (long lValue) {
+        return right.match!((long rValue) {
             switch (node.op) with (TokenTag)
             {
-                static foreach (op; [
-                    Eq, NotEq, Gt, Lt, Plus, Minus, Asterisk, Slash
-                ])
+                static foreach (op; [Eq, NotEq, Gt, Lt])
                 {
             case op:
-                    return mixin("EvalResult(lVal" ~ OPS_TAG[op] ~ "rVal)");
+                    return mixin("(lValue" ~ OPS_TAG[op] ~ "rValue) ? TRUE_ATOM : FALSE_ATOM");
+                }
+                static foreach (op; [Plus, Minus, Asterisk, Slash])
+                {
+            case op:
+                    return mixin("EvalResult(lValue" ~ OPS_TAG[op] ~ "rValue)");
                 }
             default:
                 assert(0);
             }
         }, _ => EvalResult("Types in expression do not match"));
-    }, (string _) => EvalResult("String not supported in expression"), (Unit _) => EvalResult(
-            Unit()));
+    }, (string _) => EvalResult("String not supported in infix expression"),
+            (ReturnValue _) => EvalResult("Return value not supported in infix expression"),
+            (ErrorValue err) => EvalResult(err), (Unit _) => UNIT_ATOM);
 }

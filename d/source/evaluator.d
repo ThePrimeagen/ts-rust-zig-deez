@@ -12,11 +12,12 @@ import expression;
 import parser;
 import statement;
 
+import std.array : appender, Appender;
 import std.conv : to;
 import std.format : format;
 import std.traits : isInstanceOf;
 
-import std.stdio : writefln;
+import std.sumtype : match;
 
 /// Evaluates expressions and statement nodes
 struct Evaluator
@@ -26,6 +27,8 @@ private:
     Environment env; /// Environment for variables and definitions
 
 public:
+    Appender!(EvalResult[]) results; /// Results from each program statement
+
     /**
     * Constucts the evaluator.
     * Params: parser = the parser with statements to evaluate
@@ -34,6 +37,7 @@ public:
     {
         this.parser = parser;
         this.env = env;
+        this.results = appender!(EvalResult[]);
     }
 
     /// Evaluate the entire program
@@ -41,10 +45,8 @@ public:
     {
         foreach (statement; parser.program.statements[])
         {
-            writefln("%s", statement.classinfo.toString);
-
             auto res = evalStatement(statement, this.parser.lexer, this.env);
-            writefln("LOLzy ;: %s", res);
+            this.results.put(res);
         }
     }
 }
@@ -64,7 +66,24 @@ private Evaluator* prepareEvaluator(const string input)
     return new Evaluator(parser, env);
 }
 
-/// Most basic expression statement test
+/// Basic integer test
+unittest
+{
+    const auto input = "5; 10;";
+    const long[2] expected = [5, 10];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[])
+    {
+        result.match!((long value) => assert(value == expected[i],
+                format("Number value %s does not match expected value %s", value, expected[i])),
+                _ => assert(false, format("Expected int value in statement %s", i)));
+    }
+}
+
+/// Compound expression statement test
 unittest
 {
     const auto input = "3 < 5 == false;
@@ -75,7 +94,17 @@ unittest
 -(5 + 5);
 !(true == true);";
 
+    const int[7] expected = [false, true, 10, 20, 0, -10, false];
     auto evaluator = prepareEvaluator(input);
 
     evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[])
+    {
+        result.match!((bool value) => assert(value == expected[i],
+                format("Bool value %s does not match expected value %s", value, expected[i])),
+                (long value) => assert(value == expected[i],
+                    format("Number value %s does not match expected value %s", value, expected[i])),
+                _ => assert(false, format("Unhandled type in statement %d", i)));
+    }
 }

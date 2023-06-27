@@ -46,8 +46,9 @@
 
 :"lint"
 	@echo "===> Linting"
-	dscanner --syntaxCheck source/*
-	dscanner --styleCheck source/*
+	dscanner --syntaxCheck --config dscanner.ini source/*
+	@rem skipping due to broken unused parameter check for mixins
+	@rem dscanner --styleCheck --config dscanner.ini source/*
 	@if %ready%=="yes" goto "test" else goto exit
 
 :"test"

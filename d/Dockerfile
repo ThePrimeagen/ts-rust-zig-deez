@@ -22,8 +22,8 @@ RUN wget -O linenoise.zip https://github.com/antirez/linenoise/archive/refs/head
 RUN curl -fsS https://dlang.org/install.sh | bash -s dmd
 RUN apt-get install -y dub
 
-dub run dfmt -- -h
-dub run dscanner -- -h
+CMD dub run dfmt -- -h
+CMD dub run dscanner -- -h
 
 # Commands for docker run
 CMD make fmt && \

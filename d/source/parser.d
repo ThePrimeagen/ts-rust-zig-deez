@@ -321,16 +321,6 @@ class ParseNode
     {
         return lexer.tagRepr(mainIdx);
     }
-
-    /**
-     * Evaluate the current node.
-     * Params: parser = the parser context for evaluation
-     * Returns: the result atom from the evaluation
-     */
-    //Atom eval(ref Parser parser)
-    //{
-    //    return null;
-    //}
 }
 
 /// Statement parse node

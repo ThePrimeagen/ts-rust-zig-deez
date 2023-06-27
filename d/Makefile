@@ -23,8 +23,9 @@ fmt:
 
 lint:
 	@echo "===> Linting"
-	dscanner --syntaxCheck source/*
-	dscanner --styleCheck source/*
+	dscanner --syntaxCheck --config dscanner.ini source/*
+	# skipping due to broken unused parameter check for mixins
+	#dscanner --styleCheck --config dscanner.ini source/*
 
 test:
 	@echo "===> Testing"
