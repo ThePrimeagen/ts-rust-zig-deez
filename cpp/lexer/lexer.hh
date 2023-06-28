@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <string>
 #include <string_view>
 #include <variant>
@@ -42,6 +41,7 @@ enum class token_type {
     True,
     False
 };
+std::string_view getTokenTypeName(token_type t);
 
 
 struct token final {
@@ -59,7 +59,6 @@ struct token final {
     token &operator=(const token &) = default;
     token &operator=(token &&) = default;
 
-
     inline void set(token_type t, std::string_view literal_)
     {
         type = t;
@@ -71,6 +70,8 @@ struct token final {
         type = t;
         literal = std::string_view(iter,iter+1);
     }
+
+    std::string to_string();
 };
 
 
@@ -100,5 +101,7 @@ private:
     std::string_view read_int() noexcept;
 public:
     lexer(std::string &&input_);
+    lexer(lexer &&) = default;
+
     void next_token(token &) noexcept;
 };

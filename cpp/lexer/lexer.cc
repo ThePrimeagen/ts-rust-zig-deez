@@ -13,6 +13,59 @@ const std::unordered_map<std::string, token_type, lexer::string_hash, std::equal
 };
 
 
+static const std::unordered_map<token_type, std::string> token_names{
+
+    {token_type::Identifier, "Identifier"},
+    { token_type::Integer,"Integer" },
+
+    { token_type::Illegal,"Illegal" },
+    { token_type::Eof,"Eof" },
+    { token_type::Assign,"Assign" },
+
+    { token_type::Bang,"Bang" },
+    { token_type::Dash,"Dash" },
+    { token_type::ForwardSlash,"ForwardSlash" },
+    { token_type::Asterisk,"Asterisk" },
+    { token_type::Equal, "Equal" },
+    { token_type::NotEqual,"NotEqual" },
+    { token_type::LessThan,"LessThan" },
+    { token_type::GreaterThan,"GreaterThan" },
+
+    { token_type::Plus,"Plus" },
+    { token_type::Comma,"Comma" },
+    { token_type::Semicolon,"Semicolon" },
+    { token_type::LParen,"LParen" },
+    { token_type::RParen,"RParen" },
+    { token_type::LSquirly,"LSquirly" },
+    { token_type::RSquirly,"RSquirly" },
+    { token_type::Function,"Function" },
+    { token_type::Let,"Let" },
+    { token_type::If,"If" },
+    { token_type::Else,"Else" },
+    { token_type::Return,"Return" },
+    { token_type::True,"True" },
+    { token_type::False,"False" }
+};
+
+std::string_view getTokenTypeName(token_type t)
+{
+    auto iter = token_names.find(t);
+    if (iter == token_names.end()) return "??";
+    else return iter->second;
+
+}
+
+std::string token::to_string() {
+    std::string result;
+    result.reserve(40); // should be enough
+    result = "{ ";
+    result += getTokenTypeName(type);
+    result += ", ";
+    result += literal;
+    result += "}";
+    return result;
+}
+
 lexer::lexer(std::string &&input_)
   : input{std::move(input_)}
   , ch{input.begin()}
@@ -21,13 +74,9 @@ lexer::lexer(std::string &&input_)
 void
 lexer::read_char(void) noexcept
 {
-    if (ch == input.end()) {
-        return;
+    if (ch != input.end()) [[likely]] {
+        ch++;
     }
-    else [[likely]] {
-     ch++;
-    }
-    return;
 }
 
 char
@@ -51,7 +100,7 @@ std::string_view
 lexer::read_ident() noexcept
 {
     const std::string::iterator pos = ch;
-    while (std::isalpha(*ch) || *ch == '_')
+    while (ch != input.end() && (std::isalpha(*ch) || *ch == '_'))
     {
         read_char();
     }
@@ -62,7 +111,7 @@ std::string_view
 lexer::read_int() noexcept
 {
     const std::string::iterator pos = ch;
-    while (std::isdigit(*ch))
+    while (ch != input.end() && std::isdigit(*ch))
     {
         read_char();
     }
