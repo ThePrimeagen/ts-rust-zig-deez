@@ -20,7 +20,6 @@ syn match holycVariable "[A-Za-z_][A-Za-z0-9_]*"
 
 " Preproc
 syn match holycPreProc "\#.*"
-syn region holycPreProcExe start="\#exe {" end="}"
 
 " Operator
 syn match holycOperator "[-+*/%=<>!&|^~?:]+"
