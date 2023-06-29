@@ -19,10 +19,11 @@ Parser *ParserNew(Lexer *l)
 {
 	Parser *p = MAlloc(sizeof(Parser));
 	p->l = l;
+	p->errors = NULL;
+	VectorNew(&p->errors, sizeof(U8 *), 8);
 	// Set c and n
 	ParserNext(p);
 	ParserNext(p);
-	p->errors = VectorNew(sizeof(U8 *), 8);
 	return p;
 }
 
@@ -33,7 +34,7 @@ Token *ParserPrevNext(Parser *p)
 	return old;
 }
 
-Parser *ParserAccept(Parser *p, U64 type)
+Bool ParserAccept(Parser *p, U64 type)
 {
 	if (p->c->type == type) {
 		ParserNext(p);
@@ -42,11 +43,12 @@ Parser *ParserAccept(Parser *p, U64 type)
 	return FALSE;
 }
 
-Parser *ParserExpect(Parser *p, U64 type)
+Bool ParserExpect(Parser *p, U64 type)
 {
 	if (ParserAccept(p, type))
 		return TRUE;
-	VectorAdd(p->errors, "Unexpected token");
+	U8 *a = MStrPrint("Unexpected token %s, expected %s", TokenPretty(p->c->type), TokenPretty(type));
+	VectorAdd(p->errors, &a);
 	return FALSE;
 }
 
@@ -89,7 +91,7 @@ Node *ParseTerm(Parser *p)
 	return node;
 }
 
-Node *ParseExpr(Parser *p)
+Node *ParseMathExpr(Parser *p)
 {
 	Node *node = ParseTerm(p);
 	while (PCT == TOKEN_PLUS || PCT == TOKEN_DASH) {
@@ -99,24 +101,75 @@ Node *ParseExpr(Parser *p)
 		VectorAdd(new->children, ParseTerm(p));
 		node = new;
 	}
+
 	return node;
 }
+
+Node *ParseFunction(Parser *p)
+{
+	// FIXME: Implement.
+	return NULL;
+}
+
+Node *ParseExpr(Parser *p)
+{
+	if (p->c->type == TOKEN_FUNCTION)
+		return ParseFunction(p);
+	return ParseMathExpr(p);
+}
 parse_expr_ = &ParseExpr; // Set the function pointer defined at the start
+
+Node *ParseReturn(Parser *p)
+{
+	Node *node = NodeNew(TOKEN_RETURN);
+	Token *data = ParseExpr(p);
+	VectorAdd(node->children, data);
+	return node;
+}
+
+Node *ParseLet(Parser *p)
+{
+	U8 *a;
+	Token *prev = ParserPrevNext(p);
+	if (prev->type != TOKEN_IDENT) {
+		a = MStrPrint("Unexpected token %s, expected %s", TokenPretty(prev->type), TokenPretty(TOKEN_IDENT));
+		VectorAdd(p->errors, &a);
+		for (; p->c->type != TOKEN_SEMICOLON && p->c->type != TOKEN_EOF; ParserNext(p));
+		return NULL;
+	}
+	Node *node = NodeNew(TOKEN_LET);
+	Node *name = NodeFromToken(prev);
+	VectorAdd(node->children, name);
+	ParserExpect(p, TOKEN_ASSIGN);
+	Node *data = ParseExpr(p);
+	VectorAdd(node->children, data);
+	return node;
+}
 
 Node *ParseProg(Parser *p)
 {
 	Node *prog = NodeNew(NODE_PROG);
+	Node *stmt = NULL;
+	U8 *a = NULL;
 	for (; PCT != TOKEN_EOF; ParserNext(p)) {
-		Node *stmt;
-		//if (PCT == TOKEN_RETURN)
-		//	stmt = ParseReturn(p);
-		//else if (PCT == TOKEN_LET)
-		//	stmt = ParseLet(p);
-		//else
+		if (ParserAccept(p, TOKEN_SEMICOLON))
+			goto next_token;
+
+		if (ParserAccept(p, TOKEN_RETURN))
+			stmt = ParseReturn(p);
+		else if (ParserAccept(p, TOKEN_LET))
+			stmt = ParseLet(p);
+		else
 			stmt = ParseExpr(p);
 
-		if (stmt)
+		if (stmt) {
 			VectorAdd(prog->children, stmt);
+			if (p->c->type != TOKEN_SEMICOLON) {
+				a = MStrPrint("Expected %s", TokenPretty(TOKEN_SEMICOLON));
+				VectorAdd(p->errors, &a);
+			}
+		}
+next_token:
 	}
 	return prog;
 }

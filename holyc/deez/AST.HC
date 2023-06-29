@@ -53,11 +53,11 @@ Node *NodeNew(U64 type)
 	Node *node = MAlloc(sizeof(Node));
 	node->type = type;
 	node->v.i = 0;
-	node->children = VectorNew(sizeof(Node), 8); // Most tokens will have at most 8 children. How do I know this? idk i just like the number 8 lol.
+	VectorNew(&node->children, sizeof(Node), 8); // Most tokens will have at most 8 children. How do I know this? idk i just like the number 8 lol.
 	return node;
 }
 
-Node *NodeFromToken(Token *tok, Bool free_tok=OFF)
+Node *NodeFromToken(Token *tok, Bool free_tok=ON)
 {
 	NodeValue lol;
 	lol.i = 0;
