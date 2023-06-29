@@ -19,7 +19,7 @@ struct Unit
 /// Wrapper around error message for evaluation result
 struct ErrorValue
 {
-    string msg; /// Main error message
+    string message; /// Main error message
 }
 
 /// Useful for return statement
