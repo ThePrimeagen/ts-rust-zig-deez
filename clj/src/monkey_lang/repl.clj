@@ -1,6 +1,7 @@
 (ns monkey-lang.repl 
   (:require [monkey-lang.parser :as parser]
-            [monkey-lang.ast :as ast]))
+            [monkey-lang.eval :as eval]
+            [monkey-lang.object :as object]))
 
 (def ^:const welcome " 
               __,__          
@@ -26,7 +27,8 @@
       (recur)
     (when (not= input "exit")
       (try
-        (ast/pprint (parser/run input))
+        (when-let [obj (eval/run (parser/run input))]
+          (println (object/inspect obj) \newline))
       (catch clojure.lang.ExceptionInfo e
         (parser/print-error e)))
       (recur))))))

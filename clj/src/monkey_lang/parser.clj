@@ -224,7 +224,7 @@
            padding pointer \newline)))
 
 (defn run [input]
-  (first (jb/run parse-program (cs/create input))))
+  (jb/parsed (jb/run parse-program (cs/create input))))
 
 (comment
   (println (ast/to-str (run "foobar; 5;")))

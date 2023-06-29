@@ -6,3 +6,7 @@
 (defn to-str [chrs]
   (cond (seqable? chrs) (apply str chrs) 
         :else           (str chrs)))
+
+(defn debug [v]
+  (println v)
+  (-> v))

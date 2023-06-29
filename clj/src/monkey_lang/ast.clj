@@ -116,6 +116,6 @@
     :ident (str (ident-literal ast))
     :int   (str (int-value ast))
     :bool  (str (bool-value ast))
-    (assert ast "ast/to-str not implemented")))
+    (assert ast (str "ast/to-str not implemented for " ast))))
 
 (def pprint (comp println to-str))
