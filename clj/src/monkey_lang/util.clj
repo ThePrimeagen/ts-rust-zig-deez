@@ -10,3 +10,6 @@
 (defn debug [v]
   (println v)
   (-> v))
+
+(defn yellow [txt]
+  (str "\033[;33m" txt "\033[0m"))

@@ -1,11 +1,14 @@
 (ns monkey-lang.object
-  (:refer-clojure :exclude [boolean]))
+  (:refer-clojure :exclude [boolean fn])
+  (:require [monkey-lang.util :refer [third]]
+            [monkey-lang.ast :as ast]))
 
-(def ^:const INTEGER :integer)
-(def ^:const BOOLEAN :boolean)
-(def ^:const NULL    :null)
-(def ^:const RETURN  :return)
-(def ^:const ERROR   :error)
+(def ^:const INTEGER  :integer)
+(def ^:const BOOLEAN  :boolean)
+(def ^:const NULL     :null)
+(def ^:const RETURN   :return)
+(def ^:const ERROR    :error)
+(def ^:const FUNCTION :fn)
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
@@ -23,6 +26,22 @@
 
 (def message second)
 
+(defmacro fn [ast env]
+  `(vector ~FUNCTION ~ast ~env))
+
+(def fn-ast    second)
+(def fn-env    third)
+
 (def kind  first)
 (def value second)
-(def inspect (comp str value))
+
+(defn is [obj kynd]
+  (= kynd (kind obj)))
+
+(defn error? [obj]
+  (= ERROR (kind obj)))
+
+(defn inspect [obj]
+  (case (kind obj)
+    :fn  (ast/to-str (fn-ast obj))
+    (str (value obj))))
