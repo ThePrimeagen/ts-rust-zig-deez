@@ -25,7 +25,7 @@
   (testing "infix"
     (is (= "((5 * 3) + 3);\n" (ast/to-str (parser/run "5 * 3 + 3;")))))
   (testing "if"
-    (is (= "if ((x < y)) {\n  x;\n} else {\n  y;\n};\n" (ast/to-str (parser/run "if (x < y) { x } else { y }")))))
+    (is (= "if ((x < y)) {\n  x;\n} else {\n  y;\n};\n" (ast/to-str (parser/run "if (x < y) { x } else { y };")))))
   (testing "fn"
     (is (= "fn (x, y) {\n  (x + y);\n};\n" (ast/to-str (parser/run "fn (x, y) { x + y };")))))
   (testing "call"

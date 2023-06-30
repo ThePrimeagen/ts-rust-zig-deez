@@ -37,7 +37,7 @@
                LOWEST))
 
 (def chomp-semicolon
-  (jc/skip-many* (lexer/expect :semicolon)))
+  (jc/skip-many+ (lexer/expect :semicolon)))
 
 (def parse-ident
   (jb/do
@@ -166,20 +166,20 @@
     (ident <- (lexer/expect :ident))
     (lexer/expect :assign)
     (value <- (parse-expr LOWEST))
-    (chomp-semicolon)
+    (lexer/expect :semicolon)
     (jc/return (ast/let (token/literal ident) value))))
 
 (def parse-return-stmt
   (jb/do
     (lexer/expect :return)
     (expr <- (parse-expr LOWEST))
-    (chomp-semicolon)
+    (lexer/expect :semicolon)
     (jc/return (ast/return expr))))
 
 (def parse-expr-stmt 
   (jb/do
     (expr <- (parse-expr LOWEST))
-    (chomp-semicolon)
+    (jc/skip (lexer/expect :semicolon))
     (jc/return (ast/expr expr))))
 
 (def parse-block-stmts
