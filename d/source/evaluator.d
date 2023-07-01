@@ -11,7 +11,7 @@ import atom;
 import expression;
 import parser;
 
-import std.array : appender, Appender;
+import std.array : appender, Appender, empty;
 import std.conv : to;
 import std.format : format;
 import std.traits : isInstanceOf;
@@ -24,16 +24,18 @@ struct Evaluator
 {
 private:
     Parser parser; /// Stores statement nodes for evaluation
-    Environment env; /// Environment for variables and definitions
+    Environment* env; /// Environment for variables and definitions
 
 public:
     Appender!(EvalResult[]) results; /// Results from each program statement
 
     /**
     * Constucts the evaluator.
-    * Params: parser = the parser with statements to evaluate
+    * Params:
+    * parser = the parser with statements to evaluate
+    * env = the environment
     */
-    this(ref Parser parser, ref Environment env)
+    this(ref Parser parser, Environment* env)
     {
         this.parser = parser;
         this.env = env;
@@ -58,6 +60,25 @@ public:
             });
         }
     }
+
+    /// Print end result of program
+    string showResult()
+    {
+        const auto finalResults = results[];
+
+        if (finalResults.empty())
+        {
+            return "";
+        }
+        else
+        {
+            const auto endResult = finalResults[$ - 1];
+
+            return endResult.match!((ErrorValue result) => result.message, (ReturnValue result) {
+                return result.match!((Unit _) => "", (value) => format("%s", value));
+            }, (Unit _) => "", (result) => format("%s", result));
+        }
+    }
 }
 
 /// Helper function to parse program before evaluating its statements/expressions
@@ -71,7 +92,7 @@ private Evaluator* prepareEvaluator(const string input)
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    Environment env = Environment();
+    auto env = new Environment();
     return new Evaluator(parser, env);
 }
 
@@ -285,19 +306,19 @@ unittest
 /// Error handling statement test
 unittest
 {
-    const string[7] inputs = [
+    const string[8] inputs = [
         "5 + true;", "5 + true; 5;", "-true", "true + false", "5; true + false; 5",
         "if (10 > 1) { true + false; }",
-        "if (10 > 1) { if (10 > 1) { return true + false; } return 1; }"
+        "if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "foobar"
     ];
 
-    const string[7] expected = [
+    const string[8] expected = [
         "Type mismatch in expression: INTEGER + BOOLEAN",
         "Type mismatch in expression: INTEGER + BOOLEAN",
         "Unknown operator: -BOOLEAN", "Unknown operator: BOOLEAN + BOOLEAN",
         "Unknown operator: BOOLEAN + BOOLEAN",
         "Unknown operator: BOOLEAN + BOOLEAN",
-        "Unknown operator: BOOLEAN + BOOLEAN"
+        "Unknown operator: BOOLEAN + BOOLEAN", "Unknown symbol: foobar"
     ];
 
     for (int i = 0; i < inputs.length; i++)
@@ -314,4 +335,81 @@ unittest
                 value.message, expected[i]));
         }, _ => assert(false, format("Unhandled type in program %d", i)));
     }
+}
+
+/// Let statement test
+unittest
+{
+    const string[4] inputs = [
+        "let a = 5; a;", "let a = 5 * 5; a;", "let a = 5; let b = a; b;",
+        "let a = 5; let b = a; let c = a + b + 5; c;"
+    ];
+
+    const long[4] expected = [5, 25, 5, 15];
+
+    for (int i = 0; i < inputs.length; i++)
+    {
+        auto evaluator = prepareEvaluator(inputs[i]);
+
+        evaluator.evalProgram();
+
+        auto result = evaluator.results[][$ - 1];
+
+        result.match!((long value) {
+            assert(value == expected[i],
+                format("Number value %s does not match expected value %d", value, expected[i]));
+        }, _ => assert(false, format("Unhandled type in program %d", i)));
+    }
+}
+
+/// Function statement test
+unittest
+{
+    const string[6] inputs = [
+        "let identity = fn(x) { x; }; identity(5);",
+        "let identity = fn(x) { return x; }; identity(5);",
+        "let double = fn(x) { x * 2; }; double(5);",
+        "let add = fn(x, y) { x + y; }; add(5, 5);",
+        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", "fn(x) { x; }(5)"
+    ];
+
+    const long[6] expected = [5, 5, 10, 10, 20, 5];
+
+    for (int i = 0; i < inputs.length; i++)
+    {
+        auto evaluator = prepareEvaluator(inputs[i]);
+
+        evaluator.evalProgram();
+
+        auto result = evaluator.results[][$ - 1];
+
+        result.match!((long value) {
+            assert(value == expected[i],
+                format("Number value %s does not match expected value %d", value, expected[i]));
+        }, _ => assert(false, format("Unhandled type in program %d", i)));
+    }
+}
+
+/// Closure test
+unittest
+{
+    const string input = "let newAdder = fn(x) {
+fn(y) { x + y };
+};
+
+let addTwo = newAdder(2); addTwo(2);
+";
+
+    const long expected = 4;
+
+    auto evaluator = prepareEvaluator(input);
+
+    evaluator.evalProgram();
+
+    auto result = evaluator.results[][$ - 1];
+
+    result.match!((long value) {
+        assert(value == expected,
+            format("Number value %s does not match expected value %d", value, expected));
+    }, _ => assert(false, "Unhandled type in program"));
 }

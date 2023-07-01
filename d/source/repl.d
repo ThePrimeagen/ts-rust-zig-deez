@@ -27,7 +27,7 @@ void repl()
     writefln("%s", PROMPT);
 
     char* line;
-    //auto env = new Environment();
+    auto env = new Environment();
 
     while ((line = linenoise(">> ")) !is null)
     {
@@ -51,7 +51,15 @@ void repl()
                 continue;
             }
 
-            writefln("%s", parser.program.show(lexer));
+            auto evaluator = Evaluator(parser, env);
+
+            evaluator.evalProgram();
+
+            auto result = evaluator.showResult();
+            if (result != "")
+            {
+                writefln("%s", result);
+            }
         }
     }
 }

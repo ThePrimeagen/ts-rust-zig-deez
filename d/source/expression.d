@@ -15,8 +15,10 @@ import openmethods;
 
 mixin(registerMethods);
 
+import std.array : appender, Appender;
 import std.conv : to;
 import std.format : format;
+import std.range : empty;
 import std.sumtype : match;
 
 /// Rep of operators for expressions
@@ -29,37 +31,38 @@ private const string[TokenTag.Return + 1] OPS_TAG = [
 ];
 
 /// Translate any expression node to result value
-EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
+EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
 
 ///
-@method EvalResult _eval(BooleanNode node, Lexer lexer, Environment _)
+@method EvalResult _eval(BooleanNode node, ref Lexer lexer, Environment* _)
 {
     return EvalResult(to!bool(node.show(lexer)));
 }
 
 ///
-@method EvalResult _eval(IntNode node, Lexer lexer, Environment _)
+@method EvalResult _eval(IntNode node, ref Lexer lexer, Environment* _)
 {
     return EvalResult(to!long(node.show(lexer)));
 }
 
 ///
-@method EvalResult _eval(IdentifierNode node, Lexer lexer, Environment env)
+@method EvalResult _eval(IdentifierNode node, ref Lexer lexer, Environment* env)
 {
     const string name = node.show(lexer);
 
-    if (name in env.items)
+    for (Environment* localEnv = env; localEnv !is null; localEnv = localEnv.outer)
     {
-        return env.items[name];
+        if (name in localEnv.items)
+        {
+            return localEnv.items[name];
+        }
     }
-    else
-    {
-        return EvalResult(ErrorValue(format("Unknown symbol %s", name)));
-    }
+
+    return EvalResult(ErrorValue(format("Unknown symbol: %s", name)));
 }
 
 ///
-@method EvalResult _eval(PrefixExpressionNode node, Lexer lexer, Environment env)
+@method EvalResult _eval(PrefixExpressionNode node, ref Lexer lexer, Environment* env)
 {
     EvalResult result = eval(node.expr, lexer, env);
 
@@ -85,11 +88,11 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
         }
     }, (string _) => EvalResult("String not supported in prefix expression"),
             (ReturnValue _) => EvalResult("Return value not supported in prefix expression"),
-            (ErrorValue err) => EvalResult(err), (Unit _) => UNIT_ATOM);
+            (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
 }
 
 ///
-@method EvalResult _eval(InfixExpressionNode node, Lexer lexer, Environment env)
+@method EvalResult _eval(InfixExpressionNode node, ref Lexer lexer, Environment* env)
 {
     const EvalResult left = eval(node.lhs, lexer, env);
     const EvalResult right = eval(node.rhs, lexer, env);
@@ -132,13 +135,12 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
         }, _ => EvalResult(ErrorValue("Type in RHS of expression does not match INTEGER")));
     }, (string _) => EvalResult("String not supported in infix expression"),
             (ReturnValue _) => EvalResult("Return value not supported in infix expression"),
-            (ErrorValue err) => EvalResult(err), (Unit _) => UNIT_ATOM);
+            (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
 }
 
-@method EvalResult _eval(IfExpressionNode node, Lexer lexer, Environment env)
+@method EvalResult _eval(IfExpressionNode node, ref Lexer lexer, Environment* env)
 {
     // Check value of expression
-    // if expr value true ? evaluate true branch : false branch
     const EvalResult result = eval(node.expr, lexer, env);
 
     bool truthy = result.match!((bool value) => value, (long value) => value
@@ -147,6 +149,7 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
             (long wrappedValue) => wrappedValue ? true : false, (string _) => true, _ => false);
     }, _ => false);
 
+    // if expr value true ? evaluate true branch : false branch
     if (truthy)
     {
         return evalStatement(node.trueBranch, lexer, env); /// Consequence expression
@@ -161,45 +164,112 @@ EvalResult eval(virtual!ExpressionNode node, Lexer lexer, Environment env);
     }
 }
 
-/// Translate statement to result value
-EvalResult evalStatement(virtual!StatementNode node, Lexer lexer, Environment env);
+///
+@method EvalResult _eval(FunctionLiteralNode node, ref Lexer lexer, Environment* env)
+{
+    return EvalResult(Function(&node.parameters, &node.functionBody, env));
+}
 
 ///
-@method EvalResult _evalStatement(ExpressionStatement node, Lexer lexer, Environment env)
+@method EvalResult _eval(CallExpressionNode node, ref Lexer lexer, Environment* env)
+{
+    auto exprValue = eval(node.functionBody, lexer, env);
+
+    return exprValue.match!((Function literal) {
+        auto args = evalExpressions(node.args, lexer, env);
+
+        if (args.length == 1)
+        {
+            const auto value = args[0];
+            if (value.match!((ErrorValue _) => true, _ => false))
+            {
+                return value;
+            }
+        }
+
+        auto evaluated = applyFunction(literal, args, lexer);
+        return evaluated.match!((ReturnValue result) {
+            return result.match!((bool value) => EvalResult(value),
+            (long value) => EvalResult(value),
+            (string value) => EvalResult(value), (Unit _) => UNIT_ATOM);
+        }, (result) => EvalResult(result));
+    }, (ErrorValue error) => EvalResult(error), value => EvalResult(value));
+}
+
+//TODO: Add Function ADT -> Literal | Builtin
+///
+EvalResult applyFunction(Function literal, EvalResult[] args, ref Lexer lexer)
+{
+    auto extendedEnv = extendFunctionEnv(literal, args, lexer);
+    return evalStatement(*literal.functionBody, lexer, extendedEnv);
+}
+
+EvalResult[] evalExpressions(ExpressionNode[] exprs, ref Lexer lexer, Environment* env)
+{
+    // Appender for object results
+    if (exprs.empty())
+    {
+        return [];
+    }
+
+    auto results = appender!(EvalResult[])();
+    results.reserve(exprs.length);
+
+    // Evaluate expressions until we hit error
+    for (auto i = 0; i < exprs.length; i++)
+    {
+        auto result = eval(exprs[i], lexer, env);
+        if (result.match!((ErrorValue _) => true, _ => false))
+        {
+            return [result];
+        }
+
+        results.put(result);
+    }
+
+    return results[];
+}
+
+/// Translate statement to result value
+EvalResult evalStatement(virtual!StatementNode node, ref Lexer lexer, Environment* env);
+
+///
+@method EvalResult _evalStatement(ExpressionStatement node, ref Lexer lexer, Environment* env)
 {
     return eval(node.expr, lexer, env);
 }
 
 ///
-@method EvalResult _evalStatement(LetStatement node, Lexer lexer, Environment env)
+@method EvalResult _evalStatement(LetStatement node, ref Lexer lexer, Environment* env)
 {
-    const auto value = eval(node.expr, lexer, env);
-    const auto id = lexer.tagRepr(node.mainIdx);
+    const auto exprValue = eval(node.expr, lexer, env);
 
-    if (id in env.items)
-    {
-        // TODO: allow shadowing on interpreter extension?
-        return EvalResult(ErrorValue(format("Duplicate definition of variable %s", id)));
-    }
-    else
-    {
-        env.items[id] = value;
-        return value;
-    }
+    return exprValue.match!((ErrorValue error) => EvalResult(error), (_) {
+        const auto id = lexer.tagRepr(node.mainIdx);
+
+        if (id in env.items)
+        {
+            // TODO: allow shadowing on interpreter extension?
+            return EvalResult(ErrorValue(format("Symbol already defined: %s", id)));
+        }
+        else
+        {
+            env.items[id] = exprValue;
+            return UNIT_ATOM;
+        }
+    });
 }
 
 ///
-@method EvalResult _evalStatement(ReturnStatement node, Lexer lexer, Environment env)
+@method EvalResult _evalStatement(ReturnStatement node, ref Lexer lexer, Environment* env)
 {
     if (node.expr !is null)
     {
         EvalResult result = eval(node.expr, lexer, env);
-
         return result.match!((bool value) => value ? EvalResult(TRUE_RETURN_ATOM) : EvalResult(
                 FALSE_RETURN_ATOM), (long value) => EvalResult(ReturnValue(value)),
                 (string value) => EvalResult(ReturnValue(value)), (ReturnValue value) => result,
-                (ErrorValue value) => result, (Unit _) => EvalResult(VOID_RETURN_ATOM));
-
+                (ErrorValue value) => result, (_) => EvalResult(VOID_RETURN_ATOM));
     }
     else
     {
@@ -208,10 +278,9 @@ EvalResult evalStatement(virtual!StatementNode node, Lexer lexer, Environment en
 }
 
 ///
-@method EvalResult _evalStatement(BlockStatement node, Lexer lexer, Environment env)
+@method EvalResult _evalStatement(BlockStatement node, ref Lexer lexer, Environment* env)
 {
     EvalResult value = EvalResult(VOID_RETURN_ATOM);
-
     bool notReturn = true;
     for (auto i = 0; (i < node.statements.length) && notReturn; i++)
     {
