@@ -2,7 +2,7 @@ module lexer
 
 import token { Token, TokenType }
 
-struct Lexer {
+pub struct Lexer {
 	input string [required]
 mut:
 	position      usize
@@ -11,7 +11,7 @@ mut:
 }
 
 // new_lexer returns a Lexer containing the given input string
-pub fn new_lexer(input string) Lexer {
+pub fn Lexer.new(input string) Lexer {
 	mut lexer := Lexer{
 		input: input
 	}

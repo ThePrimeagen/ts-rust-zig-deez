@@ -4,7 +4,7 @@ import token { TokenType }
 
 fn test_new_lexer() {
 	input := 'let a = 5'
-	fn_lexer := new_lexer(input)
+	fn_lexer := Lexer.new(input)
 	// test_lexer reflects changes made by read_char() method in fn_lexer
 	test_lexer := Lexer{
 		position: 0
@@ -17,7 +17,7 @@ fn test_new_lexer() {
 
 fn test_next_token() {
 	input := '=+(){},;'
-	mut lexer := new_lexer(input)
+	mut lexer := Lexer.new(input)
 	tokens := [
 		TokenType.assign,
 		TokenType.plus,
@@ -52,7 +52,7 @@ fn test_next_complete() {
 
 		10 == 10;
 		10 != 9;'
-	mut lexer := new_lexer(input)
+	mut lexer := Lexer.new(input)
 	tokens := [
 		TokenType.let,
 		TokenType.ident,
