@@ -3,53 +3,54 @@
 
 # Degenerate language maintainers.
 /R5RS/          @Fesaa
-/bash/          @aretrosen
 /bash-twce/     @ThenWhenceComethEvil
+/bash/          @aretrosen
 /bf/            @sno2
-/c/             @zivlakmilos
 /c-boreddad/    @boreddad
+/c/             @zivlakmilos
 /chatgpt/       @unconv
 /chezscheme/    @bjornkihlberg
+/clj/           @Vikasg7
 /cobol/         @kkard2
 /common-lisp/   @lh2
-/cpp/           @nicdgonzalez
 /cpp-spongman/  @Spongman
+/cpp/           @nicdgonzalez
 /crystal/       @devnote-dev
 /csharp/        @MarioGK @TomasDurica
 /csharp2/       @leo-costa @redducks100
-/clj/           @Vikasg7
 /d/             @ToraKuma42
-/dart/          @shreyassanthu77
 /dart-funk/     @Fa-C-Shus
+/dart/          @shreyassanthu77
 /elixir/        @ryanwinchester
 /erlang/        @mikimaine
 /factor/        @TriedAngle
 /fortran/       @greuben92
 /fsharp/        @meenzen
 /gdscript/      @Abdera7mane
-/groovyc/       @knudtty
-/go/            @GiorgosAthanasopoulos
 /go-concurrent/ @amis-shokoohi
+/go/            @GiorgosAthanasopoulos
 /groovy/        @trvswgnr
+/groovyc/       @knudtty
 /gsheets/       @aliyss
 /haskell-newmaidumosa/      @newmaidumosa
 /haskell/       @alexjercan
 /haxe/          @koteelok
-/java/          @xNaCly @Crain-32
-/jjdsl/         @Crain-32
-/javascript/    @trvswgnr
-/nasm/          @onehunga @iamevie
-/nim/           @Echriser
-/nelua/         @LucasTavaresA
-/pascal/        @attilakapostyak
-/ocaml/         @tjdevries
+/holyc/         @xslendix
 /jai/           @marvhus
+/java/          @xNaCly @Crain-32
+/javascript/    @trvswgnr
+/jjdsl/         @Crain-32
 /k/             @fluentpwn
-/kotlin-multiplatform/      @hermannm @ekgame @LizAinslie
 /kotlin-deez/   @sergushka
+/kotlin-multiplatform/      @hermannm @ekgame @LizAinslie
 /lua/           @aretrosen
 /luajit/        @Okanoa
+/nasm/          @onehunga @iamevie
+/nelua/         @LucasTavaresA
+/nim/           @Echriser
+/ocaml/         @tjdevries
 /odin/          @jon-lipstate
+/pascal/        @attilakapostyak
 /php/           @wartab
 /prolog/        @Kaixi26
 /prolog2/       @luizcoro2
@@ -60,16 +61,16 @@
 /roc/           @bhansconnect
 /ruby/          @ayatofrench
 /rust/          @ThePrimeagen
-/rust_xiu/      @xiuxiu62
 /rust_blaz/     @blazkowolf
+/rust_dr/       @anis-dr
+/rust_xiu/      @xiuxiu62
+/scala/         @alextsc
 /scratch/       @aliyss
+/swift/         @marcusziade @MatsMoll
 /typescript/    @ThePrimeagen
 /unison/        @cobaltburn
+/v/             @xXMacMillanXx
+/visual-cobol-micro-focus/ @LTR-Travis
 /vlang/         @FalconEthics
 /x64_nasm/      @Sirraide
 /zig/           @ThePrimeagen
-/swift/         @marcusziade @MatsMoll
-/holyc/         @xslendix
-/scala/         @alextsc
-/visual-cobol-micro-focus/ @LTR-Travis
-/rust_dr/       @anis-dr
