@@ -1,7 +1,8 @@
 (ns monkey-lang.eval 
-  (:require [monkey-lang.ast    :as ast]
-            [monkey-lang.object :as object]
-            [monkey-lang.env    :as env]))
+  (:require [monkey-lang.ast     :as ast]
+            [monkey-lang.object  :as object]
+            [monkey-lang.env     :as env]
+            [monkey-lang.builtin :as builtin]))
 
 (declare run)
 
@@ -128,6 +129,8 @@
               (let [args (eval-exprs env (ast/call-args ast))]
               (if (object/error? args)
                 (-> args)
+              (if (object/is? func object/BUILTIN)
+                (builtin/invoke func (mapv object/value args))
               (let [params (->> (ast/fn-params (object/fn-ast func)) 
                                 (mapv ast/ident-literal))
                     body   (ast/fn-block (object/fn-ast func))
@@ -135,12 +138,14 @@
                     value  (run nenv body)]
               (if (object/is? value object/RETURN)
                 (object/value value)
-              (-> value)))))))
+              (-> value))))))))
       ;; literals
-      :ident (if-let [value (env/get env (ast/ident-literal ast))]
-              (-> value)
-            (object/error (str "Identifier not found: " (ast/ident-literal ast))))
-      :int   (object/integer (ast/int-value ast))
-      :bool  (object/boolean (ast/bool-value ast))
+      :ident  (if-let [value (env/get env (ast/ident-literal ast))]
+                (-> value)
+              (if-let [builtin (get builtin/fn (ast/ident-literal ast) nil)]
+                (-> builtin)
+              (object/error (str "Identifier not found: " (ast/ident-literal ast)))))
+      :int    (object/integer (ast/int-value ast))
+      :bool   (object/boolean (ast/bool-value ast))
       :string (object/string (ast/string-value ast))
       (assert ast (str "eval/run not implemented for " ast)))))

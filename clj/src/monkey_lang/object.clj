@@ -10,6 +10,7 @@
 (def ^:const ERROR    :error)
 (def ^:const FUNCTION :fn)
 (def ^:const STRING   :string)
+(def ^:const BUILTIN  :builtin)
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
@@ -38,6 +39,9 @@
 
 (def kind  first)
 (def value second)
+
+(defmacro builtin [fn wrapper]
+  `(vector ~BUILTIN ~fn #(~wrapper %)))
 
 (defn is? [obj kynd]
   (= kynd (kind obj)))
