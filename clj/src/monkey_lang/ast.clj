@@ -121,9 +121,10 @@
                  (to-str (fn-block ast)))
     :call   (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
     ;; literals
-    :ident (str (ident-literal ast))
-    :int   (str (int-value ast))
-    :bool  (str (bool-value ast))
+    :ident  (str (ident-literal ast))
+    :int    (str (int-value ast))
+    :bool   (str (bool-value ast))
+    :string (str \" (string-value ast) \")
     (assert ast (str "ast/to-str not implemented for " ast))))
 
 (def pprint (comp println to-str))

@@ -17,7 +17,9 @@
   (testing "integer"
     (is (= "100;\n" (ast/to-str (parser/run "100;")))))
   (testing "boolean"
-    (is (= "true;\n" (ast/to-str (parser/run "true;"))))))
+    (is (= "true;\n" (ast/to-str (parser/run "true;")))))
+  (testing "string"
+    (is (= "\"Thorsten\";\n" (ast/to-str (parser/run "\"Thorsten\";"))))))
 
 (deftest expresion-test
   (testing "prefix"
