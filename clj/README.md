@@ -1,12 +1,24 @@
-## monkey-lang in clojure 
+# monkey-lang in clojure 
 Monkey Lang implement in clojure
 
-### Commands
-- Run
+## Commands
+- ### Run
+  ```console
+  $ bb run
+  ``` 
+  or  
   ```console
   $ lein run
   ```  
-- Test
+- ### Test
+  ```console
+  $ bb test
+  ```  
+  or  
   ```console
   $ lein test
-  ```
+  ```  
+
+### TODO
+- [ ] use object/is and token/is whereever possible.
+- [ ] refactor object/error call in eval.clj

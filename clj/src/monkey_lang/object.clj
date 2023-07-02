@@ -9,14 +9,18 @@
 (def ^:const RETURN   :return)
 (def ^:const ERROR    :error)
 (def ^:const FUNCTION :fn)
+(def ^:const STRING   :string)
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
 
+(defmacro string [v]
+  `(vector ~STRING ~v))
+
 (defmacro boolean [v]
   `(vector ~BOOLEAN ~v))
 
-(def null [NULL nil])
+(def null (constantly [NULL nil]))
 
 (defmacro return [v]
   `(vector ~RETURN ~v))
@@ -35,7 +39,7 @@
 (def kind  first)
 (def value second)
 
-(defn is [obj kynd]
+(defn is? [obj kynd]
   (= kynd (kind obj)))
 
 (defn error? [obj]

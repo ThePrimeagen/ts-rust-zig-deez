@@ -115,6 +115,11 @@
     (args <- parse-call-args)
     (jc/return (ast/call fn-expr args))))
 
+(def parse-string
+  (jb/do
+    (string <- (lexer/expect :string))
+    (jc/return (ast/string (token/literal string)))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :ident   parse-ident
@@ -122,6 +127,7 @@
      :l_paren parse-group
      :if      parse-if
      :fn      parse-fn
+     :string  parse-string
     (:bang  
      :minus)  parse-prefix
     (:true  
@@ -141,7 +147,7 @@
      :slash
      :astrisk) parse-infix
      :l_paren  parse-fn-call
-               nil)) ;; coz infix-parsers expect on argument
+               nil))
 
 (defn parse-expr 
   ([prece]

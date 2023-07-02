@@ -93,4 +93,5 @@
     (is (= (evaluate "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));") 20))
     (is (= (evaluate "fn(x) { x; }(5)") 5))
     (is (= (evaluate "let add = fn(a, b) { a + b }; let sub = fn(a, b) { a - b }; let applyFunc = fn(a, b, func) { func(a, b) }; applyFunc(2, 2, add);"), 4))
-    (is (= (evaluate "let newAdder = fn(x) { fn(y) { x + y } }; let addTwo = newAdder(2); addTwo(3);"), 5))))
+    (is (= (evaluate "let newAdder = fn(x) { fn(y) { x + y } }; let addTwo = newAdder(2); addTwo(3);"), 5))
+    (is (= (evaluate "let makeGreeter = fn(greeting) { fn(name) { greeting + \" \" + name + \"!\" } }; let hello = makeGreeter(\"Hello\"); hello(\"Thorsten\");"), "Hello Thorsten!"))))

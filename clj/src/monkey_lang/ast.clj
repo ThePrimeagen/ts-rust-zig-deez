@@ -32,18 +32,6 @@
 
 
 ;; expressions
-(defmacro ident [literal]
-  `(vector :ident ~literal))
-
-(def ident-literal second)
-
-
-(defmacro int [val]
-  `(vector :int ~val))
-
-(def int-value second)
-
-
 (defmacro prefix [op right]
   `(vector :prefix ~op ~right))
 
@@ -57,12 +45,6 @@
 (def infix-left  second)
 (def infix-op    third)
 (def infix-right fourth)
-
-
-(defmacro bool [val]
-  `(vector :bool ~val))
-
-(def bool-value second)
 
 
 (defmacro if [condition consequence alternative]
@@ -92,6 +74,32 @@
 
 (def program-stmts second)
 
+
+(defmacro int [val]
+  `(vector :int ~val))
+
+(def int-value second)
+
+
+(defmacro bool [val]
+  `(vector :bool ~val))
+
+(def bool-value second)
+
+
+(defmacro ident [literal]
+  `(vector :ident ~literal))
+
+(def ident-literal second)
+
+
+(defmacro string [literal]
+  `(vector :string ~literal))
+
+(def string-value second)
+
+
+;; TODO: cleanup this function a little bit
 (defn to-str [ast]
   (case (kind ast)
     :program (str/join (mapv to-str (program-stmts ast)))

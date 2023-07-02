@@ -7,7 +7,7 @@
 
 (defn eval-stmts [env stmts]
   (loop [stmts  stmts
-         result object/null]
+         result (object/null)]
     (if (empty? stmts)
       (-> result)
     (let [[stmt & rst] stmts
@@ -37,27 +37,38 @@
    ">=" >=
    "<=" <=})
 
-(defn eval-infix [left operator right]
-  (if-not (= (object/kind left) (object/kind right))
-    (object/error (str "Type Mismatch: " (name (object/kind left)) \space operator \space (name (object/kind right))))
+(defn eval-integer-infix-expr [left operator right]
   (case operator
     ("-"
      "+"
      "/"
-     "*") (if-not (and (= object/INTEGER (object/kind left))
-                       (= object/INTEGER (object/kind right)))
-            (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))
-          (object/integer ((op->fn operator) (object/value left) (object/value right))))
+     "*") (object/integer ((op->fn operator) (object/value left) (object/value right)))
     (">"
      "<"
      ">="
-     "<=") (if-not (and (= object/INTEGER (object/kind left))
-                        (= object/INTEGER (object/kind right)))
-             (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))
-           (object/boolean ((op->fn operator) (object/value left) (object/value right))))
+     "<="
+     "=="
+     "!=") (object/boolean ((op->fn operator) (object/value left) (object/value right)))
+    (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))))
+
+(defn eval-string-infix-expr [left operator right]
+  (case operator
+    ("+") (object/string (str (object/value left) (object/value right)))
+    (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))))
+
+(defn eval-infix [left operator right]
+  (if-not (= (object/kind left) (object/kind right))
+    (object/error (str "Type Mismatch: " (name (object/kind left)) \space operator \space (name (object/kind right))))
+  (if (and (object/is? left  object/INTEGER)
+           (object/is? right object/INTEGER))
+    (eval-integer-infix-expr left operator right)
+  (if (and (object/is? left  object/STRING)
+           (object/is? right object/STRING))
+    (eval-string-infix-expr left operator right)
+  (case operator
     ("=="
      "!=") (object/boolean ((op->fn operator) (object/value left) (object/value right)))
-    (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right)))))))
+  (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right)))))))))
 
 (defn eval-exprs [env exprs]
   (loop [exprs  exprs
@@ -76,7 +87,7 @@
   ([env ast]
     (case (ast/kind ast)
       :program (let [value (eval-stmts env (ast/program-stmts ast))]
-               (if (object/is value object/RETURN)
+               (if (object/is? value object/RETURN)
                  (object/value value)
                (-> value)))
       ;; statements
@@ -108,7 +119,7 @@
               (if (object/value condi)
                 (run env (ast/if-consequence ast))
               (if (empty? (ast/if-alternative ast))
-                object/null
+                (object/null)
               (run env (ast/if-alternative ast))))))
       :fn     (object/fn ast env)
       :call   (let [func (run env (ast/call-fn ast))]
@@ -122,7 +133,7 @@
                     body   (ast/fn-block (object/fn-ast func))
                     nenv   (env/enclosed (object/fn-env func) (zipmap params args))
                     value  (run nenv body)]
-              (if (object/is value object/RETURN)
+              (if (object/is? value object/RETURN)
                 (object/value value)
               (-> value)))))))
       ;; literals
@@ -131,4 +142,5 @@
             (object/error (str "Identifier not found: " (ast/ident-literal ast))))
       :int   (object/integer (ast/int-value ast))
       :bool  (object/boolean (ast/bool-value ast))
+      :string (object/string (ast/string-value ast))
       (assert ast (str "eval/run not implemented for " ast)))))
