@@ -1,13 +1,13 @@
 (ns monkey-lang.lexer
   (:refer-clojure :exclude [next peek])  
-  (:require [jdsl.combinator  :as jc]
-            [jdsl.basic       :as jb]
-            [jdsl.char-stream :as cs]
-            [jdsl.char-parser :as jp]
-            [monkey-lang.token        :as token]))
+  (:require [jdsl.combinator   :as jc]
+            [jdsl.basic        :as jb]
+            [jdsl.char-stream  :as cs]
+            [jdsl.char-parser  :as jp]
+            [monkey-lang.token :as token]))
 
 (def single-char
-  (-> token/create (jc/map (jp/any-of "=+-!*/<>,;(){}"))))
+  (-> token/create (jc/map (jp/any-of "=+-!*/<>,:;(){}[]"))))
 
 (def double-char
   (let [parsers (-> jp/string (map ["<=" ">=" "==" "!="]))] 
@@ -32,7 +32,7 @@
   (-> token/create (jc/map jp/eof)))
 
 (def illegal
-  (-> token/create (jc/map jp/any-char)))
+  (-> (partial token/create :illegal) (jc/map jp/any-char)))
 
 (def tokens
   (jc/choice [double-char 
