@@ -1,7 +1,7 @@
 module main
 
 import lexer { new_lexer }
-import token { TokenType }
+import token { Token, TokenType }
 import os
 
 fn main() {

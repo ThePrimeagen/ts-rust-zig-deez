@@ -20,7 +20,7 @@ pub fn new_lexer(input string) Lexer {
 	return lexer
 }
 
-// next_token returns a TokenType and a string, which contains the tokens value
+// next_token returns a Token, which contains the tokens type and value
 pub fn (mut l Lexer) next_token() Token {
 	l.skip_whitespace()
 
@@ -172,7 +172,9 @@ fn (mut l Lexer) read_string() string {
 	for l.ch != `"` {
 		l.read_char()
 	}
-	l.read_char()
 
-	return l.input[pos..l.position-1]
+	defer {
+		l.read_char()
+	}
+	return l.input[pos..l.position]
 }
