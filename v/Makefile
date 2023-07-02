@@ -24,10 +24,11 @@ lint:
 
 test: test-lexer test-ast test-parser
 	@echo "===> Testing EVERYTHING"
+	v test src/
 
 test-lexer:
 	@echo "===> Testing lexer"
-	v -stats test src/
+	v -stats test src/modules/lexer/lexer_test.v
 
 test-ast:
 	@echo "===> Testing AST"
