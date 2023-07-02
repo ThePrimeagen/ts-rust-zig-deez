@@ -16,7 +16,10 @@ import { zipAsync } from '../../utils';
 import { createChunkLexer } from '../createChunkLexer';
 
 test('test stream input', async () => {
-  const stream = Readable.from(Buffer.from('=+(){},;', 'utf-8'));
+  const stream = Readable.from([
+    Buffer.from('=+(){},;'),
+    Buffer.from('123\nar;'),
+  ]);
 
   const lexer = createChunkLexer(stream);
 
@@ -28,6 +31,9 @@ test('test stream input', async () => {
     SINGLE_TOKEN[123],
     SINGLE_TOKEN[125],
     SINGLE_TOKEN[44],
+    SINGLE_TOKEN[59],
+    { type: TOKEN_TYPE_INT, literal: '123' },
+    { type: TOKEN_TYPE_ID, literal: 'ar' },
     SINGLE_TOKEN[59],
   ];
 
@@ -55,7 +61,7 @@ test('test bigger stream input', async () => {
     }
     10 == 10;
     10 != 9;
-  `, 'utf-8'));
+  `));
 
   const lexer = createChunkLexer(stream);
 

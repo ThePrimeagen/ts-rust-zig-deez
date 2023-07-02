@@ -107,7 +107,7 @@ export async function* createChunkLexer(
           // If the iterator is done, yield the last token...
           yield {
             type: TOKEN_TYPE_INT,
-            literal: decodeChunk(startIdx ? chunk.slice(startIdx) : chunk),
+            literal: decodeChunk(startIdx ? chunk.subarray(startIdx) : chunk),
           };
 
           // ...and return the End of File token
@@ -116,7 +116,7 @@ export async function* createChunkLexer(
 
         yield {
           type: TOKEN_TYPE_INT,
-          literal: decodeChunk(chunk.slice(startIdx, idx)),
+          literal: decodeChunk(chunk.subarray(startIdx, idx)),
         };
 
         continue;
@@ -138,7 +138,7 @@ export async function* createChunkLexer(
             continue;
           }
 
-          const literal = decodeChunk(startIdx ? chunk.slice(startIdx) : chunk);
+          const literal = decodeChunk(startIdx ? chunk.subarray(startIdx) : chunk);
           yield RESERVED_TOKEN.hasOwnProperty(literal)
             ? RESERVED_TOKEN[literal as ReservedTokenType]
             : { type: TOKEN_TYPE_ID, literal };
@@ -146,7 +146,7 @@ export async function* createChunkLexer(
           return TOKEN_EOF;
         } while (isLetter(chunk[idx]));
 
-        const literal = decodeChunk(chunk.slice(startIdx, idx));
+        const literal = decodeChunk(chunk.subarray(startIdx, idx));
         yield RESERVED_TOKEN.hasOwnProperty(literal)
           ? RESERVED_TOKEN[literal as ReservedTokenType]
           : { type: TOKEN_TYPE_ID, literal };
