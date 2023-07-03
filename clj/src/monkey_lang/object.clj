@@ -45,8 +45,8 @@
 (def kind  first)
 (def value second)
 
-(defmacro builtin [fn wrapper]
-  `(vector ~BUILTIN ~fn #(~wrapper %)))
+(defmacro builtin [fn peeler wrapper]
+  `(vector ~BUILTIN ~fn ~peeler #(~wrapper %)))
 
 (defn is? [obj kynd]
   (= kynd (kind obj)))
@@ -61,3 +61,11 @@
            (str "[" (str/join ", " elements) "]"))
     (str (value obj))))
 
+(defmacro id [obj] `~obj)
+
+(defn from [value]
+  (cond (int? value)     (integer value)
+        (boolean? value) (boolean value)
+        (string? value)  (string value)
+        (vector? value)  (array value)
+        :else            (assert value (str "object/from not implemented for " value))))

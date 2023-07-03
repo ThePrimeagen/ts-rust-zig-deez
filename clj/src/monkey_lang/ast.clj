@@ -69,12 +69,14 @@
 (def call-args third)
 
 
-(defmacro program [stmts]
-  `(vector :program ~stmts))
+(defmacro index-expr [left index]
+  `(vector :index-expr ~left ~index))
 
-(def program-stmts second)
+(def index-expr-left  second)
+(def index-expr-index third)
 
 
+;; Literals
 (defmacro int [val]
   `(vector :int ~val))
 
@@ -131,6 +133,7 @@
     :fn     (str "fn (" (str/join ", " (mapv to-str (fn-params ast))) ")" \space
                  (to-str (fn-block ast)))
     :call   (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
+    :index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-left ast)) "])")
     ;; literals
     :ident  (str (ident-literal ast))
     :int    (str (int-value ast))

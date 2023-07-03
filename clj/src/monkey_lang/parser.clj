@@ -20,6 +20,7 @@
 (def ^:const PRODUCT 4)
 (def ^:const PREFIX  5)
 (def ^:const CALL    6)
+(def ^:const INDEX   7)
 
 (defn precedence [token]
   (case (token/kind token)
@@ -34,6 +35,7 @@
     (:slash
      :astrisk)  PRODUCT
      :l_paren   CALL
+     :l_bracket INDEX
                 LOWEST))
 
 (def parse-ident
@@ -124,6 +126,13 @@
     (lexer/expect :r_bracket)
     (jc/return (ast/array elements))))
 
+(defn parse-index-expr [lexpr]
+  (jb/do
+    (lexer/expect :l_bracket)
+    (index <- (parse-expr LOWEST))
+    (lexer/expect :r_bracket)
+    (jc/return (ast/index-expr lexpr index))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :ident   parse-ident
@@ -150,9 +159,10 @@
      :plus
      :minus
      :slash
-     :astrisk) parse-infix
-     :l_paren  parse-fn-call
-               nil))
+     :astrisk)  parse-infix
+     :l_paren   parse-fn-call
+     :l_bracket parse-index-expr
+                nil))
 
 (defn parse-expr 
   ([prece]
@@ -270,5 +280,6 @@
   (run "add(1, 2 * 3, 4 + 5);")
   (run "if (x < y) { return 5 } else { return 7 };")
   (run "if (x < y) { return 5 };")
+  (run "a[1]")
   (println (ast/to-str (run "3 + 4 * 5 == 3 * 1 + 4 * 5")))
   ())

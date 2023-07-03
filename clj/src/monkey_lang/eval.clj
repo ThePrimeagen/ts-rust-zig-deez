@@ -82,6 +82,24 @@
       (-> value)
     (recur rst (conj result value)))))))
 
+(defn eval-index-expr [left index]
+  (if (and (object/is? left object/ARRAY)
+           (object/is? index object/INTEGER))
+    (builtin/invoke (get builtin/fn "index") [left index])
+  (object/error (str "index operator not supported: " (name (object/kind left))))))
+
+(defn eval-call-expr [func args]
+  (if (object/is? func object/BUILTIN)
+    (builtin/invoke func args)
+  (let [params (->> (ast/fn-params (object/fn-ast func)) 
+                    (mapv ast/ident-literal))
+        body   (ast/fn-block (object/fn-ast func))
+        nenv   (env/enclosed (object/fn-env func) (zipmap params args))
+        value  (run nenv body)]
+  (if (object/is? value object/RETURN)
+    (object/value value)
+  (-> value)))))
+
 (defn run
   ([ast] 
     (run (env/create) ast))
@@ -129,16 +147,14 @@
               (let [args (eval-exprs env (ast/call-args ast))]
               (if (object/error? args)
                 (-> args)
-              (if (object/is? func object/BUILTIN)
-                (builtin/invoke func (mapv object/value args))
-              (let [params (->> (ast/fn-params (object/fn-ast func)) 
-                                (mapv ast/ident-literal))
-                    body   (ast/fn-block (object/fn-ast func))
-                    nenv   (env/enclosed (object/fn-env func) (zipmap params args))
-                    value  (run nenv body)]
-              (if (object/is? value object/RETURN)
-                (object/value value)
-              (-> value))))))))
+              (eval-call-expr func args)))))
+      :index-expr (let [left (run env (ast/index-expr-left ast))]
+                  (if (object/error? left)
+                    (-> left)
+                  (let [index (run env (ast/index-expr-index ast))]
+                  (if (object/error? index)
+                    (-> index)
+                  (eval-index-expr left index)))))
       ;; literals
       :ident  (if-let [value (env/get env (ast/ident-literal ast))]
                 (-> value)
