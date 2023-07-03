@@ -173,7 +173,7 @@
     (lexer/expect :assign)
     (value <- (parse-expr LOWEST))
     (lexer/expect :semicolon)
-    (jc/return (ast/let (token/literal ident) value))))
+    (jc/return (ast/let- (token/literal ident) value))))
 
 (def parse-return-stmt
   (jb/do

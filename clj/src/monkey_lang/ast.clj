@@ -1,12 +1,12 @@
 (ns monkey-lang.ast
-  (:refer-clojure :exclude [let if int fn])
+  (:refer-clojure :exclude [if int fn])
   (:require [monkey-lang.util :refer [third fourth]]
             [clojure.string :as str]))
 
 ;; statements
 (def kind first)
 
-(defmacro let [ident value]
+(defmacro let- [ident value]
   `(vector :let ~ident ~value))
 
 (def let-ident second)
