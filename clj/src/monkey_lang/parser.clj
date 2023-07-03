@@ -24,20 +24,17 @@
 (defn precedence [token]
   (case (token/kind token)
     (:eq
-     :noteq)   EQUALS
+     :noteq)    EQUALS
     (:lt
      :gt
      :gteq
-     :lteq)    LTGT
+     :lteq)     LTGT
     (:plus
-     :minus)   SUM
+     :minus)    SUM
     (:slash
-     :astrisk) PRODUCT
-     :l_paren  CALL
-               LOWEST))
-
-(def chomp-semicolon
-  (jc/skip-many+ (lexer/expect :semicolon)))
+     :astrisk)  PRODUCT
+     :l_paren   CALL
+                LOWEST))
 
 (def parse-ident
   (jb/do
@@ -120,6 +117,13 @@
     (string <- (lexer/expect :string))
     (jc/return (ast/string (token/literal string)))))
 
+(def parse-array
+  (jb/do
+    (lexer/expect :l_bracket)
+    (elements <- (-> (parse-expr LOWEST) (jc/sep-by* (lexer/expect :comma))))
+    (lexer/expect :r_bracket)
+    (jc/return (ast/array elements))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :ident   parse-ident
@@ -128,6 +132,7 @@
      :if      parse-if
      :fn      parse-fn
      :string  parse-string
+     :l_bracket parse-array
     (:bang  
      :minus)  parse-prefix
     (:true  

@@ -1,7 +1,8 @@
 (ns monkey-lang.object
   (:refer-clojure :exclude [boolean fn])
   (:require [monkey-lang.util :refer [third]]
-            [monkey-lang.ast :as ast]))
+            [monkey-lang.ast :as ast]
+            [clojure.string :as str]))
 
 (def ^:const INTEGER  :integer)
 (def ^:const BOOLEAN  :boolean)
@@ -11,6 +12,7 @@
 (def ^:const FUNCTION :fn)
 (def ^:const STRING   :string)
 (def ^:const BUILTIN  :builtin)
+(def ^:const ARRAY    :array)
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
@@ -20,6 +22,9 @@
 
 (defmacro boolean [v]
   `(vector ~BOOLEAN ~v))
+
+(defmacro array [elements]
+  `(vector ~ARRAY ~elements))
 
 (def null (constantly [NULL nil]))
 
@@ -51,5 +56,8 @@
 
 (defn inspect [obj]
   (case (kind obj)
-    :fn  (ast/to-str (fn-ast obj))
+    :fn    (ast/to-str (fn-ast obj))
+    :array (let [elements (mapv inspect (value obj))]
+           (str "[" (str/join ", " elements) "]"))
     (str (value obj))))
+

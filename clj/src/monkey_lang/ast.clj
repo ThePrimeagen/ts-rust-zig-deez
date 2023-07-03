@@ -99,6 +99,17 @@
 (def string-value second)
 
 
+(defmacro array [elements]
+  `(vector :array ~elements))
+
+(def array-elements second)
+
+
+(defmacro program [stmts]
+  `(vector :program ~stmts))
+
+(def program-stmts second)
+
 ;; TODO: cleanup this function a little bit
 (defn to-str [ast]
   (case (kind ast)
@@ -125,6 +136,7 @@
     :int    (str (int-value ast))
     :bool   (str (bool-value ast))
     :string (str \" (string-value ast) \")
+    :array  (str "[" (str/join ", "(mapv to-str (array-elements ast))) "]")
     (assert ast (str "ast/to-str not implemented for " ast))))
 
 (def pprint (comp println to-str))

@@ -148,4 +148,8 @@
       :int    (object/integer (ast/int-value ast))
       :bool   (object/boolean (ast/bool-value ast))
       :string (object/string (ast/string-value ast))
+      :array  (let [elements (eval-exprs env (ast/array-elements ast))]
+              (if (object/error? elements)
+                (-> elements)
+              (object/array (vec elements))))
       (assert ast (str "eval/run not implemented for " ast)))))
