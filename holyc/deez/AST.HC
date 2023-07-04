@@ -2,13 +2,20 @@
 #include "Vector.HC"
 
 // Get the type from the token for basic stuff
-#define NODE_PROG (255)
+#define NODE_PROG                  (255)
+#define NODE_FUNCTION_CALL         (256)
+#define NODE_FUNCTION_ARG_LIST     (257)
+#define NODE_FUNCTION_DEF_ARG_LIST (258)
 
 U8 *NodeName(U64 type)
 {
-	if (type == NODE_PROG)
-		return "PROGRAM";
-	return TokenPretty(type);
+	switch (type) {
+	case NODE_PROG:                  return "PROGRAM";
+	case NODE_FUNCTION_CALL:         return "NODE_FUNCTION_CALL";
+	case NODE_FUNCTION_ARG_LIST:     return "NODE_FUNCTION_ARG_LIST";
+	case NODE_FUNCTION_DEF_ARG_LIST: return "NODE_FUNCTION_DEF_ARG_LIST";
+	default:                         return TokenPretty(type);
+	}
 }
 
 union NodeValue
@@ -59,6 +66,8 @@ Node *NodeNew(U64 type)
 
 Node *NodeFromToken(Token *tok, Bool free_tok=ON)
 {
+	if (tok == NULL)
+		return NULL;
 	NodeValue lol;
 	lol.i = 0;
 	if (tok->type == TOKEN_INT)
