@@ -130,7 +130,7 @@ Node *ParsePrimary(Parser *p)
 {
 	Node *node = NULL;
 
-	if (PCT == TOKEN_INT) {
+	if (PCT == TOKEN_INT || PCT == TOKEN_TRUE || PCT == TOKEN_FALSE) {
 		node = NodeFromToken(p->c);
 		ParserNext(p);
 	} else if (PCT == TOKEN_IDENT) {
@@ -152,7 +152,13 @@ Node *ParsePrimary(Parser *p)
 
 Node *ParseTerm(Parser *p)
 {
-	Node *node = ParsePrimary(p);
+	Node *node;
+	if (PCT == TOKEN_BANG || PCT == TOKEN_DASH) {
+		node = NodeFromToken(ParserPrevNext(p));
+		VectorAdd(node->children, ParseTerm(p));
+		return node;
+	} else
+		node = ParsePrimary(p);
 	while (PCT == TOKEN_ASTERISK || PCT == TOKEN_FORWARD_SLASH) {
 		Node *new = NodeFromToken(p->c);
 		ParserNext(p);
@@ -171,6 +177,23 @@ Node *ParseMathExpr(Parser *p)
 		ParserNext(p);
 		VectorAdd(new->children, node);
 		VectorAdd(new->children, ParseTerm(p));
+		node = new;
+	}
+
+	return node;
+}
+
+Node *ParserLogicExpr(Parser *p)
+{
+	Node *node = ParseTerm(p);
+	while (PCT == TOKEN_LESS_THAN ||
+	       PCT == TOKEN_GREATER_THAN ||
+	       PCT == TOKEN_EQUAL ||
+	       PCT == TOKEN_NOT_EQUAL) {
+		Node *new = NodeFromToken(p->c);
+		ParserNext(p);
+		VectorAdd(new->children, node);
+		VectorAdd(new->children, ParseMathExpr(p));
 		node = new;
 	}
 
