@@ -1,4 +1,4 @@
-
+---
 Test.test : '{IO, Exception} Boolean
 Test.test = do
     result = lexer """let five = 5;
@@ -45,8 +45,3 @@ Test.test = do
     result === expect
 
 
-Test.testFile : '{IO, Exception} [Token]
-Test.testFile = do
-    path = FilePath "test.txt"
-    tokens = lexer << getText <| open path Read
-    tokens :+ Eof

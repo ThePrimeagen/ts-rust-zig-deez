@@ -1,0 +1,13 @@
+
+
+Repl.main : '{IO, Exception}()
+Repl.main = do
+  loop = do
+    input = !readLine
+    match input with
+      "exit" -> ()
+      _ ->
+        tokens = lexer <| input
+        printLine (Debug.toText <| parseProgram (tokens :+ Eof))
+        !loop
+  !loop
