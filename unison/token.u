@@ -1,6 +1,6 @@
 
-unique type Token = Illegal Text | Ident Text | Int Text 
-    | Error Text Token | Eof
+structural type Token = Illegal Text | Ident Text | Int Text 
+    | Error Text Token | ErrorExp Text [Token] | Eof
     | Assign | Plus | Comma 
     | Semicolon | Lparen | Rparen 
     | Lbrace |  Rbrace | Minus 
@@ -8,6 +8,9 @@ unique type Token = Illegal Text | Ident Text | Int Text
     | Fn | Let | Gt| Lt 
     | True | False | If | Else
     | Return | Eq | NotEq
+    | I64 Int | InfixExp Token Token Token
+    | PrefixExp Token Token | Check [Token]
+    | FunCall Token [Token] | Closure [Token] [Token]
 
 Token.keyWords : Text -> Token
 Token.keyWords word = 
@@ -31,33 +34,36 @@ Token.isInt = cases
     Int _ -> true
     _ -> false
 
-Token.toString: Token -> Text
-Token.toString = cases
-    Illegal t -> t
-    Ident t -> t
-    Int t -> t
-    Fn -> "fn"
-    Let -> "let"
-    Assign -> "="
-    Plus -> "+"
-    Minus -> "-"
-    Asterisk -> "*"
-    Slash -> "/"
-    Bang -> "!"
-    Gt -> ">"
-    Lt -> "<"
-    Eq -> "=="
-    NotEq -> "!="
-    True -> "true"
-    False -> "false"
-    If -> "if"
-    Else -> "else"
-    Return -> "return"
-    Comma -> ","
-    Semicolon -> ";"
-    Lparen -> "("
-    Rparen -> ")"    
-    Lbrace -> "{"
-    Rbrace -> "}"
-    Eof -> "end"
-    Error _ tk -> toString tk 
+Token.isIntOrIdent : Token -> Boolean
+Token.isIntOrIdent = cases
+    Ident _ -> true
+    Int _ -> true
+    I64 _ -> true
+    _ -> false
+
+Token.isExp : Token -> Boolean
+Token.isExp = cases
+    InfixExp _ _ _ -> true
+    PrefixExp _ _ -> true
+    Int _ -> true
+    Ident _ -> true
+    I64 _ -> true
+    _ -> false
+
+Token.isPrefix : Token -> Boolean
+Token.isPrefix = cases
+    Bang -> true
+    Minus -> true
+    _ -> false
+
+Token.isInfix : Token -> Boolean
+Token.isInfix = cases
+    Plus -> true
+    Minus -> true
+    Asterisk -> true
+    Slash -> true
+    Gt -> true
+    Lt -> true
+    NotEq -> true
+    Eq -> true
+    _ -> false

@@ -1,106 +1,246 @@
 
-unique type Precedence = LOWEST | EQUALS | LESSGREATER | SUM | PRODUCT | PREFIX | CALL
+structural type Statement = LetStatement Token Statement | ReturnStatement Statement 
+    | ExpressionStatement Token | ErrorStatement Statement Token | ErrorTokens [Token]
+    | IfStatement Token Statement Statement | BlockStatement [Statement]
+    | FunctionStatement [Statement] Statement | Parameter Token
+    | Empty
 
-Parser.parseProgram : [Token] -> {Exception}[Statement]
-Parser.parseProgram tks = 
-    loop tks stm = let
-        match List.uncons tks with
-            Some(tk, list)
-                | Eof === tk -> stm 
-                | otherwise ->
-                    (st, res) = parseStatement tk list
-                    loop res (stm :+ st)
-            None -> Exception.raise (Failure (typeLink Generic) "parseProgram: failed to match" (Any None))
-    loop tks []
+structural type Precedence = LOWEST | EQUALS | LESSGREATER | SUM | PRODUCT | PREFIX | CALL
 
-Parser.parseStatement : Token -> [Token] -> {Exception}(Statement, [Token])
-Parser.parseStatement tk tks = 
-    match tk with
-        Let -> parseLet tks
-        Return -> parseReturn tks
-        _ -> parseExpression tk tks
+Parser.formExpression : [Token] -> {Exception} Token
+Parser.formExpression expression =
+    mapInt = List.map intToI64
+    expressionLoop << parseGroupExpression << parsePrefix <| mapInt expression 
+
+Parser.parseGroupExpression : [Token] -> {Exception}[Token]
+Parser.parseGroupExpression tokens =
+    loop tokens expression =
+        use List :+
+        match tokens with
+            [] -> expression
+            [name@(Ident _), Lparen] ++ tail ->
+                (call, tail) = parenLoop tail Lparen Rparen
+                loop (tail) (expression :+ FunCall name (parseCall call))
+            Lparen +: tail -> 
+                exp = formExpression tail
+                loop (balanceParen tail) (expression :+ exp)
+            Rparen +: tail -> expression
+            tk +: tail -> loop tail (expression :+ tk)
+    loop tokens []
+
+Parser.parseCall : [Token] -> {Exception}[Token]
+Parser.parseCall tokens =
+    loop tks = 
+        use List +:
+        match tks with
+            [] -> []
+            Fn +: tail -> 
+                (exp, tail) = parseFunction tail
+                (funcToClosure exp) +: loop tail
+            [name@(Ident _), Lparen] ++ tail -> 
+                (exp, tail) = parenLoop tail Lparen Rparen
+                formExpression ([name, Lparen] ++ exp :+ Rparen) +: loop tail
+            Lparen +: tail -> 
+                (exp, tail) = parenLoop tail Lparen Rparen
+                formExpression exp +: loop tail
+            [tk, Comma] ++ tail -> tk +: loop tail
+            Comma +: tail -> loop tail
+            _ ->
+                (exp, tail) = parseParam tks 
+                formExpression exp +: loop tail
+    loop tokens 
+
+Parser.parseParam : [Token] -> {Exception}([Token], [Token])
+Parser.parseParam tokens =
+    loop tks res =
+        match tks with
+            Comma +: tail -> (res, tail)
+            tk +: tail -> loop tail (res :+ tk)
+            [] -> (res, [])
+    loop tokens [] 
+
+Parser.funcToClosure : Statement -> Token
+Parser.funcToClosure exp = 
+    match exp with
+        FunctionStatement params (BlockStatement exp) ->
+            paramLoop params =
+                match params with
+                    [] -> []
+                    Parameter tk +: tail -> tk +: paramLoop tail
+                    _ -> [Error "parameter not found" Fn]
+            paramTokens = paramLoop params
+            expLoop exp =
+                match exp with
+                    [] -> []
+                    ExpressionStatement tk +: tail -> tk +: expLoop tail
+                    _ -> [Error "none expression statement found" Fn]
+            expTokens = expLoop exp
+            Closure paramTokens expTokens
+        _ -> Error "Function statement not found" Fn
+
+Parser.parsePrefix : [Token] -> [Token]
+Parser.parsePrefix tokens =
+    loop current remain =
+        match remain with
+            [Minus, tk] ++ tail             
+                | isExp tk-> match current with 
+                _ :+ tk2
+                    | isExp tk2 -> loop (current ++ [Minus, tk]) tail
+                _ -> loop (current :+ PrefixExp Minus tk) tail
+            [Bang, tk] ++ tail 
+                | not <| isInfix tk -> loop (current :+ PrefixExp Bang tk) tail
+            [Minus] -> [Error "illegeal minus found at end of expression" Minus]
+            tk +: tail -> loop (current :+ tk) tail
+            [] -> current
+    loop [] tokens
+
+Parser.infixParse : [Token] -> [Token]
+Parser.infixParse tokens =
+    loop checked current precedence =
+        match current with
+            tk +: tail 
+                | not <| isInfix tk -> loop (checked :+ tk) tail precedence
+                | lt precedence <| precedences tk -> loop (checked :+ tk) tail (precedences tk)
+            _ ->
+        match checked with
+            head ++ [tk1, tk2, tk3] -> head ++ [InfixExp tk1 tk2 tk3] ++ current
+            _ -> [ErrorExp "improperly formetted infix expression" (checked ++ current)]
+    loop [] tokens LOWEST
 
 
+Parser.parenLoop : [Token] -> Token -> Token -> ([Token], [Token])
+Parser.parenLoop tokens left right =
+    loop head tail i =
+        match i with 
+            0 -> (dropLast head, tail)
+            _ -> 
+        match tail with
+            [] -> ([Error "failed to find right side not found" left], tail)
+            tk +: tail 
+                | tk === left -> loop (head :+ tk) tail (i + 1)
+                | tk === right -> loop (head :+ tk) tail (i - 1)
+                | otherwise -> loop (head :+ tk) tail i
+    loop [] tokens 1
+
+
+Parser.parseReturn : [Token] -> (Statement, [Token])
+Parser.parseReturn tokens = 
+    (expression, tail) = parseStatement tokens
+    match expression with
+        ExpressionStatement _ -> (ReturnStatement expression, tail)
+        _ -> 
+    match tail with
+        Semicolon +: tail -> (ReturnStatement expression, tail)
+        _ -> (ErrorStatement expression Let, tail)
 
 Parser.parseLet : [Token] -> {Exception}(Statement, [Token])
 Parser.parseLet tokens = 
-    (name, remain1) = grabIdent tokens
-    match name with
-        Token.Error _ _  -> handleError name remain1
-        _ -> let
-    (assign, remain2) = grabAssign remain1
-    match assign with 
-        Token.Error _ _  -> handleError name remain2
-        _ -> let
-    (expression, remain3) = parseLoop remain2
-    match List.uncons remain3 with
-        Some (h, tail)
-            | h === Semicolon -> (LetStatement name expression, tail)
-            | otherwise  -> (ErrorStatement expression Return, remain3)
-        None -> Exception.raise (Failure (typeLink Generic) "parseLet: let statement incorret format" (Any Return))    
+    match tokens with
+        [] -> Exception.raise (Failure (typeLink Generic) "parseLet: end of file reached no end marker found" (Any([])) )
+        name@tk +: tail
+            | not <| isIdent tk -> handleError tk tail
+            | otherwise ->
+    match tail with 
+        [] -> Exception.raise (Failure (typeLink Generic) "parseLet: end of file reached no end marker found" (Any([])) )
+        tk +: tail 
+            | tk !== Assign -> handleError tk tail
+            | otherwise ->
+    (expression, tail) = parseStatement tail
+    match expression with
+        ExpressionStatement _ -> (LetStatement name expression, tail)
+        _ -> 
+    match tail with
+        Semicolon +: tail -> (LetStatement name expression, tail)
+        _ -> (ErrorStatement expression Let, tail)
+    
 
-Parser.parseReturn : [Token] -> {Exception}(Statement, [Token])
-Parser.parseReturn tokens = 
-    (expression, remain) = parseLoop tokens
-    match List.uncons remain with
-        Some (h, tail)
-            | h === Semicolon -> (ReturnStatement expression, tail)
-            | otherwise  -> (ErrorStatement expression Return, remain)
-        None -> Exception.raise (Failure (typeLink Generic) "parseReturn: let statement incorret format" (Any Return))    
+Parser.parseStatement : [Token] -> {Exception}(Statement, [Token])
+Parser.parseStatement tokens = 
+    match tokens with
+        Let +: tail -> parseLet tail
+        Return +: tail  -> parseReturn tail
+        If +: tail -> parseIfStatement tail
+        Fn +: tail -> parseFunction tail
+        _ +: tail -> 
+            (statement, remain) = parseExpression tokens
+            (ExpressionStatement statement, remain)
+        [] -> Exception.raise (Failure (typeLink Generic) "parseStatement: end of file reached no end marker found" (Any tokens))
+        
 
-Parser.parseLoop: [Token] -> {Exception}([Token], [Token])
-Parser.parseLoop tks =
-    loop exp tks = 
-        match List.uncons tks with
-            Some(tk, rem) ->
-                match tk with
-                    Eof -> (exp, tks)
-                    Semicolon -> (exp, tks)
-                    Let -> (exp, tks)
-                    Return -> (exp, tks)
-                    _ -> loop (exp :+ tk) rem
-            None -> Exception.raise (Failure (typeLink Generic) "parseLoop: let statement incorret format" (Any(take 1 tks)))    
-    loop [] tks
+Parser.parseFunction : [Token] -> {Exception}(Statement, [Token])
+Parser.parseFunction tokens =
+    match tokens with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Lparen -> handleError tk tail
+            | otherwise ->
+    (parameters, tail) = parseParameters tail
+    match tail with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Lbrace -> handleError tk tail
+            | otherwise ->
+        (block, tail) = parseBlockStatement tail
+        (FunctionStatement parameters block, tail)
 
---TODO move parsing funtions to here once done
+Parser.parseParameters : [Token] -> ([Statement], [Token])
+Parser.parseParameters tokens =
+    (param, tail) = parenLoop tokens Lparen Rparen
+    loop param = 
+        match param with
+            [] -> []
+            [tk@(Ident _)] -> [Parameter tk] 
+            [tk@(Ident _), Comma] ++ tail -> (Parameter tk) +: loop tail
+            tk +: tail -> [ErrorStatement (ErrorTokens param) tk]
+    statements = loop param
+    (statements, tail)
+    
 
-Parser.grabNext : [Token] -> {Exception}(Token, [Token])
-Parser.grabNext tks =
-    match List.uncons tks with
-        None -> Exception.raise (Failure (typeLink Generic) "grabNext: let statement incorret format" (Any(take 1 tks)))
-        Some res -> res
+Parser.parseCondition : [Token] -> {Exception}(Token, [Token])
+Parser.parseCondition tokens = 
+    (cond, tail) = parenLoop tokens Lparen Rparen
+    (formExpression cond, tail)
 
+Parser.parseBlockStatement : [Token] -> {Exception}(Statement, [Token])
+Parser.parseBlockStatement tokens = 
+    (block, tail) = parenLoop tokens Lbrace Rbrace
+    loop block = let
+        (statement, tail) = parseStatement let 
+            if List.contains Semicolon block then 
+                block 
+            else 
+                Return +: block :+ Semicolon
+        match tail with
+            [] -> [statement]
+            _ -> statement +: loop tail
+    (BlockStatement (loop block), tail)
 
-Parser.grabIdent : [Token] -> {Exception}(Token, [Token])
-Parser.grabIdent tks =
-    match List.uncons tks with
-        Some (tk, res) 
-            | isIdent tk -> (tk, res)
-            | otherwise -> (Error "Ident Token not found" tk, res)
-        None -> Exception.raise (Failure (typeLink Generic) "grabIdnt: let statement incorret format" (Any(take 1 tks)) )
-
-
-Parser.grabAssign : [Token] -> {Exception}(Token, [Token])
-Parser.grabAssign tks =
-    match List.uncons tks with
-        Some (tk, res) 
-            | tk === Assign -> (tk, res)
-            | otherwise -> (Error "Assign Token not found" tk, res)
-        _ -> Exception.raise (Failure (typeLink Generic) "gradAssign: let statement incorret format" (Any(take 1 tks)))
-                
-
-Parser.handleError: Token -> [Token] -> (Statement, [Token])
-Parser.handleError tk tks =
-    loop tks err =
-        match List.uncons tks with
-            Some(t, rem)
-                | t === Let -> (ErrorStatement err tk, tks)
-                | t === Semicolon -> (ErrorStatement (err :+ t) tk, rem)
-                | t === Eof -> (ErrorStatement (err :+ t) tk, tks)
-                | otherwise -> loop rem (err :+ t)
-            None -> Exception.raise (Failure (typeLink Generic) "handleError: let statement incorret format" (Any(take 1 tks)))
-    loop tks []
-
+Parser.parseIfStatement : [Token] -> {Exception}(Statement, [Token])
+Parser.parseIfStatement tokens =
+    match tokens with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Lparen-> handleError tk tail
+            | otherwise ->
+    (cond, tail) = parseCondition tail
+    match tail with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail
+            | tk !== Lbrace -> handleError tk tail
+            | otherwise ->
+    (ifBlock, tail) = parseBlockStatement tail
+    match tail with 
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Else -> (IfStatement cond ifBlock Empty, tail)
+            | otherwise ->
+    match tail with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Lbrace -> handleError tk tail
+            | otherwise ->
+    (elseBlock, tail) = parseBlockStatement tail
+    (IfStatement cond ifBlock elseBlock, tail)    
 
 Test.testParser : '{IO, Exception}[Statement]
 Test.testParser = do
@@ -109,6 +249,89 @@ Test.testParser = do
     program = tokens :+ Eof
     parseProgram program
 
+Parser.parseLoop: [Token] -> {Exception}([Token], [Token])
+Parser.parseLoop tks =
+    loop exp tks = 
+        match tks with
+            Eof +: _ -> (exp, tks)
+            Semicolon +: _ -> (exp, tks)
+            Let +: _ -> (exp, tks)
+            Return +: _ -> (exp, tks)
+            tk +: tail -> loop (exp :+ tk) tail
+            _ -> Exception.raise (Failure (typeLink Generic) "parseLoop: let statement incorret format" (Any(take 1 tks)))    
+    loop [] tks
+
+Parser.parseExpression : [Token] -> {Exception}(Token, [Token]) 
+Parser.parseExpression tokens = 
+    (expression, remain) = parseLoop tokens
+    match remain with
+        Semicolon +: tail -> (formExpression expression, tail)
+        _ -> (Error "semicolon not found" Semicolon, remain)
+
+
+Parser.balanceParen : [Token] -> [Token]
+Parser.balanceParen tokens = 
+    loop tks i =
+        match i with
+            0 -> tks
+            _ -> 
+        match tks with
+            [] -> [Error "unbalanced parenthesis" Lparen]
+            Lparen +: tail -> loop tail (i + 1)
+            Rparen +: tail -> loop tail (i - 1)
+            _ +: tail -> loop tail i
+    loop tokens 1
+
+Parser.intToI64 : Token -> Token
+Parser.intToI64 = cases 
+    Int i -> match Int.fromText i with
+        Some e -> I64 e
+        None -> Illegal i
+    tk -> tk
+
+Parser.expressionLoop : [Token] -> {Exception} Token
+Parser.expressionLoop tokens = 
+    match tokens with
+        [tk] -> tk
+        _ -> expressionLoop <| infixParse tokens
+    
+Parser.precedences : Token -> Precedence
+Parser.precedences = cases
+    Eq -> EQUALS
+    NotEq -> EQUALS
+    Lt -> LESSGREATER
+    Gt -> LESSGREATER
+    Plus -> SUM
+    Minus -> SUM
+    Slash -> PRODUCT
+    Asterisk -> PRODUCT
+    otherwise -> LOWEST    
+
+Parser.parseProgram : [Token] -> {Exception}[Statement]
+Parser.parseProgram tokens = 
+    loop tokens stm = let
+        match tokens with
+            [] -> Exception.raise (Failure (typeLink Generic) "parseProgram: end of file reached no end marker found" (Any None))
+            [Eof] -> stm
+            _ ->
+                (st, res) = parseStatement tokens
+                loop res (stm :+ st)
+    loop tokens []
+
+Parser.handleError: Token -> [Token] -> (Statement, [Token])
+Parser.handleError tk tks =
+    loop tks err =
+        match tks with
+            [Eof] -> (ErrorStatement (ErrorTokens (err :+ Eof)) tk, tks)
+            Let +: tail -> (ErrorStatement (ErrorTokens err) Let, tks)
+            Semicolon +: tail -> (ErrorStatement (ErrorTokens (err :+ Semicolon)) tk, tail)
+            Rparen +: tail -> (ErrorStatement (ErrorTokens (err :+ Semicolon)) tk, tail)
+            Lbrace +: tail -> (ErrorStatement (ErrorTokens (err :+ Semicolon)) tk, tail)
+            Rbrace +: tail -> (ErrorStatement (ErrorTokens (err :+ Semicolon)) tk, tail)
+            tk +: tail -> loop tail (err :+ tk)
+            [] -> Exception.raise (Failure (typeLink Generic) "handleError: end of file reached no end marker found" (Any([])))
+    loop tks []
+
 Test.testTokens : '{IO, Exception}[Token]
 Test.testTokens = do
     path = FilePath "parTest.txt"
@@ -116,28 +339,10 @@ Test.testTokens = do
     tokens :+ Eof
 
 
-Parser.prefixParse : [Token] -> [Token]
-Parser.prefixParse tks =
-    tks
 
-Parser.infixParse : [Token] -> [Token]
-Parser.infixParse tks =
-    tks
-
-Parser.infixFunc : Token -> Optional Statement
-Parser.infixFunc = cases
-    _ -> None
-
-Parser.prefixFunc : Token -> Optional Statement
-Parser.prefixFunc = cases
-    _ -> None
-
-Parser.parseExpression : Token -> [Token] -> {Exception}(Statement, [Token]) -- todo might have to return a statement
-Parser.parseExpression token tokens = 
-    (expression, remain) = parseLoop tokens 
-    match List.uncons tokens with
-        None -> Exception.raise (Failure (typeLink Generic) "parseExpression: let statement incorret format" (Any token))
-        Some (tk, rem) -> let
-    match prefixFunc tk with
-        None -> (ExpressionStatement [], rem)
-        Some x -> (ExpressionStatement [], rem)
+-- test.testparser : '{IO, Exception}[statement]
+-- test.testparser = do
+--     path = filepath "partest.txt"
+--     tokens = lexer << gettext <| open path read
+--     program = tokens :+ eof
+--     parseprogram program
