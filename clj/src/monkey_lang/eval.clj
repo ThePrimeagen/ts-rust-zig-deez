@@ -85,12 +85,12 @@
 (defn eval-index-expr [left index]
   (if (and (object/is? left object/ARRAY)
            (object/is? index object/INTEGER))
-    (builtin/invoke (get builtin/fn "index") [left index])
+    (builtin/invoke builtin/index [left index])
   (object/error (str "index operator not supported: " (name (object/kind left))))))
 
 (defn eval-call-expr [func args]
   (if (object/is? func object/BUILTIN)
-    (builtin/invoke func args)
+    (builtin/invoke (object/value func) args)
   (let [params (->> (ast/fn-params (object/fn-ast func)) 
                     (mapv ast/ident-literal))
         body   (ast/fn-block (object/fn-ast func))

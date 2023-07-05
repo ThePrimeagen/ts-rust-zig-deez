@@ -1,33 +1,52 @@
 (ns monkey-lang.builtin 
-  (:refer-clojure :exclude [fn rest])
+  (:refer-clojure :exclude [fn rest last])
   (:require [monkey-lang.object :as object]))
 
-(defn invoke [[_ peel f wrap] args]
-  (let [args (peel args)]
+(defn invoke [f args]
   (try
     (if-let [value (apply f args)]
-      (wrap value)
+      (-> value)
     (object/null))
   (catch IndexOutOfBoundsException _
-    (object/error "Index Out of Bounds"))
+    (object/null))
   (catch Exception e
-    (object/error (ex-message e))))))
+    (object/error (ex-message e)))))
 
-(defn rest [v]
-  (subvec v 1))
+(defn len [array]
+  (-> (object/value array)
+      (count)
+      (object/integer)))
 
-(defn peel-all [args]
-  (mapv object/value args))
+(defn println- [& values]
+  (->> values
+       (mapv object/inspect)
+       (apply println)))
 
-(defn peel-fst [[fst & rst]]
-  (cons (object/value fst) rst))
+(defn index [array idx]
+  (-> (object/value array)
+      (nth (object/value idx) nil)))
+
+(defn first- [array]
+  (first (object/value array)))
+
+(defn last [array]
+  (peek (object/value array)))
+
+(defn rest [array]
+  (-> (object/value array)
+      (subvec 1)
+      (object/array)))
+
+(defn push [array value]
+  (-> (object/value array)
+      (conj value)
+      (object/array)))
 
 (def fn
-  {"len"     (object/builtin peel-all count   object/integer)
-   "printf"  (object/builtin peel-all printf  object/null)
-   "println" (object/builtin peel-all println object/null)
-   "index"   (object/builtin peel-all nth     object/id)
-   "first"   (object/builtin peel-all first   object/id)
-   "last"    (object/builtin peel-all peek    object/id)
-   "rest"    (object/builtin peel-all rest    object/array)
-   "push"    (object/builtin peel-fst conj    object/array)})
+  {"len"     (object/builtin  len)
+   "println" (object/builtin  println-)
+   "index"   (object/builtin  index)
+   "first"   (object/builtin  first-)
+   "last"    (object/builtin  last)
+   "rest"    (object/builtin  rest)
+   "push"    (object/builtin  push)})

@@ -45,8 +45,8 @@
 (def kind  first)
 (def value second)
 
-(defmacro builtin [fn peeler wrapper]
-  `(vector ~BUILTIN ~fn ~peeler #(~wrapper %)))
+(defmacro builtin [fn]
+  `(vector ~BUILTIN ~fn))
 
 (defn is? [obj kynd]
   (= kynd (kind obj)))
@@ -59,13 +59,7 @@
     :fn    (ast/to-str (fn-ast obj))
     :array (let [elements (mapv inspect (value obj))]
            (str "[" (str/join ", " elements) "]"))
+    :hash  (let [pairs (for [pair (value obj)]
+                         (str/join ": " (mapv inspect pair)))]
+           (str "{" (str/join ", " pairs) "}"))
     (str (value obj))))
-
-(defmacro id [obj] `~obj)
-
-(defn from [value]
-  (cond (int? value)     (integer value)
-        (boolean? value) (boolean value)
-        (string? value)  (string value)
-        (vector? value)  (array value)
-        :else            (assert value (str "object/from not implemented for " value))))

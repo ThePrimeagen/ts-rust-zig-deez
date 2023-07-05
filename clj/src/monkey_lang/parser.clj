@@ -102,17 +102,12 @@
     (block  <- parse-block-stmts)
     (jc/return (ast/fn params block))))
 
-(def parse-call-args
+(defn parse-fn-call [fn-expr]
   (jb/do
     (lexer/expect :l_paren)
     (exprs <- (-> (parse-expr LOWEST) (jc/sep-by* (lexer/expect :comma))))
     (lexer/expect :r_paren)
-    (jc/return exprs)))
-
-(defn parse-fn-call [fn-expr]
-  (jb/do
-    (args <- parse-call-args)
-    (jc/return (ast/call fn-expr args))))
+    (jc/return (ast/call fn-expr exprs))))
 
 (def parse-string
   (jb/do
