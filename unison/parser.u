@@ -7,10 +7,112 @@ structural type Statement = LetStatement Token Statement | ReturnStatement State
 
 structural type Precedence = LOWEST | EQUALS | LESSGREATER | SUM | PRODUCT | PREFIX | CALL
 
+Parser.parseProgram : [Token] -> {Exception}[Statement]
+Parser.parseProgram tokens = 
+    loop tokens stm = let
+        match tokens with
+            [] -> Exception.raise (Failure (typeLink Generic) "parseProgram: end of file reached no end marker found" (Any None))
+            [Eof] -> stm
+            _ ->
+                (st, res) = parseStatement tokens
+                loop res (stm :+ st)
+    loop tokens []
+
+Parser.parseStatement : [Token] -> {Exception}(Statement, [Token])
+Parser.parseStatement tokens = 
+    match tokens with
+        Let +: tail -> parseLet tail
+        Return +: tail  -> parseReturn tail
+        If +: tail -> parseIfStatement tail
+        Fn +: tail -> parseFunction tail
+        _ +: tail -> 
+            (statement, remain) = parseExpression tokens
+            (ExpressionStatement statement, remain)
+        [] -> Exception.raise (Failure (typeLink Generic) "parseStatement: end of file reached no end marker found" (Any tokens))
+
+Parser.parseReturn : [Token] -> (Statement, [Token])
+Parser.parseReturn tokens = 
+    (expression, tail) = parseStatement tokens
+    match expression with
+        ExpressionStatement _ -> (ReturnStatement expression, tail)
+        _ -> 
+    match tail with
+        Semicolon +: tail -> (ReturnStatement expression, tail)
+        _ -> (ErrorStatement expression Let, tail)
+
+Parser.parseLet : [Token] -> {Exception}(Statement, [Token])
+Parser.parseLet tokens = 
+    match tokens with
+        [] -> Exception.raise (Failure (typeLink Generic) "parseLet: end of file reached no end marker found" (Any([])) )
+        name@tk +: tail
+            | not <| isIdent tk -> handleError tk tail
+            | otherwise ->
+    match tail with 
+        [] -> Exception.raise (Failure (typeLink Generic) "parseLet: end of file reached no end marker found" (Any([])) )
+        tk +: tail 
+            | tk !== Assign -> handleError tk tail
+            | otherwise ->
+    (expression, tail) = parseStatement tail
+    match expression with
+        ExpressionStatement _ -> (LetStatement name expression, tail)
+        _ -> 
+    match tail with
+        Semicolon +: tail -> (LetStatement name expression, tail)
+        _ -> (ErrorStatement expression Let, tail)
+
+Parser.parseExpression : [Token] -> {Exception}(Token, [Token]) 
+Parser.parseExpression tokens = 
+    (expression, remain) = parseLoop tokens
+    match remain with
+        Semicolon +: tail -> (formExpression expression, tail)
+        _ -> (Error "semicolon not found" Semicolon, remain)
+
 Parser.formExpression : [Token] -> {Exception} Token
 Parser.formExpression expression =
     mapInt = List.map intToI64
     expressionLoop << parseGroupExpression << parsePrefix <| mapInt expression 
+
+Parser.expressionLoop : [Token] -> {Exception} Token
+Parser.expressionLoop tokens = 
+    match tokens with
+        [tk] -> tk
+        _ -> expressionLoop <| infixParse tokens
+
+Parser.intToI64 : Token -> Token
+Parser.intToI64 = cases 
+    Int i -> match Int.fromText i with
+        Some e -> I64 e
+        None -> Illegal i
+    tk -> tk
+
+Parser.parsePrefix : [Token] -> [Token]
+Parser.parsePrefix tokens =
+    loop current remain =
+        match remain with
+            [Minus, tk] ++ tail             
+                | isExp tk-> match current with 
+                _ :+ tk2
+                    | isExp tk2 -> loop (current ++ [Minus, tk]) tail
+                _ -> loop (current :+ PrefixExp Minus tk) tail
+            [Bang, tk] ++ tail 
+                | not <| isInfix tk -> loop (current :+ PrefixExp Bang tk) tail
+            [Minus] -> [Error "illegeal minus found at end of expression" Minus]
+            tk +: tail -> loop (current :+ tk) tail
+            [] -> current
+    loop [] tokens
+
+Parser.infixParse : [Token] -> [Token]
+Parser.infixParse tokens =
+    loop checked current precedence =
+        match current with
+            tk +: tail 
+                | not <| isInfix tk -> loop (checked :+ tk) tail precedence
+                | lt precedence <| precedences tk -> loop (checked :+ tk) tail (precedences tk)
+            _ ->
+        match checked with
+            head ++ [tk1, tk2, tk3] -> head ++ [InfixExp tk1 tk2 tk3] ++ current
+            _ -> [ErrorExp "improperly formetted infix expression" (checked ++ current)]
+    loop [] tokens LOWEST
 
 Parser.parseGroupExpression : [Token] -> {Exception}[Token]
 Parser.parseGroupExpression tokens =
@@ -27,6 +129,49 @@ Parser.parseGroupExpression tokens =
             Rparen +: tail -> expression
             tk +: tail -> loop tail (expression :+ tk)
     loop tokens []
+
+Parser.balanceParen : [Token] -> [Token]
+Parser.balanceParen tokens = 
+    loop tks i =
+        match i with
+            0 -> tks
+            _ -> 
+        match tks with
+            [] -> [Error "unbalanced parenthesis" Lparen]
+            Lparen +: tail -> loop tail (i + 1)
+            Rparen +: tail -> loop tail (i - 1)
+            _ +: tail -> loop tail i
+    loop tokens 1
+
+Parser.parenLoop : [Token] -> Token -> Token -> ([Token], [Token])
+Parser.parenLoop tokens left right =
+    loop head tail i =
+        match i with 
+            0 -> (dropLast head, tail)
+            _ -> 
+        match tail with
+            [] -> ([Error "failed to find right side not found" left], tail)
+            tk +: tail 
+                | tk === left -> loop (head :+ tk) tail (i + 1)
+                | tk === right -> loop (head :+ tk) tail (i - 1)
+                | otherwise -> loop (head :+ tk) tail i
+    loop [] tokens 1   
+
+Parser.parseFunction : [Token] -> {Exception}(Statement, [Token])
+Parser.parseFunction tokens =
+    match tokens with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Lparen -> handleError tk tail
+            | otherwise ->
+    (parameters, tail) = parseParameters tail
+    match tail with
+        [] -> (ErrorStatement Empty If, tokens)
+        tk +: tail 
+            | tk !== Lbrace -> handleError tk tail
+            | otherwise ->
+        (block, tail) = parseBlockStatement tail
+        (FunctionStatement parameters block, tail)
 
 Parser.parseCall : [Token] -> {Exception}[Token]
 Parser.parseCall tokens =
@@ -77,112 +222,7 @@ Parser.funcToClosure exp =
             expTokens = expLoop exp
             Closure paramTokens expTokens
         _ -> Error "Function statement not found" Fn
-
-Parser.parsePrefix : [Token] -> [Token]
-Parser.parsePrefix tokens =
-    loop current remain =
-        match remain with
-            [Minus, tk] ++ tail             
-                | isExp tk-> match current with 
-                _ :+ tk2
-                    | isExp tk2 -> loop (current ++ [Minus, tk]) tail
-                _ -> loop (current :+ PrefixExp Minus tk) tail
-            [Bang, tk] ++ tail 
-                | not <| isInfix tk -> loop (current :+ PrefixExp Bang tk) tail
-            [Minus] -> [Error "illegeal minus found at end of expression" Minus]
-            tk +: tail -> loop (current :+ tk) tail
-            [] -> current
-    loop [] tokens
-
-Parser.infixParse : [Token] -> [Token]
-Parser.infixParse tokens =
-    loop checked current precedence =
-        match current with
-            tk +: tail 
-                | not <| isInfix tk -> loop (checked :+ tk) tail precedence
-                | lt precedence <| precedences tk -> loop (checked :+ tk) tail (precedences tk)
-            _ ->
-        match checked with
-            head ++ [tk1, tk2, tk3] -> head ++ [InfixExp tk1 tk2 tk3] ++ current
-            _ -> [ErrorExp "improperly formetted infix expression" (checked ++ current)]
-    loop [] tokens LOWEST
-
-
-Parser.parenLoop : [Token] -> Token -> Token -> ([Token], [Token])
-Parser.parenLoop tokens left right =
-    loop head tail i =
-        match i with 
-            0 -> (dropLast head, tail)
-            _ -> 
-        match tail with
-            [] -> ([Error "failed to find right side not found" left], tail)
-            tk +: tail 
-                | tk === left -> loop (head :+ tk) tail (i + 1)
-                | tk === right -> loop (head :+ tk) tail (i - 1)
-                | otherwise -> loop (head :+ tk) tail i
-    loop [] tokens 1
-
-
-Parser.parseReturn : [Token] -> (Statement, [Token])
-Parser.parseReturn tokens = 
-    (expression, tail) = parseStatement tokens
-    match expression with
-        ExpressionStatement _ -> (ReturnStatement expression, tail)
-        _ -> 
-    match tail with
-        Semicolon +: tail -> (ReturnStatement expression, tail)
-        _ -> (ErrorStatement expression Let, tail)
-
-Parser.parseLet : [Token] -> {Exception}(Statement, [Token])
-Parser.parseLet tokens = 
-    match tokens with
-        [] -> Exception.raise (Failure (typeLink Generic) "parseLet: end of file reached no end marker found" (Any([])) )
-        name@tk +: tail
-            | not <| isIdent tk -> handleError tk tail
-            | otherwise ->
-    match tail with 
-        [] -> Exception.raise (Failure (typeLink Generic) "parseLet: end of file reached no end marker found" (Any([])) )
-        tk +: tail 
-            | tk !== Assign -> handleError tk tail
-            | otherwise ->
-    (expression, tail) = parseStatement tail
-    match expression with
-        ExpressionStatement _ -> (LetStatement name expression, tail)
-        _ -> 
-    match tail with
-        Semicolon +: tail -> (LetStatement name expression, tail)
-        _ -> (ErrorStatement expression Let, tail)
-    
-
-Parser.parseStatement : [Token] -> {Exception}(Statement, [Token])
-Parser.parseStatement tokens = 
-    match tokens with
-        Let +: tail -> parseLet tail
-        Return +: tail  -> parseReturn tail
-        If +: tail -> parseIfStatement tail
-        Fn +: tail -> parseFunction tail
-        _ +: tail -> 
-            (statement, remain) = parseExpression tokens
-            (ExpressionStatement statement, remain)
-        [] -> Exception.raise (Failure (typeLink Generic) "parseStatement: end of file reached no end marker found" (Any tokens))
         
-
-Parser.parseFunction : [Token] -> {Exception}(Statement, [Token])
-Parser.parseFunction tokens =
-    match tokens with
-        [] -> (ErrorStatement Empty If, tokens)
-        tk +: tail 
-            | tk !== Lparen -> handleError tk tail
-            | otherwise ->
-    (parameters, tail) = parseParameters tail
-    match tail with
-        [] -> (ErrorStatement Empty If, tokens)
-        tk +: tail 
-            | tk !== Lbrace -> handleError tk tail
-            | otherwise ->
-        (block, tail) = parseBlockStatement tail
-        (FunctionStatement parameters block, tail)
-
 Parser.parseParameters : [Token] -> ([Statement], [Token])
 Parser.parseParameters tokens =
     (param, tail) = parenLoop tokens Lparen Rparen
@@ -195,7 +235,6 @@ Parser.parseParameters tokens =
     statements = loop param
     (statements, tail)
     
-
 Parser.parseCondition : [Token] -> {Exception}(Token, [Token])
 Parser.parseCondition tokens = 
     (cond, tail) = parenLoop tokens Lparen Rparen
@@ -242,13 +281,6 @@ Parser.parseIfStatement tokens =
     (elseBlock, tail) = parseBlockStatement tail
     (IfStatement cond ifBlock elseBlock, tail)    
 
-Test.testParser : '{IO, Exception}[Statement]
-Test.testParser = do
-    path = FilePath "parTest.txt"
-    tokens = lexer << getText <| open path Read
-    program = tokens :+ Eof
-    parseProgram program
-
 Parser.parseLoop: [Token] -> {Exception}([Token], [Token])
 Parser.parseLoop tks =
     loop exp tks = 
@@ -260,40 +292,6 @@ Parser.parseLoop tks =
             tk +: tail -> loop (exp :+ tk) tail
             _ -> Exception.raise (Failure (typeLink Generic) "parseLoop: let statement incorret format" (Any(take 1 tks)))    
     loop [] tks
-
-Parser.parseExpression : [Token] -> {Exception}(Token, [Token]) 
-Parser.parseExpression tokens = 
-    (expression, remain) = parseLoop tokens
-    match remain with
-        Semicolon +: tail -> (formExpression expression, tail)
-        _ -> (Error "semicolon not found" Semicolon, remain)
-
-
-Parser.balanceParen : [Token] -> [Token]
-Parser.balanceParen tokens = 
-    loop tks i =
-        match i with
-            0 -> tks
-            _ -> 
-        match tks with
-            [] -> [Error "unbalanced parenthesis" Lparen]
-            Lparen +: tail -> loop tail (i + 1)
-            Rparen +: tail -> loop tail (i - 1)
-            _ +: tail -> loop tail i
-    loop tokens 1
-
-Parser.intToI64 : Token -> Token
-Parser.intToI64 = cases 
-    Int i -> match Int.fromText i with
-        Some e -> I64 e
-        None -> Illegal i
-    tk -> tk
-
-Parser.expressionLoop : [Token] -> {Exception} Token
-Parser.expressionLoop tokens = 
-    match tokens with
-        [tk] -> tk
-        _ -> expressionLoop <| infixParse tokens
     
 Parser.precedences : Token -> Precedence
 Parser.precedences = cases
@@ -307,16 +305,6 @@ Parser.precedences = cases
     Asterisk -> PRODUCT
     otherwise -> LOWEST    
 
-Parser.parseProgram : [Token] -> {Exception}[Statement]
-Parser.parseProgram tokens = 
-    loop tokens stm = let
-        match tokens with
-            [] -> Exception.raise (Failure (typeLink Generic) "parseProgram: end of file reached no end marker found" (Any None))
-            [Eof] -> stm
-            _ ->
-                (st, res) = parseStatement tokens
-                loop res (stm :+ st)
-    loop tokens []
 
 Parser.handleError: Token -> [Token] -> (Statement, [Token])
 Parser.handleError tk tks =
@@ -332,11 +320,11 @@ Parser.handleError tk tks =
             [] -> Exception.raise (Failure (typeLink Generic) "handleError: end of file reached no end marker found" (Any([])))
     loop tks []
 
-Test.testTokens : '{IO, Exception}[Token]
-Test.testTokens = do
-    path = FilePath "parTest.txt"
-    tokens = lexer << getText <| open path Read
-    tokens :+ Eof
+-- Test.testTokens : '{IO, Exception}[Token]
+-- Test.testTokens = do
+--     path = FilePath "parTest.txt"
+--     tokens = lexer << getText <| open path Read
+--     tokens :+ Eof
 
 
 
@@ -346,3 +334,10 @@ Test.testTokens = do
 --     tokens = lexer << gettext <| open path read
 --     program = tokens :+ eof
 --     parseprogram program
+
+-- Test.testParser : '{IO, Exception}[Statement]
+-- Test.testParser = do
+--     path = FilePath "parTest.txt"
+--     tokens = lexer << getText <| open path Read
+--     program = tokens :+ Eof
+--     parseProgram program
