@@ -22,3 +22,5 @@ Monkey Lang implement in clojure
 ### TODO
 - [ ] use object/is and token/is whereever possible.
 - [ ] refactor object/error call in eval.clj
+- [ ] refactor eval/run function
+- [ ] use token/* const wherever possible

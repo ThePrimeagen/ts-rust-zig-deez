@@ -40,16 +40,10 @@
 
 (defn eval-integer-infix-expr [left operator right]
   (case operator
-    ("-"
-     "+"
-     "/"
-     "*") (object/integer ((op->fn operator) (object/value left) (object/value right)))
-    (">"
-     "<"
-     ">="
-     "<="
-     "=="
-     "!=") (object/boolean ((op->fn operator) (object/value left) (object/value right)))
+    ("-" "+" "/" "*")
+      (object/integer ((op->fn operator) (object/value left) (object/value right)))
+    (">" "<" ">=" "<=" "==" "!=")
+      (object/boolean ((op->fn operator) (object/value left) (object/value right)))
     (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))))
 
 (defn eval-string-infix-expr [left operator right]
@@ -86,7 +80,9 @@
   (if (and (object/is? left object/ARRAY)
            (object/is? index object/INTEGER))
     (builtin/invoke builtin/index [left index])
-  (object/error (str "index operator not supported: " (name (object/kind left))))))
+  (if (object/is? left object/HASH)
+    (builtin/invoke builtin/get- [left index])
+  (object/error (str "index operator not supported: " (name (object/kind left)))))))
 
 (defn eval-call-expr [func args]
   (if (object/is? func object/BUILTIN)
@@ -99,6 +95,23 @@
   (if (object/is? value object/RETURN)
     (object/value value)
   (-> value)))))
+
+(defn eval-hash [env pairs]
+  (loop [pairs pairs
+         hashs (transient {})]
+    (if (empty? pairs)
+      (object/hash- (persistent! hashs))
+    (let [[[k v] & rst] pairs
+          kee           (run env k)]
+    (if (object/error? kee)
+      (-> kee)
+    (let [hash-kee (object/hash-key kee)]
+    (if-not hash-kee
+      (object/error (str "Unsuable as hash key: " (name (object/kind kee))))
+    (let [value (run env v)]
+    (if (object/error? value)
+      (-> value)
+    (recur rst (assoc! hashs hash-kee (object/hash-pair [kee value]))))))))))))
 
 (defn run
   ([ast] 
@@ -168,4 +181,5 @@
               (if (object/error? elements)
                 (-> elements)
               (object/array (vec elements))))
+      :hash   (eval-hash env (ast/hash-pairs ast))
       (assert ast (str "eval/run not implemented for " ast)))))

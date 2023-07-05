@@ -107,6 +107,12 @@
 (def array-elements second)
 
 
+(defmacro hash [pairs]
+  `(vector :hash ~pairs))
+
+(def hash-pairs second)
+
+
 (defmacro program [stmts]
   `(vector :program ~stmts))
 
@@ -140,6 +146,9 @@
     :bool   (str (bool-value ast))
     :string (str \" (string-value ast) \")
     :array  (str "[" (str/join ", "(mapv to-str (array-elements ast))) "]")
+    :hash   (let [pairs (for [pair (hash-pairs ast)]
+                          (str/join ": " (mapv to-str pair)))]
+            (str "{" (str/join ", " pairs) "}"))
     (assert ast (str "ast/to-str not implemented for " ast))))
 
 (def pprint (comp println to-str))

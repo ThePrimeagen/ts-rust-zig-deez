@@ -13,6 +13,11 @@
 (def ^:const STRING   :string)
 (def ^:const BUILTIN  :builtin)
 (def ^:const ARRAY    :array)
+(def ^:const HASH     :hash)
+(def ^:const HASH-PAIR :hash-pair)
+
+(def kind  first)
+(def value second)
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
@@ -25,6 +30,21 @@
 
 (defmacro array [elements]
   `(vector ~ARRAY ~elements))
+
+(defmacro hash- [pairs]
+  `(vector ~HASH ~pairs))
+
+(defmacro hash-pair [pair]
+  `(vector ~HASH-PAIR ~pair))
+
+(def hash-value (comp value value))
+
+(defn hash-key [obj]
+  (case (kind obj)
+    :boolean (if (value obj) 1 0)
+    :integer (value obj)
+    :string  (hash (value obj))
+             nil))
 
 (def null (constantly [NULL nil]))
 
@@ -42,9 +62,6 @@
 (def fn-ast    second)
 (def fn-env    third)
 
-(def kind  first)
-(def value second)
-
 (defmacro builtin [fn]
   `(vector ~BUILTIN ~fn))
 
@@ -56,10 +73,15 @@
 
 (defn inspect [obj]
   (case (kind obj)
+    :string (str \" (value obj) \")
     :fn    (ast/to-str (fn-ast obj))
     :array (let [elements (mapv inspect (value obj))]
            (str "[" (str/join ", " elements) "]"))
+    :hash-pair
+           (->> (value obj)
+                (mapv inspect)
+                (str/join ": "))
     :hash  (let [pairs (for [pair (value obj)]
-                         (str/join ": " (mapv inspect pair)))]
+                         (inspect (second pair)))]
            (str "{" (str/join ", " pairs) "}"))
     (str (value obj))))

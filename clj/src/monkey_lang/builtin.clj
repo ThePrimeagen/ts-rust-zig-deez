@@ -42,10 +42,18 @@
       (conj value)
       (object/array)))
 
+(defn get- [hash kee]
+  (let [hash-kee (object/hash-key kee)]
+  (if-not hash-kee
+    (object/error (str "Unsuable as hash key: " (name (object/kind kee))))
+  (let [hash-pair (get (object/value hash) hash-kee nil)]
+  (if-not hash-pair
+    (object/null)
+  (object/hash-value hash-pair))))))
+
 (def fn
   {"len"     (object/builtin  len)
    "println" (object/builtin  println-)
-   "index"   (object/builtin  index)
    "first"   (object/builtin  first-)
    "last"    (object/builtin  last)
    "rest"    (object/builtin  rest)

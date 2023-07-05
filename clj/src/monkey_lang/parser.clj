@@ -128,6 +128,20 @@
     (lexer/expect :r_bracket)
     (jc/return (ast/index-expr lexpr index))))
 
+(def hash-pair
+  (jb/do
+    (k <- (parse-expr LOWEST))
+    (lexer/expect :colon)
+    (v <- (parse-expr LOWEST))
+    (jc/return [k v])))
+
+(def parse-hash
+  (jb/do
+    (lexer/expect :l_squirly)
+    (pairs <- (-> hash-pair (jc/sep-by* (lexer/expect :comma))))
+    (lexer/expect :r_squirly)
+    (jc/return (ast/hash pairs))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :ident   parse-ident
@@ -137,6 +151,7 @@
      :fn      parse-fn
      :string  parse-string
      :l_bracket parse-array
+     :l_squirly parse-hash
     (:bang  
      :minus)  parse-prefix
     (:true  
@@ -277,4 +292,4 @@
   (run "if (x < y) { return 5 };")
   (run "a[1]")
   (println (ast/to-str (run "3 + 4 * 5 == 3 * 1 + 4 * 5")))
-  ())
+  (ast/to-str (run "{\"one\": 1, \"two\": 2, \"three\": 3}")))
