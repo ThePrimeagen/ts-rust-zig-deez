@@ -10,7 +10,7 @@ COPY . .
 RUN dart pub get --offline
 
 RUN dart test
-RUN dart compile exe bin/mkay.dart -o bin/main
+RUN dart compile exe /app/bin/main.dart -o /app/bin/main
 
 FROM scratch
 

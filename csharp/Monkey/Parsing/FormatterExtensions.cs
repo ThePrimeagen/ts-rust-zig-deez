@@ -2,6 +2,9 @@ using Monkey.Lexing;
 
 namespace Monkey.Parsing;
 
+// C# has a concept of extension methods - static methods that can be called as if they were instance methods.
+// They need to be declared in the static class and the member they are extending needs to be the first parameter with `this` modifier.
+// The naming conventions vary, but usually they are named [ThingItDoes][ThingItExtends]Extensions, but some parts may be omitted.
 public static class FormatterExtensions
 {
     public static string Format(this IEnumerable<IStatement> statements)

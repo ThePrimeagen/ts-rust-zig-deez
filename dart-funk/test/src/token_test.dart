@@ -64,7 +64,7 @@ void main() {
         // assert
         expect(token.value, val);
         expect(token.type, TokenType.ident);
-        expect(tStr, '<ident> => $val');
+        expect(tStr, '(<ident> => $val)');
       },
     );
   });

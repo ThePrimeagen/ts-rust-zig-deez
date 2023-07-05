@@ -1,5 +1,7 @@
 ﻿namespace Monkey.Lexing;
 
+// This is a poor-mans alternative to union types - similar to rusts powerful enums, before it will be implemented natively in C#.
+// We define a public static class to ease up creation of individual case types and store instances of types that are not parameterized to save on memory
 public static class Tokens
 {
     public static IToken Illegal(char value) => new IllegalToken(value);
@@ -35,11 +37,21 @@ public static class Tokens
     public static readonly IToken Else = new ElseToken();
     public static readonly IToken Return = new ReturnToken();
 
+    // I've found useful to have a generic method that throws an exception when called, to be used as a default case in switch expressions,
+    // so when I add a new type, I can just find all the places where I use this method and add a new case there.
     public static T OutOfRange<T>(string parameter) => throw new ArgumentOutOfRangeException(parameter);
 }
 
+// We need to use an interface instead of an abstract record due to limitations of structs
+// Unfortunately, by doing this, we lose the ability to store them on stack due to boxing (when referred through interface),
+// but this is the price we need to pay for us to be able to use this type in switch expressions.
 public interface IToken {}
-public readonly record struct IllegalToken(char Value): IToken;
+
+// A record is quite new concept in C#. It is a value type that is immutable by default and has a built-in equality and hash code implementation.
+// Instead of specifying all members, you can use "primary constructor" syntax to specify only the members that you want to initialize.
+// By default, records are classes, but you can also define records as structs, that allows them to be stored on stack instead of a heap.
+// When having records as structs, we can also use "readonly" that should help with optimization.
+public readonly record struct IllegalToken(char Value) : IToken;
 public readonly record struct EoFToken: IToken;
 public readonly record struct IdentifierToken(string Identifier): IToken;
 public readonly record struct IntegerToken(int Integer): IToken;

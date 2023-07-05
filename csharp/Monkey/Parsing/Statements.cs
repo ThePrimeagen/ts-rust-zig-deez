@@ -1,5 +1,6 @@
 namespace Monkey.Parsing;
 
+// This is the exact same approach we took in ../Lexing/Tokens.cs
 public static class Statements
 {
     public static IStatement Let(string identifier, IExpression expression) => new LetStatement(identifier, expression);

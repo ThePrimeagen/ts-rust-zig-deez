@@ -44,8 +44,8 @@ Value Program::eval(EnvironmentP env) const
 			value = statement->eval(env);
 		return value;
 	}
-	catch (const Value& value) {
-		return value;
+	catch (Value& value) {
+		return std::move(value);
 	}
 }
 

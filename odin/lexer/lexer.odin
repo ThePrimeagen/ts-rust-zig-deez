@@ -21,9 +21,8 @@ Lexer :: struct {
 }
 
 Token :: struct {
-	offset: int,
-	kind:   Token_Kind,
-	text:   string,
+	kind: Token_Kind,
+	text: string,
 }
 
 Token_Kind :: enum {

@@ -6,6 +6,7 @@ struct Token
     # identifiers
     Ident
     Integer
+    String
 
     # operators
     Assign
@@ -22,8 +23,8 @@ struct Token
     # delimiters
     Comma
     Semicolon
-    LeftParen
-    RightParen
+    LeftCurly
+    RightCurly
     LeftSquirly
     RightSquirly
 

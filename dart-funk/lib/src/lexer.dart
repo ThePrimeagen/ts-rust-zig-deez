@@ -40,37 +40,37 @@ class Lexer {
         const Token.eof(),
       );
     case '{':
-      retVal = (advance(innerLexer), const Token.lSquirly());
+      retVal = (advanceLexer(innerLexer), const Token.lSquirly());
     case '}':
-      retVal = (advance(innerLexer), const Token.rSquirly());
+      retVal = (advanceLexer(innerLexer), const Token.rSquirly());
     case '(':
-      retVal = (advance(innerLexer), const Token.lParen());
+      retVal = (advanceLexer(innerLexer), const Token.lParen());
     case ')':
-      retVal = (advance(innerLexer), const Token.rParen());
+      retVal = (advanceLexer(innerLexer), const Token.rParen());
     case ',':
-      retVal = (advance(innerLexer), const Token.comma());
+      retVal = (advanceLexer(innerLexer), const Token.comma());
     case ';':
-      retVal = (advance(innerLexer), const Token.semicolon());
+      retVal = (advanceLexer(innerLexer), const Token.semicolon());
     case '+':
-      retVal = (advance(innerLexer), const Token.plus());
+      retVal = (advanceLexer(innerLexer), const Token.plus());
     case '-':
-      retVal = (advance(innerLexer), const Token.dash());
+      retVal = (advanceLexer(innerLexer), const Token.dash());
     case '*':
-      retVal = (advance(innerLexer), const Token.asterisk());
+      retVal = (advanceLexer(innerLexer), const Token.asterisk());
     case '/':
-      retVal = (advance(innerLexer), const Token.slash());
+      retVal = (advanceLexer(innerLexer), const Token.slash());
     case '>':
-      retVal = (advance(innerLexer), const Token.greaterThan());
+      retVal = (advanceLexer(innerLexer), const Token.greaterThan());
     case '<':
-      retVal = (advance(innerLexer), const Token.lessThan());
+      retVal = (advanceLexer(innerLexer), const Token.lessThan());
     case '=' when peekChar(innerLexer) == '=':
-      retVal = (advance(advance(innerLexer)), const Token.equal());
+      retVal = (advanceLexer(advanceLexer(innerLexer)), const Token.equal());
     case '=':
-      retVal = (advance(innerLexer), const Token.assign());
+      retVal = (advanceLexer(innerLexer), const Token.assign());
     case '!' when peekChar(innerLexer) == '=':
-      retVal = (advance(advance(innerLexer)), const Token.notEqual());
+      retVal = (advanceLexer(advanceLexer(innerLexer)), const Token.notEqual());
     case '!':
-      retVal = (advance(innerLexer), const Token.bang());
+      retVal = (advanceLexer(innerLexer), const Token.bang());
     case _ when alphas.contains(innerLexer.ch):
       final read = readIdentifier(innerLexer);
       retVal = (read.$1, read.$2);
@@ -99,7 +99,11 @@ String peekChar(Lexer lexer) {
 (Lexer, int) seekTo(Lexer lexer, bool Function(String) fn) {
   var retVal = lexer;
   while (fn(retVal.ch)) {
-    retVal = advance(retVal);
+    if (retVal.position + 1 >= retVal.source.length) {
+      retVal = advanceLexer(retVal);
+      return (retVal, retVal.source.length);
+    }
+    retVal = advanceLexer(retVal);
   }
   return (retVal, retVal.position);
 }
@@ -119,7 +123,7 @@ String peekChar(Lexer lexer) {
   return (read.$1, Token.int(read.$2));
 }
 
-Lexer advance(Lexer lexer) {
+Lexer advanceLexer(Lexer lexer) {
   return lexer.copyWith(
     position: lexer.position + 1,
   );
@@ -134,4 +138,17 @@ Lexer eatWhitespace(Lexer lexer) {
     );
   }
   return lexer;
+}
+
+/// Given a source string, return a generator of tokens
+Iterable<Token> tokenGenerator(String source) sync* {
+  final lexer = Lexer(source);
+  var (currLex, currToken) = nextToken(lexer);
+  yield currToken;
+  while (currToken != const Token.eof() && currToken != const Token.illegal()) {
+    final (nextLex, anotherToken) = nextToken(currLex);
+    currLex = nextLex;
+    yield anotherToken;
+    currToken = anotherToken;
+  }
 }

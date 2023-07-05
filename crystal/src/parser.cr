@@ -18,7 +18,7 @@ class Parser
         Precedence::Sum
       when .slash?, .asterisk?
         Precedence::Product
-      when .left_paren?
+      when .left_curly?
         Precedence::Call
       else
         Precedence::Lowest
@@ -59,6 +59,13 @@ class Parser
     name = parse_identifier expect_next(:ident)
     expect_next :assign
     value = parse_expression_statement next_token
+    expect_next :semicolon unless current_token.type.semicolon?
+
+    if expr = value.expression.as?(If)
+      if expr.alternative.nil?
+        raise "if expressions in variables must have an alternative"
+      end
+    end
 
     Let.new name, value
   end
@@ -83,11 +90,13 @@ class Parser
     left = parse_prefix_proc current_token
     raise "cannot parse prefix for type #{current_token.type}" if left.nil?
 
-    while !peek_token.type.semicolon? && prec < Precedence.from(peek_token.type)
-      infix = parse_infix_proc peek_token, left
-      return left if infix.nil?
+    loop do
+      raise "unexpected End of File" if current_token.type.eof?
+      break if peek_token.type.semicolon? || prec >= Precedence.from(peek_token.type)
 
-      next_token
+      infix = parse_infix_proc peek_token, left
+      break if infix.nil?
+
       left = infix
     end
 
@@ -98,9 +107,11 @@ class Parser
     case token.type
     when .ident?         then parse_identifier token
     when .integer?       then parse_integer token
+    when .string?        then parse_string token
     when .bang?, .minus? then parse_prefix_expression
     when .true?, .false? then parse_boolean token
-    when .left_paren?    then parse_grouped_expression
+    when .if?            then parse_if token
+    when .left_curly?    then parse_grouped_expression
     when .function?      then parse_function
     end
   end
@@ -109,7 +120,7 @@ class Parser
     case token.type
     when .plus?, .minus?, .slash?, .asterisk?, .equal?, .not_equal?, .less_than?, .greater_than?
       parse_infix_expression expr
-    when .left_paren?
+    when .left_curly?
       parse_call expr
     end
   end
@@ -136,7 +147,7 @@ class Parser
   private def parse_grouped_expression : Expression
     next_token
     expr = parse_expression :lowest
-    expect_next :right_paren unless current_token.type.right_paren?
+    expect_next :right_curly unless current_token.type.right_curly?
 
     expr
   end
@@ -149,16 +160,39 @@ class Parser
     IntegerLiteral.new token.value.to_i64
   end
 
+  private def parse_string(token : Token) : Expression
+    StringLiteral.new token.value
+  end
+
   private def parse_boolean(token : Token) : Expression
     BooleanLiteral.new token.type.true?
   end
 
+  private def parse_if(token : Token) : Expression
+    expect_next :left_curly
+    condition = parse_expression :lowest
+    expect_next :right_curly unless current_token.type.right_curly?
+    next_token if condition.is_a? Call # hande call edge-cases
+
+    expect_next :left_squirly
+    consequence = parse_block
+    alternative : Block? = nil
+
+    if peek_token.type.else?
+      next_token
+      expect_next :left_squirly
+      alternative = parse_block
+    end
+
+    If.new condition, consequence, alternative
+  end
+
   private def parse_function : Expression
-    expect_next :left_paren
+    expect_next :left_curly
 
     parameters = [] of Identifier
 
-    if peek_token.type.right_paren?
+    if peek_token.type.right_curly?
       next_token
     else
       token = expect_next :ident
@@ -170,7 +204,7 @@ class Parser
         parameters << parse_identifier current_token
       end
 
-      expect_next :right_paren
+      expect_next :right_curly
     end
 
     expect_next :left_squirly
@@ -183,7 +217,7 @@ class Parser
     arguments = [] of Expression
 
     next_token
-    if peek_token.type.right_paren?
+    if peek_token.type.right_curly?
       next_token
       return Call.new expr, arguments
     end
@@ -196,7 +230,7 @@ class Parser
       arguments << parse_expression :lowest
     end
 
-    expect_next :right_paren
+    expect_next :right_curly
 
     Call.new expr, arguments
   end

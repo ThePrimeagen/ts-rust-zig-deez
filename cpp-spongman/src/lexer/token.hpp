@@ -7,13 +7,16 @@ enum class TokenType
 {
 	Illegal,
 	Eof,
+
 	Identifier,
 	Integer,
 	String,
+	True,
+	False,
 
+	Dollar,
 	Comma,
 	Semicolon,
-	Dollar,
 	Colon,
 
 	Lparen,
@@ -27,12 +30,14 @@ enum class TokenType
 	Assign,
 	Plus,
 	Minus,
+
+	Bang,
+	Tilde,
+
 	Asterisk,
 	Slash,
 	Percent,
 
-	Bang,
-	Tilde,
 
 	BitAnd,
 	BitOr,
@@ -50,8 +55,6 @@ enum class TokenType
 	// Keywords
 	Function,
 	Let,
-	True,
-	False,
 	If,
 	Else,
 	Return,
