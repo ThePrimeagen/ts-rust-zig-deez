@@ -68,7 +68,9 @@
     (is (= (evaluate "return 10; 9;") 10))
     (is (= (evaluate "return 2 * 5; 9;") 10))
     (is (= (evaluate "9; return 2 * 5; 9;") 10))
-    (is (= (evaluate "if (10 > 1) { if (10 > 1) {return 10;} return 1;}") 10)))
+    (is (= (evaluate "if (10 > 1) { if (10 > 1) {return 10;} return 1;}") 10))
+    (is (= (evaluate "let f = fn(x) { return x;  x + 10;};f(10);"), 10))
+    (is (= (evaluate "let f = fn(x) { let result = x + 10; return result; return 10;};f(10);"), 20)))
   (testing "Error Handling"
     (is (= (evaluate "5 + true;") "Type Mismatch: integer + boolean"))
     (is (= (evaluate "5 + true; 5;") "Type Mismatch: integer + boolean"))
@@ -77,7 +79,9 @@
     (is (= (evaluate "5; true + false; 5") "Unknown Operator: boolean + boolean"))
     (is (= (evaluate "if (10 > 1) { true + false; }") "Unknown Operator: boolean + boolean"))
     (is (= (evaluate "if (10 > 1) { if (10 > 1) { return true + false; } return 1; }") "Unknown Operator: boolean + boolean"))
-    (is (= (evaluate "foobar") "Identifier not found: foobar")))
+    (is (= (evaluate "foobar") "Identifier not found: foobar"))
+    (is (= (evaluate "{\"name\": \"Monkey\"}[fn(x) { x }];") "Unusable as hash key: fn"))
+    (is (= (evaluate "999[1];") "Index operator not supported: integer")))
   (testing "Let Statements"
     (is (= (evaluate "let a = 5; a;") 5))
     (is (= (evaluate "let a = 5 * 5; a;") 25))
@@ -94,4 +98,50 @@
     (is (= (evaluate "fn(x) { x; }(5)") 5))
     (is (= (evaluate "let add = fn(a, b) { a + b }; let sub = fn(a, b) { a - b }; let applyFunc = fn(a, b, func) { func(a, b) }; applyFunc(2, 2, add);"), 4))
     (is (= (evaluate "let newAdder = fn(x) { fn(y) { x + y } }; let addTwo = newAdder(2); addTwo(3);"), 5))
-    (is (= (evaluate "let makeGreeter = fn(greeting) { fn(name) { greeting + \" \" + name + \"!\" } }; let hello = makeGreeter(\"Hello\"); hello(\"Thorsten\");"), "Hello Thorsten!"))))
+    (is (= (evaluate "let makeGreeter = fn(greeting) { fn(name) { greeting + \" \" + name + \"!\" } }; let hello = makeGreeter(\"Hello\"); hello(\"Thorsten\");"), "Hello Thorsten!")))
+  (testing "Enclosed environment"
+    (is (= (evaluate "let first = 10;let second = 10;let third = 10;let ourFunction = fn(first) {  let second = 20;  first + second + third;};ourFunction(20) + first + second;") 70)))
+  (testing "Closures"
+    (is (= (evaluate "let newAdder = fn(x) { fn(y) { x + y } }; let addTwo = newAdder(2); addTwo(3);"), 5)))
+  (testing "String literal"
+    (is (= (evaluate "\"Hello World!\"") "Hello World!")))
+  (testing "String Concatenation"
+    (is (= (evaluate "\"Hello\" + \" \" + \"World!\"") "Hello World!")))
+  (testing "Builtin Functions"
+    (is (= (evaluate "len(\"\")") 0))
+    (is (= (evaluate "len(\"four\")") 4))
+    (is (= (evaluate "len(\"hello world\")") 11))
+    (is (= (evaluate "len(1)") "count not supported on this type: Integer"))
+    (is (= (evaluate "len([1, 2, 3])") 3))
+    (is (= (evaluate "len([])") 0))
+    (is (= (evaluate "puts(\"hello\", \"world!\")") nil))
+    (is (= (evaluate "first([1, 2, 3])") 1))
+    (is (= (evaluate "first([])") nil))
+    (is (= (evaluate "last([1, 2, 3])") 3))
+    (is (= (evaluate "last([])") nil))
+    (is (= (evaluate "rest([1, 2, 3])") [(object/integer 2) (object/integer 3)]))
+    (is (= (evaluate "rest([])") nil))  
+    (is (= (evaluate "push([], 1)") [(object/integer 1)])))
+  (testing "Array literals"
+    (is (= (evaluate "[1, 2 * 2, 3 + 3]"), (mapv #(object/integer %) [1, 4, 6]))))
+  (testing "Array Index Expression"
+    (is (= (evaluate "[1, 2, 3][0]") 1))
+    (is (= (evaluate "[1, 2, 3][1]") 2))
+    (is (= (evaluate "[1, 2, 3][2]") 3))
+    (is (= (evaluate "let i = 0; [1][i];") 1))
+    (is (= (evaluate "[1, 2, 3][1 + 1];") 3))
+    (is (= (evaluate "let myArray = [1, 2, 3]; myArray[2];") 3))
+    (is (= (evaluate "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];") 6))
+    (is (= (evaluate "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]") 2))
+    (is (= (evaluate "[1, 2, 3][3]") nil))
+    (is (= (evaluate "[1, 2, 3][-1]") nil)))
+  (testing "Hash Literals"
+    (is (= (evaluate "let two = \"two\";	{\"one\": 10 - 9,two: 1 + 1,\"thr\" + \"ee\": 6 / 2,4: 4,true: 5,false: 6}[false]") 6)))
+  (testing "Hash Index Expression"
+    (is (= (evaluate "{\"foo\": 5}[\"foo\"]") 5))
+    (is (= (evaluate "{\"foo\": 5}[\"bar\"]") nil))
+    (is (= (evaluate "let key = \"foo\"; {\"foo\": 5}[key]") 5))
+    (is (= (evaluate "{}[\"foo\"]") nil))
+    (is (= (evaluate "{5: 5}[5]") 5))
+    (is (= (evaluate "{true: 5}[true]") 5))
+    (is (= (evaluate "{false: 5}[false]") 5))))

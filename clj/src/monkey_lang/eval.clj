@@ -82,7 +82,7 @@
     (builtin/invoke builtin/index [left index])
   (if (object/is? left object/HASH)
     (builtin/invoke builtin/get- [left index])
-  (object/error (str "index operator not supported: " (name (object/kind left)))))))
+  (object/error (str "Index operator not supported: " (name (object/kind left)))))))
 
 (defn eval-call-expr [func args]
   (if (object/is? func object/BUILTIN)
@@ -107,7 +107,7 @@
       (-> kee)
     (let [hash-kee (object/hash-key kee)]
     (if-not hash-kee
-      (object/error (str "Unsuable as hash key: " (name (object/kind kee))))
+      (object/error (str "Unusable as hash key: " (name (object/kind kee))))
     (let [value (run env v)]
     (if (object/error? value)
       (-> value)
