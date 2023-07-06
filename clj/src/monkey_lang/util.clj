@@ -11,5 +11,8 @@
   (println v)
   (-> v))
 
-(defn yellow [txt]
-  (str "\033[;33m" txt "\033[0m"))
+(defmacro yellow [txt]
+  `(str "\033[;33m" ~txt "\033[0m"))
+
+(defmacro pad [lvl]
+  `(.repeat "  " ~lvl))

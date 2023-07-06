@@ -1,6 +1,6 @@
 (ns monkey-lang.ast
   (:refer-clojure :exclude [if int fn])
-  (:require [monkey-lang.util :refer [third fourth]]
+  (:require [monkey-lang.util :refer [third fourth pad]]
             [clojure.string :as str]))
 
 ;; statements
@@ -119,36 +119,42 @@
 (def program-stmts second)
 
 ;; TODO: cleanup this function a little bit
-(defn to-str [ast]
-  (case (kind ast)
-    :program (str/join (mapv to-str (program-stmts ast)))
-    ;; statements
-    :let    (str "let " (let-ident ast) " = " (to-str (let-value ast)) ";" \newline)
-    :expr   (str (to-str (expr-expr ast)) ";" \newline)
-    :block  (if (empty? (block-stmts ast))
-              (str "{ }")  
-            (str "{" \newline (str/join (mapv (comp #(str \space \space %) to-str) (block-stmts ast))) "}"))
-    :return (str "return " (to-str (return-expr ast)) ";" \newline)
-    ;; expressions
-    :prefix (str "(" (prefix-op ast) (to-str (prefix-right ast)) ")")
-    :infix  (str "(" (to-str (infix-left ast)) \space (infix-op ast) \space (to-str (infix-right ast)) ")")
-    :if     (str "if" \space "(" (to-str (if-condition ast)) ")" \space
-                  (to-str (if-consequence ast))
-                  (when-not (empty? (if-alternative ast))
-                    (str " else " (to-str (if-alternative ast)))))
-    :fn     (str "fn (" (str/join ", " (mapv to-str (fn-params ast))) ")" \space
-                 (to-str (fn-block ast)))
-    :call   (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
-    :index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-left ast)) "])")
-    ;; literals
-    :ident  (str (ident-literal ast))
-    :int    (str (int-value ast))
-    :bool   (str (bool-value ast))
-    :string (str \" (string-value ast) \")
-    :array  (str "[" (str/join ", "(mapv to-str (array-elements ast))) "]")
-    :hash   (let [pairs (for [pair (hash-pairs ast)]
-                          (str/join ": " (mapv to-str pair)))]
-            (str "{" (str/join ", " pairs) "}"))
-    (assert ast (str "ast/to-str not implemented for " ast))))
+(defn to-str 
+  ([ast]
+    (to-str 0 ast))
+  ([pad-lvl ast]
+    (case (kind ast)
+      :program (str/join (mapv (partial to-str pad-lvl) (program-stmts ast)))
+      ;; statements
+      :let    (str (pad pad-lvl)  "let " (let-ident ast) " = " (to-str pad-lvl (let-value ast)) ";" \newline)
+      :expr   (str (pad pad-lvl) (to-str pad-lvl (expr-expr ast)) ";" \newline)
+      :block  (if (empty? (block-stmts ast))
+                (str "{ }")
+              (let [stmts (mapv (partial to-str (inc pad-lvl)) (block-stmts ast))]
+              (str "{" \newline (str/join stmts) (pad pad-lvl) "}")))
+      :return (str (pad pad-lvl) "return " (to-str pad-lvl (return-expr ast)) ";" \newline)
+      ;; expressions
+      :prefix (str "(" (prefix-op ast) (to-str (prefix-right ast)) ")")
+      :infix  (str "(" (to-str (infix-left ast)) " " (infix-op ast) " " (to-str (infix-right ast)) ")")
+      :if     (let [condi (to-str (if-condition ast))
+                    conse (to-str pad-lvl (if-consequence ast))
+                    altrn (when-not (empty? (if-alternative ast))
+                            (str " else " (to-str pad-lvl (if-alternative ast))))]
+              (str "if (" condi ") " conse altrn))
+      :fn     (let [params (mapv to-str (fn-params ast))
+                    block  (to-str pad-lvl (fn-block ast))]
+              (str "fn (" (str/join ", " params) ") " block))
+      :call   (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
+      :index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-index ast)) "])")
+      ;; literals
+      :ident  (str (ident-literal ast))
+      :int    (str (int-value ast))
+      :bool   (str (bool-value ast))
+      :string (str \" (string-value ast) \")
+      :array  (str "[" (str/join ", "(mapv to-str (array-elements ast))) "]")
+      :hash   (let [pairs (for [pair (hash-pairs ast)]
+                            (str/join ": " (mapv to-str pair)))]
+              (str "{" (str/join ", " pairs) "}"))
+      (assert ast (str "ast/to-str not implemented for " ast)))))
 
 (def pprint (comp println to-str))
