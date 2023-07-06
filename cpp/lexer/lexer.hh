@@ -10,11 +10,11 @@
 enum class token_type {
     Identifier,
     Integer,
-
+    HexInteger,
+    String,
     Illegal,
     Eof,
     Assign,
-
     Bang,
     Dash,
     ForwardSlash,
@@ -23,18 +23,22 @@ enum class token_type {
     NotEqual,
     LessThan,
     GreaterThan,
-
     Plus,
     Comma,
     Semicolon,
+    Colon,
     LParen,
     RParen,
     LSquirly,
     RSquirly,
-
+    LBracket,
+    RBracket,
+    Ampersand,
+    Pipe,
+    Tilde,
+    Hat,
     Function,
     Let,
-
     If,
     Else,
     Return,
@@ -48,8 +52,7 @@ struct token final {
     token_type type;
     std::string_view literal;
 
-    inline token() : type(token_type::Illegal)
-    {}
+    inline token() : type(token_type::Illegal) {}
     inline token (const token&) = default;
     inline token(token &&) = default; 
     inline token(token_type t, std::string_view literal_)
@@ -71,7 +74,7 @@ struct token final {
         literal = std::string_view(iter,iter+1);
     }
 
-    std::string to_string();
+    std::string to_string() const;
 };
 
 
@@ -98,7 +101,8 @@ private:
     char peek() noexcept;
     void skip_whitespace() noexcept;
     std::string_view read_ident() noexcept;
-    std::string_view read_int() noexcept;
+    void read_int(token &t) noexcept;
+    std::string_view read_string() noexcept;
 public:
     lexer(std::string &&input_);
     lexer(lexer &&) = default;

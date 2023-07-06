@@ -14,6 +14,10 @@ Parser::Precedence Parser::precedenceFromToken(token_type tok) {
 	case token_type::ForwardSlash: return PRODUCT;
 	case token_type::Asterisk: return PRODUCT;
 	case token_type::LParen: return CALL;
+	case token_type::LBracket: return INDEX;
+	case token_type::Ampersand: return AND;
+	case token_type::Hat: return XOR;
+	case token_type::Pipe: return OR;
 	default: return LOWEST;
 	}
 }
@@ -24,7 +28,13 @@ void Parser::peekError(token_type t) {
 	msg += " but got ";
 	msg += getTokenTypeName(peek_token.type);
 	msg += " instead.";
-	errors.emplace_back(std::move(msg));
+	errors.push_back(std::move(msg));
+}
+
+void Parser::printErrors() {
+	std::cerr << "Encountered errors:\n";
+	for (const auto &error : errors)
+		std::cerr << '\t' << error << '\n';
 }
 
 void Parser::checkParserErrors() {
@@ -40,40 +50,42 @@ std::unique_ptr<Identifier> Parser::parseIdentifier() {
 }
 
 std::unique_ptr<LetStatement> Parser::parseLet() {
-	std::unique_ptr<LetStatement> let_stmt(new LetStatement);
 
 	if (!expectPeek(token_type::Identifier))
 		return nullptr;
 
+	auto let_stmt = std::make_unique<LetStatement>();
 	let_stmt->name = parseIdentifier();
 
 	if (!expectPeek(token_type::Assign))
 		return nullptr;
-
 	advance_tokens();
 
-
-	let_stmt->value = parseExpression(LOWEST);
+	let_stmt->value = std::unique_ptr<Expression>(parseExpression(LOWEST));
 	if (peekTokenIs(token_type::Semicolon)) advance_tokens();
 	return let_stmt;
 }
 
 std::unique_ptr<ReturnStatement> Parser::parseReturn() {
-	std::unique_ptr<ReturnStatement> ret_stmt(new ReturnStatement);
-
 	advance_tokens();
-
-	ret_stmt->value = parseExpression(LOWEST);
-
-	if (peekTokenIs(token_type::Semicolon)) advance_tokens();
-	return ret_stmt;
+	auto value = parseExpression(LOWEST);
+	if (peekTokenIs(token_type::Semicolon))
+		advance_tokens();
+	return std::make_unique<ReturnStatement>(std::move(value));
 }
 
 std::unique_ptr<IntegerLiteral> Parser::parseIntegerLiteral() {
-
 	std::int64_t value;
 	auto [ptr, ec] = std::from_chars(current_token.literal.data(), current_token.literal.data() + current_token.literal.size(), value);
+	if (ec == std::errc())
+		return std::make_unique<IntegerLiteral>(value);
+	onError("failed to parse integer literal");
+	return nullptr;
+}
 
+std::unique_ptr<IntegerLiteral> Parser::parseHexIntegerLiteral() {
+	std::int64_t value;
+	auto [ptr, ec] = std::from_chars(current_token.literal.data(), current_token.literal.data() + current_token.literal.size(), value, 16);
 	if (ec == std::errc())
 		return std::make_unique<IntegerLiteral>(value);
 	onError("failed to parse integer literal");
@@ -81,15 +93,15 @@ std::unique_ptr<IntegerLiteral> Parser::parseIntegerLiteral() {
 }
 
 std::unique_ptr<PrefixExpression> Parser::parsePrefixExpression() {
-	auto result = std::unique_ptr<PrefixExpression>(new PrefixExpression);
+	auto result = std::make_unique<PrefixExpression>();
 	result->type = current_token.type;
 	advance_tokens();
 	result->right = parseExpression(PREFIX);
 	return result;
 }
 
-std::unique_ptr<InfixExpression> Parser::pareseInfixExpression(expr_ptr &&left) {
-	auto result = std::unique_ptr<InfixExpression>(new InfixExpression);
+std::unique_ptr<InfixExpression> Parser::parseInfixExpression(expr_ptr &&left) {
+	auto result = std::make_unique<InfixExpression>();
 	result->left = std::move(left);
 	result->type = current_token.type;
 	Precedence precedence = currentPrecedence();
@@ -98,7 +110,7 @@ std::unique_ptr<InfixExpression> Parser::pareseInfixExpression(expr_ptr &&left) 
 	return result;
 }
 
-std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence)
+expr_ptr Parser::parseExpression(Precedence precedence)
 {
 	auto prefix = prefixParseFns.find(current_token.type);
 	if (prefix == prefixParseFns.end())
@@ -106,8 +118,7 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence)
 		std::cerr << "No prefix parsing function for " << current_token.literal << "!\n";
 		return nullptr;
 	}
-
-	std::unique_ptr<Expression> lhs = prefix->second();
+	expr_ptr lhs(prefix->second());
 
 	while (!peekTokenIs(token_type::Semicolon) && precedence < peekPrecedence()) {
 		auto infix = infixParseFns.find(peek_token.type);
@@ -115,7 +126,6 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence)
 			return lhs;
 		}
 		advance_tokens();
-
 		lhs = infix->second(std::move(lhs));
 	}
 
@@ -124,36 +134,28 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence)
 
 std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement()
 {
-	std::unique_ptr<Expression> expr = parseExpression(LOWEST);
-
+	auto expr = std::make_unique<ExpressionStatement>(parseExpression(LOWEST));
 	if (peekTokenIs(token_type::Semicolon))
 		advance_tokens();
-
-	return std::make_unique<ExpressionStatement>(std::move(expr));
+	return expr;
 }
 
-std::unique_ptr<Statement> Parser::parseStatement()
+stmt_ptr Parser::parseStatement()
 {
 	switch (current_token.type)
 	{
-		using enum token_type;
-	case Let:
+	case token_type::Let:
 		return parseLet();
-	case Return:
+	case token_type::Return:
 		return parseReturn();
-		/*case If:
-				statement = parseIf();
-				break;
-			*/
 	default:
 		return parseExpressionStatement();
 	}
 }
 
-std::unique_ptr<Expression> Parser::parseGroupedExpression() {
+expr_ptr Parser::parseGroupedExpression() {
 	advance_tokens();
-	std::unique_ptr<Expression> result = parseExpression(LOWEST);
-
+	expr_ptr result = parseExpression(LOWEST);
 	if (!expectPeek(token_type::RParen))
 		return nullptr;
 	return result;
@@ -174,17 +176,16 @@ std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
 }
 
 std::unique_ptr<IfExpression> Parser::parseIfExpression() {
-	auto ifexpr = std::make_unique<IfExpression>();
-
+	
 	if (!expectPeek(token_type::LParen))
 		return nullptr;
-
 	advance_tokens();
+
+	auto ifexpr = std::make_unique<IfExpression>();
 	ifexpr->condition = parseExpression(LOWEST);
 
 	if (!expectPeek(token_type::RParen))
 		return nullptr;
-
 	if (!expectPeek(token_type::LSquirly))
 		return nullptr;
 
@@ -194,113 +195,134 @@ std::unique_ptr<IfExpression> Parser::parseIfExpression() {
 		advance_tokens();
 		if (!expectPeek(token_type::LSquirly))
 			return nullptr;
-
 		ifexpr->alternative = parseBlockStatement();
-
-
 	}
 	return ifexpr;
 }
 
-std::optional<std::vector<std::unique_ptr<Identifier>>> Parser::parseFunctionParameters() {
-	std::vector<std::unique_ptr<Identifier>> result;
+std::shared_ptr<std::vector<std::string>> Parser::parseFunctionParameters() {
+	std::shared_ptr<std::vector<std::string>> result=std::make_shared<std::vector<std::string>>();
 
 	if (peekTokenIs(token_type::RParen))
 	{
 		advance_tokens();
 		return result;
 	}
-
 	advance_tokens();
-
-	result.push_back(std::make_unique<Identifier>(current_token.literal));
-
+	
+	result->emplace_back(current_token.literal);
 	while (peekTokenIs(token_type::Comma)) {
 		advance_tokens();
 		advance_tokens();
-		result.push_back(std::make_unique<Identifier>(current_token.literal));
+		result->emplace_back(current_token.literal);
 	}
 
 	if (!expectPeek(token_type::RParen))
-	{
-		return std::nullopt;
-	}
-
+		return nullptr;
 	return result;
 }
 
 std::unique_ptr<FunctionLiteral> Parser::parseFunctionLiteral() {
-	auto lit = std::make_unique<FunctionLiteral>();
-
+	
 	if (!expectPeek(token_type::LParen))
 		return nullptr;
 
-	auto params = parseFunctionParameters();
-	if (params) lit->parameters = std::move(*params);
-	else return nullptr;
-
+	auto lit = std::make_unique<FunctionLiteral>();
+	lit->parameters = parseFunctionParameters();
+	if (!lit->parameters)
+		return nullptr;
 	if (!expectPeek(token_type::LSquirly))
 		return nullptr;
-
-	lit->body = parseBlockStatement();
-
+	lit->body=std::shared_ptr<BlockStatement>(parseBlockStatement());
 	return lit;
 }
 
-std::optional<std::vector<expr_ptr>> Parser::parseCallArguments() {
+std::optional<std::vector<expr_ptr>> Parser::parseExpressionList(token_type end_tok) {
 	std::vector<expr_ptr> args;
 
-	if (peekTokenIs(token_type::RParen)) {
+	if (peekTokenIs(end_tok)) {
 		advance_tokens();
 		return args;
 	}
 
 	advance_tokens();
-	args.push_back(parseExpression(LOWEST));
+	args.push_back(std::move(parseExpression(LOWEST)));
 
 	while (peekTokenIs(token_type::Comma)) {
 		advance_tokens();
 		advance_tokens();
-		args.push_back(parseExpression(LOWEST));
+		args.push_back(std::move(parseExpression(LOWEST)));
 	}
 
-	if (!expectPeek(token_type::RParen)) {
+	if (!expectPeek(end_tok)) {
 		return std::nullopt;
 	}
 
 	return args;
 }
 
-std::unique_ptr<CallExpression> Parser::parseCallExpression(expr_ptr left) {
-	std::unique_ptr < CallExpression > call = std::make_unique<CallExpression>();
+std::unique_ptr<CallExpression> Parser::parseCallExpression(expr_ptr &&left) {
+	auto call = std::make_unique<CallExpression>();
 	call->function = std::move(left);
-	auto args = parseCallArguments();
+	auto args = parseExpressionList(token_type::RParen);
 	if (args) call->arguments = std::move(*args);
 	else return nullptr;
 	return call;
 }
 
-Parser::Parser(lexer &l) : lex(l)
-{
+Parser::Parser(lexer &l) : lex(l) {
 	lex.next_token(current_token);
 	lex.next_token(peek_token);
 }
 
-std::unique_ptr<Program> Parser::parse()
-{
-	std::unique_ptr<Program> program(new Program);
+std::shared_ptr<Program> Parser::parse() {
+	std::shared_ptr<Program> program(new Program);
 	while (current_token.type != token_type::Eof) {
 		stmt_ptr statement = parseStatement();
 
 		if (statement)
-			program->statements.emplace_back(std::move(statement));
+			program->statements.push_back(std::move(statement));
 		advance_tokens();
 	}
 	return program;
 }
 
-void Parser::printErrors() {
-	std::cerr << "Encountered errors:\n";
-	for (const auto &error : errors)
-		std::cerr << '\t' << error << '\n';
+std::unique_ptr<ArrayLiteral> Parser::parseArrayLiteral() {
+	auto literal = std::make_unique<ArrayLiteral>();
+	auto args = parseExpressionList(token_type::RBracket);
+	if (args) literal->elements = std::move(*args);
+	else return nullptr;
+	return literal;
+}
+
+std::unique_ptr<IndexExpression> Parser::parseIndexExpression(expr_ptr &&left) {
+	auto index = std::make_unique<IndexExpression>();
+	index->left = std::move(left);
+	advance_tokens();
+	index->index = parseExpression(LOWEST);
+	if (!expectPeek(token_type::RBracket))
+		return nullptr;
+	return index;
+}
+
+std::unique_ptr<HashLiteral> Parser::parseHashLiteral() {
+	auto hash = std::make_unique<HashLiteral>();
+
+	while (!peekTokenIs(token_type::RSquirly)) {
+		advance_tokens();
+		auto key = parseExpression(LOWEST);
+		if (!expectPeek(token_type::Colon))
+			return nullptr;
+
+		advance_tokens();
+		auto value = parseExpression(LOWEST);
+		if (!peekTokenIs(token_type::RSquirly) && !expectPeek(token_type::Comma))
+			return nullptr;
+
+		hash->elements.emplace_back(std::move(key), std::move(value));
+	}
+
+	if (!expectPeek(token_type::RSquirly))
+		return nullptr;
+	return hash;
 }

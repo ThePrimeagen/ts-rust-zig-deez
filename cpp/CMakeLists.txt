@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(
     monkey
-    VERSION 0.1.0
-    HOMEPAGE_URL "https://github.com/nicdgonzalez/Lexer"
+    VERSION 1.0.0
     LANGUAGES CXX
 )
 
@@ -27,10 +26,15 @@ set_property(
     TARGET TESTS
     PROPERTY CXX_STANDARD_REQUIRED true
 )
-
-target_include_directories(TESTS
-    PRIVATE ${CMAKE_SOURCE_DIR}
-)
+if (MSVC)
+    target_include_directories(TESTS
+        PRIVATE ${CMAKE_SOURCE_DIR}
+        "C:/Program Files (x86)/Visual Leak Detector/include"
+    )
+    target_link_libraries(TESTS
+        "C:/Program Files (x86)/Visual Leak Detector/lib/Win64/vld.lib"
+    )
+endif (MSVC)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE ${CMAKE_SOURCE_DIR}
@@ -40,6 +44,7 @@ set(SOURCES "lexer/lexer.hh"
         "lexer/lexer.cc"
         "ast/ast.hh"
         "ast/ast.cc"
+        "ast/builtins.cc"
         "parser/parser.hh"
         "parser/parser.cc"
 )
@@ -48,6 +53,9 @@ target_sources(
     TESTS
     PRIVATE
     ${SOURCES}
+    test_lexer.cc
+    test_parser.cc
+    test_eval.cc
 )
 
 target_sources(

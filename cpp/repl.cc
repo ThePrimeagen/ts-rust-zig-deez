@@ -8,6 +8,7 @@ static const char *PROMPT = ">> ";
 
 void do_repl(void)
 {
+	env_ptr env = std::make_shared<Environment>();
 	while (true) {
 		std::cout << PROMPT;
 		std::string line;
@@ -15,14 +16,15 @@ void do_repl(void)
 		lexer lex(std::move(line));
 		Parser p(lex);
 
-		std::unique_ptr<Program> program = p.parse();
+		auto program = p.parse();
 
 		if (p.hasErrors()) {
 			p.printErrors();
 			continue;
 		}
-		
-		std::cout << program->to_string() << '\n';
+
+		Object value = program->eval(env);
+		std::cout << value.to_string() << std::endl;
 
 	}
 }

@@ -17,6 +17,7 @@ static const std::unordered_map<token_type, std::string> token_names{
 
     {token_type::Identifier, "Identifier"},
     { token_type::Integer,"Integer" },
+    { token_type::String,"String" },
 
     { token_type::Illegal,"Illegal" },
     { token_type::Eof,"Eof" },
@@ -34,10 +35,13 @@ static const std::unordered_map<token_type, std::string> token_names{
     { token_type::Plus,"Plus" },
     { token_type::Comma,"Comma" },
     { token_type::Semicolon,"Semicolon" },
+    { token_type::Colon,"Colon" },
     { token_type::LParen,"LParen" },
     { token_type::RParen,"RParen" },
     { token_type::LSquirly,"LSquirly" },
     { token_type::RSquirly,"RSquirly" },
+    { token_type::LBracket,"LBracket" },
+    { token_type::RBracket,"RBracket" },
     { token_type::Function,"Function" },
     { token_type::Let,"Let" },
     { token_type::If,"If" },
@@ -55,7 +59,7 @@ std::string_view getTokenTypeName(token_type t)
 
 }
 
-std::string token::to_string() {
+std::string token::to_string() const {
     std::string result;
     result.reserve(40); // should be enough
     result = "{ ";
@@ -107,15 +111,39 @@ lexer::read_ident() noexcept
     return std::string_view(pos, ch);
 }
 
-std::string_view
-lexer::read_int() noexcept
+void
+lexer::read_int(token &t) noexcept
 {
+    std::string::iterator pos = ch;
+    if (peek() == 'x')
+    {
+        read_char();
+        read_char();
+        pos = ch;
+        t.type = token_type::HexInteger;
+        while (ch != input.end() && std::isxdigit(*ch))
+            read_char();
+    }
+    else {
+        t.type = token_type::Integer;
+        while (ch != input.end() && std::isdigit(*ch))
+            read_char();
+    }
+    t.literal = std::string_view(pos, ch);
+}
+
+std::string_view
+lexer::read_string() noexcept
+{
+    read_char();
     const std::string::iterator pos = ch;
-    while (ch != input.end() && std::isdigit(*ch))
+    while (ch != input.end() && *ch!='"')
     {
         read_char();
     }
-    return std::string_view(pos, ch);
+    std::string_view result(pos, ch);
+    read_char();
+    return result;
 }
 
 void
@@ -134,6 +162,12 @@ lexer::next_token(token &t) noexcept
     case '}':
         t.set(token_type::RSquirly, ch);
         break;
+    case '[':
+        t.set(token_type::LBracket, ch);
+        break;
+    case ']':
+        t.set(token_type::RBracket, ch);
+        break;
     case '(':
         t.set(token_type::LParen, ch);
         break;
@@ -145,6 +179,21 @@ lexer::next_token(token &t) noexcept
         break;
     case ';':
         t.set(token_type::Semicolon, ch);
+        break;
+    case ':':
+        t.set(token_type::Colon, ch);
+        break;
+    case '&':
+        t.set(token_type::Ampersand, ch);
+        break;
+    case '|':
+        t.set(token_type::Pipe, ch);
+        break;
+    case '~':
+        t.set(token_type::Tilde, ch);
+        break;
+    case '^':
+        t.set(token_type::Hat, ch);
         break;
     case '+':
         t.set(token_type::Plus, ch);
@@ -183,6 +232,9 @@ lexer::next_token(token &t) noexcept
         else
             t.set(token_type::Assign, ch);
         break;
+    case '"': 
+        t.set(token_type::String, read_string());
+        return;
     case '0':
     case '1':
     case '2':
@@ -193,7 +245,8 @@ lexer::next_token(token &t) noexcept
     case '7':
     case '8':
     case '9':
-        t.set(token_type::Integer, read_int());
+        //t.set(token_type::Integer, read_int());
+        read_int(t);
         return;
     default:
         if (std::isalpha(*ch) || *ch == '_')
