@@ -25,6 +25,8 @@ U8 *TOKEN_STR = "ILLEGAL\0"
 	"ASTERISK\0"
 	"LESS_THAN\0"
 	"GREATER_THAN\0"
+	"LESS_THAN_EQUAL\0"
+	"GREATER_THAN_EQUAL\0"
 	"EQUAL\0"
 	"NOT_EQUAL\0"
 	"LET\0"
@@ -32,7 +34,8 @@ U8 *TOKEN_STR = "ILLEGAL\0"
 	"ELSE\0"
 	"RETURN\0"
 	"FALSE\0"
-	"TRUE\0";
+	"TRUE\0"
+	"NIL\0";
 
 #exe {
 	I64 offset;
@@ -92,7 +95,7 @@ U8 LexerPeekChar(Lexer *l)
 
 U0 LexerSkipWhitespace(Lexer *l)
 {
-	while (l->ch == ' ' || l->ch == '\t' || l->ch == '\n')
+	while (l->ch == ' ' || l->ch == '\t' || l->ch == '\n' || l->ch == '')
 		LexerReadChar(l);
 }
 
@@ -133,6 +136,8 @@ U64 GetTokenTypeFromLiteral(U8 *ident)
     type = TOKEN_FALSE;
 	else if (StrCmp(ident, "true") == 0)
     type = TOKEN_TRUE;
+	else if (StrCmp(ident, "null") == 0)
+    type = TOKEN_NIL;
 	else
 		type = TOKEN_IDENT;
 	return type;
@@ -166,8 +171,20 @@ Token *LexerNextToken(Lexer *l)
 		case '-':  tok = TokenCreate(TOKEN_DASH         ); break;
 		case '/':  tok = TokenCreate(TOKEN_FORWARD_SLASH); break;
 		case '*':  tok = TokenCreate(TOKEN_ASTERISK     ); break;
-		case '<':  tok = TokenCreate(TOKEN_LESS_THAN    ); break;
-		case '>':  tok = TokenCreate(TOKEN_GREATER_THAN ); break;
+		case '<':
+      if (LexerPeekChar(l) == '=') {
+        LexerReadChar(l);
+		    tok = TokenCreate(TOKEN_LESS_THAN_EQUAL);
+      } else
+		    tok = TokenCreate(TOKEN_LESS_THAN);
+      break;
+		case '>':
+      if (LexerPeekChar(l) == '=') {
+        LexerReadChar(l);
+		    tok = TokenCreate(TOKEN_GREATER_THAN_EQUAL);
+      } else
+		    tok = TokenCreate(TOKEN_GREATER_THAN);
+      break;
 		case '\0': tok = TokenCreate(TOKEN_EOF          ); break;
 		case '!':
       if (LexerPeekChar(l) == '=') {

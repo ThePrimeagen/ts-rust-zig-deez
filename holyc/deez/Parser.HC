@@ -128,9 +128,10 @@ Node *ParseIf(Parser *p)
 
 Node *ParsePrimary(Parser *p)
 {
+	U8 *err;
 	Node *node = NULL;
 
-	if (PCT == TOKEN_INT || PCT == TOKEN_TRUE || PCT == TOKEN_FALSE) {
+	if (PCT == TOKEN_INT || PCT == TOKEN_TRUE || PCT == TOKEN_FALSE || PCT == TOKEN_NIL) {
 		node = NodeFromToken(p->c);
 		ParserNext(p);
 	} else if (PCT == TOKEN_IDENT) {
@@ -144,7 +145,9 @@ Node *ParsePrimary(Parser *p)
 	} else if (ParserAccept(p, TOKEN_IF)) {
 		return ParseIf(p);
 	} else {
-		VectorAdd(p->errors, "Unexpected token");
+		err = MStrPrint("Unexpected token %s", TokenPretty(PCT));
+		VectorAdd(p->errors, err);
+		"Err: %s\n", err;
 	}
 
 	return node;
@@ -183,11 +186,13 @@ Node *ParseMathExpr(Parser *p)
 	return node;
 }
 
-Node *ParserLogicExpr(Parser *p)
+Node *ParseLogicExpr(Parser *p)
 {
-	Node *node = ParseTerm(p);
+	Node *node = ParseMathExpr(p);
 	while (PCT == TOKEN_LESS_THAN ||
 	       PCT == TOKEN_GREATER_THAN ||
+	       PCT == TOKEN_LESS_THAN_EQUAL ||
+	       PCT == TOKEN_GREATER_THAN_EQUAL ||
 	       PCT == TOKEN_EQUAL ||
 	       PCT == TOKEN_NOT_EQUAL) {
 		Node *new = NodeFromToken(p->c);
@@ -237,7 +242,7 @@ Node *ParseExpr(Parser *p)
 {
 	if (ParserAccept(p, TOKEN_FUNCTION))
 		return ParseFunction(p);
-	return ParseMathExpr(p);
+	return ParseLogicExpr(p);
 }
 
 parse_expr_ = &ParseExpr; // Set the function pointer defined at the start
@@ -274,7 +279,7 @@ Node *ParseProg(Parser *p)
 	Node *prog = NodeNew(NODE_PROG);
 	Node *stmt = NULL;
 	U8 *a = NULL;
-	for (; PCT != TOKEN_EOF; ParserNext(p)) {
+	for (; PCT != TOKEN_EOF && PCT != TOKEN_R_SQUIRLY; ParserNext(p)) {
 		if (ParserAccept(p, TOKEN_SEMICOLON))
 			goto next_token;
 
@@ -282,14 +287,18 @@ Node *ParseProg(Parser *p)
 			stmt = ParseReturn(p);
 		else if (ParserAccept(p, TOKEN_LET))
 			stmt = ParseLet(p);
+		else if (ParserAccept(p, TOKEN_L_SQUIRLY))
+			stmt = ParseProg(p);
 		else
 			stmt = ParseExpr(p);
 
 		if (stmt) {
 			VectorAdd(prog->children, stmt);
-			if (p->c->type != TOKEN_SEMICOLON) {
-				a = MStrPrint("Expected %s", TokenPretty(TOKEN_SEMICOLON));
-				VectorAdd(p->errors, &a);
+			if (PCT != TOKEN_R_SQUIRLY && PCT != TOKEN_EOF) {
+				if (PCT != TOKEN_SEMICOLON) {
+					a = MStrPrint("Expected %s", TokenPretty(TOKEN_SEMICOLON));
+					VectorAdd(p->errors, &a);
+				}
 			}
 		}
 
