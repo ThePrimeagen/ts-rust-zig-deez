@@ -1,4 +1,4 @@
-Cd("../lexer");
+Cd("../deez");
 #include "Tests"
 Exit;
 
