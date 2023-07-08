@@ -12,6 +12,7 @@ pom.xml.asc
 .hgignore
 .hg/
 .calva
-.clj-kondo
+.clj-kondo/*
+!.clj-kondo/config.edn
 .lsp
 .vscode

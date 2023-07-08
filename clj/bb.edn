@@ -1,7 +1,7 @@
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         io.github.vikasg7/jdsl {:git/url "https://github.com/vikasg7/jdsl.git" 
-                                :git/sha "24d5570ab7d01a73bac32b76a4b3482bc816a410"
+                                :git/sha "d87583cebee2efbcac47cb79ebcf3892621f79e3"
                                 :deps/manifest :deps}}
  :tasks {run  {:task (exec 'monkey-lang.core/-main)}
          test {:extra-paths ["test"]
