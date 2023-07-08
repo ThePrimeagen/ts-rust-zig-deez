@@ -118,68 +118,75 @@
     (run (env/create) ast))
   ([env ast]
     (case (ast/kind ast)
-      :program (let [value (eval-stmts env (ast/program-stmts ast))]
-               (if (object/is? value object/RETURN)
-                 (object/value value)
-               (-> value)))
+      :ast/program  (let [value (eval-stmts env (ast/program-stmts ast))]
+                    (if (object/is? value object/RETURN)
+                      (object/value value)
+                    (-> value)))
       ;; statements
-      :let    (let [value (run env (ast/let-value ast))]
-              (if (object/error? value)
-                (-> value)
-              (env/set! env (ast/let-ident ast) value)))
-      :expr   (run env (ast/expr-expr ast))
-      :block  (eval-stmts env (ast/block-stmts ast))
-      :return (let [value (run env (ast/return-expr ast))]
-              (if (object/error? value)
-                (-> value)
-              (object/return value)))
+      :ast/let-stmt (let [value (run env (ast/let-value ast))]
+                    (if (object/error? value)
+                      (-> value)
+                    (env/set! env (ast/let-ident ast) value)))
+      
+      :ast/expr-stmt    (run env (ast/expr-expr ast))
+      :ast/block-stmt   (eval-stmts env (ast/block-stmts ast))
+      :ast/return-stmt  (let [value (run env (ast/return-expr ast))]
+                        (if (object/error? value)
+                          (-> value)
+                        (object/return value)))
       ;; expressions
-      :prefix (let [right (run env (ast/prefix-right ast))]
-              (if (object/error? right)
-                (-> right)
-              (eval-prefix (ast/prefix-op ast) right)))
-      :infix  (let [left (run env (ast/infix-left ast))]
-              (if (object/error? left)
-                (-> left)
-              (let [right (run env (ast/infix-right ast))]
-              (if (object/error? right)
-                (-> right)
-              (eval-infix left (ast/infix-op ast) right)))))
-      :if     (let [condi (run env (ast/if-condition ast))]
-              (if (object/error? condi)
-                (-> condi)
-              (if (object/value condi)
-                (run env (ast/if-consequence ast))
-              (if (empty? (ast/if-alternative ast))
-                (object/null)
-              (run env (ast/if-alternative ast))))))
-      :fn     (object/fn ast env)
-      :call   (let [func (run env (ast/call-fn ast))]
-              (if (object/error? func)
-                (-> func)
-              (let [args (eval-exprs env (ast/call-args ast))]
-              (if (object/error? args)
-                (-> args)
-              (eval-call-expr func args)))))
-      :index-expr (let [left (run env (ast/index-expr-left ast))]
-                  (if (object/error? left)
-                    (-> left)
-                  (let [index (run env (ast/index-expr-index ast))]
-                  (if (object/error? index)
-                    (-> index)
-                  (eval-index-expr left index)))))
+      :ast/prefix-expr  (let [right (run env (ast/prefix-right ast))]
+                        (if (object/error? right)
+                          (-> right)
+                        (eval-prefix (ast/prefix-op ast) right)))
+      
+      :ast/infix-expr   (let [left (run env (ast/infix-left ast))]
+                        (if (object/error? left)
+                          (-> left)
+                        (let [right (run env (ast/infix-right ast))]
+                        (if (object/error? right)
+                          (-> right)
+                        (eval-infix left (ast/infix-op ast) right)))))
+      
+      :ast/if-expr      (let [condi (run env (ast/if-condition ast))]
+                        (if (object/error? condi)
+                          (-> condi)
+                        (if (object/value condi)
+                          (run env (ast/if-consequence ast))
+                        (if (empty? (ast/if-alternative ast))
+                          (object/null)
+                        (run env (ast/if-alternative ast))))))
+      
+      :ast/fn-lit     (object/fn ast env)
+      :ast/call-expr  (let [func (run env (ast/call-fn ast))]
+                      (if (object/error? func)
+                        (-> func)
+                      (let [args (eval-exprs env (ast/call-args ast))]
+                      (if (object/error? args)
+                        (-> args)
+                      (eval-call-expr func args)))))
+      
+      :ast/index-expr (let [left (run env (ast/index-expr-left ast))]
+                      (if (object/error? left)
+                        (-> left)
+                      (let [index (run env (ast/index-expr-index ast))]
+                      (if (object/error? index)
+                        (-> index)
+                      (eval-index-expr left index)))))
       ;; literals
-      :ident  (if-let [value (env/get env (ast/ident-literal ast))]
-                (-> value)
-              (if-let [builtin (get builtin/fn (ast/ident-literal ast) nil)]
-                (-> builtin)
-              (object/error (str "Identifier not found: " (ast/ident-literal ast)))))
-      :int    (object/integer (ast/int-value ast))
-      :bool   (object/boolean (ast/bool-value ast))
-      :string (object/string (ast/string-value ast))
-      :array  (let [elements (eval-exprs env (ast/array-elements ast))]
-              (if (object/error? elements)
-                (-> elements)
-              (object/array (vec elements))))
-      :hash   (eval-hash env (ast/hash-pairs ast))
+      :ast/ident-lit  (if-let [value (env/get env (ast/ident-literal ast))]
+                        (-> value)
+                      (if-let [builtin (get builtin/fn (ast/ident-literal ast) nil)]
+                        (-> builtin)
+                      (object/error (str "Identifier not found: " (ast/ident-literal ast)))))
+      
+      :ast/int-lit    (object/integer (ast/int-value ast))
+      :ast/bool-lit   (object/boolean (ast/bool-value ast))
+      :ast/string-lit (object/string (ast/string-value ast))
+      :ast/array-lit  (let [elements (eval-exprs env (ast/array-elements ast))]
+                      (if (object/error? elements)
+                        (-> elements)
+                      (object/array (vec elements))))
+      
+      :ast/hash-lit   (eval-hash env (ast/hash-pairs ast))
       (assert ast (str "eval/run not implemented for " ast)))))

@@ -16,23 +16,23 @@
 (def string
   (let [parser (-> (jc/many* (jp/none-of "\""))
                    (jc/between (jp/char \") (jp/char \")))]
-  (-> (partial token/create :string) (jc/map parser))))
+  (-> (partial token/create token/STRING) (jc/map parser))))
 
 (def integer
-  (-> (partial token/create :int) (jc/map (jc/many+ jp/digit))))
+  (-> (partial token/create token/INT) (jc/map (jc/many+ jp/digit))))
 
 (def keywords
   (let [parsers (-> jp/string (map ["fn" "let" "true" "false" "if" "else" "return"]))]
   (-> token/create (jc/map (jc/choice parsers)))))
 
 (def identifier
-  (-> (partial token/create :ident) (jc/map (jc/many+ jp/alpha-num))))
+  (-> (partial token/create token/IDENT) (jc/map (jc/many+ jp/alpha-num))))
 
 (def EOF
   (-> token/create (jc/map jp/eof)))
 
 (def illegal
-  (-> (partial token/create :illegal) (jc/map jp/any-char)))
+  (-> (partial token/create token/ILLEGAL) (jc/map jp/any-char)))
 
 (def tokens
   (jc/choice [double-char 
@@ -63,7 +63,7 @@
     (run lexer (cs/create input)))
   ([parser cs]
     (let [[token cs] (jb/run parser cs)]
-    (if (= :eof (token/kind token))
+    (if (= token/EOF (token/kind token))
       (list token)
     (cons token (lazy-seq (run parser cs)))))))
 
