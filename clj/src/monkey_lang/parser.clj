@@ -64,7 +64,7 @@
 (def parse-bool
   (jb/do
     (bool <- (-> (lexer/expect token/TRUE) (jc/<|> (lexer/expect token/FALSE))))
-    (jc/return (ast/bool (= token/TRUE (token/kind bool))))))
+    (jc/return (ast/bool (token/is? bool token/TRUE)))))
 
 (def parse-group
   (jb/do
@@ -81,7 +81,7 @@
     (lexer/expect token/RPAREN)
     (conse <- parse-block-stmts)   ;; consequence
     (token <- lexer/peek)
-    (if-not (= token/ELSE (token/kind token))
+    (if-not (token/is? token token/ELSE)
       (jc/return (ast/if condi conse nil))
     (jb/do
       (lexer/expect token/ELSE)
@@ -183,7 +183,7 @@
   ([prece lexpr]
     (jb/do
       (token <- lexer/peek)
-      (if (or (= token/SEMICOLON (token/kind token))
+      (if (or (token/is? token token/SEMICOLON)
               (>= prece (precedence token))
               (not (infix-parse-fn token)))
         (jc/return lexpr)

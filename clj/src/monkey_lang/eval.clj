@@ -13,15 +13,15 @@
       (-> result)
     (let [[stmt & rst] stmts
           result       (run env stmt)]
-    (if (or (= object/RETURN (object/kind result))
-            (= object/ERROR (object/kind result)))
+    (if (or (object/is? result object/RETURN)
+            (object/is? result object/ERROR))
       (-> result)
     (recur rst result))))))
 
 (defn eval-prefix [operator right]
   (case operator
     "!" (object/boolean (not (object/value right)))
-    "-" (if-not (= object/INTEGER (object/kind right))
+    "-" (if-not (object/is? right object/INTEGER)
           (object/error "Unknown Operator: %s %s" operator (object/kind right))
         (object/integer (- (object/value right))))
     (assert operator (str "eval/eval-prefix not implemented for " operator))))

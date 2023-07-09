@@ -10,7 +10,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] Refactored token/* and ast/* constants
 - [x] refactor eval/run function
 - [x] refactor object/error call in eval.clj
-- [ ] use object/is? and token/is? whereever possible.
+- [x] use object/is? and token/is? whereever possible.
 - [ ] add constants for NULL, TRUE and FALSE in eval.clj
 - [ ] Add support for
   - [ ] while loop

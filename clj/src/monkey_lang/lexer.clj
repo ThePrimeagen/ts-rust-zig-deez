@@ -54,7 +54,7 @@
 (defn expect [kind]
   (jb/do
     (token <- peek)
-    (if-not (= kind (token/kind token))
+    (if-not (token/is? token kind)
       (jc/fail-with (jb/error "Expected: " kind))
     (-> next))))
 
@@ -63,7 +63,7 @@
     (run lexer (cs/create input)))
   ([parser cs]
     (let [[token cs] (jb/run parser cs)]
-    (if (= token/EOF (token/kind token))
+    (if (token/is? token token/EOF)
       (list token)
     (cons token (lazy-seq (run parser cs)))))))
 
