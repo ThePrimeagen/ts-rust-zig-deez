@@ -1,5 +1,4 @@
 (ns monkey-lang.parser
-  {:clj-kondo/ignore [:unresolved-symbol]}
   (:require [jdsl.combinator   :as jc]
             [jdsl.basic        :as jb]
             [jdsl.char-stream  :as cs]
@@ -246,8 +245,8 @@
         col-num (count (last lines))
         err-lyn (nth (str/split-lines program) (dec lyn-num) 0)
         padding (util/to-str (repeat (dec col-num) \space))
-        pointer "^"]
-  (println ex-msg \newline 
+        pointer (util/yellow "^")]
+  (println (util/yellow ex-msg) \newline 
            (or (:msg ex-data) "Expected: ") \newline
            "   Found:" found \newline
            "Location:" lyn-num ":" col-num "(line : col)" \newline \newline
