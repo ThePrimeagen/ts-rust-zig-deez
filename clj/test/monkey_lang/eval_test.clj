@@ -74,7 +74,7 @@
   (testing "Error Handling"
     (is (= (evaluate "5 + true;") "Type Mismatch: integer + boolean"))
     (is (= (evaluate "5 + true; 5;") "Type Mismatch: integer + boolean"))
-    (is (= (evaluate "-true") "Unknown Operator: -boolean"))
+    (is (= (evaluate "-true") "Unknown Operator: - boolean"))
     (is (= (evaluate "true + false;") "Unknown Operator: boolean + boolean"))
     (is (= (evaluate "5; true + false; 5") "Unknown Operator: boolean + boolean"))
     (is (= (evaluate "if (10 > 1) { true + false; }") "Unknown Operator: boolean + boolean"))

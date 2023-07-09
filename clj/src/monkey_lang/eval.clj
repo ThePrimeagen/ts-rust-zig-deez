@@ -22,7 +22,7 @@
   (case operator
     "!" (object/boolean (not (object/value right)))
     "-" (if-not (= object/INTEGER (object/kind right))
-          (object/error (str "Unknown Operator: " operator (name (object/kind right))))
+          (object/error "Unknown Operator: %s %s" operator (object/kind right))
         (object/integer (- (object/value right))))
     (assert operator (str "eval/eval-prefix not implemented for " operator))))
 
@@ -44,16 +44,16 @@
       (object/integer ((op->fn operator) (object/value left) (object/value right)))
     (">" "<" ">=" "<=" "==" "!=")
       (object/boolean ((op->fn operator) (object/value left) (object/value right)))
-    (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))))
+    (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right))))
 
 (defn eval-string-infix-expr [left operator right]
   (case operator
     ("+") (object/string (str (object/value left) (object/value right)))
-    (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right))))))
+    (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right))))
 
 (defn eval-infix [left operator right]
   (if-not (= (object/kind left) (object/kind right))
-    (object/error (str "Type Mismatch: " (name (object/kind left)) \space operator \space (name (object/kind right))))
+    (object/error "Type Mismatch: %s %s %s" (object/kind left) operator (object/kind right))
   (if (and (object/is? left  object/INTEGER)
            (object/is? right object/INTEGER))
     (eval-integer-infix-expr left operator right)
@@ -63,7 +63,7 @@
   (case operator
     ("=="
      "!=") (object/boolean ((op->fn operator) (object/value left) (object/value right)))
-  (object/error (str "Unknown Operator: " (name (object/kind left)) \space operator \space (name (object/kind right)))))))))
+  (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right)))))))
 
 (defn eval-exprs [env exprs]
   (loop [exprs  exprs
@@ -82,7 +82,7 @@
     (builtin/invoke builtin/index [left index])
   (if (object/is? left object/HASH)
     (builtin/invoke builtin/get- [left index])
-  (object/error (str "Index operator not supported: " (name (object/kind left)))))))
+  (object/error "Index operator not supported: %s" (object/kind left)))))
 
 (defn eval-call-expr [func args]
   (if (object/is? func object/BUILTIN)
@@ -107,7 +107,7 @@
       (-> kee)
     (let [hash-kee (object/hash-key kee)]
     (if-not hash-kee
-      (object/error (str "Unusable as hash key: " (name (object/kind kee))))
+      (object/error "Unusable as hash key: %s" (object/kind kee))
     (let [value (run env v)]
     (if (object/error? value)
       (-> value)
@@ -178,7 +178,7 @@
                         (-> value)
                       (if-let [builtin (get builtin/fn (ast/ident-literal ast) nil)]
                         (-> builtin)
-                      (object/error (str "Identifier not found: " (ast/ident-literal ast)))))
+                      (object/error "Identifier not found: %s" (ast/ident-literal ast))))
       
       :ast/int-lit    (object/integer (ast/int-value ast))
       :ast/bool-lit   (object/boolean (ast/bool-value ast))

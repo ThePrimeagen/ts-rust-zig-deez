@@ -51,8 +51,11 @@
 (defmacro return [v]
   `(vector ~RETURN ~v))
 
-(defmacro error [v]
-  `(vector ~ERROR ~v))
+(defmacro error 
+  ([v]
+    `(vector ~ERROR ~v))
+  ([fmt & args]
+    `(error (apply format ~fmt (mapv name [~@args])))))
 
 (def message second)
 
