@@ -16,6 +16,10 @@
 (def ^:const HASH     :hash)
 (def ^:const HASH-PAIR :hash-pair)
 
+(def ^:const True  [BOOLEAN true])
+(def ^:const False [BOOLEAN false])
+(def ^:const Null  [NULL    nil])
+
 (def kind  first)
 (def value second)
 
@@ -26,7 +30,7 @@
   `(vector ~STRING ~v))
 
 (defmacro boolean [v]
-  `(vector ~BOOLEAN ~v))
+  `(if ~v ~True ~False))
 
 (defmacro array [elements]
   `(vector ~ARRAY ~elements))
@@ -45,8 +49,6 @@
     :integer (value obj)
     :string  (hash (value obj))
              nil))
-
-(def null (constantly [NULL nil]))
 
 (defmacro return [v]
   `(vector ~RETURN ~v))

@@ -1,7 +1,8 @@
 (ns monkey-lang.parser-test
   (:require [clojure.test :refer [deftest is testing]]
             [monkey-lang.parser :as parser]
-            [monkey-lang.ast :as ast]))
+            [monkey-lang.ast :as ast]
+            [monkey-lang.util :as util]))
 
 (def parse (comp ast/to-str parser/run))
 
@@ -102,7 +103,7 @@
     (is (= "([1, 2, 3, 4, 5][(1 * 3)]);\n" (parse "[1,2,3,4,5][1*3]")))
     (is (= "({1: 2, 2: 3, 3: 4}[(1 * 3)]);\n" (parse "{1: 2, 2: 3, 3: 4}[(1*3)]"))))
   (testing "error testing"
-    (is (= (with-out-str (println "ParseError \n Expected: :token/assign \n    Found: [:token/illegal |] \n Location: 1 : 10 (line : col) \n \n let hello | 5; \n           ^ \n")  )
+    (is (= (with-out-str (println (util/yellow "ParseError") "\n Expected: :token/assign \n    Found: [:token/illegal |] \n Location: 1 : 10 (line : col) \n \n let hello | 5; \n          " (util/yellow "^") "\n")  )
            (with-out-str (parser/print-error (try (parser/run "let hello | 5;") (catch clojure.lang.ExceptionInfo e e))))))
-    (is (= (with-out-str (println "ParseError \n Expected: :token/l-brace \n    Found: [:token/ident x] \n Location: 1 : 29 (line : col) \n \n callsFunction(2, 3, fn(x, y) x + y; }); \n                              ^ \n")  )
+    (is (= (with-out-str (println (util/yellow "ParseError") "\n Expected: :token/l-brace \n    Found: [:token/ident x] \n Location: 1 : 29 (line : col) \n \n callsFunction(2, 3, fn(x, y) x + y; }); \n                             " (util/yellow "^") "\n")  )
            (with-out-str (parser/print-error (try (parser/run "callsFunction(2, 3, fn(x, y) x + y; });") (catch clojure.lang.ExceptionInfo e e))))))))

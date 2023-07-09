@@ -6,9 +6,9 @@
   (try
     (if-let [value (apply f args)]
       (-> value)
-    (object/null))
+    (-> object/Null))
   (catch IndexOutOfBoundsException _
-    (object/null))
+    (-> object/Null))
   (catch Exception e
     (object/error (ex-message e)))))
 
@@ -48,7 +48,7 @@
     (object/error (str "Unusable as hash key: " (name (object/kind kee))))
   (let [hash-pair (get (object/value hash) hash-kee nil)]
   (if-not hash-pair
-    (object/null)
+    (-> object/Null)
   (object/hash-value hash-pair))))))
 
 (def fn

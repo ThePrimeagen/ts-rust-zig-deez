@@ -8,7 +8,7 @@
 
 (defn eval-stmts [env stmts]
   (loop [stmts  stmts
-         result (object/null)]
+         result object/Null]
     (if (empty? stmts)
       (-> result)
     (let [[stmt & rst] stmts
@@ -154,7 +154,7 @@
                         (if (object/value condi)
                           (run env (ast/if-consequence ast))
                         (if (empty? (ast/if-alternative ast))
-                          (object/null)
+                          (-> object/Null)
                         (run env (ast/if-alternative ast))))))
       
       :ast/fn-lit     (object/fn ast env)
