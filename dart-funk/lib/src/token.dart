@@ -8,6 +8,7 @@ class Token extends Equatable {
   // variable values
   const Token.ident(this.value) : type = TokenType.ident;
   const Token.int(this.value) : type = TokenType.int;
+  const Token.string(this.value) : type = TokenType.string;
 
   // keywords
   const Token.let()
@@ -76,6 +77,9 @@ class Token extends Equatable {
   const Token.semicolon()
       : type = TokenType.semicolon,
         value = ';';
+  const Token.colon()
+      : type = TokenType.colon,
+        value = ':';
   const Token.lParen()
       : type = TokenType.lParen,
         value = '(';
@@ -88,6 +92,12 @@ class Token extends Equatable {
   const Token.rSquirly()
       : type = TokenType.rSquirly,
         value = '}';
+  const Token.lCrochet()
+      : type = TokenType.lCrochet,
+        value = '[';
+  const Token.rCrochet()
+      : type = TokenType.rCrochet,
+        value = ']';
 
   final String value;
   final TokenType type;
@@ -130,6 +140,7 @@ enum TokenType {
   plus,
   comma,
   semicolon,
+  colon,
   lParen,
   rParen,
   lSquirly,
@@ -148,4 +159,7 @@ enum TokenType {
   return_,
   ne,
   eq,
+  string,
+  lCrochet,
+  rCrochet,
 }

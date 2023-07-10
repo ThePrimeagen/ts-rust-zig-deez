@@ -1,4 +1,4 @@
-FROM dart:3.0.0 AS build
+FROM dart:stable AS build
 
 WORKDIR /app
 
@@ -8,14 +8,13 @@ RUN dart pub get
 COPY . .
 
 RUN dart pub get --offline
-
 RUN dart test
-RUN dart compile exe /app/bin/main.dart -o /app/bin/main
+RUN dart compile exe binny/main.dart -o binny/main
 
 FROM scratch
 
 COPY --from=build /runtime/ /
 COPY --from=build /app/test /app/test
-COPY --from=build /app/bin/main /app/bin/main
+COPY --from=build /app/binny/main /app/bin/main
 
 CMD ["/app/bin/main", "/app/test/example.monkey"]

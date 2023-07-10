@@ -6,7 +6,7 @@ void main() {
   group('Token', () {
     late Logger logger;
     setUp(() {
-      logger = Logger();
+      logger = Logger(level: Level.warning);
     });
     test(
       'should return typeOf Token when instantiated',
