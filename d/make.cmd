@@ -41,7 +41,7 @@
 
 :"fmt"
 	@echo "===> Formatting"
-	dfmt -i source/*
+	dfmt --brace_style=knr -i source/*
 	@if %ready%=="yes" goto "lint" else goto exit
 
 :"lint"
@@ -54,5 +54,10 @@
 :"test"
 	@echo "===> Testing"
 	dub test
+	@goto exit
+
+:"repl"
+	@echo "===> Repl"
+	dub -b release
 	@goto exit
 

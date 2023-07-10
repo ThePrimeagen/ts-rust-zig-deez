@@ -16,19 +16,16 @@ import std.sumtype;
 
 /// Original source of expressions: https://dlang.org/library/std/sumtype.html
 /// Most fundamental type of "nothing" according to homotopy type theory
-struct Unit
-{
+struct Unit {
 }
 
 /// Wrapper around error message for evaluation result
-struct ErrorValue
-{
+struct ErrorValue {
     string message; /// Main error message
 }
 
 /// Wrapper around error message for evaluation result
-struct Function
-{
+struct Function {
     IdentifierNode[]* parameters; /// Function parameters
     BlockStatement* functionBody; /// Main function body
     Environment* env; /// Environment containing symbols
@@ -60,14 +57,13 @@ Environment* newEnclosedEnvironment(Environment* outer)
     return env;
 }
 
-/// Environment extention for function
+/// Environment extension for function
 Environment* extendFunctionEnv(Function literal, EvalResult[] args, ref Lexer lexer)
 {
     auto enclosedEnv = newEnclosedEnvironment(literal.env);
 
-    foreach (paramIdx, param; (*literal.parameters).enumerate(0))
-    {
-        const auto id = lexer.tagRepr(param.mainIdx);
+    foreach (paramIdx, param; (*literal.parameters).enumerate(0)) {
+        const auto id = param.show(lexer);
         enclosedEnv.items[id] = args[paramIdx];
     }
 
@@ -75,8 +71,7 @@ Environment* extendFunctionEnv(Function literal, EvalResult[] args, ref Lexer le
 }
 
 /// Map out functions and variables in closures
-struct Environment
-{
+struct Environment {
     Environment* outer; /// Parent environment
     EvalResult[string] items; /// items in hashmap
 }

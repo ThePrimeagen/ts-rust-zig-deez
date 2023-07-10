@@ -20,63 +20,77 @@ import std.range : enumerate;
 import std.sumtype : match;
 
 /// Evaluates expressions and statement nodes
-struct Evaluator
-{
+struct Evaluator {
 private:
     Parser parser; /// Stores statement nodes for evaluation
     Environment* env; /// Environment for variables and definitions
-
+    StatementNode[] progStatements; /// Program statements
+    ulong position; /// Current statement cursor
+    ulong statementCount; /// Cached statement count
 public:
     Appender!(EvalResult[]) results; /// Results from each program statement
 
     /**
-    * Constucts the evaluator.
-    * Params:
-    * parser = the parser with statements to evaluate
-    * env = the environment
-    */
+     * Constucts the evaluator.
+     * Params:
+     * parser = the parser with statements to evaluate
+     * env = the environment
+     */
     this(ref Parser parser, Environment* env)
     {
         this.parser = parser;
         this.env = env;
         this.results = appender!(EvalResult[]);
+        this.position = 0;
+        this.progStatements = parser.program.statements[];
+        this.statementCount = progStatements.length;
+    }
+
+    /**
+     * Constucts the evaluator from the checkpoint.
+     * Params:
+     * parser = the parser with statements to evaluate
+     * env = the environment
+     * position = the starting statement
+     */
+    this(ref Parser parser, Environment* env, ulong position)
+    {
+        this.parser = parser;
+        this.env = env;
+        this.results = appender!(EvalResult[]);
+        this.position = position;
+        this.progStatements = parser.program.statements[];
+        this.statementCount = progStatements.length;
     }
 
     /// Evaluate the entire program
     void evalProgram()
     {
-        auto progStatements = parser.program.statements[];
         bool notReturned = true;
 
-        for (auto i = 0; (i < progStatements.length) && notReturned; i++)
-        {
-            auto res = evalStatement(progStatements[i], this.parser.lexer, this.env);
+        while ((this.position < this.statementCount) && notReturned) {
+            auto res = evalStatement(progStatements[this.position], this.parser.lexer, this.env);
 
-            res.match!((ReturnValue _) {
-                notReturned = false;
-                this.results.put(res);
-            }, (ErrorValue _) { notReturned = false; this.results.put(res); }, (_) {
-                this.results.put(res);
-            });
+            notReturned = res.match!((ReturnValue _) => false, (ErrorValue _) => false, _ => true);
+
+            this.results.put(res);
+            this.position++;
         }
     }
 
     /// Print end result of program
     string showResult()
     {
-        const auto finalResults = results[];
+        auto finalResults = results[];
 
-        if (finalResults.empty())
-        {
+        if (finalResults.empty()) {
             return "";
-        }
-        else
-        {
-            const auto endResult = finalResults[$ - 1];
+        } else {
+            auto endResult = finalResults[$ - 1];
 
             return endResult.match!((ErrorValue result) => result.message, (ReturnValue result) {
                 return result.match!((Unit _) => "", (value) => format("%s", value));
-            }, (Unit _) => "", (result) => format("%s", result));
+            }, (Function _) => "<Function>", (Unit _) => "", (result) => format("%s", result));
         }
     }
 }
@@ -97,8 +111,7 @@ private Evaluator* prepareEvaluator(const string input)
 }
 
 /// Basic integer test
-unittest
-{
+unittest {
     const auto input = "5; 10;
 -5; -10";
     const long[4] expected = [5, 10, -5, -10];
@@ -106,8 +119,7 @@ unittest
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((long value) => assert(value == expected[i],
                 format("Number value %s does not match expected value %s", value, expected[i])),
                 _ => assert(false, format("Expected int value in statement %s", i)));
@@ -115,8 +127,7 @@ unittest
 }
 
 /// More complex integer test
-unittest
-{
+unittest {
     const auto input = "5; 10; -5; -10;
 5 + 5 + 5 + 5 - 10;
 2 * 2 * 2 * 2 * 2;
@@ -137,8 +148,7 @@ unittest
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((long value) => assert(value == expected[i],
                 format("Number value %s does not match expected value %s", value, expected[i])),
                 _ => assert(false, format("Expected int value in statement %s", i)));
@@ -146,8 +156,7 @@ unittest
 }
 
 /// Basic boolean test
-unittest
-{
+unittest {
     const auto input = "true; false;
 !true; !false;
 !5; !!true; !!false; !!5;
@@ -160,8 +169,7 @@ unittest
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((bool value) => assert(value == expected[i],
                 format("Bool value %s does not match expected value %s", value, expected[i])),
                 _ => assert(false, format("Expected bool value in statement %s", i)));
@@ -169,8 +177,7 @@ unittest
 }
 
 /// Complex boolean test
-unittest
-{
+unittest {
     const auto input = "true; false;
 1 < 2; 1 > 2;
 1 < 1; 1 > 1;
@@ -187,8 +194,7 @@ unittest
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((bool value) => assert(value == expected[i],
                 format("Bool value %s does not match expected value %s", value, expected[i])),
                 _ => assert(false, format("Expected bool value in statement %s", i)));
@@ -196,8 +202,7 @@ unittest
 }
 
 /// Boolean evaluations test
-unittest
-{
+unittest {
     const auto input = "true == true;
 false == false;
 true == false;
@@ -214,8 +219,7 @@ false != true;
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((bool value) => assert(value == expected[i],
                 format("Bool value %s does not match expected value %s", value, expected[i])),
                 _ => assert(false, format("Expected bool value in statement %s", i)));
@@ -223,8 +227,7 @@ false != true;
 }
 
 /// Compound expression statement test
-unittest
-{
+unittest {
     const auto input = "3 < 5 == false;
 3 > 5 == false;
 1 + (2 + 3) + 4;
@@ -238,8 +241,7 @@ unittest
 
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((bool value) => assert(value == expected[i],
                 format("Bool value %s does not match expected value %s", value, expected[i])),
                 (long value) => assert(value == expected[i],
@@ -249,8 +251,7 @@ unittest
 }
 
 /// If else expression statement test
-unittest
-{
+unittest {
     const auto input = "if (true) { 10 }
 if (false) { 10 }
 if (1) { 10 }
@@ -266,8 +267,7 @@ if ((1000 / 2) + 250 * 2 == 1000) { 9999 }";
 
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[])
-    {
+    foreach (i, result; evaluator.results[]) {
         result.match!((bool value) => assert(value == expected[i],
                 format("Bool value %s does not match expected value %s", value, expected[i])),
                 (long value) => assert(value == expected[i],
@@ -279,16 +279,14 @@ if ((1000 / 2) + 250 * 2 == 1000) { 9999 }";
 }
 
 /// Return statement test
-unittest
-{
+unittest {
     const string[4] inputs = [
         "return 10;", "return 10; 9;", "return 2 * 5; 9;", "9; return 10; 9;"
     ];
 
     const int[4] expected = [10, 10, 10, 10];
 
-    for (int i = 0; i < inputs.length; i++)
-    {
+    for (int i = 0; i < inputs.length; i++) {
         auto evaluator = prepareEvaluator(inputs[i]);
 
         evaluator.evalProgram();
@@ -304,8 +302,7 @@ unittest
 }
 
 /// Error handling statement test
-unittest
-{
+unittest {
     const string[8] inputs = [
         "5 + true;", "5 + true; 5;", "-true", "true + false", "5; true + false; 5",
         "if (10 > 1) { true + false; }",
@@ -321,8 +318,7 @@ unittest
         "Unknown operator: BOOLEAN + BOOLEAN", "Unknown symbol: foobar"
     ];
 
-    for (int i = 0; i < inputs.length; i++)
-    {
+    for (int i = 0; i < inputs.length; i++) {
         auto evaluator = prepareEvaluator(inputs[i]);
 
         evaluator.evalProgram();
@@ -338,8 +334,7 @@ unittest
 }
 
 /// Let statement test
-unittest
-{
+unittest {
     const string[4] inputs = [
         "let a = 5; a;", "let a = 5 * 5; a;", "let a = 5; let b = a; b;",
         "let a = 5; let b = a; let c = a + b + 5; c;"
@@ -347,8 +342,7 @@ unittest
 
     const long[4] expected = [5, 25, 5, 15];
 
-    for (int i = 0; i < inputs.length; i++)
-    {
+    for (int i = 0; i < inputs.length; i++) {
         auto evaluator = prepareEvaluator(inputs[i]);
 
         evaluator.evalProgram();
@@ -363,8 +357,7 @@ unittest
 }
 
 /// Function statement test
-unittest
-{
+unittest {
     const string[6] inputs = [
         "let identity = fn(x) { x; }; identity(5);",
         "let identity = fn(x) { return x; }; identity(5);",
@@ -375,8 +368,7 @@ unittest
 
     const long[6] expected = [5, 5, 10, 10, 20, 5];
 
-    for (int i = 0; i < inputs.length; i++)
-    {
+    for (int i = 0; i < inputs.length; i++) {
         auto evaluator = prepareEvaluator(inputs[i]);
 
         evaluator.evalProgram();
@@ -390,9 +382,8 @@ unittest
     }
 }
 
-/// Closure test
-unittest
-{
+/// Basic closure test
+unittest {
     const string input = "let newAdder = fn(x) {
 fn(y) { x + y };
 };
@@ -411,5 +402,33 @@ let addTwo = newAdder(2); addTwo(2);
     result.match!((long value) {
         assert(value == expected,
             format("Number value %s does not match expected value %d", value, expected));
+    }, _ => assert(false, "Unhandled type in program"));
+}
+
+/// Counter closure test
+unittest {
+    const string input = "let counter = fn(x) {
+  if (x > 100) {
+    return true;
+  } else {
+    let foobar = 9999;
+    counter(x + 1);
+  }
+};
+
+counter(0);
+";
+
+    const bool expected = true;
+
+    auto evaluator = prepareEvaluator(input);
+
+    evaluator.evalProgram();
+
+    auto result = evaluator.results[][$ - 1];
+
+    result.match!((bool value) {
+        assert(value == expected,
+            format("Bool value %s does not match expected value %s", value, expected));
     }, _ => assert(false, "Unhandled type in program"));
 }

@@ -11,10 +11,11 @@ import atom;
 import evaluator;
 import lexer;
 import parser;
-import deimos.linenoise : linenoise;
+import deimos.linenoise;
 import std.conv : to;
 import std.range : enumerate;
 import std.stdio : writefln;
+import std.string : strip;
 
 private static const string PROMPT = "Hello! This is the Monkey programming language!
 Feel free to type in commands";
@@ -25,41 +26,72 @@ Feel free to type in commands";
 void repl()
 {
     writefln("%s", PROMPT);
+    linenoiseSetMultiLine(1); // FIXME: Might not work?
 
-    char* line;
+    char* currLine;
     auto env = new Environment();
 
-    while ((line = linenoise(">> ")) !is null)
-    {
-        if (line[0] != '\0')
-        {
-            auto lexer = Lexer(to!string(line));
-            lexer.tokenize();
+    // Context for REPL continuation
+    auto prevLexer = Lexer("");
+    auto prevParser = Parser(prevLexer);
 
-            auto parser = Parser(lexer);
-            parser.parseProgram();
-
-            if (parser.errors[].length != 0)
-            {
-                writefln("Whoops! We ran into some monkey business here!\nParser errors:");
-
-                foreach (error; parser.errors[])
-                {
-                    writefln("\t%s", error);
-                }
-
-                continue;
-            }
-
-            auto evaluator = Evaluator(parser, env);
-
-            evaluator.evalProgram();
-
-            auto result = evaluator.showResult();
-            if (result != "")
-            {
-                writefln("%s", result);
-            }
+    // Main REPL loop
+    while ((currLine = linenoise(">> ")) !is null) {
+        if (currLine[0] == '\0') {
+            continue;
         }
+
+        auto input = strip(to!string(currLine));
+        if (input == "") {
+            continue;
+        }
+
+        auto currLexer = Lexer((prevLexer.input != "") ? cast(string)(prevLexer.input) ~ ";" ~ input
+                : input, prevLexer.position, prevLexer.tokens, prevLexer.endPosition);
+
+        auto oldTokenCount = prevLexer.tokens.tag[].length;
+
+        currLexer.tokenize();
+
+        auto currParser = Parser(currLexer, oldTokenCount, prevParser.program);
+        auto oldStatementCount = prevParser.program.statements[].length;
+
+        currParser.parseProgram();
+
+        // Retry if the current parser did not have any new statements
+        auto statementCheckpoint = currParser.program.statements[].length;
+        if (statementCheckpoint == oldStatementCount) {
+            prevLexer.tokens.start.shrinkTo(oldTokenCount);
+            prevLexer.tokens.tag.shrinkTo(oldTokenCount);
+
+            prevParser.program.statements.shrinkTo(oldStatementCount);
+            continue;
+        }
+
+        // Retry if the current parser encountered any errors
+        if (currParser.errors[].length != 0) {
+            writefln("Whoops! We ran into some monkey business here!\nParser errors:");
+
+            foreach (error; currParser.errors[]) {
+                writefln("\t%s", error);
+            }
+
+            prevLexer.tokens.start.shrinkTo(oldTokenCount);
+            prevLexer.tokens.tag.shrinkTo(oldTokenCount);
+
+            prevParser.program.statements.shrinkTo(oldStatementCount);
+            continue;
+        }
+
+        auto evaluator = Evaluator(currParser, env, oldStatementCount);
+        evaluator.evalProgram();
+
+        auto result = evaluator.showResult();
+        if (result != "") {
+            writefln("%s", result);
+        }
+
+        prevLexer = currLexer;
+        prevParser = currParser;
     }
 }

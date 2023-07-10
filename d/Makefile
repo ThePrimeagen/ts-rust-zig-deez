@@ -19,7 +19,7 @@ docker-ready: docker-build
 
 fmt:
 	@echo "===> Formatting"
-	dfmt -i source/*
+	dfmt --brace_style=knr -i source/*
 
 lint:
 	@echo "===> Linting"
@@ -30,4 +30,8 @@ lint:
 test:
 	@echo "===> Testing"
 	dub test
+
+repl:
+	@echo "===> Repl"
+	dub -b release
 

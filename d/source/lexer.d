@@ -15,8 +15,7 @@ import std.range : enumerate;
 import std.string : assumeUTF, representation;
 
 /// Token type tags
-enum TokenTag : ubyte
-{
+enum TokenTag : ubyte {
     Illegal,
     Eof,
     Ident,
@@ -47,8 +46,7 @@ enum TokenTag : ubyte
 }
 
 /// Token SoA tagged with starting position and type
-struct TokenList
-{
+struct TokenList {
     Appender!(ulong[]) start; /// Starting position of tokens
     Appender!(TokenTag[]) tag; /// Type tag for tokens
 
@@ -93,8 +91,7 @@ shared static this()
         TokenTag.LSquirly: "{", TokenTag.RSquirly: "}"
     ];
 
-    foreach (e; tempKeywords.byKeyValue)
-    {
+    foreach (e; tempKeywords.byKeyValue) {
         tempRepr[e.value] = e.key;
     }
     tempRepr.rehash;
@@ -103,14 +100,22 @@ shared static this()
     tagReprs = assumeUnique(tempRepr);
 }
 
-/// Encapsulates file tokenization
-struct Lexer
-{
-private:
-    ulong position = 0; /// Current character cursor
-    ulong readPosition = 1; /// Read cursor (after current char)
-    ulong[ulong] endPosition; /// Cache for end position of identity and number tokens
+/// Encapsulates char + tag pair for lexer
+struct Unigram {
+    ubyte ch;
+    TokenTag tag;
+}
 
+/// Encapsulates char + tag pair for lexer
+struct Bigram {
+    ubyte ch;
+    TokenTag fallback;
+    Unigram[] opts;
+}
+
+/// Encapsulates file tokenization
+struct Lexer {
+private:
     /**
      * Tags an identifier for the new token and caches the end of identifiers.
      * Params: identifier = the identifier to map to a tag
@@ -118,8 +123,7 @@ private:
      */
     TokenTag tagForIdent(ulong start, string identifier)
     {
-        if (identifier in reservedKeywords)
-        {
+        if (identifier in reservedKeywords) {
             return reservedKeywords[identifier];
         }
 
@@ -128,6 +132,10 @@ private:
     }
 
 public:
+    ulong position; /// Current character cursor
+    ulong readPosition; /// Read cursor (after current char)
+    ulong[ulong] endPosition; /// Cache for end position of identity and number tokens
+
     immutable(ubyte)[] input; /// Input string
     TokenList tokens; /// Tokens in input
 
@@ -139,6 +147,32 @@ public:
     {
         this.input = representation(text);
         this.tokens = TokenList(this.input.length);
+        this.position = 0;
+        this.readPosition = 1;
+    }
+
+    /**
+     * Constructs the lexer.
+     * Params:
+     * text = the input string
+     * position = the starting position
+     * tokens = the existing tokens
+     * endPosition = the cached end positions of numbers/identifiers
+     */
+    this(string text, ulong position, TokenList tokens, ulong[ulong] endPosition)
+    {
+        this.input = representation(text);
+        this.position = position;
+        this.readPosition = position + 1;
+        this.tokens = tokens;
+
+        // Pop last token before tokenization
+        auto oldTokenCount = tokens.start[].length ? tokens.start[].length - 1 : 0;
+
+        this.tokens.start.shrinkTo(oldTokenCount);
+        this.tokens.tag.shrinkTo(oldTokenCount);
+
+        this.endPosition = endPosition.dup;
     }
 
     /**
@@ -146,6 +180,21 @@ public:
      */
     void readChar()
     {
+        this.position = this.readPosition;
+        this.readPosition++;
+    }
+
+    /**
+     * Advances in characters from the input.
+     * Params: count = the number of characters to skip
+     */
+    void readChars(ulong count)
+    {
+        if (count < 1) {
+            return;
+        }
+
+        this.readPosition += count - 1;
         this.position = this.readPosition;
         this.readPosition++;
     }
@@ -165,100 +214,45 @@ public:
     void nextToken()
     {
         const auto c = this.input[this.position];
-        switch (c) with (TokenTag)
-        {
-        case '=':
-            this.tokens.start.put(this.position);
+    outer:
+        switch (c) with (TokenTag) {
+            // Check bigram (two-character) matches
+            static foreach (i, match; [
+                    Bigram('=', Assign, [Unigram('=', Eq)]),
+                    Bigram('!', Bang, [Unigram('=', NotEq)])
+                ]) {
+        case match.ch:
+                this.tokens.start.put(this.position);
 
-            const auto nextChar = this.peek();
-            if (nextChar == '=')
-            {
-                this.tokens.tag.put(Eq);
+                const auto nextChar = this.peek();
+
+                switch (nextChar) {
+                    static foreach (opt; match.opts) {
+                case opt.ch:
+                        this.tokens.tag.put(opt.tag);
+                        this.readChars(2);
+                        break outer;
+                    }
+                default:
+                    this.tokens.tag.put(match.fallback);
+                    this.readChar();
+                    break outer;
+                }
+            }
+            // Check single character matches
+            static foreach (match; [
+                Unigram('+', Plus), Unigram('-', Minus), Unigram('/', Slash),
+                Unigram('*', Asterisk), Unigram('<', Lt), Unigram('>', Gt),
+                Unigram(';', Semicolon), Unigram(',', Comma), Unigram('(',
+                        LParen), Unigram(')', RParen), Unigram('{', LSquirly),
+                Unigram('}', RSquirly), Unigram('\0', Eof)
+            ]) {
+        case match.ch:
+                this.tokens.start.put(this.position);
+                this.tokens.tag.put(match.tag);
                 this.readChar();
+                break outer;
             }
-            else
-            {
-                this.tokens.tag.put(Assign);
-            }
-
-            this.readChar();
-            break;
-        case '+':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Plus);
-            this.readChar();
-            break;
-        case '-':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Minus);
-            this.readChar();
-            break;
-        case '!':
-            this.tokens.start.put(this.position);
-
-            const auto nextChar = this.peek();
-            if (nextChar == '=')
-            {
-                this.tokens.tag.put(NotEq);
-                this.readChar();
-            }
-            else
-            {
-                this.tokens.tag.put(Bang);
-            }
-
-            this.readChar();
-            break;
-        case '/':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Slash);
-            this.readChar();
-            break;
-        case '*':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Asterisk);
-            this.readChar();
-            break;
-        case '<':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Lt);
-            this.readChar();
-            break;
-        case '>':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Gt);
-            this.readChar();
-            break;
-        case ';':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Semicolon);
-            this.readChar();
-            break;
-        case ',':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Comma);
-            this.readChar();
-            break;
-        case '(':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(LParen);
-            this.readChar();
-            break;
-        case ')':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(RParen);
-            this.readChar();
-            break;
-        case '{':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(LSquirly);
-            this.readChar();
-            break;
-        case '}':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(RSquirly);
-            this.readChar();
-            break;
         case '0': .. case '9':
             const auto start = this.position;
 
@@ -291,18 +285,10 @@ public:
             this.tokens.start.put(start);
             this.tokens.tag.put(this.tagForIdent(start, identSlice.assumeUTF));
             break;
-        case '\0':
-            this.tokens.start.put(this.position);
-            this.tokens.tag.put(Eof);
-            this.readChar();
-            break;
         default:
-            if (isWhite(c))
-            {
+            if (isWhite(c)) {
                 skipWhitespace();
-            }
-            else
-            {
+            } else {
                 this.tokens.start.put(this.position);
                 this.tokens.tag.put(Illegal);
                 this.readChar();
@@ -315,8 +301,7 @@ public:
      */
     void skipWhitespace()
     {
-        do
-        {
+        do {
             this.readChar();
         }
         while (this.position < this.input.length && isWhite(this.input[this.position]));
@@ -327,8 +312,7 @@ public:
      */
     void readNumber()
     {
-        do
-        {
+        do {
             this.readChar();
         }
         while (this.position < this.input.length && isDigit(this.input[this.position]));
@@ -340,15 +324,11 @@ public:
     void readIdentifier()
     {
         char ch;
-        do
-        {
+        do {
             this.readChar();
-            if (this.position < this.input.length)
-            {
+            if (this.position < this.input.length) {
                 ch = this.input[this.position];
-            }
-            else
-            {
+            } else {
                 break;
             }
         }
@@ -363,18 +343,13 @@ public:
     string tagRepr(ulong index)
     {
         const auto tag = this.tokens.tag[][index];
-        if (tag in tagReprs)
-        {
+        if (tag in tagReprs) {
             return tagReprs[tag];
-        }
-        else if (tag == TokenTag.Ident || tag == TokenTag.Int)
-        {
+        } else if (tag == TokenTag.Ident || tag == TokenTag.Int) {
             const auto start = this.tokens.start[][index];
             const auto identSlice = this.input[start .. this.endPosition[start]];
             return identSlice.assumeUTF;
-        }
-        else if (tag == TokenTag.Illegal)
-        {
+        } else if (tag == TokenTag.Illegal) {
             const auto start = this.tokens.start[][index];
             return "%s".format(to!char(this.input[start]));
         }
@@ -387,8 +362,7 @@ public:
      */
     void tokenize()
     {
-        while (this.position < this.input.length)
-        {
+        while (this.position < this.input.length) {
             this.nextToken();
         }
 
@@ -417,15 +391,13 @@ private void validateTokenize(Lexer lexer, const(ulong[]) expectedStart,
             format("Token tag list was %d elements; expected to be %d elements long",
                 tokenTag.length, expectedTag.length));
 
-    foreach (i, start; startPos.enumerate(0))
-    {
+    foreach (i, start; startPos.enumerate(0)) {
         assert(start == expectedStart[i],
                 format("Wrong token position %d for tag[%d]; expected %d",
                     start, i, expectedStart[i]));
     }
 
-    foreach (i, tag; tokenTag.enumerate(0))
-    {
+    foreach (i, tag; tokenTag.enumerate(0)) {
         assert(tag == expectedTag[i],
                 format("Wrong token type '%s' for tag[%d]; expected '%s'", tag, i, expectedTag[i]));
     }
@@ -433,8 +405,7 @@ private void validateTokenize(Lexer lexer, const(ulong[]) expectedStart,
 }
 
 /// Minimal lexer test
-unittest
-{
+unittest {
     const auto input = "";
 
     auto lexer = Lexer(input);
@@ -446,8 +417,7 @@ unittest
 }
 
 /// Empty input lexer test
-unittest
-{
+unittest {
     const auto input = "  ";
 
     auto lexer = Lexer(input);
@@ -459,13 +429,11 @@ unittest
 }
 
 /// Basic lexer test
-unittest
-{
+unittest {
     const auto input = "=+(){},;";
     const ulong[] expectedStart = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
-    with (TokenTag)
-    {
+    with (TokenTag) {
         const auto expectedTag = [
             Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon,
             Eof
@@ -479,8 +447,7 @@ unittest
 }
 
 /// Complete lexer test
-unittest
-{
+unittest {
     const auto input = "let five = 5;
 let ten = 10;
 let add = fn(x, y) {
@@ -495,8 +462,7 @@ let result = add(five, ten);
         input.length
     ];
 
-    with (TokenTag)
-    {
+    with (TokenTag) {
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
@@ -513,8 +479,7 @@ let result = add(five, ten);
 }
 
 /// More complete lexer test
-unittest
-{
+unittest {
     const auto input = "let five = 5;
 let ten = 10;
 let add = fn(x, y) {
@@ -531,8 +496,7 @@ let result = add(five, ten);
         88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107, input.length
     ];
 
-    with (TokenTag)
-    {
+    with (TokenTag) {
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
@@ -550,8 +514,7 @@ let result = add(five, ten);
 }
 
 /// Lexer test with even more keywords
-unittest
-{
+unittest {
     const auto input = "let five = 5;
 let ten = 10;
 let add = fn(x, y) {
@@ -576,8 +539,7 @@ if (5 < 10) {
         input.length
     ];
 
-    with (TokenTag)
-    {
+    with (TokenTag) {
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
@@ -597,8 +559,7 @@ if (5 < 10) {
 }
 
 /// Ultimate lexer test with digram symbols
-unittest
-{
+unittest {
     const auto input = "let five = 5;
 let ten = 10;
 let add = fn(x, y) {
@@ -626,8 +587,7 @@ if (5 < 10) {
         167, 170, 173, 175, 177, 180, 183, 184, input.length
     ];
 
-    with (TokenTag)
-    {
+    with (TokenTag) {
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,

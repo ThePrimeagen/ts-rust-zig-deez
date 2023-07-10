@@ -24,8 +24,7 @@ alias InfixParseFn = ExpressionNode function(ref Parser parser,
         ref ExpressionNode lhs, Precedence prec);
 
 /// Expression precedence
-enum Precedence : ubyte
-{
+enum Precedence : ubyte {
     Lowest,
     Ternary, // X ? a : b
     Equals, // ==
@@ -37,8 +36,7 @@ enum Precedence : ubyte
 }
 
 /// Group together infix rules with precedence
-struct InfixRule
-{
+struct InfixRule {
     InfixParseFn infix; /// Parsing function for infix operators
     Precedence prec; /// Operator precedence
 
@@ -180,8 +178,7 @@ ExpressionNode parseGroupedExpression(ref Parser parser)
     parser.skipToken();
     auto expr = parser.parseExpression(Precedence.Lowest);
 
-    if (parser.tokenTags[parser.position] != TokenTag.RParen)
-    {
+    if (parser.tokenTags[parser.position] != TokenTag.RParen) {
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
                 tagReprs[TokenTag.RParen], parser.tokenTags[parser.position]));
 
@@ -199,8 +196,7 @@ ExpressionNode parseIfExpression(ref Parser parser)
     const auto tokenTags = parser.tokenTags;
 
     // expect lparen and skip before block statement
-    if (parser.peek() != TokenTag.LParen)
-    {
+    if (parser.peek() != TokenTag.LParen) {
         parser.skipToken();
 
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
@@ -213,8 +209,7 @@ ExpressionNode parseIfExpression(ref Parser parser)
     auto expr = parser.parseExpression();
 
     // Expect rparen & lsquirly and skip both before consequence block statement
-    if (tokenTags[parser.position] != TokenTag.RParen)
-    {
+    if (tokenTags[parser.position] != TokenTag.RParen) {
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
                 tagReprs[TokenTag.RParen], tokenTags[parser.position]));
 
@@ -222,8 +217,7 @@ ExpressionNode parseIfExpression(ref Parser parser)
     }
 
     parser.skipToken();
-    if (tokenTags[parser.position] != TokenTag.LSquirly)
-    {
+    if (tokenTags[parser.position] != TokenTag.LSquirly) {
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
                 tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
 
@@ -233,14 +227,12 @@ ExpressionNode parseIfExpression(ref Parser parser)
     auto trueBranch = parser.parseBlockStatement();
 
     // Expect else & lsquirly and skip both before alternative block statement
-    if (tokenTags[parser.position] != TokenTag.Else)
-    {
+    if (tokenTags[parser.position] != TokenTag.Else) {
         return new IfExpressionNode(start, expr, trueBranch, null);
     }
 
     parser.skipToken();
-    if (tokenTags[parser.position] != TokenTag.LSquirly)
-    {
+    if (tokenTags[parser.position] != TokenTag.LSquirly) {
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
                 tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
 
@@ -259,8 +251,7 @@ ExpressionNode parseFunctionLiteral(ref Parser parser)
     const auto tokenTags = parser.tokenTags;
 
     // expect lparen and skip before function parameters
-    if (parser.peek() != TokenTag.LParen)
-    {
+    if (parser.peek() != TokenTag.LParen) {
         parser.skipToken();
 
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
@@ -273,8 +264,7 @@ ExpressionNode parseFunctionLiteral(ref Parser parser)
     auto params = parser.parseFunctionParameters();
 
     // expect lsquirly and skip before block statement
-    if (tokenTags[parser.position] != TokenTag.LSquirly)
-    {
+    if (tokenTags[parser.position] != TokenTag.LSquirly) {
         parser.errors.put(format("Expected next token to be '%s'; got %s instead",
                 tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
 
@@ -299,8 +289,7 @@ ExpressionNode parseCallExpression(ref Parser parser, ref ExpressionNode functio
 
 /// Most fundamental node
 /// TODO: use emplace for custom class allocation
-class ParseNode
-{
+class ParseNode {
     const ulong mainIdx; /// First index of expression
 
     /**
@@ -324,8 +313,7 @@ class ParseNode
 }
 
 /// Statement parse node
-class StatementNode : ParseNode
-{
+class StatementNode : ParseNode {
     /// Constructs generic statement
     this(ulong mainIdx)
     {
@@ -341,8 +329,7 @@ class StatementNode : ParseNode
 }
 
 /// Expression parse node
-class ExpressionNode : ParseNode
-{
+class ExpressionNode : ParseNode {
     /// Constructs generic expression
     this(ulong mainIdx)
     {
@@ -358,8 +345,7 @@ class ExpressionNode : ParseNode
 }
 
 /// Wrapper for ExpressionNodes
-class ExpressionStatement : StatementNode
-{
+class ExpressionStatement : StatementNode {
     ExpressionNode expr; /// Expression node reference
 
     /**
@@ -381,8 +367,7 @@ class ExpressionStatement : StatementNode
 }
 
 /// Node for let statements
-class LetStatement : StatementNode
-{
+class LetStatement : StatementNode {
     ExpressionNode expr; /// Expression node reference
 
     /**
@@ -412,8 +397,7 @@ class LetStatement : StatementNode
 }
 
 /// Node for return statements
-class ReturnStatement : StatementNode
-{
+class ReturnStatement : StatementNode {
     ExpressionNode expr; /// Expression node reference
 
     /**
@@ -442,8 +426,7 @@ class ReturnStatement : StatementNode
 }
 
 /// Node for nesting statements in blocks
-class BlockStatement : StatementNode
-{
+class BlockStatement : StatementNode {
     StatementNode[] statements; /// Statement listing in block
 
     /**
@@ -470,11 +453,9 @@ class BlockStatement : StatementNode
         auto reprBuilder = appender!(string[]);
         reprBuilder.reserve(8);
 
-        foreach (statement; this.statements[])
-        {
+        foreach (statement; this.statements[]) {
             auto repr = statement.show(lexer);
-            if (repr !is null && repr != "")
-            {
+            if (repr !is null && repr != "") {
                 reprBuilder.put(repr);
             }
         }
@@ -485,8 +466,7 @@ class BlockStatement : StatementNode
 }
 
 /// Identifier node for expressions
-class IdentifierNode : ExpressionNode
-{
+class IdentifierNode : ExpressionNode {
     /**
      * Constructs identifier nodes.
      * Params: mainIdx = the identifier token index
@@ -510,8 +490,7 @@ class IdentifierNode : ExpressionNode
 }
 
 /// Integer node for expressions
-class IntNode : ExpressionNode
-{
+class IntNode : ExpressionNode {
     /**
      * Constructs int nodes.
      * Params: mainIdx = the int token index
@@ -535,8 +514,7 @@ class IntNode : ExpressionNode
 }
 
 /// Boolean node for expressions
-class BooleanNode : ExpressionNode
-{
+class BooleanNode : ExpressionNode {
     /**
      * Constructs boolean nodes.
      * Params: mainIdx = the boolean token index
@@ -560,8 +538,7 @@ class BooleanNode : ExpressionNode
 }
 
 /// Unary prefix operator node for expressions
-class PrefixExpressionNode : ExpressionNode
-{
+class PrefixExpressionNode : ExpressionNode {
     const TokenTag op; /// Prefix operation
     ExpressionNode expr; /// Primary expression
 
@@ -587,8 +564,7 @@ class PrefixExpressionNode : ExpressionNode
 }
 
 /// Infix binary operator node for expressions
-class InfixExpressionNode : ExpressionNode
-{
+class InfixExpressionNode : ExpressionNode {
     const TokenTag op; /// Infix operation
     ExpressionNode lhs; /// lhs expression
     ExpressionNode rhs; /// rhs expression
@@ -618,8 +594,7 @@ class InfixExpressionNode : ExpressionNode
 }
 
 /// Expression node for ifs
-class IfExpressionNode : ExpressionNode
-{
+class IfExpressionNode : ExpressionNode {
     ExpressionNode expr; /// Main expression to choose consequence/alternative
     BlockStatement trueBranch; /// Consequence expression
     BlockStatement falseBranch; /// Alternative expression
@@ -656,8 +631,7 @@ class IfExpressionNode : ExpressionNode
 }
 
 /// Expression node for function literals
-class FunctionLiteralNode : ExpressionNode
-{
+class FunctionLiteralNode : ExpressionNode {
     IdentifierNode[] parameters; /// Function parameters
     BlockStatement functionBody; /// Main function body
 
@@ -685,16 +659,13 @@ class FunctionLiteralNode : ExpressionNode
     override string show(ref Lexer lexer)
     {
         string paramListing = "";
-        if (this.parameters !is null && this.parameters.length)
-        {
+        if (this.parameters !is null && this.parameters.length) {
             auto paramsBuilder = appender!(string[]);
             paramsBuilder.reserve(this.parameters.length);
 
-            foreach (param; this.parameters)
-            {
+            foreach (param; this.parameters) {
                 auto repr = param.show(lexer);
-                if (repr !is null && repr != "")
-                {
+                if (repr !is null && repr != "") {
                     paramsBuilder.put(repr);
                 }
             }
@@ -708,8 +679,7 @@ class FunctionLiteralNode : ExpressionNode
 }
 
 /// Expression node for calls
-class CallExpressionNode : ExpressionNode
-{
+class CallExpressionNode : ExpressionNode {
     ExpressionNode functionBody; /// Ident | FunctionLiteral
     ExpressionNode[] args; /// Arguments for call expression
 
@@ -737,16 +707,13 @@ class CallExpressionNode : ExpressionNode
     override string show(ref Lexer lexer)
     {
         string argsListing = "";
-        if (!this.args.empty())
-        {
+        if (!this.args.empty()) {
             auto argsBuilder = appender!(string[]);
             argsBuilder.reserve(this.args.length);
 
-            foreach (arg; this.args)
-            {
+            foreach (arg; this.args) {
                 auto repr = arg.show(lexer);
-                if (repr !is null && repr != "")
-                {
+                if (repr !is null && repr != "") {
                     argsBuilder.put(repr);
                 }
             }
@@ -760,8 +727,7 @@ class CallExpressionNode : ExpressionNode
 }
 
 /// Listing for node collection
-struct Program
-{
+struct Program {
     Appender!(StatementNode[]) statements; /// List of nodes
 
     /**
@@ -787,12 +753,9 @@ struct Program
     {
         auto nodeList = this.statements[];
 
-        if (nodeList.length > 0)
-        {
+        if (nodeList.length > 0) {
             return nodeList[0].tokenLiteral(lexer);
-        }
-        else
-        {
+        } else {
             return "";
         }
     }
@@ -805,11 +768,9 @@ struct Program
         auto reprBuilder = appender!(string[]);
         reprBuilder.reserve(statementList.length);
 
-        foreach (statement; statementList)
-        {
+        foreach (statement; statementList) {
             auto repr = statement.show(lexer);
-            if (repr !is null && repr != "")
-            {
+            if (repr !is null && repr != "") {
                 reprBuilder.put(repr);
             }
         }
@@ -819,13 +780,12 @@ struct Program
 }
 
 /// Encapsulates token parsing
-struct Parser
-{
+struct Parser {
 private:
-    ulong position = 0; /// Current token cursor
-    ulong peekPosition = 1; /// Lookahead cursor (after current token)
-    const TokenTag[] tokenTags; /// Alias for tokens in lexer
-    const ulong tokenCount; /// Cached token length
+    ulong position; /// Current token cursor
+    ulong peekPosition; /// Lookahead cursor (after current token)
+    TokenTag[] tokenTags; /// Alias for tokens in lexer
+    ulong tokenCount; /// Cached token length
 
 public:
     Lexer lexer; /// Lexer instance with token list
@@ -839,9 +799,28 @@ public:
     this(ref Lexer lexer)
     {
         this.lexer = lexer;
+        this.position = 0;
+        this.peekPosition = 1;
         this.tokenTags = this.lexer.tokens.tag[];
         this.tokenCount = this.tokenTags.length;
         this.program = Program(tokenCount);
+    }
+
+    /**
+     * Constructs the parser.
+     * Params:
+     * lexer = the lexer with tokens to parse
+     * position = the starting token
+     * program = the statement listing
+     */
+    this(ref Lexer lexer, ulong position, Program program)
+    {
+        this.lexer = lexer;
+        this.position = position;
+        this.peekPosition = this.position + 1;
+        this.tokenTags = this.lexer.tokens.tag[];
+        this.tokenCount = this.tokenTags.length;
+        this.program = program;
     }
 
     /**
@@ -859,8 +838,7 @@ public:
      */
     void skipTokens(ulong count)
     {
-        if (count < 1)
-        {
+        if (count < 1) {
             return;
         }
         this.peekPosition += count - 1;
@@ -874,18 +852,14 @@ public:
      */
     TokenTag seekToken(ulong count)
     {
-        if (count < 1)
-        {
+        if (count < 1) {
             return this.tokenTags[this.position];
         }
 
         const auto seekPosition = this.position + count;
-        if (seekPosition < this.tokenCount)
-        {
+        if (seekPosition < this.tokenCount) {
             return this.tokenTags[seekPosition];
-        }
-        else
-        {
+        } else {
             return TokenTag.Eof;
         }
     }
@@ -896,12 +870,9 @@ public:
      */
     TokenTag peek()
     {
-        if (this.peekPosition < this.tokenCount)
-        {
+        if (this.peekPosition < this.tokenCount) {
             return this.tokenTags[this.peekPosition];
-        }
-        else
-        {
+        } else {
             return TokenTag.Eof;
         }
     }
@@ -915,8 +886,7 @@ public:
     {
         // Process prefix expressions
         TokenTag token = tokenTags[this.position];
-        if (token !in prefixRules)
-        {
+        if (token !in prefixRules) {
             this.errors.put(format("Expected expression, but got %s instead", token));
             this.skipToken();
             return null;
@@ -925,11 +895,9 @@ public:
         auto expr = prefixRules[token](this);
 
         // Process infix expressions with LHS as reference expression
-        while (this.position < this.tokenCount)
-        {
+        while (this.position < this.tokenCount) {
             token = tokenTags[this.position];
-            if (token !in infixRules)
-            {
+            if (token !in infixRules) {
                 this.errors.put(format("Invalid token %s for infix expression", token));
                 break;
             }
@@ -937,8 +905,7 @@ public:
             const auto infixRule = infixRules[token];
             const auto currentPrec = infixRule.prec;
 
-            if (currentPrec < prec || infixRule.infix is null)
-            {
+            if (currentPrec < prec || infixRule.infix is null) {
                 break;
             }
 
@@ -968,26 +935,22 @@ public:
         const auto start = this.position;
         const auto sliceEnd = start + expectedTags.length;
 
-        if (sliceEnd > tokenCount)
-        {
+        if (sliceEnd > tokenCount) {
             this.errors.put("Not enough tokens for Let statement");
             return null;
         }
 
         const auto tokenSlice = tokenTags[start .. sliceEnd];
 
-        foreach (i, tag; expectedTags.enumerate(0))
-        {
-            if (tag != tokenSlice[i])
-            {
+        foreach (i, tag; expectedTags.enumerate(0)) {
+            if (tag != tokenSlice[i]) {
                 this.errors.put(format("Expected next token to be '%s'; got %s instead",
                         (tag in tagReprs) ? tagReprs[tag] : to!string(tag), tokenSlice[i]));
 
                 this.skipTokens(i);
 
                 while (this.position < this.tokenCount
-                        && tokenTags[this.position] != TokenTag.Semicolon)
-                {
+                        && tokenTags[this.position] != TokenTag.Semicolon) {
                     this.skipToken();
                 }
 
@@ -1000,8 +963,7 @@ public:
         // Parse expression as part of let statement
         auto value = this.parseExpression();
 
-        if (tokenTags[this.position] == TokenTag.Semicolon)
-        {
+        if (tokenTags[this.position] == TokenTag.Semicolon) {
             this.skipToken();
         }
 
@@ -1017,8 +979,7 @@ public:
         // Parse expression as part of return statement
         auto value = this.parseExpression();
 
-        if (tokenTags[this.position] == TokenTag.Semicolon)
-        {
+        if (tokenTags[this.position] == TokenTag.Semicolon) {
             this.skipToken();
         }
 
@@ -1036,11 +997,9 @@ public:
 
         // Keep parsing statements until block ends
         while (this.position < this.tokenCount && this.tokenTags[this.position] != TokenTag
-                .RSquirly)
-        {
+                .RSquirly) {
             auto statement = this.parseStatement();
-            if (statement !is null)
-            {
+            if (statement !is null) {
                 blockBuilder.put(statement);
             }
         }
@@ -1053,8 +1012,7 @@ public:
     StatementNode parseStatement()
     {
         const auto token = this.tokenTags[this.position];
-        switch (token) with (TokenTag)
-        {
+        switch (token) with (TokenTag) {
         case Let:
             return this.parseLetStatement();
         case Return:
@@ -1075,22 +1033,17 @@ public:
         auto paramsBuilder = appender!(IdentifierNode[])();
         TokenTag token = this.tokenTags[this.position];
 
-        while (this.position < this.tokenCount)
-        {
+        while (this.position < this.tokenCount) {
             // Expect rparen at end of paren list
-            if (token == TokenTag.RParen)
-            {
+            if (token == TokenTag.RParen) {
                 this.skipToken();
                 return paramsBuilder[];
             }
 
             // Get next identifier if possible
-            if (token == TokenTag.Ident)
-            {
+            if (token == TokenTag.Ident) {
                 paramsBuilder.put(new IdentifierNode(this.position));
-            }
-            else
-            {
+            } else {
                 this.errors.put(format("Expected next token to be identifier; got %s instead",
                         token));
 
@@ -1098,13 +1051,10 @@ public:
             }
 
             const auto nextToken = this.peek();
-            if (nextToken == TokenTag.Comma)
-            {
+            if (nextToken == TokenTag.Comma) {
                 token = this.seekToken(2);
                 this.skipTokens(2);
-            }
-            else
-            {
+            } else {
                 token = nextToken;
                 this.skipToken();
             }
@@ -1120,11 +1070,9 @@ public:
         auto argsBuilder = appender!(ExpressionNode[])();
         TokenTag token = this.tokenTags[this.position];
 
-        while (this.position < this.tokenCount)
-        {
+        while (this.position < this.tokenCount) {
             // Expect rparen at end of paren list
-            if (token == TokenTag.RParen)
-            {
+            if (token == TokenTag.RParen) {
                 this.skipToken();
                 return argsBuilder[];
             }
@@ -1133,14 +1081,17 @@ public:
             auto expr = this.parseExpression(Precedence.Lowest);
             argsBuilder.put(expr);
 
+            // Catch and register out of bounds error
+            if (this.position >= this.tokenCount) {
+                this.errors.put("Incomplete argument list for function call");
+                break;
+            }
+
             const auto nextToken = this.tokenTags[this.position];
-            if (nextToken == TokenTag.Comma)
-            {
+            if (nextToken == TokenTag.Comma) {
                 token = this.peek();
                 this.skipToken();
-            }
-            else
-            {
+            } else {
                 token = nextToken;
             }
         }
@@ -1152,12 +1103,10 @@ public:
     /// Parse token list to create statement AST nodes
     void parseProgram()
     {
-        while (this.position < this.tokenCount)
-        {
+        while (this.position < this.tokenCount) {
             StatementNode statement = parseStatement();
 
-            if (statement !is null)
-            {
+            if (statement !is null) {
                 this.program.statements.put(statement);
             }
         }
@@ -1178,8 +1127,7 @@ private void validateParseProgram(const string expected, ref Lexer lexer, ref Pa
 }
 
 /// Minimal parser test
-unittest
-{
+unittest {
     const auto input = "  ";
 
     auto lexer = Lexer(input);
@@ -1195,8 +1143,7 @@ unittest
 }
 
 /// Single let statement test
-unittest
-{
+unittest {
     const auto input = "let x = 5;";
 
     auto lexer = Lexer(input);
@@ -1209,8 +1156,7 @@ unittest
 }
 
 /// Single identifier expression statement test
-unittest
-{
+unittest {
     const auto input = "foobar;";
 
     auto lexer = Lexer(input);
@@ -1223,8 +1169,7 @@ unittest
 }
 
 /// Multiple let statement test
-unittest
-{
+unittest {
     const auto input = "let x = 5;
 let y = true;
 let foobar = y;";
@@ -1239,8 +1184,7 @@ let foobar = y;";
 }
 
 /// Prefix expression test
-unittest
-{
+unittest {
     const auto input = "let x = !5;
 let y = -15;
 !true;
@@ -1261,8 +1205,7 @@ let y = -15;
 }
 
 /// Multiple let statement test
-unittest
-{
+unittest {
     const auto input = "let x 5;
 let = 10;
 let 838383";
@@ -1278,8 +1221,7 @@ let 838383";
 }
 
 /// Multiple return statement test
-unittest
-{
+unittest {
     const auto input = "return 5;
 return 10;
 return 993322;";
@@ -1294,8 +1236,7 @@ return 993322;";
 }
 
 /// Main operator precedence test
-unittest
-{
+unittest {
     const auto input = "3 < 5 == false;
 3 > 5 == false;
 1 + (2 + 3) + 4;
@@ -1322,8 +1263,7 @@ unittest
 }
 
 /// Simple if expression test
-unittest
-{
+unittest {
     const auto input = "if (x < y) { x }";
     const auto expected = "if (x < y) { x; };";
 
@@ -1337,8 +1277,7 @@ unittest
 }
 
 /// Simple if-else expression test
-unittest
-{
+unittest {
     const auto input = "if (x < y) { x } else { y }";
     const auto expected = "if (x < y) { x; } else { y; };";
 
@@ -1352,8 +1291,7 @@ unittest
 }
 
 /// More complicated if-else expression test
-unittest
-{
+unittest {
     const auto input = "if ((x * 7) < 5 - y) { x + 4 } else { y - 2 }";
     const auto expected = "if ((x * 7) < (5 - y)) { (x + 4); } else { (y - 2); };";
 
@@ -1367,8 +1305,7 @@ unittest
 }
 
 /// Function without parameters test
-unittest
-{
+unittest {
     const auto input = "fn() { return foobar + barfoo; }";
     const auto expected = "fn() { return (foobar + barfoo); };";
 
@@ -1382,8 +1319,7 @@ unittest
 }
 
 /// Function literal test
-unittest
-{
+unittest {
     const auto input = "fn(x, y) { return x + y; }";
     const auto expected = "fn(x, y) { return (x + y); };";
 
@@ -1397,8 +1333,7 @@ unittest
 }
 
 /// Function returning function test
-unittest
-{
+unittest {
     const auto input = "fn() { return fn(x, y) { return x + y; }}";
     const auto expected = "fn() { return fn(x, y) { return (x + y); }; };";
 
@@ -1412,8 +1347,7 @@ unittest
 }
 
 /// Function as variable test
-unittest
-{
+unittest {
     const auto input = "let myFunction = fn(x, y) { return x + y; }";
     const auto expected = "let myFunction = fn(x, y) { return (x + y); };";
 
@@ -1427,8 +1361,7 @@ unittest
 }
 
 /// Function parameter test
-unittest
-{
+unittest {
     const auto input = "fn() {};
 fn(x) {};
 fn(x, y, z) {};";
@@ -1443,8 +1376,7 @@ fn(x, y, z) {};";
 }
 
 /// Function as function parameter test
-unittest
-{
+unittest {
     const auto input = "myFunc(x, y, fn(x, y) { return x + y; });";
     const auto expected = "myFunc(x, y, fn(x, y) { return (x + y); });";
 
@@ -1458,8 +1390,7 @@ unittest
 }
 
 /// Function def and call parameter test
-unittest
-{
+unittest {
     const auto input = "fn(x, y) { x + y; }(2, 3);";
     const auto expected = "fn(x, y) { (x + y); }(2, 3);";
 
@@ -1473,8 +1404,7 @@ unittest
 }
 
 /// Call expression test
-unittest
-{
+unittest {
     const auto input = "add(1, 2 * 3, 4 + 5);
 a + add(b * c) + d;
 add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));
