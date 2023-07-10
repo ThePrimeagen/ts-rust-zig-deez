@@ -1,4 +1,7 @@
+import 'package:mason_logger/mason_logger.dart';
 import 'package:monkeydart/monkeydart.dart';
+
+final pLogger = Logger(level: Level.warning);
 
 enum Precedence {
   // ignore: unused_field
@@ -10,6 +13,7 @@ enum Precedence {
   product, // *
   prefix, // -X or !X
   call, // myFunction(X)
+  indecks, // array[index]
 }
 
 Map<TokenType, Precedence> precedences() {
@@ -22,6 +26,8 @@ Map<TokenType, Precedence> precedences() {
     TokenType.dash: Precedence.sum,
     TokenType.slash: Precedence.product,
     TokenType.asterisk: Precedence.product,
+    TokenType.lParen: Precedence.call,
+    TokenType.lCrochet: Precedence.indecks,
   };
 }
 
@@ -41,4 +47,11 @@ extension PrecedenceExt on Precedence {
   bool operator <(Precedence other) {
     return index < other.index;
   }
+}
+
+bool isCurrGtePeek(Parser parser, Precedence currPrec) {
+  // pLogger.detail(
+  //   'isCurrGtePeek: $currPrec >= ${peekPrecedence(parser)}',
+  // );
+  return currPrec >= peekPrecedence(parser);
 }

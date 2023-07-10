@@ -1,10 +1,11 @@
+import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:monkeydart/monkeydart.dart';
 
 @immutable
 
 /// Basic element of the AST
-sealed class Node {
+sealed class Node extends Equatable {
   const Node(this.token);
   final Token token;
 
@@ -21,11 +22,17 @@ sealed class Node {
 /// Statements do not return values
 class Statement extends Node {
   const Statement(super.token);
+
+  @override
+  List<Object?> get props => [token];
 }
 
 /// Expressions return values
 class Expression extends Node {
   const Expression(super.token);
+
+  @override
+  List<Object?> get props => [token];
 }
 
 class Identifier extends Expression {
@@ -36,15 +43,22 @@ class Identifier extends Expression {
   String toString() {
     return value;
   }
+
+  @override
+  List<Object?> get props => [token, value];
 }
 
 class IntegerLiteral extends Expression {
   IntegerLiteral(this.value) : super(Token.int(value.toString()));
   final int value;
+
   @override
   String toString() {
     return token.value;
   }
+
+  @override
+  List<Object?> get props => [token, value];
 }
 
 class BooleanLiteral extends Expression {
@@ -55,6 +69,62 @@ class BooleanLiteral extends Expression {
   @override
   String toString() {
     return token.value;
+  }
+}
+
+class StringLiteral extends Expression {
+  StringLiteral(this.value) : super(Token.string(value));
+  final String value;
+
+  @override
+  String toString() {
+    return token.value;
+  }
+}
+
+class HashLiteral extends Expression {
+  const HashLiteral(this.pairs) : super(const Token.lSquirly());
+  final Map<Expression, Expression> pairs;
+
+  @override
+  String toString() {
+    final pairStrings = <String>[];
+    for (final pair in pairs.entries) {
+      pairStrings.add('${pair.key}: ${pair.value}');
+    }
+    final retVal = StringBuffer(token.value)
+      ..write(pairStrings.join(', '))
+      ..write(const Token.rSquirly().value);
+    return retVal.toString();
+  }
+}
+
+class ArrayLiteral extends Expression {
+  const ArrayLiteral(this.elements) : super(const Token.lCrochet());
+  final List<Expression> elements;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer(token.value)
+      ..write(elements.join(', '))
+      ..write(const Token.rCrochet().value);
+    return retVal.toString();
+  }
+}
+
+class IndexExpression extends Expression {
+  const IndexExpression(this.left, this.index) : super(const Token.lCrochet());
+  final Expression left;
+  final Expression index;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer('(')
+      ..write(left)
+      ..write('[')
+      ..write(index)
+      ..write('])');
+    return retVal.toString();
   }
 }
 
@@ -106,7 +176,7 @@ class LetStatement extends Statement {
 
   @override
   String toString() {
-    return '${token.value} ${name.value} = ${value.token.value};';
+    return '${token.value} ${name.value} = $value;';
   }
 }
 
@@ -116,7 +186,7 @@ class ReturnStatement extends Statement {
 
   @override
   String toString() {
-    return '${token.value} ${returnValue.token.value};';
+    return '${token.value} $returnValue;';
   }
 }
 
@@ -174,6 +244,22 @@ class InfixExpression extends Expression {
   }
 }
 
+class CallExpression extends Expression {
+  const CallExpression(this.function, this.arguments)
+      : super(const Token.lParen());
+  final Expression function;
+  final List<Expression> arguments;
+
+  @override
+  String toString() {
+    final retVal = StringBuffer(function.toString())
+      ..write('(')
+      ..write(arguments.join(', '))
+      ..write(')');
+    return retVal.toString();
+  }
+}
+
 class Program extends Node {
   const Program(this.statements, {this.errors = const []})
       : super(const Token.eof());
@@ -194,6 +280,9 @@ class Program extends Node {
     }
     return retVal.toString();
   }
+
+  @override
+  List<Object?> get props => [token, statements, errors];
 }
 
 class NullStatement extends Statement {
@@ -260,5 +349,31 @@ String literalToken(Node node) {
     //   return 'CallExpression';
     default:
       return 'Unknown';
+  }
+}
+
+typedef ModifyFunction = Node Function(Node node);
+
+Node modify(Node node, ModifyFunction fun) {
+  switch (node) {
+    case _ when node is Program:
+      // copy and modify the statements
+      // repack the statements into a new program
+      final statements = <Statement>[];
+      for (var i = 0; i < node.statements.length; i++) {
+        final newStmt = modify(node.statements[i], fun);
+        if (newStmt is Expression) {
+          statements.add(ExpressionStatement(newStmt));
+        } else {
+          statements.add(newStmt as ExpressionStatement);
+        }
+      }
+      return Program(statements);
+    case _ when node is ExpressionStatement:
+      // copy and modify the expression
+      // repack the expression into a new statement
+      return modify(node.expression, fun) as Expression;
+    case _:
+      return fun(node);
   }
 }
