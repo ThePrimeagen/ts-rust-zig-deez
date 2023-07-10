@@ -1,6 +1,8 @@
 // ignore: lines_longer_than_80_chars
 // ignore_for_file: avoid_positional_boolean_parameters, missing_whitespace_between_adjacent_strings
 
+import 'dart:mirrors';
+
 import 'package:mason_logger/mason_logger.dart';
 import 'package:monkeydart/monkeydart.dart';
 import 'package:test/test.dart';
@@ -598,6 +600,84 @@ void main() {
           expect(pairValue, isNotNull);
           expect(pairValue, isA<Integer>());
           testInteger(pairValue!, value!);
+        }
+      },
+    );
+  });
+
+  group('Eval - Quotes', () {
+    test(
+      'should return the correct value for each quote statement',
+      () async {
+        // arrange
+        const input = {
+          'quote(5)': '5',
+          'quote(5 + 8)': '(5 + 8)',
+          'quote(foobar)': 'foobar',
+          'quote(foobar + barfoo)': '(foobar + barfoo)',
+        };
+
+        // act - assert
+        for (final entry in input.entries) {
+          final evaluated = testEval(entry.key);
+          expect(evaluated, isA<Quote>());
+          final quote = evaluated as Quote;
+          expect(quote.node.toString(), entry.value);
+        }
+      },
+    );
+  });
+
+  // group('Eval - Unquote', () {
+  //   test(
+  //     'should return the correct value for each unquote statement',
+  //     () async {
+  //       // arrange
+  //       const input = {
+  //         // 'quote(unquote(4))': '4',
+  //         // 'quote(unquote(4 + 4))': '8',
+  //         'quote(8 + unquote(4 + 4))': '(8 + 8)',
+  //       };
+
+  //       // act - assert
+  //       for (final entry in input.entries) {
+  //         final evaluated = testEval(entry.key);
+  //         expect(evaluated, isA<Quote>());
+  //         final quote = evaluated as Quote;
+  //         expect(quote.node.toString(), entry.value);
+  //       }
+  //     },
+  //   );
+  // });
+
+  group('Eval - modify quote/unquote', () {
+    test(
+      'should return the correct value for each modify quote/unquote statement',
+      () async {
+        // arrange - act - assert
+
+        Expression one() => IntegerLiteral(1);
+        Expression two() => IntegerLiteral(2);
+
+        IntegerLiteral turnOneIntoTwo(Node node) {
+          if (node is IntegerLiteral && node.value != 1) {
+            return node;
+          }
+
+          return IntegerLiteral(2);
+        }
+
+        final tests = {
+          (first: one(), second: two()),
+          (
+            first: Program([ExpressionStatement(one())]),
+            second: Program([ExpressionStatement(two())])
+          ),
+        };
+
+        for (final test in tests) {
+          final evaluated = modify(test.first, turnOneIntoTwo);
+          expect(evaluated, equals(test.second));
         }
       },
     );

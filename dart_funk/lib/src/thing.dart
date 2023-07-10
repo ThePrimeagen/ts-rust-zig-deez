@@ -11,6 +11,7 @@ enum ThingType {
   function,
   string,
   array,
+  quote,
   error,
   _let,
 }
@@ -25,6 +26,15 @@ sealed class Thing extends Equatable {
 
   @override
   List<Object?> get props => [type, inspect()];
+}
+
+class Quote extends Thing {
+  const Quote(this.node) : super(ThingType.quote);
+
+  final Node node;
+
+  @override
+  String inspect() => 'QUOTE($node)';
 }
 
 class Hash extends Thing {

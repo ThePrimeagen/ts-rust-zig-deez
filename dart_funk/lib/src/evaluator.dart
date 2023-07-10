@@ -88,6 +88,56 @@ Thing binLen(List<Thing> args) {
   };
 }
 
+Thing quote(Node node, Environment env) {
+  final qNode = evalUnquoteCalls(node, env);
+  return Quote(qNode);
+}
+
+Node convertThingToNode(Thing thing) {
+  return switch (thing) {
+    _ when thing is Integer => IntegerLiteral(thing.value),
+    _ when thing is Boolean => BooleanLiteral(value: thing.value),
+    _ when thing is Stringy => StringLiteral(thing.value),
+    _ when thing is Array => ArrayLiteral(thing.elements.cast<Expression>()),
+    _ when thing is Hash =>
+      HashLiteral(thing.pairs.cast<Expression, Expression>()),
+    _ => const NullProgram()
+  };
+}
+
+ModifyFunction quoteUnquote(Node node) {
+  return (node) => switch (node) {
+        _ when isQuoteCall(node) => node,
+        _ when isUnquoteCall(node) =>
+          convertThingToNode(eval(unquoteArgument(node), Environment())),
+        _ => node
+      };
+}
+
+Node evalUnquoteCalls(Node node, Environment env) {
+  return modify(
+    node,
+    quoteUnquote(node),
+  );
+}
+
+Node unquoteArgument(Node node) {
+  final call = node as CallExpression;
+  return call.arguments.first;
+}
+
+bool isQuoteCall(Node node) {
+  return !isUnquoteCall(node);
+}
+
+bool isUnquoteCall(Node node) {
+  if (node is! CallExpression) {
+    return false;
+  }
+  final call = node;
+  return call.function is Identifier && (call.function.toString()) == 'unquote';
+}
+
 Thing eval(Node node, Environment env) {
   switch (node.runtimeType) {
     case Program:
@@ -160,6 +210,15 @@ Thing eval(Node node, Environment env) {
       final body = node.body;
       return Fun(params, body, env);
     case CallExpression:
+      if ((node as CallExpression).function is Identifier) {
+        final identifier = node.function as Identifier;
+        if (identifier.value == 'quote') {
+          return quote(node.arguments.first, env);
+        }
+      }
+      // if ((node as CallExpression).function.tokenLiteral() =='quote') {
+      //   return quote(node.arguments.first, env);
+      // }
       final function = eval((node as CallExpression).function, env);
       if (isError(function)) {
         return function;

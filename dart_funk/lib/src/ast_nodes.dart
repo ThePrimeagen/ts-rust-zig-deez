@@ -1,10 +1,11 @@
+import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:monkeydart/monkeydart.dart';
 
 @immutable
 
 /// Basic element of the AST
-sealed class Node {
+sealed class Node extends Equatable {
   const Node(this.token);
   final Token token;
 
@@ -21,11 +22,17 @@ sealed class Node {
 /// Statements do not return values
 class Statement extends Node {
   const Statement(super.token);
+
+  @override
+  List<Object?> get props => [token];
 }
 
 /// Expressions return values
 class Expression extends Node {
   const Expression(super.token);
+
+  @override
+  List<Object?> get props => [token];
 }
 
 class Identifier extends Expression {
@@ -36,15 +43,22 @@ class Identifier extends Expression {
   String toString() {
     return value;
   }
+
+  @override
+  List<Object?> get props => [token, value];
 }
 
 class IntegerLiteral extends Expression {
   IntegerLiteral(this.value) : super(Token.int(value.toString()));
   final int value;
+
   @override
   String toString() {
     return token.value;
   }
+
+  @override
+  List<Object?> get props => [token, value];
 }
 
 class BooleanLiteral extends Expression {
@@ -266,6 +280,9 @@ class Program extends Node {
     }
     return retVal.toString();
   }
+
+  @override
+  List<Object?> get props => [token, statements, errors];
 }
 
 class NullStatement extends Statement {
@@ -332,5 +349,31 @@ String literalToken(Node node) {
     //   return 'CallExpression';
     default:
       return 'Unknown';
+  }
+}
+
+typedef ModifyFunction = Node Function(Node node);
+
+Node modify(Node node, ModifyFunction fun) {
+  switch (node) {
+    case _ when node is Program:
+      // copy and modify the statements
+      // repack the statements into a new program
+      final statements = <Statement>[];
+      for (var i = 0; i < node.statements.length; i++) {
+        final newStmt = modify(node.statements[i], fun);
+        if (newStmt is Expression) {
+          statements.add(ExpressionStatement(newStmt));
+        } else {
+          statements.add(newStmt as ExpressionStatement);
+        }
+      }
+      return Program(statements);
+    case _ when node is ExpressionStatement:
+      // copy and modify the expression
+      // repack the expression into a new statement
+      return modify(node.expression, fun) as Expression;
+    case _:
+      return fun(node);
   }
 }
