@@ -141,7 +141,7 @@ void main() {
         expect(actual.currToken, equals(const Token.let()));
         expect(actual.errors.length, equals(1));
         expect(actual.errors[0].message,
-            equals('Expected next token to be assign, got ident instead'));
+            equals('Expected next token to be assign, got ident instead'),);
       },
     );
 
