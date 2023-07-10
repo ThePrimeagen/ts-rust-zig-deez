@@ -8,6 +8,7 @@ WORKDIR /deez
 RUN apt-get update && \
     apt install -y software-properties-common git curl build-essential gcc && \
     add-apt-repository --yes ppa:neovim-ppa/unstable && \
+    apt-get install -y wget && \
     apt-get install -y neovim && \
     apt-get install -y unzip
 
