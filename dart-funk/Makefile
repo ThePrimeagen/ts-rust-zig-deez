@@ -41,9 +41,9 @@ test-lexer:
 
 test-ast:
 	@echo "===> Testing AST"
-	# TODO: replace this line with your AST testing commands
+	dart test ./test/src/ast_test.dart
 
 test-parser:
 	@echo "===> Testing parser"
-	# TODO: replace this line with your parser testing commands
+	dart test ./test/src/parser_test.dart
 

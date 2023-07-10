@@ -101,7 +101,11 @@ void main() {
             'return false;'
             '}'
             '10 == 10;'
-            '10 != 9;';
+            '10 != 9;'
+            '"foobar"'
+            '"foo bar"'
+            '[1, 2];'
+            '{"foo": "bar"}';
         const expected = [
           Token.let(),
           Token.ident('five'),
@@ -178,6 +182,23 @@ void main() {
           Token.notEqual(),
           Token.int('9'),
           Token.semicolon(),
+          // and strings
+          Token.string('foobar'),
+          Token.string('foo bar'),
+          // and arrays []
+          Token.lCrochet(),
+          Token.int('1'),
+          Token.comma(),
+          Token.int('2'),
+          Token.rCrochet(),
+          Token.semicolon(),
+          // and hashes {}
+          Token.lSquirly(),
+          Token.string('foo'),
+          Token.colon(),
+          Token.string('bar'),
+          Token.rSquirly(),
+
           Token.eof(),
         ];
 
@@ -241,7 +262,7 @@ void main() {
         '10 != 9;';
     late final Logger logger;
     setUp(() {
-      logger = Logger();
+      logger = Logger(level: Level.warning);
     });
     test(
       'should return something when calling genLexSync',
