@@ -84,18 +84,6 @@
     (builtin/invoke builtin/get- [left index])
   (object/error "Index operator not supported: %s" (object/kind left)))))
 
-(defn eval-call-expr [func args]
-  (if (object/is? func object/BUILTIN)
-    (builtin/invoke (object/value func) args)
-  (let [params (->> (ast/fn-params (object/fn-ast func)) 
-                    (mapv ast/ident-literal))
-        body   (ast/fn-block (object/fn-ast func))
-        nenv   (env/enclosed (object/fn-env func) (zipmap params args))
-        value  (run nenv body)]
-  (if (object/is? value object/RETURN)
-    (object/value value)
-  (-> value)))))
-
 (defn eval-hash [env pairs]
   (loop [pairs pairs
          hashs (transient {})]
@@ -128,7 +116,7 @@
                       (-> value)
                     (env/set! env (ast/let-ident ast) value)))
       
-      :ast/expr-stmt    (run env (ast/expr-expr ast))
+      :ast/expr-stmt    (recur env (ast/expr-expr ast))
       :ast/block-stmt   (eval-stmts env (ast/block-stmts ast))
       :ast/return-stmt  (let [value (run env (ast/return-expr ast))]
                         (if (object/error? value)
@@ -152,10 +140,10 @@
                         (if (object/error? condi)
                           (-> condi)
                         (if (object/value condi)
-                          (run env (ast/if-consequence ast))
+                          (recur env (ast/if-consequence ast))
                         (if (empty? (ast/if-alternative ast))
                           (-> object/Null)
-                        (run env (ast/if-alternative ast))))))
+                        (recur env (ast/if-alternative ast))))))
       
       :ast/fn-lit     (object/fn ast env)
       :ast/call-expr  (let [func (run env (ast/call-fn ast))]
@@ -164,7 +152,13 @@
                       (let [args (eval-exprs env (ast/call-args ast))]
                       (if (object/error? args)
                         (-> args)
-                      (eval-call-expr func args)))))
+                      (if (object/is? func object/BUILTIN)
+                        (builtin/invoke (object/value func) args)
+                      (let [params (->> (ast/fn-params (object/fn-ast func)) 
+                                        (mapv ast/ident-literal))
+                            body   (ast/program (ast/block-stmts (ast/fn-block (object/fn-ast func))))
+                            nenv   (env/enclosed (object/fn-env func) (zipmap params args))]
+                      (recur nenv body)))))))
       
       :ast/index-expr (let [left (run env (ast/index-expr-left ast))]
                       (if (object/error? left)
@@ -190,3 +184,7 @@
       
       :ast/hash-lit   (eval-hash env (ast/hash-pairs ast))
       (assert ast (str "eval/run not implemented for " ast)))))
+
+(comment
+  "let fib = fn(n, a, b) { if (n == 0) { return a; } if (n == 1) { return b; } return fib(n - 1, b, n); };"
+  )

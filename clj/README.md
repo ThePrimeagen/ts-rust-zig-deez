@@ -12,6 +12,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] refactor object/error call in eval.clj
 - [x] use object/is? and token/is? whereever possible.
 - [x] add constants for NULL, TRUE and FALSE in eval.clj
+- [ ] tail call optimization
 - [ ] Add support for
   - [ ] while loop
   - [ ] null 
