@@ -157,7 +157,7 @@
       :ast/infix-expr (str "(" (to-str (infix-left ast)) " " (infix-op ast) " " (to-str (infix-right ast)) ")")
       :ast/if-expr    (let [condi (to-str (if-condition ast))
                             conse (to-str pad-lvl (if-consequence ast))
-                            altrn (when-not (empty? (if-alternative ast))
+                            altrn (when-not (empty? (block-stmts (if-alternative ast)))
                                     (str " else " (to-str pad-lvl (if-alternative ast))))]
                       (str "if (" condi ") " conse altrn))
       

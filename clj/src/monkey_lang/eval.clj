@@ -4,19 +4,63 @@
             [monkey-lang.env     :as env]
             [monkey-lang.builtin :as builtin]))
 
-(declare run)
+(declare run eval-exprs)
+
+(defn expand-tail-call [env ast rst]
+  (case (ast/kind ast)
+    :ast/expr-stmt    (let [expr (ast/expr-expr ast)]
+                      (case (ast/kind expr)
+                        :ast/call-expr (when (empty? rst)
+                                         (recur env (ast/expr-expr ast) rst))
+                        :ast/if-expr   (recur env (ast/expr-expr ast) rst)
+                        #_else         (-> nil)))
+    :ast/return-stmt  (recur env (ast/return-expr ast) rst)
+    :ast/if-expr      (let [condi (run env (ast/if-condition ast))]
+                      (if (object/error? condi)
+                        {:error condi}
+                      (if (object/value condi)
+                        (if (empty? (ast/block-stmts (ast/if-consequence ast)))
+                          {:result object/Null}
+                        [env (ast/block-stmts (ast/if-consequence ast))])
+                      (if (empty? (ast/block-stmts (ast/if-alternative ast)))
+                        {:result object/Null}
+                      [env (ast/block-stmts (ast/if-alternative ast))]))))
+    
+    :ast/call-expr  (let [func (run env (ast/call-fn ast))]
+                    (if (object/error? func)
+                      {:error func}
+                    (let [args (eval-exprs env (ast/call-args ast))]
+                    (if (object/error? args)
+                      {:error args}
+                    (if (object/is? func object/BUILTIN)
+                      (let [result (builtin/invoke (object/value func) args)]
+                      {:result result})
+                    (let [params (->> (ast/fn-params (object/fn-ast func)) 
+                                      (mapv ast/ident-literal))
+                          stmts  (ast/block-stmts (ast/fn-block (object/fn-ast func)))
+                          nenv   (env/enclosed (object/fn-env func) (zipmap params args))]
+                    [nenv stmts]))))))
+    #_else          (-> nil)))
 
 (defn eval-stmts [env stmts]
-  (loop [stmts  stmts
-         result object/Null]
+  (loop [env    env
+         result object/Null
+         stmts  stmts]
     (if (empty? stmts)
       (-> result)
-    (let [[stmt & rst] stmts
-          result       (run env stmt)]
+    (let [[stmt & rst] stmts]
+    (if-let [expanded (expand-tail-call env stmt rst)]
+      (if-let [error (:error expanded)]
+        (-> error)
+      (if-let [result (:result expanded)]
+        (recur env result rst)
+      (let [[nenv nstmts] expanded]  
+      (recur nenv result (concat nstmts rst)))))
+    (let [result (run env stmt)]
     (if (or (object/is? result object/RETURN)
             (object/is? result object/ERROR))
       (-> result)
-    (recur rst result))))))
+    (recur env result rst))))))))
 
 (defn eval-prefix [operator right]
   (case operator
@@ -141,7 +185,7 @@
                           (-> condi)
                         (if (object/value condi)
                           (recur env (ast/if-consequence ast))
-                        (if (empty? (ast/if-alternative ast))
+                        (if (empty? (ast/block-stmts (ast/if-alternative ast)))
                           (-> object/Null)
                         (recur env (ast/if-alternative ast))))))
       

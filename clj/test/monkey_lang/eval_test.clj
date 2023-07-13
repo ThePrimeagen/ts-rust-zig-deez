@@ -144,4 +144,6 @@
     (is (= (evaluate "{}[\"foo\"]") nil))
     (is (= (evaluate "{5: 5}[5]") 5))
     (is (= (evaluate "{true: 5}[true]") 5))
-    (is (= (evaluate "{false: 5}[false]") 5))))
+    (is (= (evaluate "{false: 5}[false]") 5)))
+  (testing "Tail Recursion"
+    (is (= (evaluate "let sumTo = fn (n, acc) { if (n == 0) { return acc; }; sumTo(n-1, acc+n); }; sumTo(10000, 0);") 50005000))))
