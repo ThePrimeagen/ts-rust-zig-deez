@@ -14,8 +14,8 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] add constants for NULL, TRUE and FALSE in eval.clj
 - [x] tail call optimization
 - [ ] Add support for
-  - [ ] while loop
   - [ ] null 
+  - [ ] while loop, continue and break
   - [ ] dot property accessor for hash
   - [ ] index assignement
   - [ ] import module

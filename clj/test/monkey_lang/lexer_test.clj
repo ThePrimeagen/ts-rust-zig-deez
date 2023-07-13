@@ -28,6 +28,8 @@
   \"foo bar\"
   [1, 2];
   {\"foo\": \"bar\"}
+  null
+  let x = null
   ")
 
 (deftest lexer-test
@@ -118,5 +120,10 @@
                   [token/COLON ":"]
                   [token/STRING "bar"]
                   [token/RBRACE "}"]
+                  [token/NULL "null"]
+                  [token/LET "let"]
+                  [token/IDENT "x"]
+                  [token/ASSIGN "="]
+                  [token/NULL "null"]
                   [token/EOF ""]]]
     (is (= (lexer/run program) result)))))

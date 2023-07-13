@@ -10,20 +10,20 @@
   (-> token/create (jc/map (jp/any-of "=+-!*/<>,:;(){}[]"))))
 
 (def double-char
-  (let [parsers (-> jp/string (map ["<=" ">=" "==" "!="]))] 
-  (-> token/create (jc/map (jc/choice parsers)))))
+  (let [double-char-parsers (-> jp/string (map ["<=" ">=" "==" "!="]))] 
+  (-> token/create (jc/map (jc/choice double-char-parsers)))))
 
 (def string
-  (let [parser (-> (jc/many* (jp/none-of "\""))
+  (let [string-parser (-> (jc/many* (jp/none-of "\""))
                    (jc/between (jp/char \") (jp/char \")))]
-  (-> (partial token/create token/STRING) (jc/map parser))))
+  (-> (partial token/create token/STRING) (jc/map string-parser))))
 
 (def integer
   (-> (partial token/create token/INT) (jc/map (jc/many+ jp/digit))))
 
 (def keywords
-  (let [parsers (-> jp/string (map ["fn" "let" "true" "false" "if" "else" "return"]))]
-  (-> token/create (jc/map (jc/choice parsers)))))
+  (let [keyword-parsers (-> jp/string (map ["fn" "let" "true" "false" "if" "else" "return" "null"]))]
+  (-> token/create (jc/map (jc/choice keyword-parsers)))))
 
 (def identifier
   (-> (partial token/create token/IDENT) (jc/map (jc/many+ jp/alpha-num))))

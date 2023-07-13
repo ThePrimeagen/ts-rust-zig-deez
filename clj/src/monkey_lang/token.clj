@@ -34,6 +34,7 @@
 (def ^:const IF        :token/if)
 (def ^:const ELSE      :token/else)
 (def ^:const RETURN    :token/return)
+(def ^:const NULL      :token/null)
 
 (def lit->kind
   {"="  ASSIGN
@@ -65,7 +66,8 @@
    "false"  FALSE
    "if"     IF
    "else"   ELSE
-   "return" RETURN})
+   "return" RETURN
+   "null"   NULL})
 
 (defn create 
   ([literal]
