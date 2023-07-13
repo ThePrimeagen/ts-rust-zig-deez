@@ -150,7 +150,7 @@
     (run (env/create) ast))
   ([env ast]
     (case (ast/kind ast)
-      :ast/program  (let [value (eval-stmts env (ast/program-stmts ast))]
+      :ast/program  (let [value (run env (ast/program-stmts ast))]
                     (if (object/is? value object/RETURN)
                       (object/value value)
                     (-> value)))
@@ -200,7 +200,7 @@
                         (builtin/invoke (object/value func) args)
                       (let [params (->> (ast/fn-params (object/fn-ast func)) 
                                         (mapv ast/ident-literal))
-                            body   (ast/program (ast/block-stmts (ast/fn-block (object/fn-ast func))))
+                            body   (ast/program (ast/fn-block (object/fn-ast func)))
                             nenv   (env/enclosed (object/fn-env func) (zipmap params args))]
                       (recur nenv body)))))))
       

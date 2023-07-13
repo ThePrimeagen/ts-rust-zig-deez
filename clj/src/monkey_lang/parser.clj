@@ -231,7 +231,7 @@
   (jb/do
     (stmts <- (jc/many+ parse-stmt))
     (lexer/expect token/EOF)
-    (jc/return (ast/program stmts))))
+    (jc/return (ast/program (ast/block stmts)))))
 
 (defn print-error [e]
   (let [ex-data (ex-data e)

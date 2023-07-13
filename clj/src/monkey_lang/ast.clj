@@ -136,13 +136,12 @@
 
 (def program-stmts second)
 
-;; TODO: cleanup this function a little bit
 (defn to-str 
   ([ast]
     (to-str 0 ast))
   ([pad-lvl ast]
     (case (kind ast)
-      :ast/program    (str/join (mapv (partial to-str pad-lvl) (program-stmts ast)))
+      :ast/program    (str/join (mapv (partial to-str pad-lvl) (program-stmts (block-stmts ast))))
       ;; statement
       :ast/let-stmt   (str (pad pad-lvl)  "let " (let-ident ast) " = " (to-str pad-lvl (let-value ast)) ";" \newline)
       :ast/expr-stmt  (str (pad pad-lvl) (to-str pad-lvl (expr-expr ast)) ";" \newline)
