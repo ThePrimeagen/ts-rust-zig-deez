@@ -46,6 +46,12 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
     return EvalResult(to!bool(node.show(lexer)));
 }
 
+/// Simple translation of node into string value
+@method EvalResult _eval(StringNode node, ref Lexer lexer, Environment* _)
+{
+    return EvalResult(node.show(lexer));
+}
+
 /// Simple translation of node into integer value
 @method EvalResult _eval(IntNode node, ref Lexer lexer, Environment* _)
 {
@@ -128,8 +134,19 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
                 OPS_TAG[node.op])));
             }
         }, _ => EvalResult(ErrorValue("Type in RHS of expression does not match INTEGER")));
-    }, (string _) => EvalResult("String not supported in infix expression"),
-            (ReturnValue _) => EvalResult("Return value not supported in infix expression"),
+    }, (string lValue) {
+        return right.match!((string rValue) {
+            if (node.op == TokenTag.Plus) {
+                return EvalResult(lValue ~ rValue);
+            } else {
+                return EvalResult(ErrorValue(format("Unknown operator: STRING %s STRING",
+                OPS_TAG[node.op])));
+            }
+        }, (bool _) => EvalResult(ErrorValue(format("Type mismatch in expression: STRING %s BOOLEAN",
+            OPS_TAG[node.op]))), (long _) => EvalResult(ErrorValue(format(
+            "Type mismatch in expression: STRING %s INTEGER", OPS_TAG[node.op]))),
+            _ => EvalResult(ErrorValue("Type in RHS of expression does not match STRING")));
+    }, (ReturnValue _) => EvalResult("Return value not supported in infix expression"),
             (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
 }
 

@@ -64,7 +64,7 @@ shared static this()
     import std.exception : assumeUnique;
 
     PrefixParseFn[TokenTag] tempPrefixRules = [
-        TokenTag.Ident: &parseIdent,
+        TokenTag.Ident: &parseIdent, TokenTag.String: &parseString,
         TokenTag.Minus: &(partial!(parsePrefix, TokenTag.Minus)),
         TokenTag.Bang: &(partial!(parsePrefix, TokenTag.Bang)),
         TokenTag.Int: &parseInt, TokenTag.True: &parseBoolean,
@@ -111,6 +111,18 @@ ExpressionNode parseIdent(ref Parser parser)
     const auto start = parser.position;
     parser.skipToken();
     return new IdentifierNode(start);
+}
+
+/**
+ * Construct string node in expression.
+ * Params: parser = the parser iterating through tokens
+ * Returns: the string node
+ */
+ExpressionNode parseString(ref Parser parser)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+    return new StringNode(start);
 }
 
 /**
@@ -483,6 +495,30 @@ class IdentifierNode : ExpressionNode {
     }
 
     /// Create identifier string
+    override string show(ref Lexer lexer)
+    {
+        return lexer.tagRepr(mainIdx);
+    }
+}
+
+/// String node for expressions
+class StringNode : ExpressionNode {
+    /**
+     * Constructs string nodes.
+     * Params: mainIdx = the string token index
+     */
+    this(ulong mainIdx)
+    {
+        super(mainIdx);
+    }
+
+    /// Show the string tag
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.String);
+    }
+
+    /// Create string
     override string show(ref Lexer lexer)
     {
         return lexer.tagRepr(mainIdx);
@@ -1166,6 +1202,20 @@ unittest {
     parser.parseProgram();
 
     validateParseProgram(input, lexer, parser);
+}
+
+/// Single string expression statement test
+unittest {
+    const auto input = "\"hello world\";";
+    const auto expected = "hello world;";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
 }
 
 /// Multiple let statement test

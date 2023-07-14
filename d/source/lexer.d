@@ -20,6 +20,7 @@ enum TokenTag : ubyte {
     Eof,
     Ident,
     Int,
+    String,
     Eq,
     NotEq,
     Assign,
@@ -285,6 +286,17 @@ public:
             this.tokens.start.put(start);
             this.tokens.tag.put(this.tagForIdent(start, identSlice.assumeUTF));
             break;
+        case '"':
+            const auto start = this.readPosition;
+            this.tokens.start.put(start);
+            this.tokens.tag.put(String);
+
+            // Scan for string ending in '"'
+            this.readString();
+
+            this.endPosition[start] = this.position;
+            this.readChar();
+            break;
         default:
             if (isWhite(c)) {
                 skipWhitespace();
@@ -336,6 +348,30 @@ public:
     }
 
     /**
+     * Scan string inside '"' or until we reach EOF
+     */
+    void readString()
+    {
+        char ch = this.peek();
+        this.readChar();
+
+        // TODO: unicode support
+        while (ch != '"') {
+            if (ch == '\\') {
+                this.readChars(2);
+            } else {
+                this.readChar();
+            }
+
+            if (this.position < this.input.length) {
+                ch = this.input[this.position];
+            } else {
+                break;
+            }
+        }
+    }
+
+    /**
      * Shows a string representation of the token at the given index.
      * Params: index = the index of the representing token.
      * Returns: String representation of the token tag.
@@ -345,7 +381,8 @@ public:
         const auto tag = this.tokens.tag[][index];
         if (tag in tagReprs) {
             return tagReprs[tag];
-        } else if (tag == TokenTag.Ident || tag == TokenTag.Int) {
+            // TODO: Add string support for repr
+        } else if (tag == TokenTag.Ident || tag == TokenTag.Int || tag == TokenTag.String) {
             const auto start = this.tokens.start[][index];
             const auto identSlice = this.input[start .. this.endPosition[start]];
             return identSlice.assumeUTF;
@@ -446,7 +483,7 @@ unittest {
     }
 }
 
-/// Complete lexer test
+/// Complete lexer test with string support
 unittest {
     const auto input = "let five = 5;
 let ten = 10;
@@ -454,21 +491,33 @@ let add = fn(x, y) {
   x + y;
 };
 let result = add(five, ten);
+let firstName = \"Thorsten\";
+let lastName = \"Ball\";
+let fullName = fn(first, last) { first + \" \" + last };
+fullName(firstName, lastName);
 ";
 
+    // TODO: update this
     const ulong[] expectedStart = [
         0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42, 44,
         45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87, 88,
-        input.length
+        90, 94, 104, 107, 116, 118, 122, 131, 134, 139, 141, 145, 154, 156,
+        158, 159, 164, 166, 170, 172, 174, 180, 183, 186, 188, 193, 194, 196,
+        204, 205, 214, 216, 224, 225, input.length
     ];
 
+    // TODO: update this
     with (TokenTag) {
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
             Semicolon, Let, Ident, Assign, Function, LParen, Ident, Comma, Ident,
             RParen, LSquirly, Ident, Plus, Ident, Semicolon, RSquirly,
             Semicolon, Let, Ident, Assign, Ident, LParen, Ident, Comma, Ident,
-            RParen, Semicolon, Eof
+            RParen, Semicolon, Let, Ident, Assign, String, Semicolon, Let,
+            Ident, Assign, String, Semicolon, Let, Ident, Assign, Function,
+            LParen, Ident, Comma, Ident, RParen, LSquirly, Ident, Plus, String,
+            Plus, Ident, RSquirly, Semicolon, Ident, LParen, Ident, Comma,
+            Ident, RParen, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);

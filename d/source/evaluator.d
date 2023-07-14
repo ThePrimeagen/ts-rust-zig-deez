@@ -155,6 +155,38 @@ unittest {
     }
 }
 
+/// Basic string test
+unittest {
+    const auto input = "\"Hi\"; \"There\";
+\"foo\"; \"bar\"";
+
+    const string[4] expected = ["Hi", "There", "foo", "bar"];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((string value) => assert(value == expected[i],
+                format("String value %s does not match expected value %s", value, expected[i])),
+                _ => assert(false, format("Expected string value in statement %s", i)));
+    }
+}
+
+/// String append test
+unittest {
+    const auto input = "\"Thorsten\" + \" \" + \"Ball\";";
+    const string[1] expected = ["Thorsten Ball"];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((string value) => assert(value == expected[i],
+                format("String value %s does not match expected value %s", value, expected[i])),
+                _ => assert(false, format("Expected string value in statement %s", i)));
+    }
+}
+
 /// Basic boolean test
 unittest {
     const auto input = "true; false;
