@@ -10,7 +10,7 @@
 		"linenoise": "~>1.1.0+1.0.0",
 		"openmethods": "~>1.3.3"
 	},
-	"libs": ["$PACKAGE_DIR/lib"],
+	"libs-posix": ["linenoise"],
 	"buildTypes": {
 		"release" : {
 			"buildOptions": ["optimize", "inline"]
