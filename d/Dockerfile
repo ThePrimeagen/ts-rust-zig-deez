@@ -30,7 +30,7 @@ CMD wget -O linenoise.zip https://github.com/antirez/linenoise/archive/refs/head
     gcc -c -Os -g -o linenoise.o linenoise.c && \
     ar rcs liblinenoise.a linenoise.o && \
     cp liblinenoise.a /usr/local/lib/ && \
-    make fmt && \
-    make lint && \
-    make test
+    cd .. && \
+    rm -rf linenoise-master && \
+    make ready
 
