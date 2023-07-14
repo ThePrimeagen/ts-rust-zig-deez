@@ -29,7 +29,8 @@ CMD wget -O linenoise.zip https://github.com/antirez/linenoise/archive/refs/head
     cd linenoise-master && \
     gcc -c -Os -g -o linenoise.o linenoise.c && \
     ar rcs liblinenoise.a linenoise.o && \
-    cp liblinenoise.a /usr/local/lib/ && \
+    mkdir -p ../lib && \
+    cp liblinenoise.a ../lib && \
     cd .. && \
     rm -rf linenoise-master && \
     make ready

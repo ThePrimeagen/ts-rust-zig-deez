@@ -29,6 +29,7 @@ libmonkeyscript.a
 libmonkeyscript.lib
 libmonkeyscript-test-*
 lib*.exe
+lib
 *.pdb
 *.o
 *.obj
