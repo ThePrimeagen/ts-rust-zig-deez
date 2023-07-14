@@ -1,6 +1,8 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"linenoise": "1.1.0+1.0.0"
+		"bolts": "1.8.0",
+		"linenoise": "1.1.0+1.0.0",
+		"openmethods": "1.3.3"
 	}
 }
