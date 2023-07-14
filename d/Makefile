@@ -29,9 +29,9 @@ lint:
 
 test:
 	@echo "===> Testing"
-	dub test
+	DFLAGS="-L-L/usr/local/lib/" dub -v test
 
 repl:
 	@echo "===> Repl"
-	dub -b release
+	DFLAGS="-L-L/usr/local/lib/" dub -b release
 
