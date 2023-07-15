@@ -20,7 +20,12 @@
     (when-let [outer (:outer @env)]
       (recur outer)))))
 
-(defmacro set! [env k v]
+(defmacro set-var! [env k v]
   `(do
      (swap! ~env assoc-in [:store ~k] ~v)
      (-> ~v)))
+
+(defn set-vars! [env kvs]
+  (doseq [[k v] kvs]
+     (set-var! env k v))
+  (-> env))

@@ -70,8 +70,8 @@
 (defmacro builtin [fn]
   `(vector ~BUILTIN ~fn))
 
-(defn is? [obj kynd]
-  (= kynd (kind obj)))
+(defmacro is? [obj kynd]
+  `(= ~kynd (kind ~obj)))
 
 (defn error? [obj]
   (= ERROR (kind obj)))

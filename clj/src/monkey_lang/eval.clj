@@ -4,63 +4,11 @@
             [monkey-lang.env     :as env]
             [monkey-lang.builtin :as builtin]))
 
-(declare run eval-exprs)
+(def ^:const GLOBAL_SCOPE 1)
+(def ^:const IF_SCOPE 2)
+(def ^:const FN_SCOPE 3)
 
-(defn expand-tail-call [env ast rst]
-  (case (ast/kind ast)
-    :ast/expr-stmt    (let [expr (ast/expr-expr ast)]
-                      (case (ast/kind expr)
-                        :ast/call-expr (when (empty? rst)
-                                         (recur env (ast/expr-expr ast) rst))
-                        :ast/if-expr   (recur env (ast/expr-expr ast) rst)
-                        #_else         (-> nil)))
-    :ast/return-stmt  (recur env (ast/return-expr ast) rst)
-    :ast/if-expr      (let [condi (run env (ast/if-condition ast))]
-                      (if (object/error? condi)
-                        {:error condi}
-                      (if (object/value condi)
-                        (if (empty? (ast/block-stmts (ast/if-consequence ast)))
-                          {:result object/Null}
-                        [env (ast/block-stmts (ast/if-consequence ast))])
-                      (if (empty? (ast/block-stmts (ast/if-alternative ast)))
-                        {:result object/Null}
-                      [env (ast/block-stmts (ast/if-alternative ast))]))))
-    
-    :ast/call-expr  (let [func (run env (ast/call-fn ast))]
-                    (if (object/error? func)
-                      {:error func}
-                    (let [args (eval-exprs env (ast/call-args ast))]
-                    (if (object/error? args)
-                      {:error args}
-                    (if (object/is? func object/BUILTIN)
-                      (let [result (builtin/invoke (object/value func) args)]
-                      {:result result})
-                    (let [params (->> (ast/fn-params (object/fn-ast func)) 
-                                      (mapv ast/ident-literal))
-                          stmts  (ast/block-stmts (ast/fn-block (object/fn-ast func)))
-                          nenv   (env/enclosed (object/fn-env func) (zipmap params args))]
-                    [nenv stmts]))))))
-    #_else          (-> nil)))
-
-(defn eval-stmts [env stmts]
-  (loop [env    env
-         result object/Null
-         stmts  stmts]
-    (if (empty? stmts)
-      (-> result)
-    (let [[stmt & rst] stmts]
-    (if-let [expanded (expand-tail-call env stmt rst)]
-      (if-let [error (:error expanded)]
-        (-> error)
-      (if-let [result (:result expanded)]
-        (recur env result rst)
-      (let [[nenv nstmts] expanded]  
-      (recur nenv result (concat nstmts rst)))))
-    (let [result (run env stmt)]
-    (if (or (object/is? result object/RETURN)
-            (object/is? result object/ERROR))
-      (-> result)
-    (recur env result rst))))))))
+(declare run)
 
 (defn eval-prefix [operator right]
   (case operator
@@ -109,13 +57,13 @@
      "!=") (object/boolean ((op->fn operator) (object/value left) (object/value right)))
   (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right)))))))
 
-(defn eval-exprs [env exprs]
+(defn eval-exprs [env scope exprs]
   (loop [exprs  exprs
          result []]
     (if (empty? exprs)
       (not-empty result)
     (let [[expr & rst] exprs
-          value        (run env expr)]
+          value        (run env scope expr)]
     (if (object/error? value)
       (-> value)
     (recur rst (conj result value)))))))
@@ -128,72 +76,88 @@
     (builtin/invoke builtin/get- [left index])
   (object/error "Index operator not supported: %s" (object/kind left)))))
 
-(defn eval-hash [env pairs]
+(defn eval-hash [env scope pairs]
   (loop [pairs pairs
          hashs (transient {})]
     (if (empty? pairs)
       (object/hash- (persistent! hashs))
     (let [[[k v] & rst] pairs
-          kee           (run env k)]
+          kee           (run env scope k)]
     (if (object/error? kee)
       (-> kee)
     (let [hash-kee (object/hash-key kee)]
     (if-not hash-kee
       (object/error "Unusable as hash key: %s" (object/kind kee))
-    (let [value (run env v)]
+    (let [value (run env scope v)]
     (if (object/error? value)
       (-> value)
     (recur rst (assoc! hashs hash-kee (object/hash-pair [kee value]))))))))))))
 
+(defn eval-stmts [env scope stmts]
+  (loop [env    env
+         result object/Null
+         stmts  stmts]
+    (if (empty? stmts)
+      (-> result)
+    (let [[stmt & rst] stmts
+          nresult       (run env scope stmt)]
+    (if-let [[env stmts] (when (= FN_SCOPE scope) 
+                           (:tail nresult))]
+      (recur env result stmts)
+    (if (or (object/is? nresult object/RETURN)
+            (object/is? nresult object/ERROR))
+      (-> nresult)
+    (recur env nresult rst)))))))
+
 (defn run
   ([ast] 
-    (run (env/create) ast))
-  ([env ast]
+    (run (env/create) GLOBAL_SCOPE ast))
+  ([env scope ast]
     (case (ast/kind ast)
-      :ast/program  (let [value (run env (ast/program-stmts ast))]
+      :ast/program  (let [value (run env scope (ast/program-stmts ast))]
                     (if (object/is? value object/RETURN)
                       (object/value value)
                     (-> value)))
       ;; statements
-      :ast/let-stmt (let [value (run env (ast/let-value ast))]
+      :ast/let-stmt (let [value (run env scope (ast/let-value ast))]
                     (if (object/error? value)
                       (-> value)
-                    (env/set! env (ast/let-ident ast) value)))
+                    (env/set-var! env (ast/let-ident ast) value)))
       
-      :ast/expr-stmt    (recur env (ast/expr-expr ast))
-      :ast/block-stmt   (eval-stmts env (ast/block-stmts ast))
-      :ast/return-stmt  (let [value (run env (ast/return-expr ast))]
+      :ast/expr-stmt    (recur env scope (ast/expr-expr ast))
+      :ast/block-stmt   (eval-stmts env scope (ast/block-stmts ast))
+      :ast/return-stmt  (let [value (run env scope (ast/return-expr ast))]
                         (if (object/error? value)
                           (-> value)
                         (object/return value)))
       ;; expressions
-      :ast/prefix-expr  (let [right (run env (ast/prefix-right ast))]
+      :ast/prefix-expr  (let [right (run env scope (ast/prefix-right ast))]
                         (if (object/error? right)
                           (-> right)
                         (eval-prefix (ast/prefix-op ast) right)))
       
-      :ast/infix-expr   (let [left (run env (ast/infix-left ast))]
+      :ast/infix-expr   (let [left (run env scope (ast/infix-left ast))]
                         (if (object/error? left)
                           (-> left)
-                        (let [right (run env (ast/infix-right ast))]
+                        (let [right (run env scope (ast/infix-right ast))]
                         (if (object/error? right)
                           (-> right)
                         (eval-infix left (ast/infix-op ast) right)))))
       
-      :ast/if-expr      (let [condi (run env (ast/if-condition ast))]
+      :ast/if-expr      (let [condi (run env scope (ast/if-condition ast))]
                         (if (object/error? condi)
                           (-> condi)
                         (if (object/value condi)
-                          (recur env (ast/if-consequence ast))
+                          (recur env IF_SCOPE (ast/if-consequence ast))
                         (if (empty? (ast/block-stmts (ast/if-alternative ast)))
                           (-> object/Null)
-                        (recur env (ast/if-alternative ast))))))
+                        (recur env IF_SCOPE (ast/if-alternative ast))))))
       
       :ast/fn-lit     (object/fn ast env)
-      :ast/call-expr  (let [func (run env (ast/call-fn ast))]
+      :ast/call-expr  (let [func (run env scope (ast/call-fn ast))]
                       (if (object/error? func)
                         (-> func)
-                      (let [args (eval-exprs env (ast/call-args ast))]
+                      (let [args (eval-exprs env scope (ast/call-args ast))]
                       (if (object/error? args)
                         (-> args)
                       (if (object/is? func object/BUILTIN)
@@ -202,12 +166,26 @@
                                         (mapv ast/ident-literal))
                             body   (ast/program (ast/fn-block (object/fn-ast func)))
                             nenv   (env/enclosed (object/fn-env func) (zipmap params args))]
-                      (recur nenv body)))))))
+                      (recur nenv FN_SCOPE body)))))))
       
-      :ast/index-expr (let [left (run env (ast/index-expr-left ast))]
+      :ast/tail-call  (let [func (run env scope (ast/tail-call-fn ast))]
+                      (if (object/error? func)
+                        (-> func)
+                      (let [args (eval-exprs env scope (ast/tail-call-args ast))]
+                      (if (object/error? args)
+                        (-> args)
+                      (if (object/is? func object/BUILTIN)
+                        (builtin/invoke (object/value func) args)
+                      (let [params (->> (ast/fn-params (object/fn-ast func)) 
+                                        (mapv ast/ident-literal))
+                            stmts  (ast/block-stmts (ast/fn-block (object/fn-ast func)))
+                            nenv   (env/set-vars! (object/fn-env func) (zipmap params args))]
+                      {:tail [nenv stmts]}))))))
+      
+      :ast/index-expr (let [left (run env scope (ast/index-expr-left ast))]
                       (if (object/error? left)
                         (-> left)
-                      (let [index (run env (ast/index-expr-index ast))]
+                      (let [index (run env scope (ast/index-expr-index ast))]
                       (if (object/error? index)
                         (-> index)
                       (eval-index-expr left index)))))
@@ -221,12 +199,12 @@
       :ast/int-lit    (object/integer (ast/int-value ast))
       :ast/bool-lit   (object/boolean (ast/bool-value ast))
       :ast/string-lit (object/string (ast/string-value ast))
-      :ast/array-lit  (let [elements (eval-exprs env (ast/array-elements ast))]
+      :ast/array-lit  (let [elements (eval-exprs env scope (ast/array-elements ast))]
                       (if (object/error? elements)
                         (-> elements)
                       (object/array (vec elements))))
       
-      :ast/hash-lit   (eval-hash env (ast/hash-pairs ast))
+      :ast/hash-lit   (eval-hash env scope (ast/hash-pairs ast))
       (assert ast (str "eval/run not implemented for " ast)))))
 
 (comment

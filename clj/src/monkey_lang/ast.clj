@@ -11,6 +11,7 @@
 (def ^:const INFIX_EXPR  :ast/infix-expr)
 (def ^:const IF_EXPR     :ast/if-expr)
 (def ^:const CALL_EXPR   :ast/call-expr)
+(def ^:const TAIL_CALL   :ast/tail-call)
 (def ^:const INDEX_EXPR  :ast/index-expr)
 (def ^:const FN_LIT      :ast/fn-lit)
 (def ^:const INT_LIT     :ast/int-lit)
@@ -86,6 +87,12 @@
 (def call-fn   second)
 (def call-args third)
 
+(defmacro tail-call [fn args]
+  `(vector ~TAIL_CALL ~fn ~args))
+
+(def tail-call-fn   second)
+(def tail-call-args third)
+
 
 (defmacro index-expr [left index]
   `(vector ~INDEX_EXPR ~left ~index))
@@ -136,6 +143,9 @@
 
 (def program-stmts second)
 
+(defmacro is? [ast kynd]
+  `(= ~kynd (kind ~ast)))
+
 (defn to-str 
   ([ast]
     (to-str 0 ast))
@@ -165,6 +175,7 @@
                       (str "fn (" (str/join ", " params) ") " block))
       
       :ast/call-expr  (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
+      :ast/tail-call  (str "return " (to-str (tail-call-fn ast)) "(" (str/join ", " (mapv to-str (tail-call-args ast))) ");" \newline)
       :ast/index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-index ast)) "])")
       ;; literals
       :ast/ident-lit  (ident-literal ast)

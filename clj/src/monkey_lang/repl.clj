@@ -30,7 +30,7 @@
       (recur)
     (when (not= input "exit")
       (try
-        (when-let [obj (eval/run env (parser/run input))]
+        (when-let [obj (eval/run env eval/GLOBAL_SCOPE (parser/run input))]
           (println (yellow (object/inspect obj))))
       (catch clojure.lang.ExceptionInfo e
         (parser/print-error e)))
