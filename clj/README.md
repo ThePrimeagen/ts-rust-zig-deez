@@ -21,3 +21,4 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [ ] import module
   - [ ] functions with no return statement should return null and if should should always return the last statement. (hint: compare scopes for it.)
   - [ ] try print statement after the error message when eval/run errs.
+  - [ ] improve lexer by using raw parsers.
