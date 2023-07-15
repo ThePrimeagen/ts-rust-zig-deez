@@ -212,12 +212,21 @@
     (jc/skip (lexer/expect token/SEMICOLON))
     (jc/return (ast/expr expr))))
 
+(defn replace-tail-call [stmts]
+  (when-not (empty? stmts)
+    (let [last-stmt (peek stmts)
+          ret-expr  (ast/return-expr last-stmt)]
+    (if (and (ast/is? last-stmt ast/RETURN_STMT)
+             (ast/is? ret-expr  ast/CALL_EXPR))
+      (conj (pop stmts) (ast/tail-call (ast/call-fn ret-expr) (ast/call-args ret-expr)))
+    (-> stmts)))))
+
 (def parse-block-stmts
   (jb/do
     (lexer/expect token/LBRACE)
     (stmts <- (jc/many* parse-stmt))
     (lexer/expect token/RBRACE)
-    (jc/return (ast/block stmts))))
+    (jc/return (ast/block (replace-tail-call stmts)))))
 
 (def parse-stmt
   (jb/do
@@ -231,7 +240,7 @@
   (jb/do
     (stmts <- (jc/many+ parse-stmt))
     (lexer/expect token/EOF)
-    (jc/return (ast/program stmts))))
+    (jc/return (ast/program (ast/block stmts)))))
 
 (defn print-error [e]
   (let [ex-data (ex-data e)
@@ -291,4 +300,5 @@
   (run "if (x < y) { return 5 };")
   (run "a[1]")
   (println (ast/to-str (run "3 + 4 * 5 == 3 * 1 + 4 * 5")))
-  (ast/to-str (run "{\"one\": 1, \"two\": 2, \"three\": 3}")))
+  (ast/to-str (run "{\"one\": 1, \"two\": 2, \"three\": 3}"))
+  (run "let sumTo = fn (n, acc) { if (n == 0) { return acc; }; return sumTo(n-1, acc+n); }; sumTo(10000, 0);"))

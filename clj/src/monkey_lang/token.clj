@@ -79,5 +79,5 @@
 (def kind    first)
 (def literal second)
 
-(defn is? [token kynd]
-  (= kynd (kind token)))
+(defmacro is? [token kynd]
+  `(= ~kynd (kind ~token)))
