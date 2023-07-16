@@ -355,7 +355,9 @@ void test_builtin_function_calls_exec() {
 		{"rest([1, 2, 3])",make_array({2, 3})},
 		{"rest([])", Object()},
 		{"push([], 1)", make_array({1})},
-		{"push(1, 1)",Error("argument to 'push' must be ARRAY, got INTEGER")}
+		{"push(1, 1)",Error("argument to 'push' must be ARRAY, got INTEGER")},
+		{"pop(push([], 1))", make_array({})},
+
 	};
 	TestHelper tt("Builtin functions calls");
 	runSwitchVmTests(tt, tests);
