@@ -1,11 +1,7 @@
 #include "tests.hh"
 
 Object test_eval(std::string &&input) {
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     return program->eval(std::make_shared<Environment>());
 }
 
@@ -57,7 +53,9 @@ void test_eval_integer_expression() {
         {"2 * (5 + 10)", 30},
         {"3 * 3 * 3 + 10", 37},
         {"3 * (3 * 3) + 10", 37},
-        {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50}
+        {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+        {"0x00FF | 0xFF00", 0xFFFF},
+        {"0xFF & 0xFFFF", 0xFF}
     };
 
     TestHelper tt("Integer evaluation");
@@ -94,7 +92,15 @@ void test_eval_boolean_expression() {
         {"(1 < 2) == true", true},
         {"(1 < 2) == false", false},
         {"(1 > 2) == true", false},
-        {"(1 > 2) == false", true}
+        {"(1 > 2) == false", true},
+        {"true && true", true},
+        {"true && false", false},
+        {"false && true", false},
+        {"false && false", false},
+        {"true || true", true},
+        {"false || true ", true},
+        {"true || false", true},
+        {"false|| false", false}
     };
 
     TestHelper tt("Boolean evaluation");

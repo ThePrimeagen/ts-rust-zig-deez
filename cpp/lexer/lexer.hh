@@ -37,6 +37,8 @@ enum class token_type {
     Pipe,
     Tilde,
     Hat,
+    LogicOr,
+    LogicAnd,
     Function,
     Let,
     If,
@@ -68,7 +70,7 @@ struct token final {
         literal = literal_;
     }
 
-    inline void set(token_type t, std::string::iterator iter)
+    inline void set(token_type t, std::string::const_iterator iter)
     {
         type = t;
         literal = std::string_view(iter,iter+1);
@@ -95,17 +97,24 @@ private:
     static const std::unordered_map<std::string, token_type, string_hash, std::equal_to<>> keywords;
 
     std::string input;  // The user's input
-    std::string::iterator ch;  // The byte to evaluate
+    std::string::const_iterator ch;  // The byte to evaluate
 
-    void read_char() noexcept;
+    inline void read_char(void) noexcept
+    {
+        if (ch != input.end()) [[likely]]
+            ++ch;
+    }
+    inline void skip_whitespace() noexcept
+    {
+        while (ch != input.end() && std::isspace(*ch)) read_char();
+    }
     char peek() noexcept;
-    void skip_whitespace() noexcept;
     std::string_view read_ident() noexcept;
     void read_int(token &t) noexcept;
     std::string_view read_string() noexcept;
 public:
-    lexer(std::string &&input_);
-    lexer(lexer &&) = default;
+    explicit lexer(std::string &&input_);
+    explicit lexer(lexer &&) = default;
 
     void next_token(token &) noexcept;
 };

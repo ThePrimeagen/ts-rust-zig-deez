@@ -15,9 +15,11 @@ Parser::Precedence Parser::precedenceFromToken(token_type tok) {
 	case token_type::Asterisk: return PRODUCT;
 	case token_type::LParen: return CALL;
 	case token_type::LBracket: return INDEX;
-	case token_type::Ampersand: return AND;
-	case token_type::Hat: return XOR;
-	case token_type::Pipe: return OR;
+	case token_type::LogicAnd: return LOGAND;
+	case token_type::LogicOr: return LOGOR;
+	case token_type::Ampersand: return BITAND;
+	case token_type::Hat: return BITXOR;
+	case token_type::Pipe: return BITOR;
 	default: return LOWEST;
 	}
 }
@@ -62,6 +64,11 @@ std::unique_ptr<LetStatement> Parser::parseLet() {
 	advance_tokens();
 
 	let_stmt->value = std::unique_ptr<Expression>(parseExpression(LOWEST));
+	FunctionLiteral *fn = dynamic_cast<FunctionLiteral *>(let_stmt->value.get());
+	if (fn != nullptr) {
+		fn->name = let_stmt->name->name;
+	}
+
 	if (peekTokenIs(token_type::Semicolon)) advance_tokens();
 	return let_stmt;
 }

@@ -12,10 +12,12 @@ class Parser
 {
 	enum Precedence {
 		LOWEST,
+		LOGOR,
+		LOGAND,
+		BITOR,
+		BITXOR,
+		BITAND,
 		EQUALS,
-		OR,
-		XOR,
-		AND,
 		LESSGREATER,
 		SUM,
 		PRODUCT,
@@ -106,12 +108,14 @@ class Parser
 		{token_type::Ampersand, [this](expr_ptr &&left) { return parseInfixExpression(std::move(left)); }},
 		{token_type::Pipe, [this](expr_ptr &&left) { return parseInfixExpression(std::move(left)); }},
 		{token_type::Hat, [this](expr_ptr &&left) { return parseInfixExpression(std::move(left)); }},
+		{token_type::LogicAnd, [this](expr_ptr &&left) { return parseInfixExpression(std::move(left)); }},
+		{token_type::LogicOr, [this](expr_ptr &&left) { return parseInfixExpression(std::move(left)); }},
 		{token_type::LParen, [this](expr_ptr &&left) { return parseCallExpression(std::move(left)); }},
 		{token_type::LBracket, [this](expr_ptr &&left) { return parseIndexExpression(std::move(left)); }}
 	};
 
 public:
-	Parser(lexer &l);
+	explicit Parser(lexer &l);
 	std::shared_ptr<Program> parse();
 
 	inline bool hasErrors() {

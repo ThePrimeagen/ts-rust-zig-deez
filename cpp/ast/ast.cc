@@ -2,45 +2,21 @@
 
 extern std::unordered_map<std::string, builtin_ptr> builtins;
 
-std::optional<Object> Environment::get(const std::string &name) {
-	auto iter = store.find(name);
-	if (iter != store.end()) 
-		return iter->second;
-	if (outer != nullptr) return outer->get(name);
+std::optional<std::string> load_symbol(Symbol symbol, Compiler &compiler) {
+	if (symbol.scope == SymbolTable::GlobalScope)
+		compiler.emit(OpGetGlobal, { symbol.index });
+	else if (symbol.scope == SymbolTable::LocalScope)
+		compiler.emit(OpGetLocal, { symbol.index });
+	else if (symbol.scope == SymbolTable::BuiltinScope)
+		compiler.emit(OpGetBuiltin, { symbol.index });
+	else if (symbol.scope == SymbolTable::FreeScope)
+		compiler.emit(OpGetFree, { symbol.index });
+	else if (symbol.scope == SymbolTable::FunctionScope)
+		compiler.emit(OpCurrentClosure);
+	else return "Unexpected Scope type";
 	return std::nullopt;
 }
 
-Object &Environment::set(const std::string &name, const Object &object) {
-	return store[name] = object;
-}
-
-size_t ObjectHasher::operator()(const Object & obj) const {
-	return obj.hash();
-}
-
-std::string Function::to_string() const {
-	std::string result;
-	result.reserve(128);
-	result += "fn(";
-
-	auto iter = parameters->begin();
-	if (iter != parameters->end()) {
-		result += *(iter++);
-		for (; iter != parameters->end(); ++iter)
-			result += ", " + *(iter++);
-	}
-	result += ") " + body->to_string();
-	return result;
-}
-
-Object Function::call(std::initializer_list<Object> args)
-{
-	env_ptr fn_env = std::make_shared<Environment>(env);
-	auto pit = parameters->begin();
-	for (std::initializer_list<Object>::iterator ait = args.begin(); ait != args.end(); ++ait, ++pit)
-		fn_env->set(*pit, *ait);
-	return 	body->eval(fn_env);
-}
 
 std::string Program::to_string() const {
 	std::string result;
@@ -61,6 +37,17 @@ Object Program::eval(env_ptr env) {
 	}
 	return result;
 }
+
+std::optional<std::string> Program::compile(Compiler &compiler) {
+	for (stmt_ptr &statement : statements)
+	{
+		std::optional<std::string> result = statement->compile(compiler);
+		if (result)
+			return result;
+	}
+	return std::nullopt;
+}
+
 
 std::string BlockStatement::to_string() const {
 	std::string result;
@@ -84,6 +71,16 @@ Object BlockStatement::eval(env_ptr env) {
 	return result;
 }
 
+std::optional<std::string> BlockStatement::compile(Compiler &compiler) {
+	for (stmt_ptr &statement : statements)
+	{
+		std::optional<std::string> result = statement->compile(compiler);
+		if (result)
+			return result;
+	}
+	return std::nullopt;
+}
+
 std::string Identifier::to_string() const {
 	return name;
 }
@@ -96,6 +93,13 @@ Object Identifier::eval(env_ptr env) {
 	return Object::make_error("identifier not found: " + name);
 }
 
+std::optional<std::string> Identifier::compile(Compiler &compiler) {
+	auto symbol = compiler.resolve(name);
+	if (!symbol)
+		return "Undefined variable " + name;
+	return load_symbol(*symbol, compiler);
+};
+
  std::string IntegerLiteral::to_string() const {
 	return std::to_string(value);
 }
@@ -104,12 +108,22 @@ Object Identifier::eval(env_ptr env) {
 	 return value;
  }
 
+std::optional<std::string> IntegerLiteral::compile(Compiler &compiler) {
+	 compiler.emit(OpConstant, { (std::int64_t)compiler.add_constant(Object(value)) });
+	 return std::nullopt;
+ };
+
 std::string BooleanLiteral::to_string() const {
 	return value ? "true" : "false";
 }
 
 Object BooleanLiteral::eval(env_ptr env)  {
 	return value;
+}
+
+std::optional<std::string> BooleanLiteral::compile(Compiler &compiler) {
+	compiler.emit(value ? OpTrue : OpFalse);
+	return std::nullopt;
 }
 
 std::string PrefixExpression::to_string() const {
@@ -133,11 +147,8 @@ Object PrefixExpression::eval(env_ptr env) {
 	if (rv.isError()) return rv;
 	switch (type)
 	{
-	case token_type::Bang: {
-		auto b = rv.getBoolean();
-		if (b) return !*b;
-		else return Object::make_error("Logical not requires boolean operand");
-	}
+	case token_type::Bang: 
+		return !rv.getBoolean();
 	case token_type::Dash:
 		if (!rv.is_a<std::int64_t>())
 			return Object::make_error(std::format("unknown operator: -{}", rv.type_name()));
@@ -152,6 +163,26 @@ Object PrefixExpression::eval(env_ptr env) {
 	return Object::make_error("unexpected prefix operator");;
 }
 
+std::optional<std::string> PrefixExpression::compile(Compiler &compiler) {
+	std::optional<std::string> result = right->compile(compiler);
+	if (result)
+		return result;
+
+	switch (type)
+	{
+	case token_type::Bang:
+		compiler.emit(OpBang);
+		break;
+	case token_type::Dash:
+		compiler.emit(OpMinus);
+		break;
+	case token_type::Tilde:
+		compiler.emit(OpTilde);
+		break;
+	}
+	return std::nullopt;
+}
+
 const char *InfixExpression::operator_to_string() const {
 	switch (type)
 	{
@@ -161,11 +192,13 @@ const char *InfixExpression::operator_to_string() const {
 	case token_type::ForwardSlash: return "/";
 	case token_type::Ampersand: return "&";
 	case token_type::Pipe:		return "|";
+	case token_type::LogicAnd: return "&&";
+	case token_type::LogicOr:		return "||";
 	case token_type::LessThan:	return "<";
 	case token_type::GreaterThan: return ">";
 	case token_type::Equal:	return "==";
 	case token_type::NotEqual:	return "!=";
-	default: return "Error: Bad Token in PrefixExpresssion";
+	default: return "Error: Bad Token in InfixExpresssion";
 	}
 }
 
@@ -184,7 +217,7 @@ Object InfixExpression::eval(env_ptr env) {
 	{
 		switch (type)
 		{
-		case token_type::Ampersand:
+		case token_type::LogicAnd:
 			if (!lv.get<bool>()) return false;
 			else {
 				Object rv = right->eval(env);
@@ -194,7 +227,7 @@ Object InfixExpression::eval(env_ptr env) {
 					return Object::make_error(std::format("type mismatch: {} {} {}", lv.type_name(), operator_to_string(), rv.type_name()));
 				else return right->eval(env);
 			}
-		case token_type::Pipe:
+		case token_type::LogicOr:
 			if (lv.get<bool>()) return true;
 			else {
 				Object rv = right->eval(env);
@@ -261,6 +294,110 @@ Object InfixExpression::eval(env_ptr env) {
 	return Object::make_error("unexpected infix operator");
 }
 
+std::optional<std::string> InfixExpression::compile(Compiler &compiler) {
+	std::optional<std::string> result;
+	if (type == token_type::LogicAnd) {
+		result = left->compile(compiler);
+		if (result)
+			return result;
+		// If false, jump  to false result
+		size_t jump_to_false1 = compiler.emit(OpJumpNotTruthy, { 9999 });
+		result = right->compile(compiler);
+		if (result)
+			return result;
+		// if false, jump to false result
+		size_t jump_to_false2 = compiler.emit(OpJumpNotTruthy, { 9999 });
+		// both true, push true result
+		compiler.emit(OpTrue);
+		size_t jump_after_true = compiler.emit(OpJump, { 9999 });
+		size_t false_result = compiler.instructionSize();
+		compiler.emit(OpFalse);
+		size_t after_binary = compiler.instructionSize();
+		compiler.changeOperand(jump_to_false1, { (std::int64_t)false_result });
+		compiler.changeOperand(jump_to_false2, { (std::int64_t)false_result });
+		compiler.changeOperand(jump_after_true, { (std::int64_t)after_binary });
+		return std::nullopt;
+	}
+	else if (type == token_type::LogicOr) {
+		result = left->compile(compiler);
+		if (result)
+			return result;
+		// If true, jump  to true result
+		size_t jump_to_true1 = compiler.emit(OpJumpTruthy, { 9999 });
+		result = right->compile(compiler);
+		if (result)
+			return result;
+		// if true, jump to true result
+		size_t jump_to_true2 = compiler.emit(OpJumpTruthy, { 9999 });
+		// both false, push false result
+		compiler.emit(OpFalse);
+		size_t jump_after_false = compiler.emit(OpJump, { 9999 });
+		size_t true_result = compiler.instructionSize();
+		compiler.emit(OpTrue);
+		size_t after_binary = compiler.instructionSize();
+		compiler.changeOperand(jump_to_true1, { (std::int64_t)true_result });
+		compiler.changeOperand(jump_to_true2, { (std::int64_t)true_result });
+		compiler.changeOperand(jump_after_false, { (std::int64_t)after_binary });
+		return std::nullopt;
+	}
+
+	if (type == token_type::LessThan) {
+		result = right->compile(compiler);
+		if (result)
+			return result;
+		result = left->compile(compiler);
+		if (result)
+			return result;
+	}
+	else {
+		result = left->compile(compiler);
+		if (result)
+			return result;
+		result = right->compile(compiler);
+		if (result)
+			return result;
+	}
+
+	switch (type)
+	{
+	case token_type::Plus:
+		compiler.emit(OpAdd);
+		break;
+	case token_type::Dash:
+		compiler.emit(OpSub);
+		break;
+	case token_type::Asterisk:
+		compiler.emit(OpMul);
+		break;
+	case token_type::ForwardSlash:
+		compiler.emit(OpDiv);
+		break;
+	case token_type::Ampersand:
+		compiler.emit(OpAnd);
+		break;
+	case token_type::Pipe:
+		compiler.emit(OpOr);
+		break;
+	case token_type::Hat:
+		compiler.emit(OpXor);
+		break;
+	case token_type::LessThan:
+	case token_type::GreaterThan:
+		compiler.emit(OpGreaterThan);
+		break;
+	case token_type::Equal:
+		compiler.emit(OpEqual);
+		break;
+	case token_type::NotEqual:
+		compiler.emit(OpNotEqual);
+		break;
+	default:
+		return "Error: Bad Token in InfixExpresssion";
+	}
+
+	return std::nullopt;
+}
+
 std::string IfExpression::to_string() const {
 	std::string result;
 	result.reserve(128);
@@ -273,18 +410,49 @@ std::string IfExpression::to_string() const {
 Object IfExpression::eval(env_ptr env) {
 	Object cond = condition->eval(env);
 	if (cond.isError()) return cond;
-	auto condval = cond.getBoolean();
-	if (!condval) return Object::make_error("Condition in IF not truthlike");
-	if (*condval) return consequence->eval(env);
+	if (cond.getBoolean()) return consequence->eval(env);
 	else if (alternative) return alternative->eval(env);
 	return Object();
+}
+
+std::optional<std::string> IfExpression::compile(Compiler &compiler) {
+	std::optional<std::string> result = condition->compile(compiler);
+	if (result)
+		return result;
+
+	size_t jump_false_pos = compiler.emit(OpJumpNotTruthy, { 9999 }); // Set correct value later
+
+	result = consequence->compile(compiler);
+	if (result)
+		return result;
+	if (compiler.lastInstructionIs(OpPop))
+		compiler.removeLastInstruction();
+
+	size_t jump_pos = compiler.emit(OpJump, { 9999 });
+	size_t after_consequece_pos = compiler.instructionSize();
+	compiler.changeOperand(jump_false_pos, { (std::int64_t)after_consequece_pos });
+
+	if (!alternative) {
+		compiler.emit(OpNull);
+	}
+	else {
+		result = alternative->compile(compiler);
+		if (result)
+			return result;
+		if (compiler.lastInstructionIs(OpPop))
+			compiler.removeLastInstruction();
+	}
+
+	size_t after_alternative_pos = compiler.instructionSize();
+	compiler.changeOperand(jump_pos, { (std::int64_t)after_alternative_pos });
+	return std::nullopt;
 }
 
 std::string FunctionLiteral::to_string() const {
 	std::string result;
 	result.reserve(8 * parameters->size() + 128);
-	result += "fn(";
-
+	if (name == "") result += "fn(";
+	else result += name + '(';
 	auto iter = parameters->begin();
 	if (iter != parameters->end()) {
 		result += *iter++;
@@ -303,6 +471,33 @@ Object FunctionLiteral::eval(env_ptr env) {
 		fn->env = std::make_shared<Environment>(*env);
 	return Object(std::move(fn));
 }
+
+std::optional<std::string> FunctionLiteral::compile(Compiler &compiler) {
+	Compiler inner(compiler);
+
+	if (name != "")
+		inner.defineFunction(name);
+	for (const std::string &param : *parameters)
+		inner.define(param);
+
+	std::optional<std::string> error = body->compile(inner);
+	if (error)
+		return error;
+	if (inner.lastInstructionIs(OpPop))
+		inner.replaceLastPopWithReturn();
+	if (!inner.lastInstructionIs(OpReturnValue))
+		inner.emit(OpReturn);
+
+	for (const Symbol &symbol : inner.get_free()) {
+		load_symbol(symbol,compiler);
+	}
+	comp_func_ptr func = make_compiled_function(inner.extractInstructions(), inner.countLocals(), parameters->size());
+	//compiler.emit(OpConstant, { (std::int64_t)compiler.add_constant(Object(func)) });
+	compiler.emit(OpClosure, { (std::int64_t)compiler.add_constant(Object(func)), (std::int64_t)inner.get_free().size() });
+
+	return std::nullopt;
+};
+
 
 std::string CallExpression::to_string() const {
 	std::string result;
@@ -355,7 +550,15 @@ Object CallExpression::eval(env_ptr env) {
 		return fn_obj.get<builtin_ptr>()(args);
 	}
 	return Object::make_error("Expected a function to call!");
+}
 
+std::optional<std::string> CallExpression::compile(Compiler &compiler) {
+	std::optional<std::string> error = function->compile(compiler);
+	if (error) return error;
+	for (const auto &argument : arguments)
+		argument->compile(compiler);
+	compiler.emit(OpCall, { (std::int64_t)arguments.size() });
+	return std::nullopt;
 }
 
 std::string LetStatement::to_string() const {
@@ -372,6 +575,18 @@ Object LetStatement::eval(env_ptr env) {
 	return Object();
 }
 
+std::optional<std::string> LetStatement::compile(Compiler &compiler) {
+	Symbol symbol = compiler.define(name->name);
+	std::optional<std::string> error = value->compile(compiler);
+	if (error) return error;
+
+	if (symbol.scope == SymbolTable::GlobalScope)
+		compiler.emit(OpSetGlobal, { symbol.index });
+	else if (symbol.scope == SymbolTable::LocalScope)
+		compiler.emit(OpSetLocal, { symbol.index });
+	else return "unexpected scope type";
+	return std::nullopt;
+}
 std::string ReturnStatement::to_string() const {
 	std::string result;
 	result.reserve(64);
@@ -385,6 +600,13 @@ Object ReturnStatement::eval(env_ptr env) {
 	return result;
 }
 
+std::optional<std::string> ReturnStatement::compile(Compiler &compiler) {
+	std::optional<std::string> error = value->compile(compiler);
+	if (error) return error;
+	compiler.emit(OpReturnValue);
+	return std::nullopt;
+};
+
 std::string ExpressionStatement::to_string() const {
 	std::string result;
 	result += value->to_string();
@@ -395,12 +617,26 @@ Object ExpressionStatement::eval(env_ptr env) {
 	return value->eval(env);
 }
 
+std::optional<std::string> ExpressionStatement::compile(Compiler &compiler) {
+	std::optional<std::string> error = value->compile(compiler);
+	if (error) return error;
+	compiler.emit(OpPop);
+	return std::nullopt;
+}
+
+
 std::string StringLiteral::to_string() const {
 	return '"' + value + '"';
 }
 
 Object StringLiteral::eval(env_ptr env) {
 	return value;
+}
+
+std::optional<std::string> StringLiteral::compile(Compiler &compiler) {
+	size_t id = compiler.add_constant(Object(value));
+	compiler.emit(OpConstant, { (std::int64_t)id });
+	return std::nullopt;
 }
 
 std::string ArrayLiteral::to_string() const {
@@ -430,6 +666,17 @@ Object ArrayLiteral::eval(env_ptr env) {
 	return result;
 }
 
+std::optional<std::string> ArrayLiteral::compile(Compiler &compiler) {
+	std::optional<std::string> error;
+	for (auto &elem : elements)
+	{
+		error = elem->compile(compiler);
+		if (error) return error;
+	}
+	compiler.emit(OpArray, { (std::int64_t)elements.size() });
+	return std::nullopt;
+};
+
 std::string IndexExpression::to_string() const {
 	std::string result;
 	result.reserve(32);
@@ -450,11 +697,11 @@ Object IndexExpression::eval(env_ptr env) {
 		if (!iv.is_a<std::int64_t>())
 			return Object::make_error("Expected index into array to be an INTEGER");
 
-		std::int64_t index = iv.get<std::int64_t>();
-		if (index < 0 || index >= lv.get<array_ptr>()->size())
+		std::int64_t index_value = iv.get<std::int64_t>();
+		if (index_value < 0 || index_value >= lv.get<array_ptr>()->size())
 			return Object::make_error("Index into array is out of bounds");
 
-		return (*lv.get<array_ptr>())[(size_t)index];
+		return (*lv.get<array_ptr>())[(size_t)index_value];
 	}
 	else if (lv.is_a<hashmap_ptr>()) {
 		hashmap_ptr hash = lv.get<hashmap_ptr>();
@@ -466,6 +713,16 @@ Object IndexExpression::eval(env_ptr env) {
 
 	return Object::make_error("Index operator not supported: " + lv.type_name());
 }
+
+std::optional<std::string> IndexExpression::compile(Compiler &compiler) {
+	std::optional<std::string> error;
+	error = left->compile(compiler);
+	if (error) return error;
+	error = index->compile(compiler);
+	if (error) return error;
+	compiler.emit(OpIndex);
+	return std::nullopt;
+};
 
 std::string HashLiteral::to_string() const {
 	std::string result;
@@ -498,3 +755,17 @@ Object HashLiteral::eval(env_ptr env) {
 	}
 	return hashlit;
 }
+
+std::optional<std::string> HashLiteral::compile(Compiler &compiler) {
+	std::optional<std::string> error;
+	for (auto &elem : elements) {
+		error = elem.first->compile(compiler);
+		if (error) return error;
+		error = elem.second->compile(compiler);
+		if (error) return error;
+	}
+
+	compiler.emit(OpHash, { (std::int64_t)elements.size() * 2 });
+
+	return std::nullopt;
+};

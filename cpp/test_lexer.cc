@@ -87,6 +87,7 @@ test_complex_input(void)
         "[0, 1];\n"
         "{\"foo\":\"bar\"}\n"
         "~1|2&false\n"
+        "1||2&&3\n"
     };
 
     std::vector<token> expected_tokens{
@@ -176,14 +177,20 @@ test_complex_input(void)
         {token_type::Colon, ":"},
         {token_type::String, "bar"},
         {token_type::RSquirly, "}"},
-        // "~1|2&false"
+        
         {token_type::Tilde, "~"},
         {token_type::Integer, "1"},
         {token_type::Pipe, "|"},
         {token_type::Integer, "2"},
         {token_type::Ampersand, "&"},
         {token_type::False, "false"},
-        {token_type::Eof, "\0"}
+        
+        {token_type::Integer, "1"},
+        {token_type::LogicOr, "||"},
+        {token_type::Integer, "2"},
+        {token_type::LogicAnd, "&&"},
+        {token_type::Integer, "3"},
+        {token_type::Eof, "\0"},
 
     };
 

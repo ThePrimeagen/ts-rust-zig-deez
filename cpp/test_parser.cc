@@ -80,7 +80,7 @@ bool test_literal(TestHelper &tt, Expression *expr, const Literal &lit)
 }
 
 
-bool test_program(TestHelper &tt, std::shared_ptr<Program> &program, size_t stmt_count) {
+bool test_program(TestHelper &tt, const std::shared_ptr<Program> &program, size_t stmt_count) {
 
     if (!program) {
         tt.fail("No program returned");
@@ -106,16 +106,13 @@ void test_let_statements()
     };
 
     TestHelper tt("Let Statements");
-    LetStatement *stmt;
-    for (auto iter = std::begin(tests); iter != std::end(tests); ++iter) {
-        lexer l(std::move(iter->input));
-        Parser p(l);
 
-        std::shared_ptr<Program> program = p.parse();
+    for (auto iter = std::begin(tests); iter != std::end(tests); ++iter) {
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
 
         if (!test_program(tt, program, 1)) return;
 
-        stmt = dynamic_cast<LetStatement *>(program->statements[0].get());
+        LetStatement *stmt = dynamic_cast<LetStatement *>(program->statements[0].get());
         if (stmt == nullptr)
         {
             tt.fail("Expected let statment, got another statement type");
@@ -145,11 +142,7 @@ void test_return_statement()
 
     TestHelper tt("Return Statement");
     for (auto iter = std::begin(tests); iter != std::end(tests); ++iter) {
-        lexer l(std::move(iter->input));
-        Parser p(l);
-
-        std::shared_ptr<Program> program = p.parse();
-
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
         if (!test_program(tt, program, 1)) return;
 
         ReturnStatement *stmt = dynamic_cast<ReturnStatement *>(program->statements[0].get());
@@ -165,14 +158,9 @@ void test_return_statement()
 
 void test_identifier_expression() {
     std::string input("foobar;\n");
-
     TestHelper tt("Identifier");
 
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -199,12 +187,7 @@ void test_integer_literal() {
 
     TestHelper tt("Integer Literal");
     for (auto iter = std::begin(tests); iter != std::end(tests); ++iter) {
-
-        lexer l(std::move(iter->input));
-        Parser p(l);
-
-        std::shared_ptr<Program> program = p.parse();
-
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
         if (!test_program(tt, program, 1)) return;
 
         ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -233,11 +216,7 @@ void test_prefix_parsing() {
     TestHelper tt("Prefix Parsing");
     for (auto iter = std::begin(tests); iter != std::end(tests); ++iter)
     {
-        lexer l(std::move(iter->input));
-        Parser p(l);
-
-        std::shared_ptr<Program> program = p.parse();
-
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
         if (!test_program(tt, program, 1)) continue;
 
         ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -307,11 +286,7 @@ void test_infix_expression() {
     TestHelper tt("Infix Expressions");
     for (auto iter = std::begin(tests); iter != std::end(tests); ++iter)
     {
-        lexer l(std::move(iter->input));
-        Parser p(l);
-
-        std::shared_ptr<Program> program = p.parse();
-
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
         if (!test_program(tt, program, 1))
             continue;
 
@@ -358,19 +333,15 @@ void test_operator_precedence() {
         {"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
         {"~a", "(~a)"},
         {"a | b", "(a | b)"},
-        {"~a | b & c", "((~a) | (b & c))"},
-        {"a < b | a < c", "((a < b) | (a < c))"},
-        {"a > 0 & a < 100", "((a > 0) & (a < 100))"}
+        {"~a || b && c", "((~a) || (b && c))"},
+        {"a < b || a < c", "((a < b) || (a < c))"},
+        {"a > 0 && a < 100", "((a > 0) && (a < 100))"}
     };
 
     TestHelper tt("Operator Precedence");
     for (auto iter = std::begin(tests); iter != std::end(tests); ++iter)
     {
-        lexer l(std::move(iter->input));
-        Parser p(l);
-
-        std::shared_ptr<Program> program = p.parse();
-
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
         if (!program) {
             tt.fail("No program returned");
             return;
@@ -387,10 +358,7 @@ void test_if_expression() {
     std::string input("if (x < y) { x }");
     TestHelper tt("If Expression");
 
-    lexer l(std::move(input));
-    Parser p(l);
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1))
         return;
 
@@ -430,11 +398,7 @@ void test_if_expression() {
 void test_if_else_expression() {
     std::string input("if (x < y) { x } else { y }");
     TestHelper tt("If-Else Expression");
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1))
         return;
 
@@ -496,11 +460,7 @@ void test_function_literal() {
     std::string input("fn(x, y) { x + y; }");
 
     TestHelper tt("Function Literal");
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -559,11 +519,7 @@ void test_function_parameter_parsing() {
     TestHelper tt("Function Parameter parsing");
     for (auto iter = std::begin(tests); iter != std::end(tests); ++iter)
     {
-        lexer l(std::move(iter->input));
-        Parser p(l);
-
-        std::shared_ptr<Program> program = p.parse();
-
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
         if (!test_program(tt, program, 1)) continue;
 
         ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -592,11 +548,7 @@ void test_function_parameter_parsing() {
 void test_call_expression() {
     std::string input("add(1, 2 * 3, 4 + 5);");
     TestHelper tt("Call Expression");
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -632,11 +584,7 @@ void test_string_expression() {
 
     TestHelper tt("String Literal");
 
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -665,11 +613,7 @@ void test_array_expression() {
 
     TestHelper tt("Array Literal");
 
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -704,11 +648,7 @@ void test_index_expression() {
 
     TestHelper tt("Array Literal");
 
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -735,12 +675,7 @@ void test_hash_expression() {
     std::string input("{\"one\": 1, \"two\": 2, \"three\": 3}\n");
 
     TestHelper tt("Hash Literal");
-
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -781,11 +716,7 @@ void test_empty_expression() {
 
     TestHelper tt("Empty Hash Literal");
 
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -812,12 +743,7 @@ void test_hash_nested_expression() {
     std::string input("{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15 / 5}\n");
 
     TestHelper tt("Hash Literal");
-
-    lexer l(std::move(input));
-    Parser p(l);
-
-    std::shared_ptr<Program> program = p.parse();
-
+    std::shared_ptr<Program> program = parse(std::move(input));
     if (!test_program(tt, program, 1)) return;
 
     ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
@@ -853,6 +779,33 @@ void test_hash_nested_expression() {
         return;
 }
 
+void test_function_litearl_with_name() {
+    std::string input("let myFunction = fn() { };\n");
+
+    TestHelper tt("Function Literal with name");
+    std::shared_ptr<Program> program = parse(std::move(input));
+    if (!test_program(tt, program, 1)) return;
+
+    if (!test_program(tt, program, 1)) return;
+
+    LetStatement *ls = dynamic_cast<LetStatement *>(program->statements[0].get());
+    if (ls == nullptr) {
+        tt.fail("Expected an ExpressionStatement!");
+        return;
+    }
+    FunctionLiteral *fn = dynamic_cast<FunctionLiteral *>(ls->value.get());
+    if (fn == nullptr) {
+        tt.fail("Expected a Function literal!");
+        return;
+    }
+    if (fn->name != "myFunction") {
+        tt.fail("Expected function to have a name!");
+        return;
+    }
+
+
+}
+
 void test_parser()
 {
     std::cout << ">>> Parser tests <<<\n";
@@ -874,5 +827,6 @@ void test_parser()
     test_hash_expression();
     test_empty_expression();
     test_hash_nested_expression();
+    test_function_litearl_with_name();
     std::cout << std::endl;
 }

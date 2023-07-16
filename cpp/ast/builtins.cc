@@ -1,18 +1,19 @@
 #include "ast.hh"
+#include "vm/vm.hh"
 
 #include <iostream>
 #include <algorithm>
 #include <fstream>
 #include <filesystem>
 #include <regex>
+#include <unordered_set>
 
 
 Object make_args_errror(size_t got, size_t wanted) {
 	return Object(Error(std::format("wrong number of arguments. got={}, want={}", got, wanted)));
 }
 
-
-std::unordered_map<std::string, builtin_ptr> builtins{
+std::vector<std::pair<std::string, builtin_ptr>> builtin_defs {
 	{
 		// Container support 
 		"len",
@@ -32,9 +33,17 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		[](BuiltinFunctionParameters args) {
 			if (args.size() != 1) return make_args_errror(args.size(),1);
 			else if (args[0].is_a<array_ptr>())
-				return args[0].get<array_ptr>()->front();
+			{
+				array_ptr a = args[0].get<array_ptr>();
+				if (a->empty()) return Object();
+				else return a->front();
+			}
 			else if (args[0].is_a<std::string>())
-				return Object(args[0].get<std::string>().front());
+			{
+				const std::string &s = args[0].get<std::string>();
+				if (s.empty()) return Object();
+				else return Object(s.front());
+			}
 			else return Object(Error(std::format("argument to 'first' not supported, got {}", args[0].type_name())));
 		}
 	},
@@ -43,9 +52,17 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		[](BuiltinFunctionParameters args) {
 			if (args.size() != 1) return make_args_errror(args.size(),1);
 			else if (args[0].is_a<array_ptr>())
-				return args[0].get<array_ptr>()->back();
+			{
+				array_ptr a = args[0].get<array_ptr>();
+				if (a->empty()) return Object();
+				else return a->back();
+			}
 			else if (args[0].is_a<std::string>())
-				return Object(args[0].get<std::string>().back());
+			{
+				const std::string &s = args[0].get<std::string>();
+				if (s.empty()) return Object();
+				else return Object(s.back());
+			}
 			else return Object(Error(std::format("argument to 'last' not supported, got {}", args[0].type_name())));
 		}
 	},
@@ -56,8 +73,9 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 			else if (args[0].is_a<array_ptr>())
 			{
 				array_ptr ar = args[0].get<array_ptr>();
-				Array::iterator second = ar->begin()++;
-				return Object(std::make_shared<Array>(second, ar->end()));
+				Array::iterator second = ar->begin();
+				if (second == ar->end()) return Object(std::make_shared<Array>());
+				return Object(std::make_shared<Array>(++second, ar->end()));
 			}
 			else if (args[0].is_a<std::string>())
 			{
@@ -82,6 +100,7 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		"pop", [](BuiltinFunctionParameters args) {
 			if (args.size() != 1) return make_args_errror(args.size(),1);
 			else if (args[0].is_a<array_ptr>()) {
+				if (args[0].get<array_ptr>()->empty()) return Object();
 				Object result = args[0].get<array_ptr>()->back();
 				args[0].get<array_ptr>()->pop_back();
 				return result;
@@ -160,27 +179,91 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		}
 	},
 	{
+		"split", [](BuiltinFunctionParameters args) {
+			if (args.size() != 2 || !args[0].is_a<std::string>() || !args[1].is_a<std::string>())
+				return Object(Error("'split' expects two strings as parameters"));
+			const std::string &src = args[0].get<std::string>();
+			const std::string &split = args[1].get<std::string>();
+			array_ptr result = make_array();
+			if (split.length() == 0) {
+				for (char c : src)
+					result->push_back(Object(c));
+			}
+			else if (split.length() == 1) {
+				size_t start = 0;
+				char s = split[0];
+				while (true) {
+					size_t end = src.find_first_of(s, start);
+					result->push_back(Object(src.substr(start,end - start)));
+					if (end == std::string::npos) break;
+					start = end + 1;
+				}
+			}
+			else {
+				size_t start = 0;
+				while (true) {
+					size_t end = src.find(split, start);
+					result->push_back(Object(src.substr(start, end - start)));
+					if (end == std::string::npos) break;
+					start = end + split.length();
+				}
+
+			}
+			return Object(result);
+		}
+	},
+	{
+		"join", [](BuiltinFunctionParameters args) {
+			if (args.size() != 2 || !args[0].is_a<array_ptr>() || !args[1].is_a<std::string>())
+				return Object(Error("'join' expects an array and a string as parameters"));
+			array_ptr src = args[0].get<array_ptr>();
+			const std::string &join = args[1].get<std::string>();
+			std::string result;
+			result.reserve(src->size() * 16);
+			if (src->size() > 0) {
+				auto iter = src->begin();
+				result += iter->to_string();
+				++iter;
+				for (; iter != src->end(); ++iter)
+					result += join + iter->to_string();
+			}
+			return Object(result);
+		}
+	},
+	{
 		"sort", [](BuiltinFunctionParameters args) {
 			if (args.size() != 1 && args.size() != 2)
 				return Object(Error("'sort' expects an array and an optional compare function as parameters"));
 			if (args.size() == 2)
 			{
-				if (!args[1].is_a<func_ptr>())
-					return Object(Error("'sort' expects second parameter to be a compare function"));
-				if (args[1].get<func_ptr>()->paramCount() != 2)
-					return Object(Error("Compare function for 'sort' must take two paramteters"));
+				if (args[1].is_a<func_ptr>()) {
+					if (args[1].get<func_ptr>()->paramCount() != 2)
+						return Object(Error("Compare function for 'sort' must take two parameters"));
+				}
+				else if (args[1].is_a<closure_ptr>()) {
+					if (args[1].get<closure_ptr>()->fn->numParameters != 2)
+						return Object(Error("Compare function for 'sort' must take two parameters"));
+				}
+				else
+					return Object(Error("Second parameter to sort must be a comparison function"));
 			}
 
 			if (args[0].is_a<array_ptr>()) {
 				array_ptr array = args[0].get<array_ptr>();
 				if (args.size() == 1)
 					std::sort(array->begin(), array->end());
-				else {
+				else if (args[1].is_a<func_ptr>()) {
 					func_ptr fn = args[1].get<func_ptr>();
-					if (fn->paramCount() != 2)
-						return Object(Error("Compare function for 'sort' must take two paramteters"));
 					std::sort(array->begin(), array->end(), [&fn](Object &a, Object &b) {
 						return fn->call({ a,b }).get<bool>();
+						});
+				}
+				else if (args[1].is_a<closure_ptr>()) {
+					closure_ptr fn = args[1].get<closure_ptr>();
+					SwitchVM vm(GlobalData::getLastGlobals());
+					std::sort(array->begin(), array->end(), [&vm, &fn](Object &a, Object &b) {
+						vm.run(fn, { a, b });
+						return vm.last_popped_element().get<bool>();
 						});
 				}
 				return args[0];
@@ -189,10 +272,18 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 				std::string s = args[0].get<std::string>();
 				if (args.size() == 1)
 					std::sort(s.begin(), s.end());
-				else {
+				else if (args[1].is_a<func_ptr>()) {
 					func_ptr fn = args[1].get<func_ptr>();
 					std::sort(s.begin(), s.end(), [&fn](char a, char b) {
 						return fn->call({ Object(a),Object(b) }).get<bool>();
+						});
+				}
+				else if (args[1].is_a<closure_ptr>()) {
+					closure_ptr fn = args[1].get<closure_ptr>();
+					SwitchVM vm(GlobalData::getLastGlobals());
+					std::sort(s.begin(), s.end(), [&vm, &fn](char a, char b) {
+						vm.run(fn, { Object(a), Object(b) });
+						return vm.last_popped_element().get<bool>();
 						});
 				}
 				return Object(s);
@@ -252,9 +343,9 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		}
 	},
 	{
-		"readfile", [](BuiltinFunctionParameters args) {
+		"file_read", [](BuiltinFunctionParameters args) {
 			if (args.size() != 1 || !args[0].is_a<std::string>())
-				return Object(Error("'readfile' expects a string with the filename as it's single paramter"));
+				return Object(Error("'file_read' expects a string with the filename as it's single paramter"));
 			// read entire file into string
 			if (std::ifstream is{ args[0].get<std::string>(), std::ios::binary | std::ios::ate}) {
 				auto size = is.tellg();
@@ -267,9 +358,9 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		}
 	},
 	{
-		"writefile", [](BuiltinFunctionParameters args) {
+		"file_write", [](BuiltinFunctionParameters args) {
 			if (args.size() != 2 || !args[0].is_a<std::string>() || !args[1].is_a<std::string>())
-				return Object(Error("'readfile' expects a string with the filename as first and the string to write as second paramter"));
+				return Object(Error("'file_write' expects a string with the filename as first and the string to write as second paramter"));
 			std::ofstream ostrm(args[0].get<std::string>(), std::ios::binary);
 			const std::string &str = args[1].get<std::string>();
 			ostrm.write(&str[0], str.size());
@@ -279,7 +370,7 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 	{
 		"glob",[](BuiltinFunctionParameters args) {
 			if (args.size() != 1 || !args[0].is_a<std::string>())
-				return Object(Error("'gob' expects a string with the path to search for matching files"));
+				return Object(Error("'glob' expects a string with the path to search for matching files"));
 			array_ptr result = make_array();
 			std::filesystem::path path{ args[0].get<std::string>()};
 			std::string filename;
@@ -349,3 +440,5 @@ std::unordered_map<std::string, builtin_ptr> builtins{
 		}
 	}
 };
+
+std::unordered_map<std::string, builtin_ptr> builtins{ builtin_defs.begin(), builtin_defs.end() };

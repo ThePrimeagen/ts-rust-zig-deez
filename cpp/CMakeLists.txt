@@ -42,11 +42,21 @@ target_include_directories(${PROJECT_NAME}
 
 set(SOURCES "lexer/lexer.hh"
         "lexer/lexer.cc"
+        "parser/parser.hh"
+        "parser/parser.cc"
+        "ast/object.hh"
+        "ast/object.cc"
         "ast/ast.hh"
         "ast/ast.cc"
         "ast/builtins.cc"
-        "parser/parser.hh"
-        "parser/parser.cc"
+        "vm/code.hh"
+        "vm/code.cc"
+        "vm/compiler.hh"
+        "vm/compiler.cc"
+        "vm/vm.hh"
+        "vm/vm.cc"
+        "vm/symbol_table.hh"
+        "vm/symbol_table.cc"
 )
 
 target_sources(
@@ -56,6 +66,9 @@ target_sources(
     test_lexer.cc
     test_parser.cc
     test_eval.cc
+    test_code.cc
+    test_vm.cc
+    test_symbol_table.cc
 )
 
 target_sources(

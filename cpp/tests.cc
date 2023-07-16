@@ -54,6 +54,9 @@ main(void)
     std::cout << std::endl;
     test_parser();
     test_evaluation();
+    test_symbol_table();
+    test_code();
+    test_vm();
 
     return 0;
 }

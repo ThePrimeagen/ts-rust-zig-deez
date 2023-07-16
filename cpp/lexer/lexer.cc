@@ -75,16 +75,7 @@ lexer::lexer(std::string &&input_)
   , ch{input.begin()}
 {}
 
-void
-lexer::read_char(void) noexcept
-{
-    if (ch != input.end()) [[likely]] {
-        ch++;
-    }
-}
-
-char
-lexer::peek(void) noexcept
+char lexer::peek(void) noexcept
 {
     if (ch + 1 == input.end()) {
         return '\0';
@@ -94,16 +85,10 @@ lexer::peek(void) noexcept
     }
 }
 
-void 
-lexer::skip_whitespace() noexcept
-{
-    while (ch!=input.end() && std::isspace(*ch)) read_char();
-}
-
 std::string_view
 lexer::read_ident() noexcept
 {
-    const std::string::iterator pos = ch;
+    const std::string::const_iterator pos = ch;
     while (ch != input.end() && (std::isalpha(*ch) || *ch == '_'))
     {
         read_char();
@@ -114,7 +99,7 @@ lexer::read_ident() noexcept
 void
 lexer::read_int(token &t) noexcept
 {
-    std::string::iterator pos = ch;
+    std::string::const_iterator pos = ch;
     if (peek() == 'x')
     {
         read_char();
@@ -136,7 +121,7 @@ std::string_view
 lexer::read_string() noexcept
 {
     read_char();
-    const std::string::iterator pos = ch;
+    const std::string::const_iterator pos = ch;
     while (ch != input.end() && *ch!='"')
     {
         read_char();
@@ -184,10 +169,22 @@ lexer::next_token(token &t) noexcept
         t.set(token_type::Colon, ch);
         break;
     case '&':
-        t.set(token_type::Ampersand, ch);
+        if (peek() == '&')
+        {
+            read_char();
+            t.set(token_type::LogicAnd, "&&");
+        }
+        else
+            t.set(token_type::Ampersand, ch);
         break;
     case '|':
-        t.set(token_type::Pipe, ch);
+        if (peek() == '|')
+        {
+            read_char();
+            t.set(token_type::LogicOr, "||");
+        }
+        else
+            t.set(token_type::Pipe, ch);
         break;
     case '~':
         t.set(token_type::Tilde, ch);
