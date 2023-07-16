@@ -327,6 +327,56 @@ std::vector<std::pair<std::string, builtin_ptr>> builtin_defs {
 			else return Object(Error(std::format("argument to 'sort' not supported, got {}", args[0].type_name())));
 		}
 	},
+			// Value inspection
+	{
+		"is_nil", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<std::monostate>());
+		}
+	},
+	{
+		"is_error", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<Error>());
+		}
+	},
+	{
+		"is_integer", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<std::int64_t>());
+		}
+	},
+	{
+		"is_bool", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<bool>());
+		}
+	},
+	{
+		"is_array", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<array_ptr>());
+		}
+	},
+	{
+		"is_hash", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<hashmap_ptr>());
+		}
+	},
+	{
+		"is_function", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1)
+				return Object(Error("Expected exactly one parameter!"));
+			return Object(args[0].is_a<func_ptr>() || args[0].is_a<closure_ptr>());
+		}
+	},
 			// Input/Output
 	{
 		"puts", [](BuiltinFunctionParameters args) {
@@ -368,9 +418,9 @@ std::vector<std::pair<std::string, builtin_ptr>> builtin_defs {
 		}
 	},
 	{
-		"glob",[](BuiltinFunctionParameters args) {
+		"file_glob",[](BuiltinFunctionParameters args) {
 			if (args.size() != 1 || !args[0].is_a<std::string>())
-				return Object(Error("'glob' expects a string with the path to search for matching files"));
+				return Object(Error("'file_glob' expects a string with the path to search for matching files"));
 			array_ptr result = make_array();
 			std::filesystem::path path{ args[0].get<std::string>()};
 			std::string filename;
@@ -405,7 +455,79 @@ std::vector<std::pair<std::string, builtin_ptr>> builtin_defs {
 			return Object(result);
 		}
 	},
-			// Regular expression fun
+	{ 
+		"file_size", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1 || !args[0].is_a<std::string>())
+				return Object(Error("Argument must be a string contaiing a path"));
+			std::filesystem::path path = args[0].get<std::string>();
+			return Object((std::int64_t)std::filesystem::file_size(path));
+		}
+	},
+	{ 
+		"file_exists", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1 || !args[0].is_a<std::string>())
+				return Object(Error("Argument must be a string contaiing a path"));
+			std::filesystem::path path = args[0].get<std::string>();
+			return Object(std::filesystem::exists(path));
+		}
+	},
+	{ 
+		"file_curpath", [](BuiltinFunctionParameters args) {
+			if (args.size() == 0) {
+				std::filesystem::path path = std::filesystem::current_path();
+				return Object(path.string());
+			}
+			else if (args.size() == 1) {
+				if (!args[0].is_a<std::string>())
+					return Object(Error("optional argument must be path to switch to"));
+				std::filesystem::path path = args[0].get<std::string>();
+				std::filesystem::current_path(path);
+				return Object();
+			}
+			else 
+				return Object(Error("Unexpected number of arguments"));
+		}
+	},
+	{ 
+		"file_mkdir", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1 || !args[0].is_a<std::string>())
+				return Object(Error("Argument must be a string contaiing a path"));
+			std::filesystem::path path = args[0].get<std::string>();
+			return Object(std::filesystem::create_directories(path));
+		}
+	},
+	{ 
+		"file_delete", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1 || !args[0].is_a<std::string>())
+				return Object(Error("Argument must be a string contaiing a path"));
+			std::filesystem::path path = args[0].get<std::string>();
+			return Object(std::filesystem::remove(path));
+		}
+	},
+	{ 
+		"file_mtime", [](BuiltinFunctionParameters args) {
+			if (args.size() != 1 || !args[0].is_a<std::string>())
+				return Object(Error("Argument must be a string contaiing a path"));
+			std::filesystem::path path = args[0].get<std::string>();
+			auto t = std::filesystem::last_write_time(path).time_since_epoch();
+			return Object(std::chrono::duration_cast<std::chrono::seconds>(t).count());
+		}
+	},
+	{ 
+		"file_rename", [](BuiltinFunctionParameters args) {
+			if (args.size() != 2 || !args[0].is_a<std::string>() || !args[1].is_a<std::string>())
+				return Object(Error("Arguments must be two strings containing a path each"));
+			std::filesystem::path oldpath = args[0].get<std::string>();
+			std::filesystem::path newpath = args[1].get<std::string>();
+			std::error_code ec;
+			std::filesystem::rename(oldpath, newpath, ec);
+			if (ec)
+				return Object(Error(ec.message()));
+			else
+				return Object();
+		}
+	},
+			// Regular expressionsm no language is complete without!
 	{ "regexp",[](BuiltinFunctionParameters args) {
 			if (args.size() != 2 || !args[0].is_a<std::string>() || !args[1].is_a<std::string>())
 				return Object(Error("'regexp' expects a string with the regular expression as first and the string to match against as second paramter"));
@@ -425,6 +547,26 @@ std::vector<std::pair<std::string, builtin_ptr>> builtin_defs {
 			std::regex re(args[0].get<std::string>());
 			return Object(std::regex_replace(args[1].get<std::string>(), re, args[2].get<std::string>()));
 			}
+	},
+			// Time
+	{
+		"time_now",
+		[](BuiltinFunctionParameters args) {
+			auto t = std::chrono::system_clock::now().time_since_epoch();
+			return Object(std::chrono::duration_cast<std::chrono::seconds>(t).count());
+		}
+	},
+	{
+		"time_format",
+		[](BuiltinFunctionParameters args) {
+			if (args.size() != 2 && !args[0].is_a<std::string>() && !args[1].is_a<std::int64_t>())
+				return Object(Error("Expected a format specifier followed by a timestamp"));
+			//auto p0 = std::chrono::time_point<std::chrono::system_clock>{} + std::chrono::seconds(args[1].get<std::int64_t>());
+			auto p0 = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds(args[1].get<std::int64_t>()));
+			std::string f = "{:" + args[0].get<std::string>() + "}";
+			std::string result = std::vformat(f, std::make_format_args(p0));
+			return Object(std::move(result));
+		}
 	},
 			// Other system interaction
 	{
