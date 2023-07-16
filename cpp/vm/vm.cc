@@ -249,7 +249,7 @@ std::optional<std::string> SwitchVM::main_loop() {
 				auto from = stack.begin() + (sp - numArgs);
 				auto to = stack.begin() + sp;
 				std::vector<Object> args(from, to);
-				sp -= numArgs - 1;
+				sp -= numArgs + 1;
 				stack[sp++] = callee(args);
 				break;
 			}
