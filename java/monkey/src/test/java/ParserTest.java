@@ -1,14 +1,14 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import root.TokenType;
+import root.ast.Program;
 import root.ast.expressions.*;
 import root.ast.statements.ExpressionStatement;
-import root.lexer.Lexer;
-import root.parser.Parser;
-import root.TokenType;
-import root.ast.*;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
+import root.lexer.Lexer;
+import root.parser.Parser;
 
 import java.util.List;
 
@@ -79,12 +79,7 @@ public class ParserTest {
         Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
         var statement = (ExpressionStatement) program.getStatements().get(0);
 
-        Assertions.assertInstanceOf(IdentifierExpression.class, statement.getExpression());
-        var ident = (IdentifierExpression) statement.getExpression();
-
-        var value = ident.getValue();
-        Assertions.assertEquals("foobar", value);
-        Assertions.assertEquals("foobar", ident.tokenLiteral());
+        testIdentifier(statement.getExpression(), "foobar");
     }
 
     @Test
@@ -98,25 +93,37 @@ public class ParserTest {
         Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
         var statement = (ExpressionStatement) program.getStatements().get(0);
 
-        Assertions.assertInstanceOf(IntegerLiteralExpression.class, statement.getExpression());
-        var integer = (IntegerLiteralExpression) statement.getExpression();
-
-        var value = integer.getValue();
-        Assertions.assertEquals(5, value);
-        Assertions.assertEquals("5", integer.tokenLiteral());
+        testIntegerLiteral(statement.getExpression(), 5L);
     }
 
-    private record PrefixTestRecord(String input, String operator, long integerValue) {
+    @Test
+    void testBooleanLiteralExpression() {
+        var input = "true; false;";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(2, program.getStatements().size());
+
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
+
+        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(0)).getExpression(), true);
+        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(1)).getExpression(), false);
+    }
+
+    private record PrefixTestRecord(String input, String operator, Object right) {
     }
 
     @Test
     void testParsingPrefixExpressions() {
         var prefixTests = List.of(
                 new PrefixTestRecord("!5", "!", 5),
-                new PrefixTestRecord("- 15;", "-", 15)
+                new PrefixTestRecord("- 15;", "-", 15),
+                new PrefixTestRecord("!true", "!", true),
+                new PrefixTestRecord("!false", "!", false)
         );
 
-        for (PrefixTestRecord(String input, String operator, long integerValue) : prefixTests) {
+        for (PrefixTestRecord(String input, String operator, Object right) : prefixTests) {
             Program program = buildProgram(input);
 
             Assertions.assertEquals(1, program.getStatements().size());
@@ -124,16 +131,11 @@ public class ParserTest {
             Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
             var statement = (ExpressionStatement) program.getStatements().get(0);
 
-            Assertions.assertInstanceOf(PrefixExpression.class, statement.getExpression());
-            var prefix = (PrefixExpression) statement.getExpression();
-            Assertions.assertEquals(operator, prefix.getOperator());
-
-            var right = prefix.getRight();
-            testIntegerLiteral(right, integerValue);
+            testPrefixExpression(statement.getExpression(), operator, right);
         }
     }
 
-    private record InfixTestRecord(String input, long leftValue, String operator, long rightValue) {
+    private record InfixTestRecord(String input, Object leftValue, String operator, Object rightValue) {
     }
 
     @Test
@@ -148,10 +150,13 @@ public class ParserTest {
                 new InfixTestRecord("5 < 5;", 5, "<", 5),
                 new InfixTestRecord("0 < 83", 0, "<", 83),
                 new InfixTestRecord("5 == 5;", 5, "==", 5),
-                new InfixTestRecord("5 != 5;", 5, "!=", 5)
+                new InfixTestRecord("5 != 5;", 5, "!=", 5),
+                new InfixTestRecord("true == true", true, "==", true),
+                new InfixTestRecord("true != false;", true, "!=", false),
+                new InfixTestRecord("false == false", false, "==", false)
         );
 
-        for (InfixTestRecord(String input, long leftValue, String operator, long rightValue) : infixTests) {
+        for (InfixTestRecord(String input, Object leftValue, String operator, Object rightValue) : infixTests) {
             var program = buildProgram(input);
 
             Assertions.assertEquals(1, program.getStatements().size());
@@ -159,15 +164,7 @@ public class ParserTest {
             Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
             var statement = (ExpressionStatement) program.getStatements().get(0);
 
-            Assertions.assertInstanceOf(InfixExpression.class, statement.getExpression());
-            var infix = (InfixExpression) statement.getExpression();
-            Assertions.assertEquals(operator, infix.getOperator());
-
-            var left = infix.getLeft();
-            testIntegerLiteral(left, leftValue);
-
-            var right = infix.getRight();
-            testIntegerLiteral(right, rightValue);
+            testInfixExpression(statement.getExpression(), leftValue, operator, rightValue);
         }
     }
 
@@ -208,7 +205,7 @@ public class ParserTest {
                 ),
                 List.of(
                         "3 + 4; -5 * 5",
-                        "(3 + 4)\n((-5) * 5)" // TODO Here, we are inserting a \n since there are two Statements. Should we stick to the book?
+                        "(3 + 4)\n((-5) * 5)"
                 ),
                 List.of(
                         "5 > 4 == 3 < 4",
@@ -225,6 +222,42 @@ public class ParserTest {
                 List.of(
                         "3 + 4 * 5 == 3 * 1 + 4 * 5",
                         "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+                ),
+                List.of(
+                        "true",
+                        "true"
+                ),
+                List.of(
+                        "false",
+                        "false"
+                ),
+                List.of(
+                        "3 > 5 == false",
+                        "((3 > 5) == false)"
+                ),
+                List.of(
+                        "3 < 5 == true",
+                        "((3 < 5) == true)"
+                ),
+                List.of(
+                        "1 + (2 + 3) + 4",
+                        "((1 + (2 + 3)) + 4)"
+                ),
+                List.of(
+                        "(5 + 5) * 2",
+                        "((5 + 5) * 2)"
+                ),
+                List.of(
+                        "2 / (5 + 5)",
+                        "(2 / (5 + 5))"
+                ),
+                List.of(
+                        "-(5 + 5)",
+                        "(-(5 + 5))"
+                ),
+                List.of(
+                        "!(true == true)",
+                        "(!(true == true))"
                 )
         );
 
@@ -241,6 +274,53 @@ public class ParserTest {
             Assertions.assertEquals(expectedValue.toString(), integerLiteralExpression.tokenLiteral());
         } else {
             throw new AssertionError(expression.getClass().getSimpleName() + " is not instance of IntegerLiteralExpression");
+        }
+    }
+
+    private void testIdentifier(Expression expression, String value) {
+        if (expression instanceof IdentifierExpression identifierExpression) {
+            Assertions.assertEquals(value, identifierExpression.getValue());
+            Assertions.assertEquals(value, identifierExpression.tokenLiteral());
+        } else {
+            throw new AssertionError(expression.getClass().getSimpleName() + " is not instance of IdentifierExpression");
+        }
+    }
+
+    private void testBooleanLiteral(Expression expression, Boolean value) {
+        if (expression instanceof BooleanLiteralExpression booleanLiteralExpression) {
+            Assertions.assertEquals(value, booleanLiteralExpression.getValue());
+            Assertions.assertEquals(value.toString(), booleanLiteralExpression.tokenLiteral());
+        } else {
+            throw new AssertionError(expression.getClass().getSimpleName() + " is not instance of IdentifierExpression");
+        }
+    }
+
+    private void testLiteralExpression(Expression expression, Object expected) {
+        switch (expected) {
+            case Integer i -> testIntegerLiteral(expression, i.longValue());
+            case Long i -> testIntegerLiteral(expression, i);
+            case String s -> testIdentifier(expression, s);
+            case Boolean b -> testBooleanLiteral(expression, b);
+            default -> throw new AssertionError("Type of exp not handled. got=" + expected.getClass().getSimpleName());
+        }
+    }
+
+    private void testInfixExpression(Expression expression, Object left, String operator, Object right) {
+        if (expression instanceof InfixExpression infixExpression) {
+            testLiteralExpression(infixExpression.getLeft(), left);
+            Assertions.assertEquals(operator, infixExpression.getOperator());
+            testLiteralExpression(infixExpression.getRight(), right);
+        } else {
+            throw new AssertionError(expression.getClass().getSimpleName() + " is not instance of infixExpression");
+        }
+    }
+
+    private void testPrefixExpression(Expression expression, String operator, Object right) {
+        if (expression instanceof PrefixExpression prefixExpression) {
+            Assertions.assertEquals(operator, prefixExpression.getOperator());
+            testLiteralExpression(prefixExpression.getRight(), right);
+        } else {
+            throw new AssertionError(expression.getClass().getSimpleName() + " is not instance of prefixExpression");
         }
     }
 
@@ -270,7 +350,7 @@ public class ParserTest {
             StringBuilder errorMessage = new StringBuilder("Parser encountered errors:\n");
 
             for (var error : p.errors) {
-                errorMessage.append(error);
+                errorMessage.append(error).append("\n");
             }
 
             throw new AssertionError(errorMessage.toString());

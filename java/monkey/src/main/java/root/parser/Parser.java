@@ -26,21 +26,21 @@ public class Parser {
     public Parser(Lexer lexer) {
         this.lexer = lexer;
 
-        this.proceedToNextToken();
-        this.proceedToNextToken();
+        proceedToNextToken();
+        proceedToNextToken();
     }
 
     public Program parseProgram() {
         Program program = new Program();
 
-        while (!curTokenIs(TokenType.EOF)) {
+        while (!currentTokenIs(TokenType.EOF)) {
             try {
                 Statement statement = parseStatement();
                 if (statement != null) {
                     program.getStatements().add(statement);
                 }
             } catch (ParserException pe) {
-                this.errors.add(pe.getMessage());
+                errors.add(pe.getMessage());
             }
             proceedToNextToken();
         }
@@ -49,59 +49,59 @@ public class Parser {
     }
 
     private void peekError(TokenType expected) throws ParserException {
-        throw new ParserException("Expected next token to be %s, got %s".formatted(expected.name(), this.currentToken.type().name()));
+        throw new ParserException("Expected next token to be %s, got %s".formatted(expected.name(), currentToken.type().name()));
     }
 
     private void proceedToNextToken() {
-        this.currentToken = this.peekToken;
-        this.peekToken = this.lexer.nextToken();
+        currentToken = peekToken;
+        peekToken = lexer.nextToken();
     }
 
     private Statement parseStatement() throws ParserException {
-        return switch (this.currentToken.type()) {
-            case LET -> this.parseLetStatement();
-            case RETURN -> this.parseReturnStatement();
-            default -> this.parseExpressionStatement();
+        return switch (currentToken.type()) {
+            case LET -> parseLetStatement();
+            case RETURN -> parseReturnStatement();
+            default -> parseExpressionStatement();
         };
     }
 
     private ReturnStatement parseReturnStatement() {
-        ReturnStatement returnStatement = new ReturnStatement(this.currentToken);
+        ReturnStatement returnStatement = new ReturnStatement(currentToken);
 
         this.proceedToNextToken();
 
         // TODO: We're skipping the expressions until we encounter a semicolon or EOF
-        while (!this.curTokenIs(TokenType.SEMI) && !this.curTokenIs(TokenType.EOF)) {
-            this.proceedToNextToken();
+        while (!currentTokenIs(TokenType.SEMI) && !currentTokenIs(TokenType.EOF)) {
+            proceedToNextToken();
         }
 
         return returnStatement;
     }
 
     private LetStatement parseLetStatement() throws ParserException {
-        LetStatement letStatement = new LetStatement(this.currentToken);
+        LetStatement letStatement = new LetStatement(currentToken);
 
-        this.expectPeek(TokenType.IDENT);
+        expectPeek(TokenType.IDENT);
 
-        letStatement.setName(new IdentifierExpression(this.currentToken, this.currentToken.literal()));
+        letStatement.setName(new IdentifierExpression(currentToken, currentToken.literal()));
 
-        this.expectPeek(TokenType.ASSIGN);
+        expectPeek(TokenType.ASSIGN);
 
         // TODO: We're skipping the expressions until we encounter a semicolon or EOF
-        while (!this.curTokenIs(TokenType.SEMI) && !this.curTokenIs(TokenType.EOF)) {
-            this.proceedToNextToken();
+        while (!currentTokenIs(TokenType.SEMI) && !currentTokenIs(TokenType.EOF)) {
+            proceedToNextToken();
         }
 
         return letStatement;
     }
 
     private ExpressionStatement parseExpressionStatement() throws ParserException {
-        ExpressionStatement statement = new ExpressionStatement(this.currentToken);
+        ExpressionStatement statement = new ExpressionStatement(currentToken);
 
-        statement.setExpression(this.parseExpression(OperatorPrecedence.LOWEST));
+        statement.setExpression(parseExpression(OperatorPrecedence.LOWEST));
 
-        if (this.peekTokenIs(TokenType.SEMI)) {
-            this.proceedToNextToken();
+        if (peekTokenIs(TokenType.SEMI)) {
+            proceedToNextToken();
         }
 
         return statement;
@@ -136,7 +136,9 @@ public class Parser {
             // NumberFormatException should never be thrown here, since we already know it's an INT
             // token and those contain valid int representations in their values
             case INT -> () -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
+            case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
             case BANG, MINUS -> this::parsePrefixExpression;
+            case LPAREN -> this::parseGroupedExpression;
             default -> null;
         };
     }
@@ -165,27 +167,37 @@ public class Parser {
         return expression;
     }
 
-    private boolean curTokenIs(TokenType type) {
-        return this.currentToken.type() == type;
+    private Expression parseGroupedExpression() throws ParserException {
+        proceedToNextToken();
+
+        Expression expression = parseExpression(OperatorPrecedence.LOWEST);
+
+        expectPeek(TokenType.RPAREN);
+
+        return expression;
+    }
+
+    private boolean currentTokenIs(TokenType type) {
+        return currentToken.type() == type;
     }
 
     private OperatorPrecedence curPrecedence() {
-        return OperatorPrecedence.precedenceForTokenType(this.currentToken.type());
+        return OperatorPrecedence.precedenceForTokenType(currentToken.type());
     }
 
     private boolean peekTokenIs(TokenType type) {
-        return this.peekToken.type() == type;
+        return peekToken.type() == type;
     }
 
     private OperatorPrecedence peekPrecedence() {
-        return OperatorPrecedence.precedenceForTokenType(this.peekToken.type());
+        return OperatorPrecedence.precedenceForTokenType(peekToken.type());
     }
 
     private void expectPeek(TokenType type) throws ParserException {
-        if (this.peekTokenIs(type)) {
-            this.proceedToNextToken();
+        if (peekTokenIs(type)) {
+            proceedToNextToken();
         } else {
-            this.peekError(type);
+            peekError(type);
         }
     }
 }

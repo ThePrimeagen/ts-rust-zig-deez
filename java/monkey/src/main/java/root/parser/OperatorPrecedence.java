@@ -4,14 +4,13 @@ import root.TokenType;
 
 public enum OperatorPrecedence {
     LOWEST,
-    EQUALS,         // ==
+    EQUALS,         // == or !=
     LESS_GREATER,   // > or <
-    SUM,            // +
-    PRODUCT,        // *
+    SUM,            // + or -
+    PRODUCT,        // * or /
     PREFIX,         // -X or !X
     CALL;           // myFunction(X)
 
-    // TODO Should we put this in the TokenType enum?
     public static OperatorPrecedence precedenceForTokenType(TokenType tokenType) {
         return switch (tokenType) {
             case EQUAL, NOT_EQUAL   -> EQUALS;
