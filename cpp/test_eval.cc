@@ -2,7 +2,8 @@
 
 Object test_eval(std::string &&input) {
     std::shared_ptr<Program> program = parse(std::move(input));
-    return program->eval(std::make_shared<Environment>());
+    Environment env;
+    return program->eval(&env);
 }
 
 bool test_integer_object(TestHelper &tt, Object object, std::int64_t expected) {

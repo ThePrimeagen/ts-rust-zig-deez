@@ -18,36 +18,38 @@ struct Object;
 class Environment
 {
 	std::unordered_map<std::string, Object> store;
-	std::shared_ptr<Environment> outer;
+	Environment *outer;
+
+	// Managing the circular dependencies of enviromments correctly needs some very clever solution.
+	// (Think of a function/closure referencing the environment that it is itself contained in.) 
+	// Since I don't have one at the moment, we just keep the enviromments around until the end of the program.
+	// This means that the VM based solution is also more memory efficient...
+	std::vector<std::unique_ptr<Environment>> sub_envs;
 public:
 	Environment() : outer(nullptr) {};
-	Environment(std::shared_ptr<Environment> o) : outer(o) {};
+	Environment(Environment *o) : outer(o) {};
 	Environment(const Environment &) = default;
 	Environment(Environment &&) = default;
-
-	// Copies the contents of another environment into this one. 
-	// Needed for closures to prevent circular ownership that shared pointer cannot resolve.
-	// Also probably more what is wanted, so one function cannot modify the contents of another functions closure.
-	inline Environment operator=(std::shared_ptr<Environment> other) {
-		store = other->store;
-		outer = other->outer;
-		return *this;
-	}
 	virtual ~Environment() = default;
 	bool isEmpty() {
 		return !outer && store.empty();
 	}
 	std::optional<Object> get(const std::string &name);
 	Object &set(const std::string &name, const Object &object);
+
+	Environment *get_sub_env(Environment *outer) {
+		sub_envs.push_back(std::make_unique<Environment>(outer));
+		return sub_envs.back().get();
+	}
 };
-using env_ptr = std::shared_ptr<Environment>;
+using env_ptr = Environment*;
 
 struct BlockStatement;
 
 struct Function {
 	std::shared_ptr<std::vector<std::string>> parameters;
 	std::shared_ptr<BlockStatement> body;
-	env_ptr env;
+	env_ptr env = nullptr;
 
 	~Function() = default;
 	std::string to_string() const;

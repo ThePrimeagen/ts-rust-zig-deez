@@ -54,20 +54,19 @@ void do_file(std::string filename, array_ptr &&args, bool use_vm = false)
 		value = vm.last_popped_element();
 	}
 	else {
-		env_ptr env = std::make_shared<Environment>();
-		env->set("args", args);
-		value = program->eval(env);
+		Environment env;
+		env.set("args", args);
+		value = program->eval(&env);
 	}
 }
 
 void do_repl(array_ptr &&args, bool use_vm=false)
 {
-	env_ptr env;
+	Environment env;
 	GlobalData globals;
 	SwitchVM vm(&globals);
 	if (!use_vm) {
-		env = std::make_shared<Environment>();
-		env->set("args", args);
+		env.set("args", args);
 	}
 	else {
 		Symbol sym = globals.symbolTable.define("args");
@@ -104,7 +103,7 @@ void do_repl(array_ptr &&args, bool use_vm=false)
 			value = vm.last_popped_element();
 		}
 		else {
-			value = program->eval(env);
+			value = program->eval(&env);
 		}
 		std::cout << value.to_string() << std::endl;
 	}

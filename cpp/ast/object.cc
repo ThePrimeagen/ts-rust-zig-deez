@@ -34,11 +34,11 @@ std::string Function::to_string() const {
 
 Object Function::call(std::initializer_list<Object> args)
 {
-	env_ptr fn_env = std::make_shared<Environment>(env);
+	Environment fn_env;
 	auto pit = parameters->begin();
 	for (std::initializer_list<Object>::const_iterator ait = args.begin(); ait != args.end(); ++ait, ++pit)
-		fn_env->set(*pit, *ait);
-	return 	body->eval(fn_env);
+		fn_env.set(*pit, *ait);
+	return 	body->eval(&fn_env);
 }
 
 

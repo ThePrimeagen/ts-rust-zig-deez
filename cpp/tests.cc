@@ -1,4 +1,5 @@
 #include "tests.hh"
+#include "vm/vm.hh"
 
 #ifdef WIN32
 #include <windows.h>
@@ -22,6 +23,72 @@ void test_to_string() {
         return;
     }
 
+}
+
+void benchmark() {
+
+    std::string input(
+        "let fibonacci = fn(x) {\n"
+        "   if (x == 0) {\n"
+        "       0\n"
+        "   }\n"
+        "   else {\n"
+        "       if (x == 1) {\n"
+        "           return 1;\n"
+        "       }\n"
+        "       else {\n"
+        "           fibonacci(x - 1) + fibonacci(x - 2);\n"
+        "       }\n"
+        "   }\n"
+        "};\n"
+        "fibonacci(35);\n");
+    auto program = parse(std::move(input));
+    GlobalData globals;
+    Compiler compiler(&globals);
+    std::optional<std::string> error = program->compile(compiler);
+    if (error) {
+        std::cerr << "Fatal - compiler Error: " << *error << std::endl;
+        return;
+    }
+
+    Environment env;
+    std::chrono::time_point<std::chrono::steady_clock> start_eval{ std::chrono::steady_clock::now() };
+    Object result_eval = program->eval(&env);
+    std::chrono::time_point<std::chrono::steady_clock> end_eval{ std::chrono::steady_clock::now() };
+    std::cout << "Eval: result is " << result_eval.to_string()
+        << " duration " << std::chrono::duration_cast<std::chrono::seconds>(end_eval - start_eval)
+        << std::endl;
+
+    SwitchVM vm(&globals);
+    Bytecode bytecode(std::move(compiler));
+    std::chrono::time_point<std::chrono::steady_clock> start_vm{std::chrono::steady_clock::now()};
+    error = vm.run(std::move(bytecode));
+    if (error) {
+        std::cerr << "Error executing code: " << *error << std::endl;
+        return;
+    }
+    std::chrono::time_point<std::chrono::steady_clock> end_vm{ std::chrono::steady_clock::now() };
+    Object result_vm = vm.last_popped_element();
+    std::cout << "VM: result is " << result_vm.to_string()
+        << " duration " << std::chrono::duration_cast<std::chrono::seconds>(end_vm - start_vm)
+        << std::endl;
+}
+
+void print_sizes() {
+    // std::monostate, Error, bool, std::int64_t, std::string, func_ptr, hashmap_ptr, builtin_ptr, array_ptr, comp_func_ptr, closure_ptr 
+    std::cout
+        << "Object: " << sizeof(Object) << '\n'
+        << "std::monostate: " << sizeof(std::monostate) << '\n'
+        << "bool: " << sizeof(bool) << '\n'
+        << "std::int64_t: " << sizeof(std::int64_t) << '\n'
+        << "std::string: " << sizeof(std::string) << '\n'
+        << "func_ptr: " << sizeof(func_ptr) << '\n'
+        << "hashmap_ptr: " << sizeof(hashmap_ptr) << '\n'
+        << "builtin_ptr: " << sizeof(builtin_ptr) << '\n'
+        << "array_ptr: " << sizeof(array_ptr) << '\n'
+        << "comp_func_ptr: " << sizeof(comp_func_ptr) << '\n'
+        << "closure_ptr: " << sizeof(closure_ptr) << '\n'
+        ;
 }
 
 int
@@ -48,6 +115,7 @@ main(void)
         return GetLastError();
     }
 #endif
+    print_sizes();
 
     test_lexer();
     test_to_string();
@@ -58,5 +126,6 @@ main(void)
     test_code();
     test_vm();
 
+   // benchmark();
     return 0;
 }

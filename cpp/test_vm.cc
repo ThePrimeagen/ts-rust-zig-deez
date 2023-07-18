@@ -11,7 +11,7 @@ void runSwitchVmTests(TestHelper &tt, vmTestCase(&tests)[N]) {
 	std::optional<std::string> error;
 	for (auto iter = std::begin(tests); iter != std::end(tests); ++iter) {
 		auto program = parse(std::move(iter->input));
-		GlobalData globals;;
+		GlobalData globals;
 		Compiler compiler(&globals);
 		error = program->compile(compiler);
 		if (error) {

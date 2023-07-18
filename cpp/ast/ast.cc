@@ -467,8 +467,7 @@ Object FunctionLiteral::eval(env_ptr env) {
 	func_ptr fn = make_function();
 	fn->body = body;
 	fn->parameters = parameters;
-	if (!env->isEmpty())
-		fn->env = std::make_shared<Environment>(*env);
+	fn->env = env;
 	return Object(std::move(fn));
 }
 
@@ -524,7 +523,8 @@ Object CallExpression::eval(env_ptr env) {
 		if (arguments.size() != fn->parameters->size())
 			return Object::make_error("Wrong number of arguments for function called");
 
-		env_ptr fn_env = std::make_shared<Environment>(fn->env);
+		//env_ptr fn_env = std::make_shared<Environment>(fn->env);
+		env_ptr fn_env = env->get_sub_env(fn->env);
 		for (size_t i = 0; i < arguments.size(); ++i)
 		{
 			Object arg = arguments[i]->eval(env);
@@ -587,6 +587,7 @@ std::optional<std::string> LetStatement::compile(Compiler &compiler) {
 	else return "unexpected scope type";
 	return std::nullopt;
 }
+
 std::string ReturnStatement::to_string() const {
 	std::string result;
 	result.reserve(64);
