@@ -268,6 +268,53 @@ public class ParserTest {
         }
     }
 
+    @Test
+    void testIfExpression() {
+        var input = "if (x < y) { x }";
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        ExpressionStatement statement = (ExpressionStatement) program.getStatements().get(0);
+
+        Assertions.assertInstanceOf(IfExpression.class, statement.getExpression());
+        IfExpression expression = (IfExpression) statement.getExpression();
+        testInfixExpression(expression.getCondition(), "x", "<", "y");
+
+        Assertions.assertEquals(1, expression.getConsequence().getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, expression.getConsequence().getStatements().get(0));
+        ExpressionStatement consequence = (ExpressionStatement) expression.getConsequence().getStatements().get(0);
+        testIdentifier(consequence.getExpression(), "x");
+
+        Assertions.assertNull(expression.getAlternative());
+
+        Assertions.assertEquals("if (x < y) {\nx\n}", expression.toString());
+
+        input = "if (y > x) { x } else { y }";
+        program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        statement = (ExpressionStatement) program.getStatements().get(0);
+
+        Assertions.assertInstanceOf(IfExpression.class, statement.getExpression());
+        expression = (IfExpression) statement.getExpression();
+        testInfixExpression(expression.getCondition(), "y", ">", "x");
+
+        Assertions.assertEquals(1, expression.getConsequence().getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, expression.getConsequence().getStatements().get(0));
+        consequence = (ExpressionStatement) expression.getConsequence().getStatements().get(0);
+        testIdentifier(consequence.getExpression(), "x");
+
+        Assertions.assertNotNull(expression.getAlternative());
+        Assertions.assertEquals(1, expression.getAlternative().getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, expression.getAlternative().getStatements().get(0));
+        ExpressionStatement alternative = (ExpressionStatement) expression.getAlternative().getStatements().get(0);
+        testIdentifier(alternative.getExpression(), "y");
+
+        Assertions.assertEquals("if (y > x) {\nx\n} else {\ny\n}", expression.toString());
+    }
+
     private void testIntegerLiteral(Expression expression, Long expectedValue) {
         if (expression instanceof IntegerLiteralExpression integerLiteralExpression) {
             Assertions.assertEquals(expectedValue, integerLiteralExpression.getValue());

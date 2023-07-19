@@ -4,10 +4,7 @@ import root.Token;
 import root.TokenType;
 import root.ast.Program;
 import root.ast.expressions.*;
-import root.ast.statements.ExpressionStatement;
-import root.ast.statements.LetStatement;
-import root.ast.statements.ReturnStatement;
-import root.ast.statements.Statement;
+import root.ast.statements.*;
 import root.lexer.Lexer;
 
 import java.util.ArrayList;
@@ -46,10 +43,6 @@ public class Parser {
         }
 
         return program;
-    }
-
-    private void peekError(TokenType expected) throws ParserException {
-        throw new ParserException("Expected next token to be %s, got %s".formatted(expected.name(), currentToken.type().name()));
     }
 
     private void proceedToNextToken() {
@@ -139,6 +132,7 @@ public class Parser {
             case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
             case BANG, MINUS -> this::parsePrefixExpression;
             case LPAREN -> this::parseGroupedExpression;
+            case IF -> this::parseIfExpression;
             default -> null;
         };
     }
@@ -177,6 +171,46 @@ public class Parser {
         return expression;
     }
 
+    private IfExpression parseIfExpression() throws ParserException {
+        IfExpression ifExpression = new IfExpression(currentToken);
+
+        expectPeek(TokenType.LPAREN);
+        proceedToNextToken();
+
+        ifExpression.setCondition(parseExpression(OperatorPrecedence.LOWEST));
+
+        expectPeek(TokenType.RPAREN);
+        expectPeek(TokenType.LSQIRLY);
+
+        ifExpression.setConsequence(parseBlockStatement());
+
+        if (peekTokenIs(TokenType.ELSE)) {
+            proceedToNextToken();
+            expectPeek(TokenType.LSQIRLY);
+
+            ifExpression.setAlternative(parseBlockStatement());
+        }
+
+        return ifExpression;
+    }
+
+    private BlockStatement parseBlockStatement() throws ParserException {
+        BlockStatement blockStatement = new BlockStatement(currentToken);
+
+        proceedToNextToken();
+
+        while (!currentTokenIs(TokenType.RSQIRLY) && !currentTokenIs(TokenType.EOF)) {
+            blockStatement.addStatement(parseStatement());
+            proceedToNextToken();
+        }
+
+        if (!currentTokenIs(TokenType.RSQIRLY)) {
+            throw new ParserException("Block statement needs to be closed");
+        }
+
+        return blockStatement;
+    }
+
     private boolean currentTokenIs(TokenType type) {
         return currentToken.type() == type;
     }
@@ -197,7 +231,7 @@ public class Parser {
         if (peekTokenIs(type)) {
             proceedToNextToken();
         } else {
-            peekError(type);
+            throw new ParserException("Expected next token to be %s, got %s".formatted(type.name(), peekToken.type().name()));
         }
     }
 }
