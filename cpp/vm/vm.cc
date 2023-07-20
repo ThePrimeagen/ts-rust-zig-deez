@@ -59,9 +59,13 @@ std::optional<std::string> SwitchVM::main_loop() {
 			--sp;
 			break;
 		case OpAdd:
-			// We could pop into temporaries, then push the result... but why waste cycles
+			// We could pop into temporaries, then push the result... but why trust the optimizer?
 			if (stack[sp - 2].is_a<std::int64_t>() && stack[sp - 1].is_a<std::int64_t>()) {
 				stack[sp - 2].get<std::int64_t>() += stack[sp - 1].get<std::int64_t>();
+				--sp;
+			}
+			else if (stack[sp - 2].is_a<double>() && stack[sp - 1].is_a<double>()) {
+				stack[sp - 2].get<double>() += stack[sp - 1].get<double>();
 				--sp;
 			}
 			else if (stack[sp - 2].is_a<std::string>() && stack[sp - 1].is_a<std::string>()) {
@@ -75,6 +79,10 @@ std::optional<std::string> SwitchVM::main_loop() {
 				stack[sp - 2].get<std::int64_t>() -= stack[sp - 1].get<std::int64_t>();
 				--sp;
 			}
+			else if (stack[sp - 2].is_a<double>() && stack[sp - 1].is_a<double>()) {
+				stack[sp - 2].get<double>() -= stack[sp - 1].get<double>();
+				--sp;
+			}
 			else goto binary_type_error;
 			break;
 		case OpMul:
@@ -82,11 +90,19 @@ std::optional<std::string> SwitchVM::main_loop() {
 				stack[sp - 2].get<std::int64_t>() *= stack[sp - 1].get<std::int64_t>();
 				--sp;
 			}
+			else if (stack[sp - 2].is_a<double>() && stack[sp - 1].is_a<double>()) {
+				stack[sp - 2].get<double>() *= stack[sp - 1].get<double>();
+				--sp;
+			}
 			else goto binary_type_error;
 			break;
 		case OpDiv:
 			if (stack[sp - 2].is_a<std::int64_t>() && stack[sp - 1].is_a<std::int64_t>()) {
 				stack[sp - 2].get<std::int64_t>() /= stack[sp - 1].get<std::int64_t>();
+				--sp;
+			}
+			else if (stack[sp - 2].is_a<double>() && stack[sp - 1].is_a<double>()) {
+				stack[sp - 2].get<double>() /= stack[sp - 1].get<double>();
 				--sp;
 			}
 			else goto binary_type_error;

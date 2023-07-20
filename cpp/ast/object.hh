@@ -143,7 +143,7 @@ inline hashmap_ptr make_hash() { return std::make_shared<HashMap>(); }
 inline hashmap_ptr make_hash(std::initializer_list<HashMap::value_type> elems) { return std::make_shared<HashMap>(elems); }
 
 class Object {
-	using Data = std::variant<std::monostate, Error, bool, std::int64_t, std::string, func_ptr, hashmap_ptr, builtin_ptr, array_ptr, comp_func_ptr, closure_ptr >;
+	using Data = std::variant<std::monostate, Error, bool, std::int64_t, double, std::string, func_ptr, hashmap_ptr, builtin_ptr, array_ptr, comp_func_ptr, closure_ptr >;
 	Data data;
 public:
 	bool is_returned = false; // if it would have a getter and a setter, just make it public...

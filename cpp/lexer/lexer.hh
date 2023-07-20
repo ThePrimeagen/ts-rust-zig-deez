@@ -11,6 +11,7 @@ enum class token_type {
     Identifier,
     Integer,
     HexInteger,
+    FloatingPoint,
     String,
     Illegal,
     Eof,

@@ -99,6 +99,15 @@ std::unique_ptr<IntegerLiteral> Parser::parseHexIntegerLiteral() {
 	return nullptr;
 }
 
+std::unique_ptr<FloatingPointLiteral> Parser::parseFloatingPointLiteral() {
+	double value;
+	auto [ptr, ec] = std::from_chars(current_token.literal.data(), current_token.literal.data() + current_token.literal.size(), value);
+	if (ec == std::errc())
+		return std::make_unique<FloatingPointLiteral>(value);
+	onError("failed to parse integer literal");
+	return nullptr;
+}
+
 std::unique_ptr<PrefixExpression> Parser::parsePrefixExpression() {
 	auto result = std::make_unique<PrefixExpression>();
 	result->type = current_token.type;

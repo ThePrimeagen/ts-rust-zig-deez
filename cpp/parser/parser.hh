@@ -60,6 +60,7 @@ class Parser
 	std::unique_ptr<ReturnStatement> parseReturn();
 	std::unique_ptr<IntegerLiteral> parseIntegerLiteral();
 	std::unique_ptr<IntegerLiteral> parseHexIntegerLiteral();
+	std::unique_ptr<FloatingPointLiteral> parseFloatingPointLiteral();
 	std::unique_ptr<PrefixExpression> parsePrefixExpression();
 	std::unique_ptr<InfixExpression> parseInfixExpression(expr_ptr &&left);
 	std::unique_ptr<Expression> parseExpression(Precedence precedence);
@@ -83,6 +84,7 @@ class Parser
 		{token_type::Identifier, [this]() { return parseIdentifier(); }},
 		{token_type::Integer, [this]() { return parseIntegerLiteral(); }},
 		{token_type::HexInteger, [this]() { return parseHexIntegerLiteral(); }},
+		{token_type::FloatingPoint, [this]() { return parseFloatingPointLiteral(); }},
 		{token_type::Dash, [this]() { return parsePrefixExpression(); }},
 		{token_type::Bang, [this]() { return parsePrefixExpression(); }},
 		{token_type::Tilde, [this]() { return parsePrefixExpression(); }},

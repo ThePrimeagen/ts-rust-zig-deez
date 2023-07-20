@@ -59,7 +59,15 @@ struct IntegerLiteral : public Expression {
 	std::int64_t value;
 	
 	explicit inline IntegerLiteral(std::int64_t val) : value(val) {};
-	virtual ~IntegerLiteral() = default;
+	std::string to_string() const override;
+	Object eval(env_ptr env) override;
+	std::optional<std::string> compile(Compiler &compiler) override;
+};
+
+struct FloatingPointLiteral : public Expression {
+	double value;
+	
+	explicit inline FloatingPointLiteral(double val) : value(val) {};
 	std::string to_string() const override;
 	Object eval(env_ptr env) override;
 	std::optional<std::string> compile(Compiler &compiler) override;

@@ -108,9 +108,24 @@ lexer::read_int(token &t) noexcept
         t.type = token_type::HexInteger;
         while (ch != input.end() && std::isxdigit(*ch))
             read_char();
+        t.literal = std::string_view(pos, ch);
+
+        return;
     }
-    else {
-        t.type = token_type::Integer;
+    t.type = token_type::Integer;
+    while (ch != input.end() && std::isdigit(*ch))
+        read_char();
+    if (ch != input.end() && *ch == '.') {
+        read_char();
+        t.type = token_type::FloatingPoint;
+        while (ch != input.end() && std::isdigit(*ch))
+            read_char();
+    }
+    if (ch != input.end() && *ch == 'e')
+    {
+        read_char();
+        t.type = token_type::FloatingPoint;
+        if (ch != input.end() && *ch == '+' || *ch == '-') read_char();
         while (ch != input.end() && std::isdigit(*ch))
             read_char();
     }
@@ -242,6 +257,7 @@ lexer::next_token(token &t) noexcept
     case '7':
     case '8':
     case '9':
+    case '.':
         //t.set(token_type::Integer, read_int());
         read_int(t);
         return;

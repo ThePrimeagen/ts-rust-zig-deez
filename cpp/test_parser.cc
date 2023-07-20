@@ -40,6 +40,21 @@ bool test_integer_literal(TestHelper &tt, Expression *expr, std::int64_t value) 
     return true;
 }
 
+bool test_float_literal(TestHelper &tt, Expression *expr, double value) {
+    FloatingPointLiteral *fplit = dynamic_cast<FloatingPointLiteral *>(expr);
+    if (fplit == nullptr)
+    {
+        tt.fail("Expected floating point, got another expression type");
+        return false;
+    }
+
+    if (fplit->value != value) {
+        tt.fail("Expected integer with value ", value, ", got ", fplit->value);
+        return false;
+    }
+    return true;
+}
+
 bool test_string_literal(TestHelper &tt, Expression *expr, std::string value) {
     StringLiteral *strlit = dynamic_cast<StringLiteral *>(expr);
     if (strlit == nullptr)
@@ -198,6 +213,36 @@ void test_integer_literal() {
         }
 
         if (!test_integer_literal(tt, es->value.get(), iter->expected)) {
+            return;
+        }
+    }
+}
+
+void test_floating_point_literals() {
+    struct {
+        std::string input;
+        double expected;
+    } tests[] = {
+        {"1.1;\n",1.1},
+        {".22;\n",0.22},
+        {"3.1415;\n",3.1415},
+        {"2.987e5;\n",2.987e5},
+        {"10e-10;\n",10e-10}
+    };
+
+    TestHelper tt("Floating Point Literal");
+    for (auto iter = std::begin(tests); iter != std::end(tests); ++iter) {
+        std::shared_ptr<Program> program = parse(std::move(iter->input));
+        if (!test_program(tt, program, 1)) return;
+
+        ExpressionStatement *es = dynamic_cast<ExpressionStatement *>(program->statements[0].get());
+        if (es == nullptr)
+        {
+            tt.fail("Expected ExpressionStatement, got another expression type");
+            return;
+        }
+
+        if (!test_float_literal(tt, es->value.get(), iter->expected)) {
             return;
         }
     }
@@ -813,6 +858,7 @@ void test_parser()
     test_return_statement();
     test_identifier_expression();
     test_integer_literal();
+    test_floating_point_literals();
     test_prefix_parsing();
     test_infix_expression();
     test_operator_precedence();

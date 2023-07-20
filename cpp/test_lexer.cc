@@ -88,6 +88,7 @@ test_complex_input(void)
         "{\"foo\":\"bar\"}\n"
         "~1|2&false\n"
         "1||2&&3\n"
+        "1.1 .22e-18"
     };
 
     std::vector<token> expected_tokens{
@@ -190,6 +191,9 @@ test_complex_input(void)
         {token_type::Integer, "2"},
         {token_type::LogicAnd, "&&"},
         {token_type::Integer, "3"},
+        // 1.1 .22e-18
+        {token_type::FloatingPoint, "1.1"},
+        {token_type::FloatingPoint, ".22e-18"},
         {token_type::Eof, "\0"},
 
     };

@@ -20,6 +20,20 @@ bool test_integer_object(TestHelper &tt, Object object, std::int64_t expected) {
     return true;
 }
 
+bool test_float_object(TestHelper &tt, Object object, double expected) {
+
+    if (!object.is_a<double>()) {
+        tt.fail("Expected a double value!");
+        return false;
+    }
+
+    if (object.get<double>() != expected) {
+        tt.fail("Expected a value to be ", expected, " but got ", object);
+        return false;
+    }
+    return true;
+}
+
 bool test_boolean_object(TestHelper &tt, Object object, bool expected) {
 
     if (!object.is_a<bool>()) {
@@ -43,7 +57,6 @@ void test_eval_integer_expression() {
         {"10",10},
         {"-5",-5},
         {"-10",-10},
-        {"-10",-10},
         {"5 + 5 + 5 + 5 - 10", 10},
         {"2 * 2 * 2 * 2 * 2", 32},
         {"-50 + 100 + -50", 0},
@@ -65,6 +78,36 @@ void test_eval_integer_expression() {
 
         Object result = test_eval(std::move(iter->input));
         if (!test_integer_object(tt, result, iter->expected))
+            continue;
+
+    }
+}
+
+void test_eval_floating_expression() {
+    struct {
+        std::string input;
+        double expected;
+    } tests[] = {
+        {"5.0",5.0},
+        {"10.83",10.83},
+        {"-5.2",-5.2},
+        {"-10.23",-10.23},
+        {"5.1 + 5.1 + 5.1 + 5.1 - 10.2", 10.2},
+        {"2.0 * 2.0 * 2.0 * 2.0 * 2.0", 32.0},
+        {"-50.3 + 100.5 + -50.2", 0.0},
+        {"5.5 * 2.0 + 10.8", 21.8},
+        {"5.5 + 2.2 * 10.5", 28.6},
+        {"23.1 + 2.2 * -10.5", 0.0},
+        {"50.0 / 2.0 * 2.0 + 10.0", 60.0},
+        {"2.5 * (5.2 + 10.8)", 40.0}
+    };
+
+    TestHelper tt("Floating point evaluation");
+    for (auto iter = std::begin(tests); iter != std::end(tests); ++iter)
+    {
+
+        Object result = test_eval(std::move(iter->input));
+        if (!test_float_object(tt, result, iter->expected))
             continue;
 
     }
@@ -585,6 +628,7 @@ void test_eval_callback_sort() {
 void test_evaluation() {
     std::cout << ">>> Evaluation tests <<<\n";
     test_eval_integer_expression();
+    test_eval_floating_expression();
     test_eval_boolean_expression();
     test_eval_bang_expression();
     test_eval_if_else_expression();

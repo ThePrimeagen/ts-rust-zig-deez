@@ -126,6 +126,6 @@ main(void)
     test_code();
     test_vm();
 
-   // benchmark();
+    //benchmark();
     return 0;
 }

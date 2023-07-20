@@ -113,6 +113,20 @@ std::optional<std::string> IntegerLiteral::compile(Compiler &compiler) {
 	 return std::nullopt;
  };
 
+
+ std::string FloatingPointLiteral::to_string() const {
+	return std::to_string(value);
+}
+
+ Object FloatingPointLiteral::eval(env_ptr env)  {
+	 return value;
+ }
+
+std::optional<std::string> FloatingPointLiteral::compile(Compiler &compiler) {
+	 compiler.emit(OpConstant, { (std::int64_t)compiler.add_constant(Object(value)) });
+	 return std::nullopt;
+ };
+
 std::string BooleanLiteral::to_string() const {
 	return value ? "true" : "false";
 }
@@ -150,14 +164,14 @@ Object PrefixExpression::eval(env_ptr env) {
 	case token_type::Bang: 
 		return !rv.getBoolean();
 	case token_type::Dash:
-		if (!rv.is_a<std::int64_t>())
-			return Object::make_error(std::format("unknown operator: -{}", rv.type_name()));
-
-		return -rv.get<std::int64_t>();
+		if (rv.is_a<std::int64_t>())
+			return -rv.get<std::int64_t>();
+		if (rv.is_a<double>())
+			return -rv.get<double>();
+		else return Object::make_error(std::format("unknown operator: -{}", rv.type_name()));
 	case token_type::Tilde:
 		if (!rv.is_a<std::int64_t>())
 			return Object::make_error(std::format("unknown operator: ~{}", rv.type_name()));
-
 		return ~rv.get<std::int64_t>();
 	}
 	return Object::make_error("unexpected prefix operator");;
@@ -192,6 +206,7 @@ const char *InfixExpression::operator_to_string() const {
 	case token_type::ForwardSlash: return "/";
 	case token_type::Ampersand: return "&";
 	case token_type::Pipe:		return "|";
+	case token_type::Hat:		return "^";
 	case token_type::LogicAnd: return "&&";
 	case token_type::LogicOr:		return "||";
 	case token_type::LessThan:	return "<";
@@ -245,27 +260,32 @@ Object InfixExpression::eval(env_ptr env) {
 
 	if (lv.index() != rv.index())
 		return Object::make_error(std::format("type mismatch: {} {} {}", lv.type_name(), operator_to_string(), rv.type_name()));
+
+	// Handle comparisons that can be used for all types
 	switch (type)
 	{
-	case token_type::Hat:
-		if (lv.is_a<bool>())
-			return lv.get<bool>() ^ rv.get<bool>();;
-		if (lv.is_a<std::int64_t>())
-			return lv.get<std::int64_t>() ^ rv.get<std::int64_t>();
-		else return Object::make_error(std::format("unknown operator: {} {} {}", lv.type_name(), operator_to_string(), rv.type_name()));;
-	case token_type::Plus:
-		if (lv.is_a<std::string>()) // we already know rv is the same type
+	case token_type::Equal:
+		return lv == rv;
+	case token_type::NotEqual:
+		return lv != rv;
+	case token_type::LessThan:
+		return lv < rv;
+	case token_type::GreaterThan:
+		return lv > rv;
+	}
+
+	if (lv.is_a<std::string>())
+	{
+		switch (type)
 		{
+		case token_type::Plus:
 			return lv.get<std::string>() + rv.get<std::string>();
+		default:
+			goto infix_operator_error;
 		}
-		[[fallthrough]];
-	case token_type::Dash: 
-	case token_type::Asterisk:
-	case token_type::ForwardSlash:
-	case token_type::Ampersand:
-	case token_type::Pipe:
-		if (!lv.is_a<std::int64_t>()) // we already know rv is the same type
-			return Object::make_error(std::format("unknown operator: {} {} {}", lv.type_name(), operator_to_string(), rv.type_name()));;
+	}
+	else if (lv.is_a<std::int64_t>())
+	{
 		switch (type)
 		{
 		case token_type::Plus:
@@ -280,18 +300,30 @@ Object InfixExpression::eval(env_ptr env) {
 			return lv.get<std::int64_t>() & rv.get<std::int64_t>();
 		case token_type::Pipe:
 			return lv.get<std::int64_t>() | rv.get<std::int64_t>();
+		case token_type::Hat:
+			return lv.get<std::int64_t>() ^ rv.get<std::int64_t>();
+		default: 
+			goto infix_operator_error;
 		}
-		break;
-	case token_type::Equal:
-		return lv == rv;
-	case token_type::NotEqual:
-		return lv != rv;
-	case token_type::LessThan:
-		return lv < rv;
-	case token_type::GreaterThan:
-		return lv > rv;
 	}
-	return Object::make_error("unexpected infix operator");
+	else if (lv.is_a<double>())
+	{
+		switch (type)
+		{
+		case token_type::Plus:
+			return lv.get<double>() + rv.get<double>();
+		case token_type::Dash:
+			return lv.get<double>() - rv.get<double>();
+		case token_type::Asterisk:
+			return lv.get<double>() * rv.get<double>();
+		case token_type::ForwardSlash:
+			return lv.get<double>() / rv.get<double>();
+		default:
+			goto infix_operator_error;
+		}
+	}
+infix_operator_error:
+	return Object::make_error(std::format("unknown operator: {} {} {}", lv.type_name(), operator_to_string(), rv.type_name()));;
 }
 
 std::optional<std::string> InfixExpression::compile(Compiler &compiler) {
