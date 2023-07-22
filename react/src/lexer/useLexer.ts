@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import useTokenizer from './useTokenizer';
-import { Token } from './token';
+
+import useTokenizer from 'tokenizer/useTokenizer';
+import { Token } from 'utils/token';
 
 type Props = {
   input: string;

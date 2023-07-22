@@ -1,6 +1,7 @@
 import { useReducer } from 'react';
-import { reducer } from './reducer';
-import { TokenType } from './token';
+
+import { reducer } from 'utils/reducer';
+import { TokenType } from 'utils/token';
 
 type Props = {
   input: string;

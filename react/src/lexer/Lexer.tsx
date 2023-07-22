@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import Tokenizer, { TokenizerRef } from './Tokenizer';
-import { Token } from './token';
+
+import Tokenizer, { TokenizerRef } from 'tokenizer/Tokenizer';
+import { Token } from 'utils/token';
 
 type Props = {
   input: string;

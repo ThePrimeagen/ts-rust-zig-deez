@@ -1,5 +1,7 @@
 import { ForwardedRef, forwardRef, useImperativeHandle } from 'react';
-import { Token } from './token';
+
+import { Token } from 'utils/token';
+
 import useTokenizer from './useTokenizer';
 
 type Props = {

@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
-import useLexer from '../useLexer';
-import { Token, TokenType } from '../token';
+
+import useLexer from 'lexer/useLexer';
+import { Token, TokenType } from 'utils/token';
 
 test('test#1', () => {
   const input = `

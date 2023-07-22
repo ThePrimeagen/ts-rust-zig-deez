@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import Lexer from '../Lexer';
+
+import Lexer from 'lexer/Lexer';
 
 test('test#1', () => {
   const input = `
