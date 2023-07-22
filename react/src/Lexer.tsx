@@ -12,10 +12,10 @@ const Lexer = ({ input }: Props) => {
 
   useEffect(() => {
     const tokenizer = tokenizerRef.current;
-    if (!tokenizer?.hasNext()) return;
+    if (!tokenizer?.hasNext) return;
 
     setTokens(tokens => (tokenizer.token ? [...tokens, tokenizer.token] : [...tokens]));
-    tokenizer.pop();
+    tokenizer.popNext();
   }, [tokens]);
 
   return (

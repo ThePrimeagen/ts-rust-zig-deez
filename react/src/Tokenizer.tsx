@@ -1,6 +1,6 @@
-import { ForwardedRef, forwardRef, useImperativeHandle, useReducer } from 'react';
-import { reducer } from './reducer';
+import { ForwardedRef, forwardRef, useImperativeHandle } from 'react';
 import { Token } from './token';
+import useTokenizer from './useTokenizer';
 
 type Props = {
   input: string;
@@ -8,25 +8,21 @@ type Props = {
 
 export type TokenizerRef = {
   token?: Token;
-  hasNext: () => boolean;
-  pop: () => void;
+  hasNext: boolean;
+  popNext: () => void;
 };
 
 const Tokenizer = forwardRef(({ input }: Props, ref: ForwardedRef<TokenizerRef>) => {
-  const [state, dispatch] = useReducer(reducer, { buffer: input + '\0' });
+  const [token, popNext, hasNext] = useTokenizer({ input: input + '\0' });
 
   useImperativeHandle(
     ref,
     () => ({
-      token: state.token,
-      hasNext: () => {
-        return !!state.buffer;
-      },
-      pop: () => {
-        dispatch();
-      },
+      token,
+      hasNext,
+      popNext,
     }),
-    [state]
+    [token, popNext, hasNext]
   );
 
   return null;
