@@ -1,5 +1,5 @@
 (ns monkey-lang.object
-  (:refer-clojure :exclude [boolean fn])
+  (:refer-clojure :exclude [boolean fn hash])
   (:require [monkey-lang.util :refer [third]]
             [monkey-lang.ast :as ast]
             [clojure.string :as str]))
@@ -35,7 +35,7 @@
 (defmacro array [elements]
   `(vector ~ARRAY ~elements))
 
-(defmacro hash- [pairs]
+(defmacro hash [pairs]
   `(vector ~HASH ~pairs))
 
 (defmacro hash-pair [pair]
@@ -59,6 +59,7 @@
   ([fmt & args]
     `(error (apply format ~fmt (mapv name [~@args])))))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def message second)
 
 (defmacro fn [ast env]

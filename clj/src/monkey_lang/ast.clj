@@ -1,5 +1,5 @@
 (ns monkey-lang.ast
-  (:refer-clojure :exclude [if int fn])
+  (:refer-clojure :exclude [if int fn hash])
   (:require [monkey-lang.util :refer [third fourth pad]]
             [clojure.string :as str]))
 
@@ -132,7 +132,7 @@
 (def array-elements second)
 
 
-(defmacro hash- [pairs]
+(defmacro hash [pairs]
   `(vector ~HASH_LIT ~pairs))
 
 (def hash-pairs second)
@@ -188,4 +188,5 @@
                       (str "{" (str/join ", " pairs) "}"))
       (assert ast (str "ast/to-str not implemented for " ast)))))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def pprint (comp println to-str))

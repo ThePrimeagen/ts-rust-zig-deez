@@ -139,7 +139,7 @@
     (lexer/expect token/LBRACE)
     (pairs <- (-> hash-pair (jc/sep-by* (lexer/expect token/COMMA))))
     (lexer/expect token/RBRACE)
-    (jc/return (ast/hash- pairs))))
+    (jc/return (ast/hash pairs))))
 
 (defn prefix-parse-fn [token]
   (case (token/kind token)

@@ -80,7 +80,7 @@
   (loop [pairs pairs
          hashs (transient {})]
     (if (empty? pairs)
-      (object/hash- (persistent! hashs))
+      (object/hash (persistent! hashs))
     (let [[[k v] & rst] pairs
           kee           (run env scope k)]
     (if (object/error? kee)

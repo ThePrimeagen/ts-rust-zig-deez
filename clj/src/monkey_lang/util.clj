@@ -7,6 +7,7 @@
   (cond (seqable? chrs) (apply str chrs) 
         :else           (str chrs)))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn debug [v]
   (println v)
   (-> v))
