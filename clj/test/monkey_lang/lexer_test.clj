@@ -126,4 +126,4 @@
                   [token/ASSIGN "="]
                   [token/NULL "null"]
                   [token/EOF ""]]]
-    (is (= (lexer/run program) result)))))
+    (is (= result (lexer/run program))))))

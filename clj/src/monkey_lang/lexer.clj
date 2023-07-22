@@ -4,29 +4,33 @@
             [jdsl.basic        :as jb]
             [jdsl.char-stream  :as cs]
             [jdsl.char-parser  :as jp]
-            [monkey-lang.token :as token]))
+            [monkey-lang.token :as token]
+            [monkey-lang.util  :as util]))
 
 (def single-char
   (-> token/create (jc/map (jp/any-of "=+-!*/<>,:;(){}[]"))))
 
-(def double-char
-  (let [double-char-parsers (-> jp/string (map ["<=" ">=" "==" "!="]))] 
-  (-> token/create (jc/map (jc/choice double-char-parsers)))))
+(defn double-char [cs]
+  (when-let [[chars cs] (cs/read cs 2)]
+  (let [lit (util/to-str chars)]
+  (when-let [kind (token/lit->kind lit)]
+    [(token/create kind lit) cs]))))
 
 (def string
   (let [string-parser (-> (jc/many* (jp/none-of "\""))
-                   (jc/between (jp/char \") (jp/char \")))]
+                          (jc/between (jp/char \") (jp/char \")))]
   (-> (partial token/create token/STRING) (jc/map string-parser))))
 
 (def integer
   (-> (partial token/create token/INT) (jc/map (jc/many+ jp/digit))))
 
 (def keywords
-  (let [keyword-parsers (-> jp/string (map ["fn" "let" "true" "false" "if" "else" "return" "null"]))]
-  (-> token/create (jc/map (jc/choice keyword-parsers)))))
-
-(def identifier
-  (-> (partial token/create token/IDENT) (jc/map (jc/many+ jp/alpha-num))))
+  (jb/do
+    (chars <- (jc/many+ jp/alphabet))
+    (let [lit (util/to-str chars)]
+    (if-let [kind (token/lit->ident-kind lit)]
+      (jc/return (token/create kind lit))
+    (jc/return (token/create token/IDENT lit))))))
 
 (def EOF
   (-> token/create (jc/map jp/eof)))
@@ -39,8 +43,7 @@
               single-char 
               string 
               integer 
-              keywords 
-              identifier
+              keywords
               EOF
               illegal]))
 

@@ -13,6 +13,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] use object/is? and token/is? whereever possible.
 - [x] add constants for NULL, TRUE and FALSE in eval.clj
 - [x] tail call optimization
+- [x] improve lexer
 - [ ] Add support for
   - [ ] null 
   - [ ] while loop, continue and break
@@ -21,4 +22,4 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [ ] import module
   - [ ] functions with no return statement should return null and if should should always return the last statement. (hint: compare scopes for it.)
   - [ ] try print statement after the error message when eval/run errs.
-  - [ ] improve lexer by using raw parsers.
+  - [ ] remove (comment) from the files

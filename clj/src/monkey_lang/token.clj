@@ -53,14 +53,15 @@
    "{"  LBRACE
    "}"  RBRACE
    "["  LBRACKET
-   "]"  RBRACKET   
+   "]"  RBRACKET
    "<=" LT_EQ
    ">=" GT_EQ
    "==" EQ
    "!=" NOT_EQ
-   ""   EOF
-   ;; keywords
-   "fn"     FUNCTION
+   ""   EOF})
+
+(def lit->ident-kind
+  {"fn"     FUNCTION
    "let"    LET
    "true"   TRUE
    "false"  FALSE
@@ -72,7 +73,7 @@
 (defn create 
   ([literal]
     (let [literal (util/to-str literal)]
-    (vector (or (lit->kind literal) ILLEGAL) literal)))
+    (vector (or (lit->kind literal) (lit->ident-kind literal) ILLEGAL) literal)))
   ([kind literal]
     (vector kind (util/to-str literal))))
 
