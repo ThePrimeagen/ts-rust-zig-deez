@@ -3,6 +3,7 @@
   (:require [monkey-lang.util :refer [third fourth pad]]
             [clojure.string :as str]))
 
+(def ^:const PROGRAM     :ast/program)
 (def ^:const LET_STMT    :ast/let-stmt)
 (def ^:const EXPR_STMT   :ast/expr-stmt)
 (def ^:const BLOCK_STMT  :ast/block-stmt)
@@ -20,7 +21,7 @@
 (def ^:const STRING_LIT  :ast/string-lit)
 (def ^:const ARRAY_LIT   :ast/array-lit)
 (def ^:const HASH_LIT    :ast/hash-lit)
-(def ^:const PROGRAM     :ast/program)
+(def ^:const NULL_LIT    :ast/null-lit)
 
 ;; statements
 (def kind first)
@@ -137,6 +138,7 @@
 
 (def hash-pairs second)
 
+(def null (vector NULL_LIT nil))
 
 (defmacro program [stmts]
   `(vector ~PROGRAM ~stmts))
@@ -186,6 +188,7 @@
       :ast/hash-lit   (let [pairs (for [pair (hash-pairs ast)]
                                     (str/join ": " (mapv to-str pair)))]
                       (str "{" (str/join ", " pairs) "}"))
+      :ast/null-lit   "null"
       (assert ast (str "ast/to-str not implemented for " ast)))))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}

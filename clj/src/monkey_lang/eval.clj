@@ -205,6 +205,7 @@
                       (object/array (vec elements))))
       
       :ast/hash-lit   (eval-hash env scope (ast/hash-pairs ast))
+      :ast/null-lit   object/Null
       (assert ast (str "eval/run not implemented for " ast)))))
 
 (comment

@@ -48,6 +48,11 @@
     (let [parsed-int (Integer/parseInt (token/literal integer))]
     (jc/return (ast/int parsed-int)))))
 
+(def parse-null
+  (jb/do
+    (lexer/expect token/NULL)
+    (jc/return ast/null)))
+
 (def parse-prefix
   (jb/do
     (prefix     <- (-> lexer/next (jc/label "Expected: prefix function")))
@@ -151,6 +156,7 @@
      :token/string  parse-string
      :token/l-bracket parse-array
      :token/l-brace parse-hash
+     :token/null    parse-null
     (:token/bang  
      :token/minus)  parse-prefix
     (:token/true  

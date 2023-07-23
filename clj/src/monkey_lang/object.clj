@@ -90,4 +90,5 @@
     :hash  (let [pairs (for [pair (value obj)]
                          (inspect (second pair)))]
            (str "{" (str/join ", " pairs) "}"))
+    :null  "null"
     (str (value obj))))

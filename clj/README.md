@@ -14,12 +14,17 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] add constants for NULL, TRUE and FALSE in eval.clj
 - [x] tail call optimization
 - [x] improve lexer
+- [ ] add make file
+- [ ] try print statement after the error message when eval/run errs.
+- [ ] input validation for builtin functions to avoid crashes
+- [ ] remove (comment) from the files
 - [ ] Add support for
-  - [ ] null 
-  - [ ] while loop, continue and break
-  - [ ] dot property accessor for hash
+  - [x] null 
   - [ ] index assignement
+  - [ ] dot property accessor for hash
+  - [ ] while loop with continue and break
+  - [ ] for loop with continue and break
   - [ ] import module
-  - [ ] functions with no return statement should return null and if should should always return the last statement. (hint: compare scopes for it.)
-  - [ ] try print statement after the error message when eval/run errs.
-  - [ ] remove (comment) from the files
+  - [ ] more operators like %, bit operations and so on
+  - [ ] implement go like channels
+  - [ ] add push! builtin function
