@@ -17,9 +17,9 @@
       (count)
       (object/integer)))
 
-(defn println- [& values]
+(defn puts [& values]
   (->> values
-       (mapv object/inspect)
+       (mapv object/value)
        (apply println)))
 
 (defn index [array idx]
@@ -53,7 +53,7 @@
 
 (def fn
   {"len"   (object/builtin  len)
-   "puts"  (object/builtin  println-)
+   "puts"  (object/builtin  puts)
    "first" (object/builtin  first-)
    "last"  (object/builtin  last)
    "rest"  (object/builtin  rest)

@@ -114,7 +114,7 @@
     (is (= (evaluate "len(1)") "count not supported on this type: Integer"))
     (is (= (evaluate "len([1, 2, 3])") 3))
     (is (= (evaluate "len([])") 0))
-    (is (= (evaluate "puts(\"hello\", \"world!\")") nil))
+    (is (= (with-out-str (evaluate "puts(\"hello world!\")")) (with-out-str (println "hello world!"))))
     (is (= (evaluate "first([1, 2, 3])") 1))
     (is (= (evaluate "first([])") nil))
     (is (= (evaluate "last([1, 2, 3])") 3))
