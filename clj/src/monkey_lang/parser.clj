@@ -266,7 +266,7 @@
            "   Found:" found \newline
            "Location:" lyn-num ":" col-num "(line : col)" \newline \newline
            err-lyn \newline
-           padding pointer \newline)))
+           padding pointer)))
 
 (defn run [input]
   (jb/parsed (jb/run parse-program (cs/create input))))

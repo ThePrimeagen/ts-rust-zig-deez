@@ -39,7 +39,9 @@
 
 (defn push [array value]
   (-> (object/value array)
-      (conj value)
+      (transient)
+      (conj! value)
+      (persistent!)
       (object/array)))
 
 (defn get- [hash kee]

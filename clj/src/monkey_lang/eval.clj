@@ -154,18 +154,18 @@
                         (recur env IF_SCOPE (ast/if-alternative ast))))))
       
       :ast/fn-lit     (object/fn ast env)
-      :ast/call-expr  (let [func (run env scope (ast/call-fn ast))]
-                      (if (object/error? func)
-                        (-> func)
+      :ast/call-expr  (let [fn (run env scope (ast/call-fn ast))]
+                      (if (object/error? fn)
+                        (-> fn)
                       (let [args (eval-exprs env scope (ast/call-args ast))]
                       (if (object/error? args)
                         (-> args)
-                      (if (object/is? func object/BUILTIN)
-                        (builtin/invoke (object/value func) args)
-                      (let [params (->> (ast/fn-params (object/fn-ast func)) 
+                      (if (object/is? fn object/BUILTIN)
+                        (builtin/invoke (object/value fn) args)
+                      (let [params (->> (ast/fn-params (object/fn-ast fn)) 
                                         (mapv ast/ident-literal))
-                            body   (ast/program (ast/fn-block (object/fn-ast func)))
-                            nenv   (env/enclosed (object/fn-env func) (zipmap params args))]
+                            body   (ast/program (ast/fn-block (object/fn-ast fn)))
+                            nenv   (env/enclosed (object/fn-env fn) (zipmap params args))]
                       (recur nenv FN_SCOPE body)))))))
       
       :ast/tail-call  (let [func (run env scope (ast/tail-call-fn ast))]
