@@ -30,6 +30,9 @@
   {\"foo\": \"bar\"}
   null
   let x = null
+  let x1 = null
+  let x! = null
+  let x_1 = null
   ")
 
 (deftest lexer-test
@@ -125,5 +128,17 @@
                   [token/IDENT "x"]
                   [token/ASSIGN "="]
                   [token/NULL "null"]
+                  [:token/let "let"]
+                  [:token/ident "x1"]
+                  [:token/assign "="]
+                  [:token/null "null"]
+                  [:token/let "let"]
+                  [:token/ident "x!"]
+                  [:token/assign "="]
+                  [:token/null "null"]
+                  [:token/let "let"]
+                  [:token/ident "x_1"]
+                  [:token/assign "="]
+                  [:token/null "null"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

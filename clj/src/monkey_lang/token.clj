@@ -72,8 +72,9 @@
 
 (defn create 
   ([literal]
-    (let [literal (util/to-str literal)]
-    (vector (or (lit->kind literal) (lit->ident-kind literal) ILLEGAL) literal)))
+    (let [literal (util/to-str literal)
+          kind    (or (lit->kind literal) (lit->ident-kind literal) ILLEGAL)]
+    (vector kind literal)))
   ([kind literal]
     (vector kind (util/to-str literal))))
 

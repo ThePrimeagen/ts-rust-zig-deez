@@ -4,6 +4,7 @@
             [jdsl.basic        :as jb]
             [jdsl.char-stream  :as cs]
             [jdsl.char-parser  :as jp]
+            [jdsl.util         :as ju]
             [monkey-lang.token :as token]
             [monkey-lang.util  :as util]))
 
@@ -24,9 +25,12 @@
 (def integer
   (-> (partial token/create token/INT) (jc/map (jc/many+ jp/digit))))
 
+(def identifier?
+  (some-fn ju/alpha-num? #{\! \_}))
+
 (def keywords
   (jb/do
-    (chars <- (jc/many+ jp/alphabet))
+    (chars <- (jc/many+ (jp/satisfy identifier?)))
     (let [lit (util/to-str chars)]
     (if-let [kind (token/lit->ident-kind lit)]
       (jc/return (token/create kind lit))
@@ -43,7 +47,7 @@
               single-char 
               string 
               integer 
-              keywords
+              (jc/attempt keywords)
               EOF
               illegal]))
 
@@ -73,5 +77,5 @@
 (comment
   (run "=+(){},;|")
   (run "== != <= >= < > = /")
-  (run (slurp "./test/clj/lexer.monkey"))
+  (run "let x1 = 5")
   ())
