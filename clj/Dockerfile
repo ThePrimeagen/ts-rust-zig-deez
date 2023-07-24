@@ -1,5 +1,7 @@
 FROM clojure:lein-2.9.1-alpine
 
+RUN apk add --update-cache curl bash
+
 # install babashka
 RUN curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install \
     && chmod +x install \
