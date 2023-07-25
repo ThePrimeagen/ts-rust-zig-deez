@@ -148,4 +148,7 @@
   (testing "Tail Recursion"
     (is (= (evaluate "let sumTo = fn (n, acc) { if (n == 0) { return acc; }; return sumTo(n-1, acc+n); }; sumTo(10000, 0);") 50005000)))
   (testing "null literals"
-    (is (= (evaluate "let x = []; x[1]") nil))))
+    (is (= (evaluate "let x = []; x[1]") nil)))
+  (testing "if has its won enclosing scope"
+    (is (= (evaluate "if (false) { } else { let x = 0; }; x;") "Identifier not found: x"))
+    (is (= (evaluate "if (true) { let x = 0; }; x;") "Identifier not found: x"))))

@@ -147,11 +147,12 @@
       :ast/if-expr      (let [condi (run env scope (ast/if-condition ast))]
                         (if (object/error? condi)
                           (-> condi)
+                        (let [nenv (env/enclosed env)]
                         (if (object/value condi)
-                          (recur env IF_SCOPE (ast/if-consequence ast))
+                          (recur nenv IF_SCOPE (ast/if-consequence ast))
                         (if (empty? (ast/block-stmts (ast/if-alternative ast)))
                           (-> object/Null)
-                        (recur env IF_SCOPE (ast/if-alternative ast))))))
+                        (recur nenv IF_SCOPE (ast/if-alternative ast)))))))
       
       :ast/fn-lit     (object/fn ast env)
       :ast/call-expr  (let [fn (run env scope (ast/call-fn ast))]
