@@ -73,14 +73,14 @@
            (object/is? index object/INTEGER))
     (builtin/invoke builtin/index [left index])
   (if (object/is? left object/HASH)
-    (builtin/invoke builtin/get- [left index])
+    (builtin/invoke builtin/at [left index])
   (object/error "Index operator not supported: %s" (object/kind left)))))
 
 (defn eval-hash [env scope pairs]
   (loop [pairs pairs
-         hashs (transient {})]
+         hash-tbl (transient {})]
     (if (empty? pairs)
-      (object/hash (persistent! hashs))
+      (object/hash (persistent! hash-tbl))
     (let [[[k v] & rst] pairs
           kee           (run env scope k)]
     (if (object/error? kee)
@@ -91,7 +91,7 @@
     (let [value (run env scope v)]
     (if (object/error? value)
       (-> value)
-    (recur rst (assoc! hashs hash-kee (object/hash-pair [kee value]))))))))))))
+    (recur rst (assoc! hash-tbl hash-kee (object/hash-pair [kee value]))))))))))))
 
 (defn eval-stmts [env scope stmts]
   (loop [env    env

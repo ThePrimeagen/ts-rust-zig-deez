@@ -1,27 +1,34 @@
 (ns monkey-lang.object
-  (:refer-clojure :exclude [boolean fn hash])
+  (:refer-clojure :exclude [boolean fn hash ref])
   (:require [monkey-lang.util :refer [third]]
             [monkey-lang.ast :as ast]
             [clojure.string :as str]))
 
-(def ^:const INTEGER  :integer)
-(def ^:const BOOLEAN  :boolean)
-(def ^:const NULL     :null)
-(def ^:const RETURN   :return)
-(def ^:const ERROR    :error)
-(def ^:const FUNCTION :fn)
-(def ^:const STRING   :string)
-(def ^:const BUILTIN  :builtin)
-(def ^:const ARRAY    :array)
-(def ^:const HASH     :hash)
-(def ^:const HASH-PAIR :hash-pair)
+(def ^:const INTEGER   :object/integer)
+(def ^:const BOOLEAN   :object/boolean)
+(def ^:const NULL      :object/null)
+(def ^:const RETURN    :object/return)
+(def ^:const ERROR     :object/error)
+(def ^:const FUNCTION  :object/fn)
+(def ^:const STRING    :object/string)
+(def ^:const BUILTIN   :object/builtin)
+(def ^:const ARRAY     :object/array)
+(def ^:const HASH      :object/hash)
+(def ^:const HASH-PAIR :object/hash-pair)
 
 (def ^:const True  [BOOLEAN true])
 (def ^:const False [BOOLEAN false])
 (def ^:const Null  [NULL    nil])
 
 (def kind  first)
-(def value second)
+
+(def ref second)
+
+(defn value [obj]
+  (case (kind obj)
+    (:object/array
+     :object/hash) (deref (second obj))
+    #_else         (second obj)))
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
@@ -33,10 +40,10 @@
   `(if ~v ~True ~False))
 
 (defmacro array [elements]
-  `(vector ~ARRAY ~elements))
+  `(vector ~ARRAY (atom ~elements)))
 
 (defmacro hash [pairs]
-  `(vector ~HASH ~pairs))
+  `(vector ~HASH (atom ~pairs)))
 
 (defmacro hash-pair [pair]
   `(vector ~HASH-PAIR ~pair))
@@ -45,10 +52,10 @@
 
 (defn hash-key [obj]
   (case (kind obj)
-    :boolean (if (value obj) 1 0)
-    :integer (value obj)
-    :string  (hash (value obj))
-             nil))
+    :object/boolean (if (value obj) 1 0)
+    :object/integer (value obj)
+    :object/string  (clojure.core/hash (value obj))
+                    nil))
 
 (defmacro return [v]
   `(vector ~RETURN ~v))
@@ -79,16 +86,18 @@
 
 (defn inspect [obj]
   (case (kind obj)
-    :string (str \" (value obj) \")
-    :fn    (ast/to-str (fn-ast obj))
-    :array (let [elements (mapv inspect (value obj))]
-           (str "[" (str/join ", " elements) "]"))
-    :hash-pair
-           (->> (value obj)
-                (mapv inspect)
-                (str/join ": "))
-    :hash  (let [pairs (for [pair (value obj)]
-                         (inspect (second pair)))]
-           (str "{" (str/join ", " pairs) "}"))
-    :null  "null"
+    :object/string (str \" (value obj) \")
+    :object/fn     (ast/to-str (fn-ast obj))
+    :object/array 
+      (let [elements (mapv inspect (value obj))]
+      (str "[" (str/join ", " elements) "]"))
+    :object/hash-pair
+      (->> (value obj)
+           (mapv inspect)
+           (str/join ": "))
+    :object/hash
+      (let [pairs (for [pair (value obj)]
+                    (inspect (second pair)))]
+                  (str "{" (str/join ", " pairs) "}"))
+    :object/null  "null"
     (str (value obj))))

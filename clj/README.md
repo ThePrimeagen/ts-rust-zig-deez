@@ -15,11 +15,12 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] tail call optimization
 - [x] improve lexer
 - [x] add make file and update docker image to support babashka instead of leiningen
+- [x] input validation for builtin functions to avoid crashes
 - [ ] try print statement after the error message when eval/run errs.
-- [ ] input validation for builtin functions to avoid crashes
 - [ ] remove (comment) from the files
 - [ ] Add support for
   - [x] null 
+  - [x] add push! builtin function
   - [ ] variables reassignment
   - [ ] index re-assignment
   - [ ] dot property accessor for hash
@@ -29,5 +30,6 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [ ] import module
   - [ ] more operators like %, bit operations and so on
   - [ ] implement go like channels
-  - [ ] add push! builtin function
   - [ ] add character datatype
+  - [ ] all array functions must support string as argument like first/last/rest
+  - [ ] add support for floats

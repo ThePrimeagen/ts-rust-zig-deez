@@ -111,7 +111,7 @@
     (is (= (evaluate "len(\"\")") 0))
     (is (= (evaluate "len(\"four\")") 4))
     (is (= (evaluate "len(\"hello world\")") 11))
-    (is (= (evaluate "len(1)") "count not supported on this type: Integer"))
+    (is (= (evaluate "len(1)") "len not implemented for integer"))
     (is (= (evaluate "len([1, 2, 3])") 3))
     (is (= (evaluate "len([])") 0))
     (is (= (with-out-str (evaluate "puts(\"hello world!\")")) (with-out-str (println "hello world!"))))
@@ -121,7 +121,9 @@
     (is (= (evaluate "last([])") nil))
     (is (= (evaluate "rest([1, 2, 3])") [(object/integer 2) (object/integer 3)]))
     (is (= (evaluate "rest([])") nil))  
-    (is (= (evaluate "push([], 1)") [(object/integer 1)])))
+    (is (= (evaluate "push([], 1)") [(object/integer 1)]))
+    (is (= (evaluate "let x = [1,2,3]; push!(x, 5);") nil))
+    (is (= (evaluate "let x = [1,2,3]; push!(x, 5); x") [(object/integer 1) (object/integer 2) (object/integer 3) (object/integer 5)])))
   (testing "Array literals"
     (is (= (evaluate "[1, 2 * 2, 3 + 3]"), (mapv #(object/integer %) [1, 4, 6]))))
   (testing "Array Index Expression"
@@ -151,4 +153,5 @@
     (is (= (evaluate "let x = []; x[1]") nil)))
   (testing "if has its won enclosing scope"
     (is (= (evaluate "if (false) { } else { let x = 0; }; x;") "Identifier not found: x"))
-    (is (= (evaluate "if (true) { let x = 0; }; x;") "Identifier not found: x"))))
+    (is (= (evaluate "if (true) { let x = 0; }; x;") "Identifier not found: x")))
+  )
