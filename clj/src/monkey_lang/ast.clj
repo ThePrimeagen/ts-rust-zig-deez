@@ -14,6 +14,7 @@
 (def ^:const CALL_EXPR   :ast/call-expr)
 (def ^:const TAIL_CALL   :ast/tail-call)
 (def ^:const INDEX_EXPR  :ast/index-expr)
+(def ^:const ASSIGN_EXPR :ast/assign-expr)
 (def ^:const FN_LIT      :ast/fn-lit)
 (def ^:const INT_LIT     :ast/int-lit)
 (def ^:const BOOL_LIT    :ast/bool-lit)
@@ -101,6 +102,12 @@
 (def index-expr-left  second)
 (def index-expr-index third)
 
+(defmacro assign-expr [left right]
+  `(vector ~ASSIGN_EXPR ~left ~right))
+
+(def assign-expr-left  second)
+(def assign-expr-right third)
+
 
 ;; Literals
 (defmacro int [val]
@@ -179,6 +186,7 @@
       :ast/call-expr  (str (to-str (call-fn ast)) "(" (str/join ", " (mapv to-str (call-args ast))) ")")
       :ast/tail-call  (str "return " (to-str (tail-call-fn ast)) "(" (str/join ", " (mapv to-str (tail-call-args ast))) ");" \newline)
       :ast/index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-index ast)) "])")
+      :ast/assign-expr (str (to-str (assign-expr-left ast)) " = " (to-str (assign-expr-right ast)))
       ;; literals
       :ast/ident-lit  (ident-literal ast)
       :ast/int-lit    (str (int-value ast))

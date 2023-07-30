@@ -13,16 +13,18 @@
 
 ;; precedence
 (def ^:const PREC_LOWEST  0)
-(def ^:const PREC_EQUALS  1)
-(def ^:const PREC_LTGT    2)
-(def ^:const PREC_SUM     3)
-(def ^:const PREC_PRODUCT 4)
-(def ^:const PREC_PREFIX  5)
-(def ^:const PREC_CALL    6)
-(def ^:const PREC_INDEX   7)
+(def ^:const PREC_ASSIGN  1)
+(def ^:const PREC_EQUALS  2)
+(def ^:const PREC_LTGT    3)
+(def ^:const PREC_SUM     4)
+(def ^:const PREC_PRODUCT 5)
+(def ^:const PREC_PREFIX  6)
+(def ^:const PREC_CALL    7)
+(def ^:const PREC_INDEX   8)
 
 (defn precedence [token]
   (case (token/kind token)
+     :token/assign   PREC_ASSIGN
     (:token/eq
      :token/noteq)    PREC_EQUALS
     (:token/lt
@@ -146,6 +148,12 @@
     (lexer/expect token/RBRACE)
     (jc/return (ast/hash pairs))))
 
+(defn parse-assign-expr [left]
+  (jb/do
+    (lexer/expect token/ASSIGN)
+    (right <- (parse-expr PREC_LOWEST))
+    (jc/return (ast/assign-expr left right))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :token/ident   parse-ident
@@ -177,6 +185,7 @@
      :token/astrisk)  parse-infix
      :token/l-paren   parse-fn-call
      :token/l-bracket parse-index-expr
+     :token/assign    parse-assign-expr
                       nil))
 
 (defn parse-expr 

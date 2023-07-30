@@ -138,7 +138,8 @@
     (is (= (evaluate "[1, 2, 3][3]") nil))
     (is (= (evaluate "[1, 2, 3][-1]") nil)))
   (testing "Hash Literals"
-    (is (= (evaluate "let two = \"two\";	{\"one\": 10 - 9,two: 1 + 1,\"thr\" + \"ee\": 6 / 2,4: 4,true: 5,false: 6}[false]") 6)))
+    (is (= (evaluate "let two = \"two\";	{\"one\": 10 - 9,two: 1 + 1,\"thr\" + \"ee\": 6 / 2,4: 4,true: 5,false: 6}[false]") 6))
+    (is (= (evaluate "let x = {foo!: 3, true: 2, \"a\": 1}; x[\"foo!\"]") 3)))
   (testing "Hash Index Expression"
     (is (= (evaluate "{\"foo\": 5}[\"foo\"]") 5))
     (is (= (evaluate "{\"foo\": 5}[\"bar\"]") nil))
@@ -154,4 +155,8 @@
   (testing "if has its won enclosing scope"
     (is (= (evaluate "if (false) { } else { let x = 0; }; x;") "Identifier not found: x"))
     (is (= (evaluate "if (true) { let x = 0; }; x;") "Identifier not found: x")))
-  )
+  (testing "assign operator"
+    (is (= (evaluate "let x = 4; x = 3; x == 3;") true))
+    (is (= (evaluate "let x = {a: 1}; x[\"a\"] = 5; x == {a: 5};") true))
+    (is (= (evaluate "let x = [1, 2]; x[0] = 5; x == [5, 2];") true))
+    (is (= (evaluate "let x = [1, 2]; x[10] = 5; x == [0, 5];") "Index 10 out of bounds"))))

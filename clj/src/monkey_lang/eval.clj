@@ -76,13 +76,18 @@
     (builtin/invoke builtin/at [left index])
   (object/error "Index operator not supported: %s" (object/kind left)))))
 
+(defn eval-hash-key [env scope kee]
+  (case (ast/kind kee)
+    :ast/ident-lit (run env scope (ast/string (ast/ident-literal kee)))
+    #_else         (run env scope kee)))
+
 (defn eval-hash [env scope pairs]
   (loop [pairs pairs
          hash-tbl (transient {})]
     (if (empty? pairs)
       (object/hash (persistent! hash-tbl))
     (let [[[k v] & rst] pairs
-          kee           (run env scope k)]
+          kee           (eval-hash-key env scope k)]
     (if (object/error? kee)
       (-> kee)
     (let [hash-kee (object/hash-key kee)]
@@ -100,7 +105,7 @@
     (if (empty? stmts)
       (-> result)
     (let [[stmt & rst] stmts
-          nresult       (run env scope stmt)]
+          nresult      (run env scope stmt)]
     (if-let [[env stmts] (when (= FN_SCOPE scope) 
                            (:tail nresult))]
       (recur env result stmts)
@@ -190,6 +195,42 @@
                       (if (object/error? index)
                         (-> index)
                       (eval-index-expr left index)))))
+      
+      :ast/assign-expr  (let [left  (ast/assign-expr-left ast)
+                              right (ast/assign-expr-right ast)]
+                        (case (ast/kind left)
+                          :ast/ident-lit  (let [ident (run env scope left)]
+                                          (if (object/error? ident)
+                                            (-> ident)
+                                          (let [value (run env scope right)]
+                                          (if (object/error? value)
+                                            (-> value)
+                                          (env/set-var! env (ast/ident-literal left) value)))))
+                          
+                          :ast/index-expr (let [obj (run env scope (ast/index-expr-left left))]
+                                          (if (object/error? obj)
+                                            (-> obj)
+                                          (let [idx-key (run env scope (ast/index-expr-index left))]
+                                          (if (object/error? idx-key)
+                                            (-> idx-key)
+                                          (let [value (run env scope right)]
+                                          (if (object/error? value)
+                                            (-> value)
+                                          (case (object/kind obj)
+                                            :object/array (let [index idx-key]
+                                                          (if (object/is? index object/INTEGER)
+                                                            (builtin/assoc! obj (object/value index) value)
+                                                          (object/error "Can't index array with %s" (object/kind index))))
+
+                                            :object/hash  (let [kee idx-key
+                                                                hash-kee (object/hash-key kee)]
+                                                          (if-not hash-kee
+                                                            (object/error "Unusable as hash key: %s" (object/kind kee))
+                                                          (builtin/assoc! obj hash-kee (object/hash-pair [kee value]))))
+                                            
+                                            (object/error "Object type %s does not support item assignment" (object/kind obj)))))))))
+                        (object/error "Expected identifier or index expression. got %s" (ast/kind left))))
+
       ;; literals
       :ast/ident-lit  (if-let [value (env/get env (ast/ident-literal ast))]
                         (-> value)
@@ -207,7 +248,7 @@
       
       :ast/hash-lit   (eval-hash env scope (ast/hash-pairs ast))
       :ast/null-lit   object/Null
-      (assert ast (str "eval/run not implemented for " ast)))))
+      (assert ast (str "eval/run not implemented for " (or ast "nil"))))))
 
 (comment
   "let fib = fn(n, a, b) { if (n == 0) { return a; } if (n == 1) { return b; } return fib(n - 1, b, n); };"

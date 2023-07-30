@@ -16,13 +16,14 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] improve lexer
 - [x] add make file and update docker image to support babashka instead of leiningen
 - [x] input validation for builtin functions to avoid crashes
+- [ ] hash keys can have identifiers
 - [ ] try print statement after the error message when eval/run errs.
 - [ ] remove (comment) from the files
 - [ ] Add support for
   - [x] null 
   - [x] add push! builtin function
-  - [ ] variables reassignment
-  - [ ] index re-assignment
+  - [x] variables reassignment
+  - [x] index re-assignment
   - [ ] dot property accessor for hash
   - [ ] dot property reassignment
   - [ ] while loop with continue and break
@@ -33,3 +34,4 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [ ] add character datatype
   - [ ] all array functions must support string as argument like first/last/rest
   - [ ] add support for floats
+  - [ ] add |> for chaining functions just like clojure -> macro.

@@ -1,5 +1,5 @@
 (ns monkey-lang.builtin 
-  (:refer-clojure :exclude [fn rest last first])
+  (:refer-clojure :exclude [fn rest last first assoc!])
   (:require [monkey-lang.object :as object]))
 
 (defn invoke [f args]
@@ -54,6 +54,13 @@
       (swap! (object/ref obj) conj value)
       (-> object/Null))
   (object/error "push! not implemented for %s" (object/kind obj))))
+
+(defn assoc! [obj idx-key value]
+  (try
+    (swap! (object/ref obj) assoc idx-key value)
+    (-> object/Null)
+  (catch IndexOutOfBoundsException _
+    (object/error "Index %s out of bounds" (str idx-key)))))
 
 (defn at [obj kee]
   (let [hash-kee (object/hash-key kee)]

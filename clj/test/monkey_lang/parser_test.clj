@@ -109,4 +109,9 @@
            (with-out-str (parser/print-error (try (parser/run "callsFunction(2, 3, fn(x, y) x + y; });") (catch clojure.lang.ExceptionInfo e e)))))))
   (testing "null literals"
     (is (= "null;\n" (parse "null;")))
-    (is (= "let x = null;\n" (parse "let x = null;")))))
+    (is (= "let x = null;\n" (parse "let x = null;"))))
+  (testing "assign expression"
+    (is (= "x = 5;\n" (parse "x = 5;")))
+    (is (= "(x[0]) = 5;\n" (parse "x[0] = 5;")))
+    (is (= "([1, 2][0]) = 5;\n" (parse "[1, 2][0] = 5;")))
+    (is (= "({\"a\": 1}[\"a\"]) = 5;\n" (parse "{\"a\": 1}[\"a\"] = 5;")))))
