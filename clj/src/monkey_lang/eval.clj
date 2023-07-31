@@ -76,18 +76,13 @@
     (builtin/invoke builtin/at [left index])
   (object/error "Index operator not supported: %s" (object/kind left)))))
 
-(defn eval-hash-key [env scope kee]
-  (case (ast/kind kee)
-    :ast/ident-lit (run env scope (ast/string (ast/ident-literal kee)))
-    #_else         (run env scope kee)))
-
 (defn eval-hash [env scope pairs]
   (loop [pairs pairs
          hash-tbl (transient {})]
     (if (empty? pairs)
       (object/hash (persistent! hash-tbl))
     (let [[[k v] & rst] pairs
-          kee           (eval-hash-key env scope k)]
+          kee           (run env scope k)]
     (if (object/error? kee)
       (-> kee)
     (let [hash-kee (object/hash-key kee)]

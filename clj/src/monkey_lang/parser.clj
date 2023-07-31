@@ -139,7 +139,8 @@
     (k <- (parse-expr PREC_LOWEST))
     (lexer/expect token/COLON)
     (v <- (parse-expr PREC_LOWEST))
-    (jc/return [k v])))
+    (let [k (if (ast/is? k ast/IDENT_LIT) (ast/ident->string k) k)]
+    (jc/return [k v]))))
 
 (def parse-hash
   (jb/do

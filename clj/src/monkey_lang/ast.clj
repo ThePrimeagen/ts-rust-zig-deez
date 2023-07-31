@@ -134,6 +134,9 @@
 (def string-value second)
 
 
+(defn ident->string [ident]
+  (string (ident-literal ident)))
+
 (defmacro array [elements]
   `(vector ~ARRAY_LIT ~elements))
 
