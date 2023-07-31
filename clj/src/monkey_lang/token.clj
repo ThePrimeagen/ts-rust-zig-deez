@@ -27,6 +27,7 @@
 (def ^:const RBRACE    :token/r-brace)
 (def ^:const LBRACKET  :token/l-bracket)
 (def ^:const RBRACKET  :token/r-bracket)
+(def ^:const DOT       :token/dot)
 (def ^:const FUNCTION  :token/fn)
 (def ^:const LET       :token/let)
 (def ^:const TRUE      :token/true)
@@ -54,6 +55,7 @@
    "}"  RBRACE
    "["  LBRACKET
    "]"  RBRACKET
+   "."  DOT
    "<=" LT_EQ
    ">=" GT_EQ
    "==" EQ

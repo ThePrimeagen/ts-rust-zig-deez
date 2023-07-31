@@ -33,6 +33,7 @@
   let x1 = null
   let x! = null
   let x_1 = null
+  x.1 = 1
   ")
 
 (deftest lexer-test
@@ -140,5 +141,10 @@
                   [:token/ident "x_1"]
                   [:token/assign "="]
                   [:token/null "null"]
+                  [:token/ident "x"]
+                  [:token/dot "."]
+                  [:token/int "1"]
+                  [:token/assign "="]
+                  [:token/int "1"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

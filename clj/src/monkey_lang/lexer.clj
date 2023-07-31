@@ -9,7 +9,7 @@
             [monkey-lang.util  :as util]))
 
 (def single-char
-  (-> token/create (jc/map (jp/any-of "=+-!*/<>,:;(){}[]"))))
+  (-> token/create (jc/map (jp/any-of "=+-!*/<>,:;(){}[]."))))
 
 (defn double-char [cs]
   (when-let [[chars cs] (cs/read cs 2)]
@@ -25,12 +25,12 @@
 (def integer
   (-> (partial token/create token/INT) (jc/map (jc/many+ jp/digit))))
 
-(def identifier?
-  (some-fn ju/alpha-num? #{\! \_}))
+(def identifier
+  (jp/satisfy (some-fn ju/alpha-num? #{\! \_})))
 
 (def keywords
   (jb/do
-    (chars <- (jc/many+ (jp/satisfy identifier?)))
+    (chars <- (jc/many+ identifier))
     (let [lit (util/to-str chars)]
     (if-let [kind (token/lit->ident-kind lit)]
       (jc/return (token/create kind lit))

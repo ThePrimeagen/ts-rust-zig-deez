@@ -24,7 +24,7 @@
 
 (defn precedence [token]
   (case (token/kind token)
-     :token/assign   PREC_ASSIGN
+     :token/assign    PREC_ASSIGN
     (:token/eq
      :token/noteq)    PREC_EQUALS
     (:token/lt
@@ -37,6 +37,7 @@
      :token/astrisk)  PREC_PRODUCT
      :token/l-paren   PREC_CALL
      :token/l-bracket PREC_INDEX
+     :token/dot       PREC_INDEX
                       PREC_LOWEST))
 
 (def parse-ident
@@ -155,6 +156,12 @@
     (right <- (parse-expr PREC_LOWEST))
     (jc/return (ast/assign-expr left right))))
 
+(defn parse-accessor-expr [left]
+  (jb/do
+    (lexer/expect token/DOT)
+    (prop <- lexer/next)
+    (jc/return (ast/index-expr left (ast/string (token/literal prop))))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :token/ident   parse-ident
@@ -187,6 +194,7 @@
      :token/l-paren   parse-fn-call
      :token/l-bracket parse-index-expr
      :token/assign    parse-assign-expr
+     :token/dot       parse-accessor-expr 
                       nil))
 
 (defn parse-expr 

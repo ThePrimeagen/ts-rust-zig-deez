@@ -16,7 +16,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] improve lexer
 - [x] add make file and update docker image to support babashka instead of leiningen
 - [x] input validation for builtin functions to avoid crashes
-- [ ] hash keys can have identifiers
+- [x] hash keys can have identifiers
 - [ ] try print statement after the error message when eval/run errs.
 - [ ] remove (comment) from the files
 - [ ] Add support for
@@ -24,8 +24,8 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [x] add push! builtin function
   - [x] variables reassignment
   - [x] index re-assignment
-  - [ ] dot property accessor for hash
-  - [ ] dot property reassignment
+  - [x] dot property accessor for hash
+  - [x] dot property reassignment
   - [ ] while loop with continue and break
   - [ ] for loop with continue and break
   - [ ] import module
