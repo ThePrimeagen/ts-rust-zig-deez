@@ -8,6 +8,8 @@
 (def ^:const EXPR_STMT   :ast/expr-stmt)
 (def ^:const BLOCK_STMT  :ast/block-stmt)
 (def ^:const RETURN_STMT :ast/return-stmt)
+(def ^:const BREAK_STMT  :ast/break-stmt)
+(def ^:const CONTINUE_STMT :ast/continue-stmt)
 (def ^:const PREFIX_EXPR :ast/prefix-expr)
 (def ^:const INFIX_EXPR  :ast/infix-expr)
 (def ^:const IF_EXPR     :ast/if-expr)
@@ -15,6 +17,7 @@
 (def ^:const TAIL_CALL   :ast/tail-call)
 (def ^:const INDEX_EXPR  :ast/index-expr)
 (def ^:const ASSIGN_EXPR :ast/assign-expr)
+(def ^:const WHILE_EXPR  :ast/while-expr)
 (def ^:const FN_LIT      :ast/fn-lit)
 (def ^:const INT_LIT     :ast/int-lit)
 (def ^:const BOOL_LIT    :ast/bool-lit)
@@ -51,6 +54,8 @@
 
 (def return-expr second)
 
+(def break (vector BREAK_STMT))
+(def continue (vector CONTINUE_STMT))
 
 ;; expressions
 (defmacro prefix [op right]
@@ -108,6 +113,11 @@
 (def assign-expr-left  second)
 (def assign-expr-right third)
 
+(defmacro while-expr [condition consequence]
+  `(vector ~WHILE_EXPR ~condition ~consequence))
+
+(def while-condition   second)
+(def while-consequence third)
 
 ;; Literals
 (defmacro int [val]
@@ -173,6 +183,8 @@
                       (str "{" \newline (str/join stmts) (pad pad-lvl) "}")))
       
       :ast/return-stmt (str (pad pad-lvl) "return " (to-str pad-lvl (return-expr ast)) ";" \newline)
+      :ast/break-stmt  (str (pad pad-lvl) "break;" \newline)
+      :ast/continue-stmt  (str (pad pad-lvl) "continue;" \newline)
       ;; expressions
       :ast/prefix-expr (str "(" (prefix-op ast) (to-str (prefix-right ast)) ")")
       :ast/infix-expr (str "(" (to-str (infix-left ast)) " " (infix-op ast) " " (to-str (infix-right ast)) ")")
@@ -190,6 +202,7 @@
       :ast/tail-call  (str "return " (to-str (tail-call-fn ast)) "(" (str/join ", " (mapv to-str (tail-call-args ast))) ");" \newline)
       :ast/index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-index ast)) "])")
       :ast/assign-expr (str (to-str (assign-expr-left ast)) " = " (to-str (assign-expr-right ast)))
+      :ast/while-expr  (str "while (" (to-str (while-condition ast)) ") " (to-str (while-consequence ast)))
       ;; literals
       :ast/ident-lit  (ident-literal ast)
       :ast/int-lit    (str (int-value ast))

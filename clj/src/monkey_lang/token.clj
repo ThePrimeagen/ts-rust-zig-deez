@@ -35,6 +35,9 @@
 (def ^:const IF        :token/if)
 (def ^:const ELSE      :token/else)
 (def ^:const RETURN    :token/return)
+(def ^:const WHILE     :token/while)
+(def ^:const BREAK     :token/break)
+(def ^:const CONTINUE  :token/continue)
 (def ^:const NULL      :token/null)
 
 (def lit->kind
@@ -70,6 +73,9 @@
    "if"     IF
    "else"   ELSE
    "return" RETURN
+   "while"  WHILE
+   "break"  BREAK
+   "continue" CONTINUE
    "null"   NULL})
 
 (defn create 

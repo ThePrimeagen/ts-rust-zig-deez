@@ -26,7 +26,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [x] index re-assignment
   - [x] dot property accessor for hash
   - [x] dot property reassignment
-  - [ ] while loop with continue and break
+  - [x] while loop with continue and break
   - [ ] for loop with continue and break
   - [ ] import module
   - [ ] more operators like %, bit operations and so on

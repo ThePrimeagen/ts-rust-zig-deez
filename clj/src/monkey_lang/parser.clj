@@ -86,7 +86,7 @@
     (lexer/expect token/LPAREN)
     (condi <- (parse-expr PREC_LOWEST)) ;; condition
     (lexer/expect token/RPAREN)
-    (conse <- parse-block-stmts)   ;; consequence
+    (conse <- parse-block-stmts) ;; consequence
     (token <- lexer/peek)
     (if-not (token/is? token token/ELSE)
       (jc/return (ast/if condi conse nil))
@@ -162,6 +162,15 @@
     (prop <- lexer/next)
     (jc/return (ast/index-expr left (ast/string (token/literal prop))))))
 
+(def parse-while
+  (jb/do
+    (lexer/expect token/WHILE)
+    (lexer/expect token/LPAREN)
+    (condi <- (parse-expr PREC_LOWEST)) ;; condition
+    (lexer/expect token/RPAREN)
+    (conse <- parse-block-stmts) ;; consequence
+    (jc/return (ast/while-expr condi conse))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :token/ident   parse-ident
@@ -169,6 +178,7 @@
      :token/l-paren parse-group
      :token/if      parse-if
      :token/fn      parse-fn
+     :token/while   parse-while
      :token/string  parse-string
      :token/l-bracket parse-array
      :token/l-brace parse-hash
@@ -242,8 +252,21 @@
           ret-expr  (ast/return-expr last-stmt)]
     (if (and (ast/is? last-stmt ast/RETURN_STMT)
              (ast/is? ret-expr  ast/CALL_EXPR))
-      (conj (pop stmts) (ast/tail-call (ast/call-fn ret-expr) (ast/call-args ret-expr)))
+      (conj (pop stmts) 
+            (ast/tail-call (ast/call-fn ret-expr) (ast/call-args ret-expr)))
     (-> stmts)))))
+
+(def parse-break-stmt
+  (jb/do
+    (lexer/expect token/BREAK)
+    (jc/skip (lexer/expect token/SEMICOLON))
+    (jc/return ast/break)))
+
+(def parse-continue-stmt
+  (jb/do
+    (lexer/expect token/CONTINUE)
+    (jc/skip (lexer/expect token/SEMICOLON))
+    (jc/return ast/continue)))
 
 (def parse-block-stmts
   (jb/do
@@ -258,6 +281,8 @@
     (case (token/kind token)
       :token/let    parse-let-stmt
       :token/return parse-return-stmt
+      :token/break  parse-break-stmt
+      :token/continue parse-continue-stmt
                     parse-expr-stmt)))
 
 (def parse-program

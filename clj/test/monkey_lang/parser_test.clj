@@ -117,4 +117,7 @@
     (is (= "({\"a\": 1}[\"a\"]) = 5;\n" (parse "{\"a\": 1}[\"a\"] = 5;"))))
   (testing "dot property accessor"
     (is (= "(x[\"a\"]);\n" (parse "x.a;")))
-    (is (= "(x[\"a\"]) = 1;\n" (parse "x.a = 1;")))))
+    (is (= "(x[\"a\"]) = 1;\n" (parse "x.a = 1;"))))
+  (testing "while expression"
+    (is (= "while ((x < a)) { };\n" (parse "while (x < a) { };")))
+    (is (= "while ((x < a)) {\n  continue;\n  break;\n};\n" (parse "while (x < a) { continue; break; };")))))

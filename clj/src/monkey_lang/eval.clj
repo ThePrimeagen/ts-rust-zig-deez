@@ -7,6 +7,7 @@
 (def ^:const GLOBAL_SCOPE 1)
 (def ^:const IF_SCOPE 2)
 (def ^:const FN_SCOPE 3)
+(def ^:const WHILE_SCOPE 4)
 
 (declare run)
 
@@ -104,10 +105,12 @@
     (if-let [[env stmts] (when (= FN_SCOPE scope) 
                            (:tail nresult))]
       (recur env result stmts)
-    (if (or (object/is? nresult object/RETURN)
-            (object/is? nresult object/ERROR))
-      (-> nresult)
-    (recur env nresult rst)))))))
+    (case (object/kind nresult)
+      (:object/return
+       :object/error
+       :object/break
+       :object/continue) (-> nresult)
+       #_else            (recur env nresult rst)))))))
 
 (defn run
   ([ast] 
@@ -130,6 +133,9 @@
                         (if (object/error? value)
                           (-> value)
                         (object/return value)))
+      
+      :ast/break-stmt    (-> object/break)
+      :ast/continue-stmt (-> object/continue)
       ;; expressions
       :ast/prefix-expr  (let [right (run env scope (ast/prefix-right ast))]
                         (if (object/error? right)
@@ -200,7 +206,7 @@
                                           (let [value (run env scope right)]
                                           (if (object/error? value)
                                             (-> value)
-                                          (env/set-var! env (ast/ident-literal left) value)))))
+                                          (env/set-var! ienv (ast/ident-literal left) value)))))
                           
                           :ast/index-expr (let [obj (run env scope (ast/index-expr-left left))]
                                           (if (object/error? obj)
@@ -225,9 +231,25 @@
                                             
                                             (object/error "Object type %s does not support item assignment" (object/kind obj)))))))))
                         (object/error "Expected identifier or index expression. got %s" (ast/kind left))))
+    
+      :ast/while-expr (let [nenv  (env/enclosed env)
+                            conde (ast/while-condition ast)
+                            block (ast/while-consequence ast)]
+                      (loop [result object/Null]
+                        (let [condi (run env scope conde)]
+                        (if (object/error? condi)
+                          (-> condi)
+                        (if-not (object/value condi)
+                          (-> result)
+                        (let [conse (run nenv WHILE_SCOPE block)]
+                        (case  (object/kind conse)
+                          :object/error (-> conse)
+                          :object/break (-> result)
+                          :object/continue (recur result)
+                          #_else        (recur conse))))))))
 
       ;; literals
-      :ast/ident-lit  (if-let [value (env/get env (ast/ident-literal ast))]
+      :ast/ident-lit  (if-let [[value _env] (env/get env (ast/ident-literal ast))]
                         (-> value)
                       (if-let [builtin (get builtin/fn (ast/ident-literal ast) nil)]
                         (-> builtin)

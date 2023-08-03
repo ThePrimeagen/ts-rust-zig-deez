@@ -161,4 +161,8 @@
     (is (= (evaluate "let x = {a: 1}; x[\"a\"] = 5; x == {a: 5};") true))
     (is (= (evaluate "let x = {a: 1}; x.a = 5; x == {a: 5};") true))
     (is (= (evaluate "let x = [1, 2]; x[0] = 5; x == [5, 2];") true))
-    (is (= (evaluate "let x = [1, 2]; x[10] = 5; x == [0, 5];") "Index 10 out of bounds"))))
+    (is (= (evaluate "let x = [1, 2]; x[10] = 5; x == [0, 5];") "Index 10 out of bounds")))
+  (testing "assign operator"
+    (is (= (evaluate "let x = 0; while (x < 5) { x = x + 1; }; x;") 5))
+    (is (= (evaluate "let x = 0; while (x < 15) { if (x < 10) { x = x + 1; continue; }; break; }; x;") 10))
+    (is (= (evaluate "let x = 0; while (x < 15) { if (x > 10) { break; }; x = x + 1; }; x;") 11))))

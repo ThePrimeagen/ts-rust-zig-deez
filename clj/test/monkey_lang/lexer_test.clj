@@ -34,6 +34,12 @@
   let x! = null
   let x_1 = null
   x.1 = 1
+  while (true) {
+    if (x > 1) {
+      break;
+    }
+    conitnue;
+  }
   ")
 
 (deftest lexer-test
@@ -129,22 +135,40 @@
                   [token/IDENT "x"]
                   [token/ASSIGN "="]
                   [token/NULL "null"]
-                  [:token/let "let"]
-                  [:token/ident "x1"]
-                  [:token/assign "="]
-                  [:token/null "null"]
-                  [:token/let "let"]
-                  [:token/ident "x!"]
-                  [:token/assign "="]
-                  [:token/null "null"]
-                  [:token/let "let"]
-                  [:token/ident "x_1"]
-                  [:token/assign "="]
-                  [:token/null "null"]
-                  [:token/ident "x"]
-                  [:token/dot "."]
-                  [:token/int "1"]
-                  [:token/assign "="]
-                  [:token/int "1"]
+                  [token/LET "let"]
+                  [token/IDENT "x1"]
+                  [token/ASSIGN "="]
+                  [token/NULL "null"]
+                  [token/LET "let"]
+                  [token/IDENT "x!"]
+                  [token/ASSIGN "="]
+                  [token/NULL "null"]
+                  [token/LET "let"]
+                  [token/IDENT "x_1"]
+                  [token/ASSIGN "="]
+                  [token/NULL "null"]
+                  [token/IDENT "x"]
+                  [token/DOT "."]
+                  [token/INT "1"]
+                  [token/ASSIGN "="]
+                  [token/INT "1"]
+                  [token/WHILE "while"]
+                  [token/LPAREN "("]
+                  [token/TRUE "true"]
+                  [token/RPAREN ")"]
+                  [token/LBRACE "{"]
+                  [token/IF "if"]
+                  [token/LPAREN "("]
+                  [token/IDENT "x"]
+                  [token/GT ">"]
+                  [token/INT "1"]
+                  [token/RPAREN ")"]
+                  [token/LBRACE "{"]
+                  [token/BREAK "break"]
+                  [token/SEMICOLON ";"]
+                  [token/RBRACE "}"]
+                  [token/IDENT "conitnue"]
+                  [token/SEMICOLON ";"]
+                  [token/RBRACE "}"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

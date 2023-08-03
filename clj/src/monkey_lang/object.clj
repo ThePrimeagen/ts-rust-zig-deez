@@ -8,6 +8,8 @@
 (def ^:const BOOLEAN   :object/boolean)
 (def ^:const NULL      :object/null)
 (def ^:const RETURN    :object/return)
+(def ^:const BREAK     :object/break)
+(def ^:const CONTINUE  :object/continue)
 (def ^:const ERROR     :object/error)
 (def ^:const FUNCTION  :object/fn)
 (def ^:const STRING    :object/string)
@@ -20,7 +22,7 @@
 (def ^:const False [BOOLEAN false])
 (def ^:const Null  [NULL    nil])
 
-(def kind  first)
+(def kind first)
 
 (def ref second)
 
@@ -59,6 +61,9 @@
 
 (defmacro return [v]
   `(vector ~RETURN ~v))
+
+(def break (vector BREAK))
+(def continue (vector CONTINUE))
 
 (defmacro error 
   ([v]
@@ -100,4 +105,6 @@
                     (inspect (second pair)))]
                   (str "{" (str/join ", " pairs) "}"))
     :object/null  "null"
+    :object/break    "break"
+    :object/continue "continue"
     (str (value obj))))
