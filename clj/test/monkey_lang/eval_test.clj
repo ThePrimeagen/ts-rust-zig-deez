@@ -157,6 +157,7 @@
     (is (= (evaluate "if (true) { let x = 0; }; x;") "Identifier not found: x")))
   (testing "assign operator"
     (is (= (evaluate "let x = 4; x = 3; x == 3;") true))
+    (is (= (evaluate "let x = 0; let y = fn () { x = x + 1 }; y(); y(); x == 2;") true))
     (is (= (evaluate "let x = {a: 1}; x[\"a\"] = 5; x == {a: 5};") true))
     (is (= (evaluate "let x = {a: 1}; x.a = 5; x == {a: 5};") true))
     (is (= (evaluate "let x = [1, 2]; x[0] = 5; x == [5, 2];") true))

@@ -16,7 +16,7 @@
 (defn get [env k]
   (loop [env env]
     (if-let [value (get-in @env [:store k] nil)]
-      (-> value)
+      [value env]
     (when-let [outer (:outer @env)]
       (recur outer)))))
 

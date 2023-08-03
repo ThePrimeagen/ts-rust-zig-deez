@@ -194,7 +194,7 @@
       :ast/assign-expr  (let [left  (ast/assign-expr-left ast)
                               right (ast/assign-expr-right ast)]
                         (case (ast/kind left)
-                          :ast/ident-lit  (let [ident (run env scope left)]
+                          :ast/ident-lit  (let [[ident ienv] (env/get env (ast/ident-literal left))]
                                           (if (object/error? ident)
                                             (-> ident)
                                           (let [value (run env scope right)]
