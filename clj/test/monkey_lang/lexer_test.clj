@@ -40,6 +40,9 @@
     }
     conitnue;
   }
+  for {let x = 0; x < 10; x = x + 1} {
+    
+  }
   ")
 
 (deftest lexer-test
@@ -169,6 +172,25 @@
                   [token/RBRACE "}"]
                   [token/IDENT "conitnue"]
                   [token/SEMICOLON ";"]
+                  [token/RBRACE "}"]
+                  [token/FOR "for"]
+                  [token/LBRACE "{"]
+                  [token/LET "let"]
+                  [token/IDENT "x"]
+                  [token/ASSIGN "="]
+                  [token/INT "0"]
+                  [token/SEMICOLON ";"]
+                  [token/IDENT "x"]
+                  [token/LT "<"]
+                  [token/INT "10"]
+                  [token/SEMICOLON ";"]
+                  [token/IDENT "x"]
+                  [token/ASSIGN "="]
+                  [token/IDENT "x"]
+                  [token/PLUS "+"]
+                  [token/INT "1"]
+                  [token/RBRACE "}"]
+                  [token/LBRACE "{"]
                   [token/RBRACE "}"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

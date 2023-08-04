@@ -165,4 +165,8 @@
   (testing "while expr"
     (is (= (evaluate "let x = 0; while (x < 5) { x = x + 1; }; x;") 5))
     (is (= (evaluate "let x = 0; while (x < 15) { if (x < 10) { x = x + 1; continue; }; break; }; x;") 10))
-    (is (= (evaluate "let x = 0; while (x < 15) { if (x > 10) { break; }; x = x + 1; }; x;") 11))))
+    (is (= (evaluate "let x = 0; while (x < 15) { if (x > 10) { break; }; x = x + 1; }; x;") 11)))
+  (testing "for expr"
+    (is (= (evaluate "let x = 0; for (let x = 0; x < 5; x = x + 1) { }; x;") 5))
+    (is (= (evaluate "let x = 0; for (let x = 0; x < 15; x = x + 1) { if (x < 10) { continue; }; break; }; x;") 10))
+    (is (= (evaluate "let x = 0; for (let x = 0; x < 15; x = x + 1) { if (x > 10) { break; }; }; x;") 11))))

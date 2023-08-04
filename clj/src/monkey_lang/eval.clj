@@ -4,10 +4,12 @@
             [monkey-lang.env     :as env]
             [monkey-lang.builtin :as builtin]))
 
+;; anything has a body block has a scope
 (def ^:const GLOBAL_SCOPE 1)
-(def ^:const IF_SCOPE 2)
-(def ^:const FN_SCOPE 3)
-(def ^:const WHILE_SCOPE 4)
+(def ^:const IF_SCOPE     2)
+(def ^:const FN_SCOPE     3)
+(def ^:const WHILE_SCOPE  4)
+(def ^:const FOR_SCOPE    5)
 
 (declare run)
 
@@ -247,6 +249,31 @@
                           :object/break (-> result)
                           :object/continue (recur result)
                           #_else        (recur conse))))))))
+
+      :ast/for-expr (let [initialize (run env scope (ast/for-initialize ast))]
+                    (if (object/error? initialize)
+                      (-> initialize)
+                    (let [nenv  (env/enclosed env)
+                          conde (ast/for-condition ast)
+                          block (ast/for-consequence ast)
+                          incre (ast/for-increment ast)]
+                      (loop [result object/Null]
+                        (let [condi (run env scope conde)]
+                        (if (object/error? condi)
+                          (-> condi)
+                        (if-not (object/value condi)
+                          (-> result)
+                        (let [conse (run nenv FOR_SCOPE block)]
+                        (case  (object/kind conse)
+                          :object/error (-> conse)
+                          :object/break (-> result)
+                          #_else
+                          (let [increment (run env scope incre)]
+                          (if (object/error? increment)
+                            (-> increment)
+                          (if (object/is? conse object/CONTINUE)
+                            (recur result)
+                          (recur conse)))))))))))))
 
       ;; literals
       :ast/ident-lit  (if-let [[value _env] (env/get env (ast/ident-literal ast))]

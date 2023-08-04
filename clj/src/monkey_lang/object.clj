@@ -105,6 +105,6 @@
                     (inspect (second pair)))]
                   (str "{" (str/join ", " pairs) "}"))
     :object/null  "null"
-    :object/break    "break"
+    :object/break "break"
     :object/continue "continue"
     (str (value obj))))

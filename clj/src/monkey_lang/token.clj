@@ -35,6 +35,7 @@
 (def ^:const IF        :token/if)
 (def ^:const ELSE      :token/else)
 (def ^:const RETURN    :token/return)
+(def ^:const FOR       :token/for)
 (def ^:const WHILE     :token/while)
 (def ^:const BREAK     :token/break)
 (def ^:const CONTINUE  :token/continue)
@@ -73,6 +74,7 @@
    "if"     IF
    "else"   ELSE
    "return" RETURN
+   "for"    FOR
    "while"  WHILE
    "break"  BREAK
    "continue" CONTINUE
@@ -81,7 +83,9 @@
 (defn create 
   ([literal]
     (let [literal (util/to-str literal)
-          kind    (or (lit->kind literal) (lit->ident-kind literal) ILLEGAL)]
+          kind    (or (lit->kind literal) 
+                      (lit->ident-kind literal)
+                      ILLEGAL)]
     (vector kind literal)))
   ([kind literal]
     (vector kind (util/to-str literal))))

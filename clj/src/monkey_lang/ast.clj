@@ -18,6 +18,7 @@
 (def ^:const INDEX_EXPR  :ast/index-expr)
 (def ^:const ASSIGN_EXPR :ast/assign-expr)
 (def ^:const WHILE_EXPR  :ast/while-expr)
+(def ^:const FOR_EXPR    :ast/for-expr)
 (def ^:const FN_LIT      :ast/fn-lit)
 (def ^:const INT_LIT     :ast/int-lit)
 (def ^:const BOOL_LIT    :ast/bool-lit)
@@ -94,6 +95,7 @@
 (def call-fn   second)
 (def call-args third)
 
+
 (defmacro tail-call [fn args]
   `(vector ~TAIL_CALL ~fn ~args))
 
@@ -107,17 +109,28 @@
 (def index-expr-left  second)
 (def index-expr-index third)
 
+
 (defmacro assign-expr [left right]
   `(vector ~ASSIGN_EXPR ~left ~right))
 
 (def assign-expr-left  second)
 (def assign-expr-right third)
 
+
 (defmacro while-expr [condition consequence]
   `(vector ~WHILE_EXPR ~condition ~consequence))
 
 (def while-condition   second)
 (def while-consequence third)
+
+
+(defmacro for-expr [initialize condition increment consequence]
+  `(vector ~FOR_EXPR ~initialize ~condition ~increment ~consequence))
+
+(def for-initialize  second)
+(def for-condition   third)
+(def for-increment   #(nth % 3 nil))
+(def for-consequence #(nth % 4 nil))
 
 ;; Literals
 (defmacro int [val]
@@ -203,6 +216,11 @@
       :ast/index-expr (str "(" (to-str (index-expr-left ast)) "[" (to-str (index-expr-index ast)) "])")
       :ast/assign-expr (str (to-str (assign-expr-left ast)) " = " (to-str (assign-expr-right ast)))
       :ast/while-expr  (str "while (" (to-str (while-condition ast)) ") " (to-str (while-consequence ast)))
+      :ast/for-expr    (let [initl (str/trim-newline (to-str (for-initialize ast)))
+                             condi (to-str (for-condition ast))
+                             incre (str/trim-newline (to-str (for-increment ast)))
+                             conse (to-str (for-consequence ast))]
+                       (str "for (" initl " " condi "; " incre ") " conse))
       ;; literals
       :ast/ident-lit  (ident-literal ast)
       :ast/int-lit    (str (int-value ast))

@@ -120,4 +120,7 @@
     (is (= "(x[\"a\"]) = 1;\n" (parse "x.a = 1;"))))
   (testing "while expression"
     (is (= "while ((x < a)) { };\n" (parse "while (x < a) { };")))
-    (is (= "while ((x < a)) {\n  continue;\n  break;\n};\n" (parse "while (x < a) { continue; break; };")))))
+    (is (= "while ((x < a)) {\n  continue;\n  break;\n};\n" (parse "while (x < a) { continue; break; };"))))
+  (testing "while expression"
+    (is (= "for (let x = 0; (x < 10); x = (x + 1);) { };\n" (parse "for (let x = 0; x < 10; x = x + 1) { };")))
+    (is (= "for (let x = 0; (x < 10); x = (x + 1);) {\n  continue;\n  break;\n};\n" (parse "for (let x = 0; x < 10; x = x + 1) { continue; break; };")))))

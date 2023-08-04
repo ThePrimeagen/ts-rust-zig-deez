@@ -9,7 +9,7 @@
             [clojure.string    :as str]
             [monkey-lang.util  :as util]))
 
-(declare parse-expr parse-block-stmts parse-stmt)
+(declare parse-expr parse-block-stmts parse-stmt parse-let-stmt parse-expr-stmt)
 
 ;; precedence
 (def ^:const PREC_LOWEST  0)
@@ -171,6 +171,18 @@
     (conse <- parse-block-stmts) ;; consequence
     (jc/return (ast/while-expr condi conse))))
 
+(def parse-for
+  (jb/do
+    (lexer/expect token/FOR)
+    (lexer/expect token/LPAREN)
+    (initialize <- parse-let-stmt)
+    (condition  <- (parse-expr PREC_LOWEST))
+    (lexer/expect token/SEMICOLON)
+    (increment  <- parse-expr-stmt)
+    (lexer/expect token/RPAREN)
+    (consequence <- parse-block-stmts)
+    (jc/return (ast/for-expr initialize condition increment consequence))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :token/ident   parse-ident
@@ -179,6 +191,7 @@
      :token/if      parse-if
      :token/fn      parse-fn
      :token/while   parse-while
+     :token/for     parse-for
      :token/string  parse-string
      :token/l-bracket parse-array
      :token/l-brace parse-hash
@@ -350,4 +363,5 @@
   (run "a[1]")
   (println (ast/to-str (run "3 + 4 * 5 == 3 * 1 + 4 * 5")))
   (ast/to-str (run "{\"one\": 1, \"two\": 2, \"three\": 3}"))
-  (run "let sumTo = fn (n, acc) { if (n == 0) { return acc; }; return sumTo(n-1, acc+n); }; sumTo(10000, 0);"))
+  (run "let sumTo = fn (n, acc) { if (n == 0) { return acc; }; return sumTo(n-1, acc+n); }; sumTo(10000, 0);")
+  (run ""))
