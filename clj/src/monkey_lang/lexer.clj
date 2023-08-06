@@ -9,13 +9,15 @@
             [monkey-lang.util  :as util]))
 
 (def single-char
-  (-> token/create (jc/map (jp/any-of "=+-!*/<>,:;(){}[]."))))
+  (jb/do
+    (lit <- (jp/satisfy token/char1->kind))
+    (let [kind (token/char1->kind lit)]
+    (jc/return (token/create kind lit)))))
 
 (defn double-char [cs]
-  (when-let [[chars cs] (cs/read cs 2)]
-  (let [lit (util/to-str chars)]
-  (when-let [kind (token/lit->kind lit)]
-    [(token/create kind lit) cs]))))
+  (when-let [[lit cs] (cs/read cs 2)]
+  (when-let [kind (token/char2->kind lit)]
+    [(token/create kind lit) cs])))
 
 (def string
   (let [string-parser (-> (jc/many* (jp/none-of "\""))
@@ -32,12 +34,12 @@
   (jb/do
     (chars <- (jc/many+ identifier))
     (let [lit (util/to-str chars)]
-    (if-let [kind (token/lit->ident-kind lit)]
+    (if-let [kind (token/ident->kind lit)]
       (jc/return (token/create kind lit))
     (jc/return (token/create token/IDENT lit))))))
 
 (def EOF
-  (-> token/create (jc/map jp/eof)))
+  (-> (partial token/create token/EOF) (jc/map jp/eof)))
 
 (def illegal
   (-> (partial token/create token/ILLEGAL) (jc/map jp/any-char)))

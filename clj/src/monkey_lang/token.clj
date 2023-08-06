@@ -41,32 +41,33 @@
 (def ^:const CONTINUE  :token/continue)
 (def ^:const NULL      :token/null)
 
-(def lit->kind
-  {"="  ASSIGN
-   "+"  PLUS
-   "-"  MINUS
-   "!"  BANG
-   "*"  ASTERISK
-   "/"  SLASH
-   "<"  LT
-   ">"  GT
-   ","  COMMA
-   ";"  SEMICOLON
-   ":"  COLON
-   "("  LPAREN
-   ")"  RPAREN
-   "{"  LBRACE
-   "}"  RBRACE
-   "["  LBRACKET
-   "]"  RBRACKET
-   "."  DOT
-   "<=" LT_EQ
-   ">=" GT_EQ
-   "==" EQ
-   "!=" NOT_EQ
-   ""   EOF})
+(def char1->kind
+  {\=  ASSIGN
+   \+  PLUS
+   \-  MINUS
+   \!  BANG
+   \*  ASTERISK
+   \/  SLASH
+   \<  LT
+   \>  GT
+   \,  COMMA
+   \;  SEMICOLON
+   \:  COLON
+   \(  LPAREN
+   \)  RPAREN
+   \{  LBRACE
+   \}  RBRACE
+   \[  LBRACKET
+   \]  RBRACKET
+   \.  DOT})
 
-(def lit->ident-kind
+(def char2->kind
+  {[\< \=] LT_EQ
+   [\> \=] GT_EQ
+   [\= \=] EQ
+   [\! \=] NOT_EQ})
+
+(def ident->kind
   {"fn"     FUNCTION
    "let"    LET
    "true"   TRUE
@@ -80,15 +81,8 @@
    "continue" CONTINUE
    "null"   NULL})
 
-(defn create 
-  ([literal]
-    (let [literal (util/to-str literal)
-          kind    (or (lit->kind literal) 
-                      (lit->ident-kind literal)
-                      ILLEGAL)]
-    (vector kind literal)))
-  ([kind literal]
-    (vector kind (util/to-str literal))))
+(defn create [kind literal]
+  (vector kind (util/to-str literal)))
 
 (def kind    first)
 (def literal second)
