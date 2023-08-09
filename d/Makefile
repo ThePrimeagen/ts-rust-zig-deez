@@ -33,5 +33,6 @@ test:
 
 repl:
 	@echo "===> Repl"
-	DFLAGS="-L-L/usr/local/lib/" dub -b release
+	#DFLAGS="-L-L/usr/local/lib/" dub -b release
+	DFLAGS="-L-L/usr/local/lib/" dub -b debug
 

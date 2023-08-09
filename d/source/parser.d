@@ -32,7 +32,8 @@ enum Precedence : ubyte {
     Term, // + | -
     Factor, // * | /
     Unary, // -X | !X
-    Call // myFunction(X)
+    Call, // myFunction(X)
+    Index // myArray[X]
 }
 
 /// Group together infix rules with precedence
@@ -69,7 +70,8 @@ shared static this()
         TokenTag.Bang: &(partial!(parsePrefix, TokenTag.Bang)),
         TokenTag.Int: &parseInt, TokenTag.True: &parseBoolean,
         TokenTag.False: &parseBoolean, TokenTag.LParen: &parseGroupedExpression,
-        TokenTag.If: &parseIfExpression, TokenTag.Function: &parseFunctionLiteral
+        TokenTag.If: &parseIfExpression, TokenTag.Function: &parseFunctionLiteral,
+        TokenTag.LBracket: &parseArrayExpression
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
@@ -90,7 +92,9 @@ shared static this()
         TokenTag.Gt: InfixRule(&(partial!(parseBinary, TokenTag.Gt)),
                 Precedence.LessGreater),
         TokenTag.LParen: InfixRule(&parseCallExpression, Precedence.Call),
+        TokenTag.LBracket: InfixRule(&parseIndexExpression, Precedence.Index),
         TokenTag.RParen: InfixRule(null, Precedence.Lowest),
+        TokenTag.RBracket: InfixRule(null, Precedence.Lowest),
         TokenTag.RSquirly: InfixRule(null, Precedence.Lowest),
         TokenTag.Comma: InfixRule(null, Precedence.Lowest),
         TokenTag.Semicolon: InfixRule(null, Precedence.Lowest),
@@ -201,6 +205,19 @@ ExpressionNode parseGroupedExpression(ref Parser parser)
     return expr;
 }
 
+/// Parse expressions grouped by square brackets
+ExpressionNode parseArrayExpression(ref Parser parser)
+{
+    const auto start = parser.position;
+    const auto tokenTags = parser.tokenTags;
+
+    // expect lbracket and skip before function parameters
+    parser.skipToken();
+    auto elements = parser.parseCallArguments(TokenTag.RBracket);
+
+    return new ArrayLiteralNode(start, elements);
+}
+
 /// Parse if-else statements
 ExpressionNode parseIfExpression(ref Parser parser)
 {
@@ -294,9 +311,29 @@ ExpressionNode parseCallExpression(ref Parser parser, ref ExpressionNode functio
     const auto start = parser.position;
     parser.skipToken();
 
-    auto args = parser.parseCallArguments();
+    auto args = parser.parseCallArguments(TokenTag.RParen);
 
     return new CallExpressionNode(start, functionBody, args);
+}
+
+/// Parse index expressions
+ExpressionNode parseIndexExpression(ref Parser parser, ref ExpressionNode lhs, Precedence _)
+{
+    const auto start = parser.position;
+    parser.skipToken();
+
+    auto index = parser.parseExpression(Precedence.Lowest);
+
+    if (parser.tokenTags[parser.position] != TokenTag.RBracket) {
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.RBracket], parser.tokenTags[parser.position]));
+
+        return null;
+    }
+
+    parser.skipToken();
+
+    return new IndexExpressionNode(start, lhs, index);
 }
 
 /// Most fundamental node
@@ -720,7 +757,7 @@ class CallExpressionNode : ExpressionNode {
     ExpressionNode[] args; /// Arguments for call expression
 
     /**
-     * Constructs the binary operator expression
+     * Constructs the function call expression
      * Params:
      * mainIdx = the index of the operator tag
      * functionBody = the main function body
@@ -759,6 +796,80 @@ class CallExpressionNode : ExpressionNode {
 
         return format("%s(%s)", (this.functionBody !is null)
                 ? functionBody.show(lexer) : "", argsListing);
+    }
+}
+
+/// Expression node for arrays
+class ArrayLiteralNode : ExpressionNode {
+    ExpressionNode[] elements; /// Arguments for array expression
+
+    /**
+     * Constructs the array literal expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * args = the expressions as array inputs
+     */
+    this(ulong mainIdx, ExpressionNode[] elements)
+    {
+        super(mainIdx);
+        this.elements = elements;
+    }
+
+    /// Show the left bracket
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.LBracket);
+    }
+
+    /// Create array expression string
+    override string show(ref Lexer lexer)
+    {
+        string arrayListing = "";
+        if (!this.elements.empty()) {
+            auto elementBuilder = appender!(string[]);
+            elementBuilder.reserve(this.elements.length);
+
+            foreach (arg; this.elements) {
+                auto repr = arg.show(lexer);
+                if (repr !is null && repr != "") {
+                    elementBuilder.put(repr);
+                }
+            }
+
+            arrayListing = elementBuilder[].joiner(", ").to!string;
+        }
+
+        return format("[%s]", arrayListing);
+    }
+}
+
+class IndexExpressionNode : ExpressionNode {
+    ExpressionNode lhs; /// LHS expression defining which array is indexed
+    ExpressionNode index; /// Expression in brackets for array index
+
+    /**
+     * Constructs the array literal expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * args = the expressions as array inputs
+     */
+    this(ulong mainIdx, ExpressionNode lhs, ExpressionNode index)
+    {
+        super(mainIdx);
+        this.lhs = lhs;
+        this.index = index;
+    }
+
+    /// Show the token left of bracket
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.LBracket);
+    }
+
+    /// Create array index expression string
+    override string show(ref Lexer lexer)
+    {
+        return format("(%s[%s])", this.lhs.show(lexer), this.index.show(lexer));
     }
 }
 
@@ -1101,14 +1212,14 @@ public:
     }
 
     /// Parse parameter input comma separated list
-    ExpressionNode[] parseCallArguments()
+    ExpressionNode[] parseCallArguments(TokenTag endTag)
     {
         auto argsBuilder = appender!(ExpressionNode[])();
         TokenTag token = this.tokenTags[this.position];
 
         while (this.position < this.tokenCount) {
             // Expect rparen at end of paren list
-            if (token == TokenTag.RParen) {
+            if (token == endTag) {
                 this.skipToken();
                 return argsBuilder[];
             }
@@ -1443,6 +1554,34 @@ unittest {
 unittest {
     const auto input = "fn(x, y) { x + y; }(2, 3);";
     const auto expected = "fn(x, y) { (x + y); }(2, 3);";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Array parameter test
+unittest {
+    const auto input = "let myArray = [1, 2 * 2, 3 + 3];
+    myArray[2];";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(input, lexer, parser);
+}
+
+/// Array expression test
+unittest {
+    const auto input = "5 * [1,2,3,4][1*2] * 6;";
+    const auto expected = "((5 * ([1,2,3,4][1*2])) * 6);";
 
     auto lexer = Lexer(input);
     lexer.tokenize();

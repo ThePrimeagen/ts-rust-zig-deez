@@ -19,6 +19,7 @@ import std.array : appender, Appender;
 import std.conv : to;
 import std.format : format;
 import std.range : empty;
+import std.stdio : writefln;
 import std.sumtype : match;
 
 /// Rep of operators for expressions
@@ -29,6 +30,172 @@ private const string[TokenTag.Return + 1] OPS_TAG = [
     TokenTag.Asterisk: "*", TokenTag.Slash: "/", TokenTag.Lt: "<",
     TokenTag.Gt: ">", TokenTag.Comma: ":", TokenTag.Semicolon: ";"
 ];
+
+/// Builtin functions
+/// Measure length of array or string
+private alias evalResult(T) = mixin("(", T, " value) => EvalResult(value)");
+private alias builtinResult(T) = mixin("(", T, " value) => ReturnValue(value)");
+
+ReturnValue len(EvalResult[] vars...)
+{
+    if (vars.length != 1) {
+        return ReturnValue(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 1 argument",
+                vars.length)));
+    }
+
+    alias arrLen(T) = mixin("(", T, " value) => ReturnValue(value.length)");
+
+    return vars[0].match!((Results value) => ReturnValue(value.length),
+            arrLen!(bool[][]), arrLen!(long[][]), arrLen!(string[][]),
+            arrLen!(Array!bool), arrLen!(Array!long), arrLen!(Array!string),
+            arrLen!(string), (_) => ReturnValue(ErrorValue("`len` not supported for argument")));
+}
+
+/// First element of array
+ReturnValue first(EvalResult[] vars...)
+{
+    if (vars.length != 1) {
+        return ReturnValue(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 1 argument",
+                vars.length)));
+    }
+
+    alias firstElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
+  return ReturnValue(arr[0]); } else { return NIL_RETURN_ATOM; } }");
+
+    return vars[0].match!(firstElement!(bool[][]), firstElement!(long[][]),
+            firstElement!(string[][]), firstElement!(Array!bool),
+            firstElement!(Array!long), firstElement!(Array!string), (Results arr) {
+        if (arr.length > 0) {
+            return arr[0].match!(builtinResult!(Array!long), builtinResult!(Array!bool),
+                builtinResult!(Array!string), builtinResult!(bool), builtinResult!(long),
+                builtinResult!(string), builtinResult!(void*), (_) => VOID_RETURN_ATOM);
+        } else {
+            return NIL_RETURN_ATOM;
+        }
+    }, (string str) {
+        if (str.length > 0) {
+            return ReturnValue(Character(str[0]));
+        } else {
+            return ReturnValue(Character('\0'));
+        }
+    }, (_) => ReturnValue(ErrorValue("`first` not supported for argument")));
+}
+
+/// Last element of array
+ReturnValue last(EvalResult[] vars...)
+{
+    if (vars.length != 1) {
+        return ReturnValue(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 1 argument",
+                vars.length)));
+    }
+
+    alias lastElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
+  return ReturnValue(arr[$ - 1]); } else { return NIL_RETURN_ATOM; } }");
+
+    return vars[0].match!(lastElement!(bool[][]), lastElement!(long[][]),
+            lastElement!(string[][]), lastElement!(Array!bool),
+            lastElement!(Array!long), lastElement!(Array!string), (Results arr) {
+        if (arr.length > 0) {
+            return arr[$ - 1].match!(builtinResult!(Array!long), builtinResult!(Array!bool),
+                builtinResult!(Array!string), builtinResult!(bool), builtinResult!(long),
+                builtinResult!(string), builtinResult!(void*), (_) => VOID_RETURN_ATOM);
+        } else {
+            return NIL_RETURN_ATOM;
+        }
+    }, (string str) {
+        if (str.length > 0) {
+            return ReturnValue(Character(str[$ - 1]));
+        } else {
+            return ReturnValue(Character('\0'));
+        }
+    }, (_) => ReturnValue(ErrorValue("`last` not supported for argument")));
+}
+
+/// View of array tail
+ReturnValue rest(EvalResult[] vars...)
+{
+    if (vars.length != 1) {
+        return ReturnValue(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 1 argument",
+                vars.length)));
+    }
+
+    alias restOf(T) = mixin("(", T, " value) => ReturnValue(value[1 .. $])");
+
+    return vars[0].match!(restOf!(bool[][]), restOf!(long[][]),
+            restOf!(string[][]), restOf!(Array!bool), restOf!(Array!long),
+            restOf!(Array!string), // (Results arr) {
+            //        if (arr.length > 0) {
+            //            return arr[1].match!((bool value) => ReturnValue(arr[1..$]),
+            //                (long value) => ReturnValue(arr[1..$]), (Array!long value) => ReturnValue(arr[1..$]),
+            //                (Array!bool value) => ReturnValue(arr[1..$]), (string value) => ReturnValue(arr[1..$]),
+            //                (Array!string value) => ReturnValue(arr[1..$]),
+            //                (void* value) => ReturnValue(arr[1..$]), (_) => ReturnValue(UNIT_INSTANCE));
+            //        } else {
+            //            return NIL_RETURN_ATOM;
+            //        }
+            //    },
+            (string str) {
+        if (str.length > 1) {
+            return ReturnValue(str[1 .. $]);
+        } else {
+            return ReturnValue(Character('\0'));
+        }
+    }, (_) => ReturnValue(ErrorValue("`rest` not supported for argument")));
+}
+
+/// Append single value to array tail
+ReturnValue push(EvalResult[] vars...)
+{
+    if (vars.length != 2) {
+        return ReturnValue(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 2 arguments",
+                vars.length)));
+    }
+
+    // TODO: Generic array type would fix so many things, especially this builtin function
+    alias pushValue(T) = mixin("(", T, "[] arr) {
+      return vars[1].match!((", T, " value) => ReturnValue(arr ~ value),
+          _ => ReturnValue(ErrorValue(\"`push` not supported for input argument\")));
+    }");
+
+    return vars[0].match!(pushValue!(bool[]), pushValue!(long[]), pushValue!(string[]),
+        pushValue!(bool), pushValue!(long), pushValue!(string),
+    (_) => ReturnValue(ErrorValue("argument to `push` must be array")));
+
+  // only pattern match array - arg0
+  // pattern match any old object - arg1
+  // otherwise, return different error
+}
+
+/// Print variable in stdout
+ReturnValue puts(EvalResult[] vars...)
+{
+    alias printValue(T) = mixin("(", T, " value) => writefln(\"%s\", value)");
+    alias printNumber(T) = mixin("(", T, " value) => writefln(\"%d\", value)");
+
+    // Write repr of each entry in vararg
+    foreach (var; vars) {
+        var.match!(printValue!(bool[][]), printValue!(long[][]),
+                printValue!(string[][]), printValue!(Array!bool), printValue!(Array!long),
+                printValue!(Array!string), printValue!(bool), printNumber!(long),
+                printValue!(string), printValue!(void*), (_) {});
+    }
+
+    // End with unit effect
+    return NIL_RETURN_ATOM;
+}
+
+immutable BuiltinFunction[string] builtinFunctions; /// Map keywords to builtin functions
+
+shared static this()
+{
+    import std.exception : assumeUnique;
+
+    BuiltinFunction[string] tempBuiltinFunctions = [
+        "puts": &puts, "len": &len, "first": &first, "last": &last, "rest": &rest, "push": &push,
+    ];
+
+    builtinFunctions = assumeUnique(tempBuiltinFunctions);
+}
 
 /**
  * Translate any expression node to result value
@@ -66,10 +233,34 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
     for (Environment* localEnv = env; localEnv !is null; localEnv = localEnv.outer) {
         if (name in localEnv.items) {
             return localEnv.items[name];
+        } else if (name in builtinFunctions) {
+            return EvalResult(BuiltinFunctionKey(name));
         }
     }
 
     return EvalResult(ErrorValue(format("Unknown symbol: %s", name)));
+}
+
+/// Prefix expression handlers
+private EvalResult boolPrefix(PrefixExpressionNode node, bool value)
+{
+    if ((node.op) == TokenTag.Bang) {
+        return (!value) ? TRUE_ATOM : FALSE_ATOM;
+    } else {
+        return EvalResult(ErrorValue(format("Unknown operator: %sBOOLEAN", OPS_TAG[node.op])));
+    }
+}
+
+private EvalResult longPrefix(PrefixExpressionNode node, long value)
+{
+    switch (node.op) with (TokenTag) {
+        static foreach (op; [Minus, Bang]) {
+    case op:
+            return mixin("EvalResult(", OPS_TAG[op], "value)");
+        }
+    default:
+        assert(0);
+    }
 }
 
 /// Evaluate prefix expression
@@ -77,24 +268,66 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
 {
     EvalResult result = eval(node.expr, lexer, env);
 
-    return result.match!((bool value) {
-        if ((node.op) == TokenTag.Bang) {
-            return (!value) ? TRUE_ATOM : FALSE_ATOM;
-        } else {
-            return EvalResult(ErrorValue(format("Unknown operator: %sBOOLEAN", OPS_TAG[node.op])));
-        }
-    }, (long value) {
+    return result.match!((bool value) => boolPrefix(node, value),
+            (long value) => longPrefix(node, value), (string _) => EvalResult(
+                "String not supported in prefix expression"), (ReturnValue prefixValue) {
+        return prefixValue.match!((bool value) => boolPrefix(node, value),
+            (long value) => longPrefix(node, value),
+            (string _) => EvalResult("String not supported in prefix expression"),
+            (_) => EvalResult(ErrorValue("Unsupported type in LHS of infix expression")));
+    }, (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
+}
+
+/// Infix expression handlers
+private EvalResult boolInfix(InfixExpressionNode node, bool lValue, EvalResult right)
+{
+    return right.match!((bool rValue) {
         switch (node.op) with (TokenTag) {
-            static foreach (op; [Minus, Bang]) {
+            static foreach (op; [Eq, NotEq, Gt, Lt]) {
         case op:
-                return mixin("EvalResult(" ~ OPS_TAG[op] ~ "value)");
+                return mixin("(lValue", OPS_TAG[op], "rValue) ? TRUE_ATOM : FALSE_ATOM");
             }
         default:
-            assert(0);
+            return EvalResult(ErrorValue(format("Unknown operator: BOOLEAN %s BOOLEAN",
+                OPS_TAG[node.op])));
         }
-    }, (string _) => EvalResult("String not supported in prefix expression"),
-            (ReturnValue _) => EvalResult("Return value not supported in prefix expression"),
-            (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
+    }, (long _) => EvalResult(ErrorValue(format("Type mismatch in expression: BOOLEAN %s INTEGER", OPS_TAG[node.op]))),
+            _ => EvalResult(ErrorValue("Type in RHS of expression does not match BOOLEAN")));
+}
+
+private EvalResult longInfix(InfixExpressionNode node, long lValue, EvalResult right)
+{
+    return right.match!((bool _) => EvalResult(ErrorValue(format("Type mismatch in expression: INTEGER %s BOOLEAN",
+            OPS_TAG[node.op]))), (long rValue) {
+        switch (node.op) with (TokenTag) {
+            static foreach (op; [Eq, NotEq, Gt, Lt]) {
+        case op:
+                return mixin("(lValue", OPS_TAG[op], "rValue) ? TRUE_ATOM : FALSE_ATOM");
+            }
+            static foreach (op; [Plus, Minus, Asterisk, Slash]) {
+        case op:
+                return mixin("EvalResult(lValue", OPS_TAG[op], "rValue)");
+            }
+        default:
+            return EvalResult(ErrorValue(format("Unknown operator: INTEGER %s INTEGER",
+                OPS_TAG[node.op])));
+        }
+    }, _ => EvalResult(ErrorValue("Type in RHS of expression does not match INTEGER")));
+}
+
+private EvalResult stringInfix(InfixExpressionNode node, string lValue, EvalResult right)
+{
+    return right.match!((string rValue) {
+        if (node.op == TokenTag.Plus) {
+            return EvalResult(lValue ~ rValue);
+        } else {
+            return EvalResult(ErrorValue(format("Unknown operator: STRING %s STRING",
+                OPS_TAG[node.op])));
+        }
+    }, (bool _) => EvalResult(ErrorValue(format("Type mismatch in expression: STRING %s BOOLEAN",
+            OPS_TAG[node.op]))), (long _) => EvalResult(ErrorValue(format(
+            "Type mismatch in expression: STRING %s INTEGER", OPS_TAG[node.op]))),
+            _ => EvalResult(ErrorValue("Type in RHS of expression does not match STRING")));
 }
 
 /// Evaluate infix expression
@@ -103,51 +336,13 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
     const EvalResult left = eval(node.lhs, lexer, env);
     const EvalResult right = eval(node.rhs, lexer, env);
 
-    return left.match!((bool lValue) {
-        return right.match!((bool rValue) {
-            switch (node.op) with (TokenTag) {
-                static foreach (op; [Eq, NotEq, Gt, Lt]) {
-            case op:
-                    return mixin("(lValue" ~ OPS_TAG[op] ~ "rValue) ? TRUE_ATOM : FALSE_ATOM");
-                }
-            default:
-                return EvalResult(ErrorValue(format("Unknown operator: BOOLEAN %s BOOLEAN",
-                OPS_TAG[node.op])));
-            }
-        }, (long _) => EvalResult(ErrorValue(format("Type mismatch in expression: BOOLEAN %s INTEGER",
-            OPS_TAG[node.op]))),
-            _ => EvalResult(ErrorValue("Type in RHS of expression does not match BOOLEAN")));
-    }, (long lValue) {
-        return right.match!((bool _) => EvalResult(ErrorValue(format("Type mismatch in expression: INTEGER %s BOOLEAN",
-            OPS_TAG[node.op]))), (long rValue) {
-            switch (node.op) with (TokenTag) {
-                static foreach (op; [Eq, NotEq, Gt, Lt]) {
-            case op:
-                    return mixin("(lValue" ~ OPS_TAG[op] ~ "rValue) ? TRUE_ATOM : FALSE_ATOM");
-                }
-                static foreach (op; [Plus, Minus, Asterisk, Slash]) {
-            case op:
-                    return mixin("EvalResult(lValue" ~ OPS_TAG[op] ~ "rValue)");
-                }
-            default:
-                return EvalResult(ErrorValue(format("Unknown operator: INTEGER %s INTEGER",
-                OPS_TAG[node.op])));
-            }
-        }, _ => EvalResult(ErrorValue("Type in RHS of expression does not match INTEGER")));
-    }, (string lValue) {
-        return right.match!((string rValue) {
-            if (node.op == TokenTag.Plus) {
-                return EvalResult(lValue ~ rValue);
-            } else {
-                return EvalResult(ErrorValue(format("Unknown operator: STRING %s STRING",
-                OPS_TAG[node.op])));
-            }
-        }, (bool _) => EvalResult(ErrorValue(format("Type mismatch in expression: STRING %s BOOLEAN",
-            OPS_TAG[node.op]))), (long _) => EvalResult(ErrorValue(format(
-            "Type mismatch in expression: STRING %s INTEGER", OPS_TAG[node.op]))),
-            _ => EvalResult(ErrorValue("Type in RHS of expression does not match STRING")));
-    }, (ReturnValue _) => EvalResult("Return value not supported in infix expression"),
-            (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
+    return left.match!((bool lValue) => boolInfix(node, lValue, right),
+            (long lValue) => longInfix(node, lValue, right),
+            (string lValue) => stringInfix(node, lValue, right), (ReturnValue lhsValue) {
+        return lhsValue.match!((bool lValue) => boolInfix(node, lValue, right),
+            (long lValue) => longInfix(node, lValue, right), (string lValue) => stringInfix(node, lValue, right),
+            (_) => EvalResult(ErrorValue("Unsupported type in LHS of infix expression")));
+    }, (ErrorValue err) => EvalResult(err), (_) => UNIT_ATOM);
 }
 
 /// Evaluate if-then-else expression
@@ -178,12 +373,76 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
     return EvalResult(Function(&node.parameters, &node.functionBody, env));
 }
 
+/// Evaluate array literal
+@method EvalResult _eval(ArrayLiteralNode node, ref Lexer lexer, Environment* env)
+{
+    return evalExpressionsForArray(node.elements, lexer, env);
+    /*
+    auto elements = evalExpressions(node.elements, lexer, env);
+
+    if (elements.length == 1) {
+        const auto value = elements[0];
+        if (value.match!((ErrorValue _) => true, _ => false)) {
+            return value;
+        }
+    }
+
+    return EvalResult(elements);
+    */
+}
+
+/// Array index expression handlers
+private EvalResult longIndex(IndexExpressionNode node, EvalResult lhs, long idx,
+        ref Lexer lexer, Environment* env)
+{
+    return lhs.match!((Results left) => evalArrayIndexExpression(left, idx, lexer, env),
+            _ => EvalResult(ErrorValue("Index operator not supported for non-array on LHS")));
+}
+
+/// Evaluate array index expression
+@method EvalResult _eval(IndexExpressionNode node, ref Lexer lexer, Environment* env)
+{
+    auto lhs = eval(node.lhs, lexer, env);
+    if (lhs.match!((ErrorValue _) => true, _ => false)) {
+        return lhs;
+    }
+
+    // TODO: check that LHS = hashmap
+    auto index = eval(node.index, lexer, env);
+
+    return index.match!((long idx) => longIndex(node, lhs, idx, lexer, env),
+            (ErrorValue _) => index, (ReturnValue value) {
+        return value.match!((long idx) => longIndex(node, lhs, idx, lexer, env),
+            _ => EvalResult(ErrorValue("Index operator not supported for non-numeric on RHS")));
+    }, _ => EvalResult(ErrorValue("Index operator not supported for non-numeric on RHS")));
+}
+
+EvalResult evalArrayIndexExpression(Results lhs, long index, ref Lexer lexer, Environment* env)
+{
+    if (index < 0 || index >= lhs.length) {
+        return NIL_ATOM;
+    }
+
+    return lhs[index];
+}
+
 /// Evaluate function call
 @method EvalResult _eval(CallExpressionNode node, ref Lexer lexer, Environment* env)
 {
     auto exprValue = eval(node.functionBody, lexer, env);
 
-    return exprValue.match!((Function literal) {
+    return exprValue.match!((BuiltinFunctionKey key) {
+        auto args = evalExpressions(node.args, lexer, env);
+
+        if (args.length == 1) {
+            const auto value = args[0];
+            if (value.match!((ErrorValue _) => true, _ => false)) {
+                return value;
+            }
+        }
+
+        return EvalResult(builtinFunctions[key.name](args));
+    }, (Function literal) {
         auto args = evalExpressions(node.args, lexer, env);
 
         if (args.length == 1) {
@@ -196,9 +455,11 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
         auto evaluated = applyFunction(literal, args, lexer);
 
         return evaluated.match!((ReturnValue result) {
-            return result.match!((bool value) => EvalResult(value),
-            (long value) => EvalResult(value),
-            (string value) => EvalResult(value), (Unit _) => UNIT_ATOM);
+            return result.match!(evalResult!(long[][]),
+            evalResult!(bool[][]), evalResult!(string[][]), evalResult!(Array!long),
+            evalResult!(Array!bool), evalResult!(Array!string), evalResult!(bool),
+            evalResult!(long), evalResult!(string), evalResult!(ErrorValue),
+            evalResult!(void*), evalResult!(Character), (Unit _) => UNIT_ATOM);
         }, (result) => EvalResult(result));
     }, (ErrorValue error) => EvalResult(error), value => EvalResult(value));
 }
@@ -206,18 +467,65 @@ EvalResult eval(virtual!ExpressionNode node, ref Lexer lexer, Environment* env);
 /// Evaluate function with an extended environment
 EvalResult applyFunction(Function literal, EvalResult[] args, ref Lexer lexer)
 {
-    //TODO: Add Function ADT -> Literal | Builtin
     auto extendedEnv = extendFunctionEnv(literal, args, lexer);
     return evalStatement(*literal.functionBody, lexer, extendedEnv);
 }
 
-/// Evaluate all expressions until either error or completion
-EvalResult[] evalExpressions(ExpressionNode[] exprs, ref Lexer lexer, Environment* env)
+/// Evaluate remaining expressions as array of values
+EvalResult evalExpressionsArray(T)(T first, ExpressionNode[] exprs,
+        ref Lexer lexer, Environment* env)
 {
     if (exprs.empty()) {
-        return [];
+        return EvalResult([first]);
     }
 
+    auto results = appender!(T[])();
+    results.reserve(exprs.length + 1);
+    results.put(first);
+
+    // Evaluate expressions until we hit error
+    foreach (expression; exprs) {
+        auto result = eval(expression, lexer, env);
+        string errMsg = result.match!((ErrorValue err) => err.message, (T value) {
+            results.put(value);
+            return "";
+        }, _ => "Type mismatch for array");
+
+        if (!errMsg.empty) {
+            return EvalResult(ErrorValue(errMsg));
+        }
+    }
+
+    return EvalResult(results[]);
+}
+
+/// Evaluate all expressions in array until either error or completion
+EvalResult evalExpressionsForArray(ExpressionNode[] exprs, ref Lexer lexer, Environment* env)
+{
+    if (exprs.empty()) {
+        return EvalResult(cast(Results)([]));
+    }
+
+    auto firstResult = eval(exprs[0], lexer, env);
+    if (firstResult.match!((ErrorValue _) => true, _ => false)) {
+        return firstResult;
+    }
+
+    // FIXME: Arrays with maximum of 2 dimensions supported
+    return firstResult.match!((bool value) => evalExpressionsArray(value,
+            exprs[1 .. $], lexer, env), (long value) => evalExpressionsArray(value,
+            exprs[1 .. $], lexer, env), (Array!long value) => evalExpressionsArray(value,
+            exprs[1 .. $], lexer, env), (Array!bool value) => evalExpressionsArray(value,
+            exprs[1 .. $], lexer, env), (string value) => evalExpressionsArray(value,
+            exprs[1 .. $], lexer, env), (Array!string value) => evalExpressionsArray(value,
+            exprs[1 .. $], lexer, env), //(void* _) => UNIT_ATOM,
+            //(Unit _) => UNIT_ATOM,
+            (_) => UNIT_ATOM);
+}
+
+/// Evaluate all expressions in param listing until either error or completion
+EvalResult[] evalExpressions(ExpressionNode[] exprs, ref Lexer lexer, Environment* env)
+{
     auto results = appender!(EvalResult[])();
     results.reserve(exprs.length);
 

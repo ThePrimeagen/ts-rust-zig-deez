@@ -89,7 +89,8 @@ public:
             auto endResult = finalResults[$ - 1];
 
             return endResult.match!((ErrorValue result) => result.message, (ReturnValue result) {
-                return result.match!((Unit _) => "", (value) => format("%s", value));
+                return result.match!((Unit _) => "", (ErrorValue result) => result.message,
+                    (Character c) => format("'%c'", c.value), (value) => format("%s", value));
             }, (Function _) => "<Function>", (Unit _) => "", (result) => format("%s", result));
         }
     }
@@ -184,6 +185,105 @@ unittest {
         result.match!((string value) => assert(value == expected[i],
                 format("String value %s does not match expected value %s", value, expected[i])),
                 _ => assert(false, format("Expected string value in statement %s", i)));
+    }
+}
+
+/// Basic array test
+unittest {
+    const auto input = "[1, 2 * 2, 3 + 3]";
+    const Array expected = Array[EvalResult(1), EvalResult(4), EvalResult(6)];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((Array arr) {
+            foreach (i, value; arr.elements.enumerate(0)) {
+                assert(value == expected[i],
+                    format("Int value %s does not match expected value %s", value, expected[i]));
+            }
+        }, _ => assert(false, format("Expected array value in statement %s", i)));
+    }
+}
+
+/// Array and string len test
+unittest {
+    const auto input = "len([1, 2 * 2, 3 + 3]);
+    len([]); len(\"1234\"); len(\"Hello world!\");";
+    const long[4] expected = [3, 0, 4, 12];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((long value) => assert(value == expected[i],
+                format("Number value %s does not match expected value %s", value, expected[i])),
+                _ => assert(false, format("Expected int value in statement %s", i)));
+    }
+}
+
+/// Array index test
+unittest {
+    const auto input = "[1, 2, 3][0]";
+    const long expected = 1;
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((long value) {
+            assert(value == expected,
+                format("Int value %s does not match expected value %s", value, expected));
+        }, _ => assert(false, format("Expected array value in statement %s", i)));
+    }
+}
+
+/// Builtin function test
+unittest {
+    const auto input = "len([9,8,7]);
+    first([9,8,7]);
+    last([9,8,7]);";
+    const long expected[3] = [3, 9, 7];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((long value) {
+            assert(value == expected[i],
+                format("Int value %s does not match expected value %s", value, expected[i]));
+        }, _ => assert(false, format("Expected number in statement %s", i)));
+    }
+}
+
+/// Builtin rest function base test
+unittest {
+    const auto input = "rest([9,8,7]);";
+    const long expected[2] = [8, 7];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((Array!long value) {
+            assert(value == expected,
+                format("Int values %s does not match expected values %s", value, expected));
+        }, _ => assert(false, format("Expected array in statement %s", i)));
+    }
+}
+
+/// Builtin rest function empty test
+unittest {
+    const auto input = "rest([3]);";
+    const long expected[0] = [];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((Array!long value) {
+            assert(value.empty, "Int values expected to be empty");
+        }, _ => assert(false, format("Expected array in statement %s", i)));
     }
 }
 

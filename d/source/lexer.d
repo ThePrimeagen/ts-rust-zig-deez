@@ -37,6 +37,8 @@ enum TokenTag : ubyte {
     RParen,
     LSquirly,
     RSquirly,
+    LBracket,
+    RBracket,
     Function,
     Let,
     True,
@@ -89,7 +91,8 @@ shared static this()
         TokenTag.Bang: "!", TokenTag.Asterisk: "*", TokenTag.Slash: "/",
         TokenTag.Lt: "<", TokenTag.Gt: ">", TokenTag.Comma: ":",
         TokenTag.Semicolon: ";", TokenTag.LParen: "(", TokenTag.RParen: ")",
-        TokenTag.LSquirly: "{", TokenTag.RSquirly: "}"
+        TokenTag.LSquirly: "{", TokenTag.RSquirly: "}", TokenTag.LBracket: "[",
+        TokenTag.RBracket: "]"
     ];
 
     foreach (e; tempKeywords.byKeyValue) {
@@ -246,7 +249,8 @@ public:
                 Unigram('*', Asterisk), Unigram('<', Lt), Unigram('>', Gt),
                 Unigram(';', Semicolon), Unigram(',', Comma), Unigram('(',
                         LParen), Unigram(')', RParen), Unigram('{', LSquirly),
-                Unigram('}', RSquirly), Unigram('\0', Eof)
+                Unigram('}', RSquirly), Unigram('[', LBracket),
+                Unigram(']', RBracket), Unigram('\0', Eof)
             ]) {
         case match.ch:
                 this.tokens.start.put(this.position);
@@ -381,7 +385,6 @@ public:
         const auto tag = this.tokens.tag[][index];
         if (tag in tagReprs) {
             return tagReprs[tag];
-            // TODO: Add string support for repr
         } else if (tag == TokenTag.Ident || tag == TokenTag.Int || tag == TokenTag.String) {
             const auto start = this.tokens.start[][index];
             const auto identSlice = this.input[start .. this.endPosition[start]];
@@ -497,7 +500,6 @@ let fullName = fn(first, last) { first + \" \" + last };
 fullName(firstName, lastName);
 ";
 
-    // TODO: update this
     const ulong[] expectedStart = [
         0, 4, 9, 11, 12, 14, 18, 22, 24, 26, 28, 32, 36, 38, 40, 41, 42, 44,
         45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87, 88,
@@ -506,7 +508,6 @@ fullName(firstName, lastName);
         204, 205, 214, 216, 224, 225, input.length
     ];
 
-    // TODO: update this
     with (TokenTag) {
         const auto expectedTag = [
             Let, Ident, Assign, Int, Semicolon, Let, Ident, Assign, Int,
@@ -626,6 +627,7 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
+[1, 2];
 ";
 
     const ulong[] expectedStart = [
@@ -633,7 +635,8 @@ if (5 < 10) {
         45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
         88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107, 110, 113, 114,
         116, 118, 120, 122, 126, 133, 137, 139, 141, 146, 150, 157, 162, 164,
-        167, 170, 173, 175, 177, 180, 183, 184, input.length
+        167, 170, 173, 175, 177, 180, 183, 184, 188, 190, 191, 193, 194,
+        input.length
     ];
 
     with (TokenTag) {
@@ -646,7 +649,7 @@ if (5 < 10) {
             Int, Lt, Int, Gt, Int, Semicolon, If, LParen, Int, Lt, Int, RParen,
             LSquirly, Return, True, Semicolon, RSquirly, Else, LSquirly,
             Return, False, Semicolon, RSquirly, Int, Eq, Int, Semicolon, Int,
-            NotEq, Int, Semicolon, Eof
+            NotEq, Int, Semicolon, LBracket, Int, Comma, Int, RBracket, Eof
         ];
 
         auto lexer = Lexer(input);
