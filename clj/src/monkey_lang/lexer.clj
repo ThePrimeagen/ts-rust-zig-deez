@@ -8,11 +8,10 @@
             [monkey-lang.token :as token]
             [monkey-lang.util  :as util]))
 
-(def single-char
-  (jb/do
-    (lit <- (jp/satisfy token/char1->kind))
-    (let [kind (token/char1->kind lit)]
-    (jc/return (token/create kind lit)))))
+(defn single-char [cs]
+  (when-let [[lit cs] (cs/read cs)]
+  (when-let [kind (token/char1->kind lit)]
+    [(token/create kind lit) cs])))
 
 (defn double-char [cs]
   (when-let [[lit cs] (cs/read cs 2)]
