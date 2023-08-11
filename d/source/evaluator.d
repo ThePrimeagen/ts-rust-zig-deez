@@ -89,7 +89,7 @@ public:
             auto endResult = finalResults[$ - 1];
 
             return endResult.match!((ErrorValue result) => result.message, (ReturnValue result) {
-                return result.match!((Unit _) => "", (ErrorValue result) => result.message,
+                return (*result).match!((Unit _) => "", (ErrorValue result) => result.message,
                     (Character c) => format("'%c'", c.value), (value) => format("%s", value));
             }, (Function _) => "<Function>", (Unit _) => "", (result) => format("%s", result));
         }

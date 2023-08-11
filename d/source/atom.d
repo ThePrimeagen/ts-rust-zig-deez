@@ -38,51 +38,43 @@ struct Function {
     Environment* env; /// Environment containing symbols
 }
 
-// TODO: add array type; handle 'null'/Unit input param
-/// Useful as input parameter
-alias InputParam = SumType!(long, bool, Array!long, Array!bool, string, Array!string, void*);
-
-// TODO: add array type
-/// Useful for return statement
-alias ReturnValue = SumType!(long, bool, long[][], Array!long, bool[][],
-        Array!bool, string, string[][], Array!string, void*, Character, Unit, ErrorValue);
-
 /// Wrapper around character
 struct Character {
     char value;
 }
-
-/// Wrapper around builtin functions for interpretation
-alias BuiltinFunction = ReturnValue function(EvalResult[]...);
 
 struct BuiltinFunctionKey {
     string name;
 }
 
 /// Wraps evaluation results
-alias EvalResult = SumType!(long, bool, This[], long[][], Array!long,
-        bool[][], Array!bool, string, string[][], Array!string, ReturnValue,
-        ErrorValue, void*, Character, Unit, Function, BuiltinFunctionKey);
+alias EvalResult = SumType!(long, bool, This[], string,
+        ErrorValue, void*, Character, Unit, Function, BuiltinFunctionKey, const This*);
 
-/// Wrapper around Atom Array
-alias Array(T) = T[];
-//alias Array = InputParam.Types[2];
+/// Type for result array
 alias Results = EvalResult.Types[2];
+
+/// Useful for return statement
+alias ReturnValue = EvalResult.Types[$ - 1];
+
+/// Wrapper around builtin functions for interpretation
+alias BuiltinFunction = EvalResult function(EvalResult[]...);
 
 /// Describe type of atom for inspection
 static const UNIT_INSTANCE = Unit(); /// Instance of void atom
 //static const NIL_INSTANCE = Nil(); /// Instance of null atom
 
+static const EMPTY_ARRAY_ATOM = EvalResult(cast(EvalResult[])([])); /// Evaluation instance of empty array
 static const UNIT_ATOM = EvalResult(UNIT_INSTANCE); /// Evaluation instance of void atom
 static const NIL_ATOM = EvalResult(cast(void*) null); /// Evaluation instance of null atom
 static const TRUE_ATOM = EvalResult(true); /// Evaluation instance of true value
 static const FALSE_ATOM = EvalResult(false); /// Evaluation instance of false value
 
-static const VOID_RETURN_ATOM = ReturnValue(UNIT_INSTANCE); /// Return instance of void atom as return value
-//static const NIL_RETURN_ATOM = ReturnValue(NIL_INSTANCE); /// Return instance of nil atom as return value
-static const NIL_RETURN_ATOM = ReturnValue(cast(void*) null); /// Return instance of nil atom as return value
-static const TRUE_RETURN_ATOM = ReturnValue(true); /// Return instance of true atom as return value
-static const FALSE_RETURN_ATOM = ReturnValue(false); /// Return instance of false atom as return value
+static const VOID_RETURN_ATOM = &UNIT_ATOM; /// Return instance of void atom as return value
+//static const NIL_RETURN_ATOM = &(NIL_INSTANCE); /// Return instance of nil atom as return value
+static const NIL_RETURN_ATOM = &NIL_ATOM; /// Return instance of nil atom as return value
+static const TRUE_RETURN_ATOM = &TRUE_ATOM; /// Return instance of true atom as return value
+static const FALSE_RETURN_ATOM = &FALSE_ATOM; /// Return instance of false atom as return value
 
 /// Creates new sibling environment referencing parent environment
 /// Very useful for block statements
