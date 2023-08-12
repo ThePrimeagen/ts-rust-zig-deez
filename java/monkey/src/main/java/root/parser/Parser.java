@@ -28,7 +28,7 @@ public class Parser {
     }
 
     public Program parseProgram() {
-        Program program = new Program();
+        var program = new Program();
 
         while (!currentTokenIs(TokenType.EOF)) {
             try {
@@ -59,7 +59,7 @@ public class Parser {
     }
 
     private ReturnStatement parseReturnStatement() {
-        ReturnStatement returnStatement = new ReturnStatement(currentToken);
+        var returnStatement = new ReturnStatement(currentToken);
 
         this.proceedToNextToken();
 
@@ -72,7 +72,7 @@ public class Parser {
     }
 
     private LetStatement parseLetStatement() throws ParserException {
-        LetStatement letStatement = new LetStatement(currentToken);
+        var letStatement = new LetStatement(currentToken);
 
         expectPeek(TokenType.IDENT);
 
@@ -89,7 +89,7 @@ public class Parser {
     }
 
     private ExpressionStatement parseExpressionStatement() throws ParserException {
-        ExpressionStatement statement = new ExpressionStatement(currentToken);
+        var statement = new ExpressionStatement(currentToken);
 
         statement.setExpression(parseExpression(OperatorPrecedence.LOWEST));
 
@@ -133,6 +133,7 @@ public class Parser {
             case BANG, MINUS -> this::parsePrefixExpression;
             case LPAREN -> this::parseGroupedExpression;
             case IF -> this::parseIfExpression;
+            case FUNC -> this::parseFunctionLiteral;
             default -> null;
         };
     }
@@ -172,7 +173,7 @@ public class Parser {
     }
 
     private IfExpression parseIfExpression() throws ParserException {
-        IfExpression ifExpression = new IfExpression(currentToken);
+        var ifExpression = new IfExpression(currentToken);
 
         expectPeek(TokenType.LPAREN);
         proceedToNextToken();
@@ -194,8 +195,40 @@ public class Parser {
         return ifExpression;
     }
 
+    private FunctionLiteralExpression parseFunctionLiteral() throws ParserException {
+        var functionLiteral = new FunctionLiteralExpression(currentToken);
+
+        expectPeek(TokenType.LPAREN);
+
+        parseFunctionparameters(functionLiteral);
+
+        expectPeek(TokenType.LSQIRLY);
+
+        functionLiteral.setBody(parseBlockStatement());
+
+        return functionLiteral;
+    }
+
+    private void parseFunctionparameters(FunctionLiteralExpression functionLiteral) throws ParserException {
+        if (peekTokenIs(TokenType.RPAREN)) {
+            proceedToNextToken();
+            return;
+        }
+
+        proceedToNextToken();
+        var identifier = new IdentifierExpression(currentToken, currentToken.literal());
+        functionLiteral.getParameters().add(identifier);
+
+        if (peekTokenIs(TokenType.COMMA)) {
+            proceedToNextToken();
+            parseFunctionparameters(functionLiteral);
+        } else {
+            expectPeek(TokenType.RPAREN);
+        }
+    }
+
     private BlockStatement parseBlockStatement() throws ParserException {
-        BlockStatement blockStatement = new BlockStatement(currentToken);
+        var blockStatement = new BlockStatement(currentToken);
 
         proceedToNextToken();
 

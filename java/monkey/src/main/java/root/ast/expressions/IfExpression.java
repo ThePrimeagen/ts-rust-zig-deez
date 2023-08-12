@@ -39,10 +39,10 @@ public class IfExpression extends Expression {
 
     @Override
     public String toString() {
-        var ifString = "if %s {\n%s\n}".formatted(condition, consequence);
+        var ifString = "if %s %s".formatted(condition, consequence);
 
         if (alternative != null) {
-            ifString += " else {\n%s\n}".formatted(alternative);
+            ifString += " else %s".formatted(alternative);
         }
 
         return ifString;

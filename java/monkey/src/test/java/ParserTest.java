@@ -315,6 +315,57 @@ public class ParserTest {
         Assertions.assertEquals("if (y > x) {\nx\n} else {\ny\n}", expression.toString());
     }
 
+    @Test
+    void testFunctionLiteralParsing() {
+        var input = "fn(x, y) { x + y; }";
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+
+        ExpressionStatement expressionStatement = (ExpressionStatement) program.getStatements().get(0);
+
+        Assertions.assertInstanceOf(FunctionLiteralExpression.class, expressionStatement.getExpression());
+
+        FunctionLiteralExpression function = (FunctionLiteralExpression) expressionStatement.getExpression();
+
+        Assertions.assertEquals(2, function.getParameters().size());
+        testLiteralExpression(function.getParameters().get(0), "x");
+        testLiteralExpression(function.getParameters().get(1), "y");
+
+        Assertions.assertEquals(1, function.getBody().getStatements().size());
+
+        Assertions.assertInstanceOf(ExpressionStatement.class, function.getBody().getStatements().get(0));
+
+        ExpressionStatement expression = (ExpressionStatement) function.getBody().getStatements().get(0);
+
+        testInfixExpression(expression.getExpression(),"x", "+", "y");
+
+        Assertions.assertEquals("fn(x, y) {\n(x + y)\n}", function.toString());
+    }
+
+    private static record FunctionParameterTest(String input, List<String> expectedParams) {}
+
+    @Test
+    void testFunctionParameterParsing() {
+        var tests = List.of(
+                new FunctionParameterTest("fn () {};", List.of()),
+                new FunctionParameterTest("fn (x) {};", List.of("x")),
+                new FunctionParameterTest("fn (x, y, z) {};", List.of("x", "y", "z"))
+        );
+
+        for (FunctionParameterTest(String input, List<String> expectedParams) : tests) {
+            var program = buildProgram(input);
+            var function = (FunctionLiteralExpression) ((ExpressionStatement) program.getStatements().get(0)).getExpression();
+
+            Assertions.assertEquals(expectedParams.size(), function.getParameters().size());
+
+            for (int i = 0; i < expectedParams.size(); i++) {
+                testLiteralExpression(function.getParameters().get(i), expectedParams.get(i));
+            }
+        }
+    }
+
     private void testIntegerLiteral(Expression expression, Long expectedValue) {
         if (expression instanceof IntegerLiteralExpression integerLiteralExpression) {
             Assertions.assertEquals(expectedValue, integerLiteralExpression.getValue());

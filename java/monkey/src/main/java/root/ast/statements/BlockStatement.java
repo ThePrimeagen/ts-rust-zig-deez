@@ -24,6 +24,7 @@ public class BlockStatement extends Statement {
 
     @Override
     public String toString() {
-        return statements.stream().map(Object::toString).collect(Collectors.joining("\n"));
+        var statements = this.statements.stream().map(Object::toString).collect(Collectors.joining("\n"));
+        return "{\n%s\n}".formatted(statements);
     }
 }
