@@ -50,7 +50,7 @@
 
 (def illegal
   (jb/do
-    (lit <- (jc/map jp/any-char))
+    (lit <- jp/any-char)
     (jc/return (token/create token/ILLEGAL lit))))
 
 (def tokens
