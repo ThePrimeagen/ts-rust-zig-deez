@@ -13,6 +13,7 @@ public enum OperatorPrecedence {
 
     public static OperatorPrecedence precedenceForTokenType(TokenType tokenType) {
         return switch (tokenType) {
+            case LPAREN             -> CALL;
             case EQUAL, NOT_EQUAL   -> EQUALS;
             case LT, GT             -> LESS_GREATER;
             case PLUS, MINUS        -> SUM;

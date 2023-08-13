@@ -58,13 +58,14 @@ public class Parser {
         };
     }
 
-    private ReturnStatement parseReturnStatement() {
+    private ReturnStatement parseReturnStatement() throws ParserException {
         var returnStatement = new ReturnStatement(currentToken);
 
         this.proceedToNextToken();
 
-        // TODO: We're skipping the expressions until we encounter a semicolon or EOF
-        while (!currentTokenIs(TokenType.SEMI) && !currentTokenIs(TokenType.EOF)) {
+        returnStatement.setReturnValue(parseExpression(OperatorPrecedence.LOWEST));
+
+        if (peekTokenIs(TokenType.SEMI)) {
             proceedToNextToken();
         }
 
@@ -79,9 +80,11 @@ public class Parser {
         letStatement.setName(new IdentifierExpression(currentToken, currentToken.literal()));
 
         expectPeek(TokenType.ASSIGN);
+        proceedToNextToken();
 
-        // TODO: We're skipping the expressions until we encounter a semicolon or EOF
-        while (!currentTokenIs(TokenType.SEMI) && !currentTokenIs(TokenType.EOF)) {
+        letStatement.setValue(parseExpression(OperatorPrecedence.LOWEST));
+
+        if (peekTokenIs(TokenType.SEMI)) {
             proceedToNextToken();
         }
 
@@ -126,8 +129,6 @@ public class Parser {
     private ParserSupplier<Expression> prefixParseFn() {
         return switch (currentToken.type()) {
             case IDENT -> () -> new IdentifierExpression(currentToken, currentToken.literal());
-            // NumberFormatException should never be thrown here, since we already know it's an INT
-            // token and those contain valid int representations in their values
             case INT -> () -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
             case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
             case BANG, MINUS -> this::parsePrefixExpression;
@@ -148,6 +149,7 @@ public class Parser {
     private ParserFunction<Expression, Expression> infixParseFn(TokenType tokenType) {
         return switch (tokenType) {
             case PLUS, MINUS, SLASH, ASTERISK, EQUAL, NOT_EQUAL, LT, GT -> this::parseInfixExpression;
+            case LPAREN -> this::parseCallExpression;
             default -> null;
         };
     }
@@ -160,6 +162,30 @@ public class Parser {
         expression.setRight(parseExpression(precedence));
 
         return expression;
+    }
+
+    private CallExpression parseCallExpression(Expression function) throws ParserException {
+        var callExpression = new CallExpression(currentToken, function);
+        parseCallArguments(callExpression);
+        return callExpression;
+    }
+
+    private void parseCallArguments(CallExpression callExpression) throws ParserException {
+        if (peekTokenIs(TokenType.RPAREN)) {
+            proceedToNextToken();
+            return;
+        }
+
+        proceedToNextToken();
+        var argument = parseExpression(OperatorPrecedence.LOWEST);
+        callExpression.getArguments().add(argument);
+
+        if (peekTokenIs(TokenType.COMMA)) {
+            proceedToNextToken();
+            parseCallArguments(callExpression);
+        } else {
+            proceedToNextToken();
+        }
     }
 
     private Expression parseGroupedExpression() throws ParserException {

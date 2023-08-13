@@ -14,39 +14,43 @@ import java.util.List;
 
 public class ParserTest {
 
+    private record InputStatementTest(String input, String expectedIdentifier, Object expectedValue) {
+    }
+
     @Test
     void testLetStatements() {
-        var input = """
-                let x = 5;
-                let y = 10;
-                let foobar = 838383;""";
+        var tests = List.of(
+                new InputStatementTest("let x = 5;", "x", 5),
+                new InputStatementTest("let y = true;", "y", true),
+                new InputStatementTest("let foobar = y;", "foobar", "y")
+        );
 
-        var program = buildProgram(input);
+        for (InputStatementTest(String input, String expectedIdentifier, Object expectedValue) : tests) {
+            var program = buildProgram(input);
+            Assertions.assertEquals(1, program.getStatements().size());
+            var letStatement = (LetStatement) program.getStatements().get(0);
 
-        Assertions.assertEquals(3, program.getStatements().size());
-
-        var expectedIdentifiers = List.of("x", "y", "foobar");
-
-        var index = 0;
-        for (var statement : program.getStatements()) {
-            testLetStatement(statement, expectedIdentifiers.get(index++));
+            testLetStatement(letStatement, expectedIdentifier, expectedValue);
         }
+    }
+
+    private record ReturnStatementTest(String input, Object expectedValue) {
     }
 
     @Test
     void testReturnStatements() {
-        var input = """
-                return 5;
-                return 10;
-                return 993322;""";
+        var tests = List.of(
+                new ReturnStatementTest("return 5;", 5),
+                new ReturnStatementTest("return true;", true),
+                new ReturnStatementTest("return y;", "y")
+        );
 
-        var program = buildProgram(input);
+        for (ReturnStatementTest(String input, Object expectedValue) : tests) {
+            var program = buildProgram(input);
+            Assertions.assertEquals(1, program.getStatements().size());
+            var letStatement = (ReturnStatement) program.getStatements().get(0);
 
-        Assertions.assertEquals(3, program.getStatements().size());
-
-        for (var statement : program.getStatements()) {
-            Assertions.assertTrue(statement instanceof ReturnStatement);
-            Assertions.assertEquals(TokenType.RETURN.token().literal(), statement.tokenLiteral());
+            testReturnStatement(letStatement, expectedValue);
         }
     }
 
@@ -258,6 +262,18 @@ public class ParserTest {
                 List.of(
                         "!(true == true)",
                         "(!(true == true))"
+                ),
+                List.of(
+                        "a + add(b * c) + d",
+                        "((a + add((b * c))) + d)"
+                ),
+                List.of(
+                        "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"
+                ),
+                List.of(
+                        "add(a + b + c * d / f + g)",
+                        "add((((a + b) + ((c * d) / f)) + g))"
                 )
         );
 
@@ -339,12 +355,13 @@ public class ParserTest {
 
         ExpressionStatement expression = (ExpressionStatement) function.getBody().getStatements().get(0);
 
-        testInfixExpression(expression.getExpression(),"x", "+", "y");
+        testInfixExpression(expression.getExpression(), "x", "+", "y");
 
         Assertions.assertEquals("fn(x, y) {\n(x + y)\n}", function.toString());
     }
 
-    private static record FunctionParameterTest(String input, List<String> expectedParams) {}
+    private record FunctionParameterTest(String input, List<String> expectedParams) {
+    }
 
     @Test
     void testFunctionParameterParsing() {
@@ -356,12 +373,58 @@ public class ParserTest {
 
         for (FunctionParameterTest(String input, List<String> expectedParams) : tests) {
             var program = buildProgram(input);
+            Assertions.assertEquals(1, program.getStatements().size());
             var function = (FunctionLiteralExpression) ((ExpressionStatement) program.getStatements().get(0)).getExpression();
 
             Assertions.assertEquals(expectedParams.size(), function.getParameters().size());
 
             for (int i = 0; i < expectedParams.size(); i++) {
                 testLiteralExpression(function.getParameters().get(i), expectedParams.get(i));
+            }
+        }
+    }
+
+    @Test
+    void testCallExpression() {
+        var input = "add(1, 2 * 3, 4 + 5)";
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+
+        ExpressionStatement statement = (ExpressionStatement) program.getStatements().get(0);
+
+        Assertions.assertInstanceOf(CallExpression.class, statement.getExpression());
+
+        CallExpression callExpression = (CallExpression) statement.getExpression();
+
+        testIdentifier(callExpression.getFunction(), "add");
+        Assertions.assertEquals(3, callExpression.getArguments().size());
+        testLiteralExpression(callExpression.getArguments().get(0), 1);
+        testInfixExpression(callExpression.getArguments().get(1), 2, "*", 3);
+        testInfixExpression(callExpression.getArguments().get(2), 4, "+", 5);
+    }
+
+    private record CallParameterTest(String input, List<String> expectedArguments) {
+    }
+
+    @Test
+    void testCallParameterParsing() {
+        var tests = List.of(
+                new CallParameterTest("func()", List.of()),
+                new CallParameterTest("func(3 - 1)", List.of("(3 - 1)")),
+                new CallParameterTest("func(1, 2 * 3 + 1, 98)", List.of("1", "((2 * 3) + 1)", "98"))
+        );
+
+        for (CallParameterTest(String input, List<String> expectedArguments) : tests) {
+            var program = buildProgram(input);
+            Assertions.assertEquals(1, program.getStatements().size());
+            var call = (CallExpression) ((ExpressionStatement) program.getStatements().get(0)).getExpression();
+
+            Assertions.assertEquals(expectedArguments.size(), call.getArguments().size());
+
+            for (int i = 0; i < expectedArguments.size(); i++) {
+                Assertions.assertEquals(expectedArguments.get(i), call.getArguments().get(i).toString());
             }
         }
     }
@@ -432,14 +495,25 @@ public class ParserTest {
         return program;
     }
 
-    private void testLetStatement(Statement statement, String name) {
+    private void testLetStatement(Statement statement, String name, Object expectedValue) {
         Assertions.assertEquals(TokenType.LET.token().literal(), statement.tokenLiteral());
 
         if (statement instanceof LetStatement letStatement) {
             Assertions.assertEquals(name, letStatement.getName().getValue());
             Assertions.assertEquals(name, letStatement.getName().tokenLiteral());
+            testLiteralExpression(letStatement.getValue(), expectedValue);
         } else {
             throw new AssertionError(statement.getClass().getSimpleName() + " is not instance of LetStatement");
+        }
+    }
+
+    private void testReturnStatement(Statement statement, Object expectedValue) {
+        Assertions.assertEquals(TokenType.RETURN.token().literal(), statement.tokenLiteral());
+
+        if (statement instanceof ReturnStatement returnStatement) {
+            testLiteralExpression(returnStatement.getReturnValue(), expectedValue);
+        } else {
+            throw new AssertionError(statement.getClass().getSimpleName() + " is not instance of ReturnStatement");
         }
     }
 
