@@ -18,13 +18,17 @@ public class Parser {
 
     private Token peekToken;
 
-    public final List<String> errors = new ArrayList<>();
+    private final List<String> errors = new ArrayList<>();
 
     public Parser(Lexer lexer) {
         this.lexer = lexer;
 
         proceedToNextToken();
         proceedToNextToken();
+    }
+
+    public List<String> getErrors() {
+        return errors;
     }
 
     public Program parseProgram() {

@@ -1,6 +1,7 @@
 package root;
 
-import root.lexer.LexerIterable;
+import root.lexer.Lexer;
+import root.parser.Parser;
 
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -26,7 +27,20 @@ public class REPL {
         printPrompt();
         while (scanner.hasNextLine()) {
             var line = scanner.nextLine();
-            LexerIterable.fromString(line).forEachRemaining(this::printToken);
+            var lexer = new Lexer(line);
+            var parser = new Parser(lexer);
+            var program = parser.parseProgram();
+
+            if (!parser.getErrors().isEmpty()) {
+                for (var error : parser.getErrors()) {
+                    printStream.println("\t" + error);
+                }
+                continue;
+            }
+
+            printStream.println(program);
+            printStream.println();
+
             printPrompt();
         }
     }

@@ -518,10 +518,10 @@ public class ParserTest {
     }
 
     private void checkParseErrors(Parser p) {
-        if (!p.errors.isEmpty()) {
+        if (!p.getErrors().isEmpty()) {
             StringBuilder errorMessage = new StringBuilder("Parser encountered errors:\n");
 
-            for (var error : p.errors) {
+            for (var error : p.getErrors()) {
                 errorMessage.append(error).append("\n");
             }
 
