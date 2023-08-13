@@ -81,8 +81,8 @@
    "continue" CONTINUE
    "null"   NULL})
 
-(defn create [kind literal]
-  (vector kind (util/to-str literal)))
+(defmacro create [kind literal]
+  `(vector ~kind (util/to-str ~literal)))
 
 (def kind    first)
 (def literal second)

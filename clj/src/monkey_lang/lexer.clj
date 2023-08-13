@@ -18,13 +18,19 @@
   (when-let [kind (token/char2->kind lit)]
     [(token/create kind lit) cs])))
 
+(def string-parser
+  (-> (jc/many* (jp/none-of "\""))
+      (jc/between (jp/char \") (jp/char \"))))
+
 (def string
-  (let [string-parser (-> (jc/many* (jp/none-of "\""))
-                          (jc/between (jp/char \") (jp/char \")))]
-  (-> (partial token/create token/STRING) (jc/map string-parser))))
+  (jb/do
+    (lit <- string-parser)
+    (jc/return (token/create token/STRING lit))))
 
 (def integer
-  (-> (partial token/create token/INT) (jc/map (jc/many+ jp/digit))))
+  (jb/do
+    (lit <- (jc/many+ jp/digit))
+    (jc/return (token/create token/INT lit))))
 
 (def identifier
   (jp/satisfy (some-fn ju/alpha-num? #{\! \_})))
@@ -38,10 +44,14 @@
     (jc/return (token/create token/IDENT lit))))))
 
 (def EOF
-  (-> (partial token/create token/EOF) (jc/map jp/eof)))
+  (jb/do
+    (lit <- jp/eof)
+    (jc/return (token/create token/EOF lit))))
 
 (def illegal
-  (-> (partial token/create token/ILLEGAL) (jc/map jp/any-char)))
+  (jb/do
+    (lit <- (jc/map jp/any-char))
+    (jc/return (token/create token/ILLEGAL lit))))
 
 (def tokens
   (jc/choice [double-char 
