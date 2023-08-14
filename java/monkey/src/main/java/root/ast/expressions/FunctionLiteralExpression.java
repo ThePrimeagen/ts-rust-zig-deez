@@ -1,5 +1,6 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 import root.ast.statements.BlockStatement;
 
@@ -12,7 +13,7 @@ public class FunctionLiteralExpression extends Expression {
     private final List<IdentifierExpression> parameters = new ArrayList<>();
     private BlockStatement body;
 
-    public FunctionLiteralExpression(Token token) {
+    public FunctionLiteralExpression(LocalizedToken token) {
         this.token = token;
     }
 

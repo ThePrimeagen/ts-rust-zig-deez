@@ -1,6 +1,6 @@
 package root.parser;
 
-import root.Token;
+import root.LocalizedToken;
 import root.TokenType;
 import root.ast.Program;
 import root.ast.expressions.*;
@@ -14,9 +14,9 @@ public class Parser {
 
     private final Lexer lexer;
 
-    private Token currentToken;
+    private LocalizedToken currentToken;
 
-    private Token peekToken;
+    private LocalizedToken peekToken;
 
     private final List<String> errors = new ArrayList<>();
 
@@ -51,7 +51,7 @@ public class Parser {
 
     private void proceedToNextToken() {
         currentToken = peekToken;
-        peekToken = lexer.nextToken();
+        peekToken = lexer.nextLocalized();
     }
 
     private Statement parseStatement() throws ParserException {
@@ -65,7 +65,7 @@ public class Parser {
     private ReturnStatement parseReturnStatement() throws ParserException {
         var returnStatement = new ReturnStatement(currentToken);
 
-        this.proceedToNextToken();
+        proceedToNextToken();
 
         returnStatement.setReturnValue(parseExpression(OperatorPrecedence.LOWEST));
 
@@ -111,7 +111,7 @@ public class Parser {
         ParserSupplier<Expression> prefixFn = prefixParseFn();
 
         if (prefixFn == null) {
-            throw new ParserException("No prefix parse function found for " + currentToken.type());
+            throw new ParserException("Unexpected token found (no prefix parse function): " + currentToken.literal(), currentToken);
         }
         Expression leftExpression = prefixFn.get();
 
@@ -188,7 +188,7 @@ public class Parser {
             proceedToNextToken();
             parseCallArguments(callExpression);
         } else {
-            proceedToNextToken();
+            expectPeek(TokenType.RPAREN);
         }
     }
 
@@ -268,7 +268,7 @@ public class Parser {
         }
 
         if (!currentTokenIs(TokenType.RSQIRLY)) {
-            throw new ParserException("Block statement needs to be closed");
+            throw new ParserException("Block statement needs to be closed", currentToken);
         }
 
         return blockStatement;
@@ -294,7 +294,7 @@ public class Parser {
         if (peekTokenIs(type)) {
             proceedToNextToken();
         } else {
-            throw new ParserException("Expected next token to be %s, got %s".formatted(type.name(), peekToken.type().name()));
+            throw new ParserException("Expected next token to be %s, got %s".formatted(type.tokenOrName(), peekToken.literal()), currentToken);
         }
     }
 }

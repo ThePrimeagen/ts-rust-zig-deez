@@ -1,5 +1,6 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 public class InfixExpression extends Expression {
@@ -8,7 +9,7 @@ public class InfixExpression extends Expression {
     private final String operator;
     private Expression right;
 
-    public InfixExpression(Token token, String operator, Expression left) {
+    public InfixExpression(LocalizedToken token, String operator, Expression left) {
         this.token = token;
         this.operator = operator;
         this.left = left;

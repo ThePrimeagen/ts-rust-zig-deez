@@ -1,5 +1,6 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ public class CallExpression extends Expression {
     private final Expression function;
     private final List<Expression> arguments = new ArrayList<>();
 
-    public CallExpression(Token token, Expression function) {
+    public CallExpression(LocalizedToken token, Expression function) {
         this.function = function;
         this.token = token;
     }

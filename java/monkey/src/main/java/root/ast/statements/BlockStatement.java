@@ -1,5 +1,6 @@
 package root.ast.statements;
 
+import root.LocalizedToken;
 import root.Token;
 
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ public class BlockStatement extends Statement {
 
     private final List<Statement> statements = new ArrayList<>();
 
-    public BlockStatement(Token token) {
+    public BlockStatement(LocalizedToken token) {
         this.token = token;
     }
 

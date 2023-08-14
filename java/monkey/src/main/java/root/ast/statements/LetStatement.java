@@ -1,5 +1,6 @@
 package root.ast.statements;
 
+import root.LocalizedToken;
 import root.Token;
 import root.ast.expressions.Expression;
 import root.ast.expressions.IdentifierExpression;
@@ -9,7 +10,7 @@ public class LetStatement extends Statement {
     private IdentifierExpression name;
     private Expression value;
 
-    public LetStatement(Token token) {
+    public LetStatement(LocalizedToken token) {
         this.token = token;
     }
 

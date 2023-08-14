@@ -56,13 +56,20 @@ public class ParserTest {
 
     @Test
     void testString() {
+        var codeLine = "let myVar = anotherVar;";
         var program = new Program() {
             {
                 getStatements().add(
-                        new LetStatement(TokenType.LET.token()) {
+                        new LetStatement(TokenType.LET.token().localize(
+                                0, 0, codeLine
+                        )) {
                             {
-                                setName(new IdentifierExpression(TokenType.IDENT.createToken("myVar"), "myVar"));
-                                setValue(new IdentifierExpression(TokenType.IDENT.createToken("anotherVar"), "anotherVar"));
+                                setName(new IdentifierExpression(TokenType.IDENT.createToken("myVar").localize(
+                                        0, 4, codeLine
+                                ), "myVar"));
+                                setValue(new IdentifierExpression(TokenType.IDENT.createToken("anotherVar").localize(
+                                        0, 12, codeLine
+                                ), "anotherVar"));
                             }
                         }
                 );
@@ -427,6 +434,27 @@ public class ParserTest {
                 Assertions.assertEquals(expectedArguments.get(i), call.getArguments().get(i).toString());
             }
         }
+    }
+
+    @Test
+    void testErrorMessages() {
+        var input = """
+                let foo = add(a,b
+                """;
+
+        var l = new Lexer(input);
+        var p = new Parser(l);
+        p.parseProgram();
+
+        var erros = p.getErrors();
+
+        Assertions.assertEquals(1, erros.size());
+        Assertions.assertEquals(
+                "InvalidSyntax: Expected next token to be ), got eof\n" +
+                "01: let foo = add(a,b\n" +
+                "--------------------^",
+                erros.get(0)
+        );
     }
 
     private void testIntegerLiteral(Expression expression, Long expectedValue) {

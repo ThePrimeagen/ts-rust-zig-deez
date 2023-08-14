@@ -1,5 +1,6 @@
 package root.ast.statements;
 
+import root.LocalizedToken;
 import root.Token;
 import root.ast.expressions.Expression;
 
@@ -7,7 +8,7 @@ public class ExpressionStatement extends Statement {
 
     private Expression expression;
 
-    public ExpressionStatement(Token token) {
+    public ExpressionStatement(LocalizedToken token) {
         this.token = token;
     }
 

@@ -55,4 +55,8 @@ public enum TokenType {
         }
         return token;
     }
+
+    public String tokenOrName() {
+        return token == null ? name() : token.literal();
+    }
 }

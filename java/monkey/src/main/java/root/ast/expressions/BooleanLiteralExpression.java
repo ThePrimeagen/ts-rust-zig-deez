@@ -1,12 +1,13 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 public class BooleanLiteralExpression extends Expression {
 
     private final Boolean value;
 
-    public BooleanLiteralExpression(Token token, boolean value) {
+    public BooleanLiteralExpression(LocalizedToken token, boolean value) {
         this.token = token;
         this.value = value;
     }

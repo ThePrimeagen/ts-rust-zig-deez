@@ -1,5 +1,6 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 public class PrefixExpression extends Expression {
@@ -8,7 +9,7 @@ public class PrefixExpression extends Expression {
 
     private Expression right;
 
-    public PrefixExpression(Token token, String operator) {
+    public PrefixExpression(LocalizedToken token, String operator) {
         this.token = token;
         this.operator = operator;
     }

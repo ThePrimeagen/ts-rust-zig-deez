@@ -1,15 +1,30 @@
 package root.lexer;
 
+import root.LocalizedToken;
 import root.Token;
 import root.TokenType;
 
 public class Lexer {
 
     private final String input;
+    private final String[] lines;
     private int pos = 0;
+    private int line = 0;
+    private int column = 0;
 
     public Lexer(String input) {
         this.input = input;
+        this.lines = input.split("\n");
+    }
+
+    public LocalizedToken nextLocalized() {
+        this.skipWhitespace();
+
+        var start = this.column;
+        var lineStart = this.line;
+        var codeLine = lineStart >= this.lines.length ? "" : this.lines[lineStart];
+
+        return this.nextToken().localize(lineStart, start, codeLine);
     }
 
     public Token nextToken() {
@@ -68,10 +83,10 @@ public class Lexer {
 
     private void advance() {
         if (this.pos >= this.input.length()) {
-            this.pos = -1;
             return;
         }
         this.pos++;
+        this.column++;
     }
 
     protected char getCc() {
@@ -113,6 +128,10 @@ public class Lexer {
 
     private void skipWhitespace() {
         while (Character.isWhitespace(this.getCc())) {
+            if (this.getCc() == '\n') {
+                this.column = -1;
+                this.line++;
+            }
             this.advance();
         }
     }

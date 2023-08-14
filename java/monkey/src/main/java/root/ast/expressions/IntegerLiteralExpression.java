@@ -1,12 +1,13 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 public class IntegerLiteralExpression extends Expression {
 
     private final Long value;
 
-    public IntegerLiteralExpression(Token token, long value) {
+    public IntegerLiteralExpression(LocalizedToken token, long value) {
         this.token = token;
         this.value = value;
     }

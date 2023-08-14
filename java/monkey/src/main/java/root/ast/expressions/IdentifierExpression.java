@@ -1,12 +1,13 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 public class IdentifierExpression extends Expression {
 
     private String value;
 
-    public IdentifierExpression(Token token, String value) {
+    public IdentifierExpression(LocalizedToken token, String value) {
         this.token = token;
         this.value = value;
     }

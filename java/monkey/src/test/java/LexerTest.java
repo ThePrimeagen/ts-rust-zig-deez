@@ -1,8 +1,9 @@
-import root.lexer.Lexer;
-import root.Token;
-import root.TokenType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import root.LocalizedToken;
+import root.Token;
+import root.TokenType;
+import root.lexer.Lexer;
 
 public class LexerTest {
 
@@ -177,6 +178,67 @@ public class LexerTest {
 
         for (Token t : expected) {
             Token g = l.nextToken();
+            Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
+
+    @Test
+    void testLocalization() {
+        String input = """
+                let a = 10;
+                let b = 5;
+                
+                fn add(a,b) {
+                    return a + b
+                }
+                
+                let foo = add(a, b)
+                """;
+
+        LocalizedToken[] expected = {
+                TokenType.LET.token().localize(0, 0, "let a = 10;"),
+                TokenType.IDENT.createToken("a").localize(0, 4, "let a = 10;"),
+                TokenType.ASSIGN.token().localize(0, 6, "let a = 10;"),
+                TokenType.INT.createToken("10").localize(0, 8, "let a = 10;"),
+                TokenType.SEMI.token().localize(0, 10, "let a = 10;"),
+
+                TokenType.LET.token().localize(1, 0, "let b = 5;"),
+                TokenType.IDENT.createToken("b").localize(1, 4, "let b = 5;"),
+                TokenType.ASSIGN.token().localize(1, 6, "let b = 5;"),
+                TokenType.INT.createToken("5").localize(1, 8, "let b = 5;"),
+                TokenType.SEMI.token().localize(1, 9, "let b = 5;"),
+
+                TokenType.FUNC.token().localize(3, 0, "fn add(a,b) {"),
+                TokenType.IDENT.createToken("add").localize(3, 3, "fn add(a,b) {"),
+                TokenType.LPAREN.token().localize(3, 6, "fn add(a,b) {"),
+                TokenType.IDENT.createToken("a").localize(3, 7, "fn add(a,b) {"),
+                TokenType.COMMA.token().localize(3, 8, "fn add(a,b) {"),
+                TokenType.IDENT.createToken("b").localize(3, 9, "fn add(a,b) {"),
+                TokenType.RPAREN.token().localize(3, 10, "fn add(a,b) {"),
+                TokenType.LSQIRLY.token().localize(3, 12, "fn add(a,b) {"),
+
+                TokenType.RETURN.token().localize(4, 4, "    return a + b"),
+                TokenType.IDENT.createToken("a").localize(4, 11, "    return a + b"),
+                TokenType.PLUS.token().localize(4, 13, "    return a + b"),
+                TokenType.IDENT.createToken("b").localize(4, 15, "    return a + b"),
+
+                TokenType.RSQIRLY.token().localize(5, 0, "}"),
+
+                TokenType.LET.token().localize(7, 0, "let foo = add(a, b)"),
+                TokenType.IDENT.createToken("foo").localize(7, 4, "let foo = add(a, b)"),
+                TokenType.ASSIGN.token().localize(7, 8, "let foo = add(a, b)"),
+                TokenType.IDENT.createToken("add").localize(7, 10, "let foo = add(a, b)"),
+                TokenType.LPAREN.token().localize(7, 13, "let foo = add(a, b)"),
+                TokenType.IDENT.createToken("a").localize(7, 14, "let foo = add(a, b)"),
+                TokenType.COMMA.token().localize(7, 15, "let foo = add(a, b)"),
+                TokenType.IDENT.createToken("b").localize(7, 17, "let foo = add(a, b)"),
+                TokenType.RPAREN.token().localize(7, 18, "let foo = add(a, b)"),
+        };
+
+        Lexer l = new Lexer(input);
+
+        for (LocalizedToken t : expected) {
+            LocalizedToken g = l.nextLocalized();
             Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
         }
     }
