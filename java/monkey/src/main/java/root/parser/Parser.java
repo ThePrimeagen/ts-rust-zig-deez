@@ -18,7 +18,7 @@ public class Parser {
 
     private LocalizedToken peekToken;
 
-    private final List<String> errors = new ArrayList<>();
+    private final List<ParserException> errors = new ArrayList<>();
 
     public Parser(Lexer lexer) {
         this.lexer = lexer;
@@ -27,11 +27,7 @@ public class Parser {
         proceedToNextToken();
     }
 
-    public List<String> getErrors() {
-        return errors;
-    }
-
-    public Program parseProgram() {
+    public Program parseProgram() throws ParseProgramException {
         var program = new Program();
 
         while (!currentTokenIs(TokenType.EOF)) {
@@ -41,9 +37,13 @@ public class Parser {
                     program.getStatements().add(statement);
                 }
             } catch (ParserException pe) {
-                errors.add(pe.getMessage());
+                errors.add(pe);
             }
             proceedToNextToken();
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ParseProgramException(errors.stream().map(Throwable::getMessage).toList());
         }
 
         return program;
@@ -79,7 +79,7 @@ public class Parser {
     private LetStatement parseLetStatement() throws ParserException {
         var letStatement = new LetStatement(currentToken);
 
-        expectPeek(TokenType.IDENT);
+        expectPeek(TokenType.IDENTIFIER);
 
         letStatement.setName(new IdentifierExpression(currentToken, currentToken.literal()));
 
@@ -132,7 +132,7 @@ public class Parser {
 
     private ParserSupplier<Expression> prefixParseFn() {
         return switch (currentToken.type()) {
-            case IDENT -> () -> new IdentifierExpression(currentToken, currentToken.literal());
+            case IDENTIFIER -> () -> new IdentifierExpression(currentToken, currentToken.literal());
             case INT -> () -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
             case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
             case BANG, MINUS -> this::parsePrefixExpression;

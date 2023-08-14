@@ -3,7 +3,7 @@ package root;
 public enum TokenType {
     ILLEGAL,
     EOF("eof"),
-    IDENT,
+    IDENTIFIER,
     INT,
     COMMA(","),
     SEMI(";"),

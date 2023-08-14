@@ -1,6 +1,8 @@
 package root;
 
+import root.ast.Program;
 import root.lexer.Lexer;
+import root.parser.ParseProgramException;
 import root.parser.Parser;
 
 import java.io.InputStream;
@@ -29,18 +31,16 @@ public class REPL {
             var line = scanner.nextLine();
             var lexer = new Lexer(line);
             var parser = new Parser(lexer);
-            var program = parser.parseProgram();
 
-            if (!parser.getErrors().isEmpty()) {
-                for (var error : parser.getErrors()) {
-                    printStream.println("\t" + error);
-                }
-                continue;
+            try {
+                Program program = parser.parseProgram();
+
+                printStream.println(program);
+            } catch (ParseProgramException e) {
+                printStream.println(e.getMessage());
             }
 
-            printStream.println(program);
             printStream.println();
-
             printPrompt();
         }
     }

@@ -73,7 +73,7 @@ public class Lexer {
                     case "if" -> TokenType.IF.token();
                     case "else" -> TokenType.ELSE.token();
                     case "return" -> TokenType.RETURN.token();
-                    default -> TokenType.IDENT.createToken(ident);
+                    default -> TokenType.IDENTIFIER.createToken(ident);
                 };
             }
             case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number(currentChar));

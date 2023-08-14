@@ -8,6 +8,7 @@ import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
 import root.lexer.Lexer;
+import root.parser.ParseProgramException;
 import root.parser.Parser;
 
 import java.util.List;
@@ -64,10 +65,10 @@ public class ParserTest {
                                 0, 0, codeLine
                         )) {
                             {
-                                setName(new IdentifierExpression(TokenType.IDENT.createToken("myVar").localize(
+                                setName(new IdentifierExpression(TokenType.IDENTIFIER.createToken("myVar").localize(
                                         0, 4, codeLine
                                 ), "myVar"));
-                                setValue(new IdentifierExpression(TokenType.IDENT.createToken("anotherVar").localize(
+                                setValue(new IdentifierExpression(TokenType.IDENTIFIER.createToken("anotherVar").localize(
                                         0, 12, codeLine
                                 ), "anotherVar"));
                             }
@@ -444,16 +445,21 @@ public class ParserTest {
 
         var l = new Lexer(input);
         var p = new Parser(l);
-        p.parseProgram();
+        List<String> errors = null;
 
-        var erros = p.getErrors();
+        try {
+            p.parseProgram();
+        } catch (ParseProgramException e) {
+            errors = e.getParseErrors();
+        }
 
-        Assertions.assertEquals(1, erros.size());
+        Assertions.assertNotNull(errors);
+        Assertions.assertEquals(1, errors.size());
         Assertions.assertEquals(
                 "InvalidSyntax: Expected next token to be ), got eof\n" +
                 "01: let foo = add(a,b\n" +
                 "--------------------^",
-                erros.get(0)
+                errors.get(0)
         );
     }
 
@@ -516,11 +522,18 @@ public class ParserTest {
     private Program buildProgram(String input) {
         var l = new Lexer(input);
         var p = new Parser(l);
-        var program = p.parseProgram();
 
-        checkParseErrors(p);
+        try {
+            return p.parseProgram();
+        } catch (ParseProgramException e) {
+            StringBuilder errorMessage = new StringBuilder("Parser encountered errors:\n");
 
-        return program;
+            for (var error : e.getParseErrors()) {
+                errorMessage.append(error).append("\n");
+            }
+
+            throw new AssertionError(errorMessage.toString());
+        }
     }
 
     private void testLetStatement(Statement statement, String name, Object expectedValue) {
@@ -542,18 +555,6 @@ public class ParserTest {
             testLiteralExpression(returnStatement.getReturnValue(), expectedValue);
         } else {
             throw new AssertionError(statement.getClass().getSimpleName() + " is not instance of ReturnStatement");
-        }
-    }
-
-    private void checkParseErrors(Parser p) {
-        if (!p.getErrors().isEmpty()) {
-            StringBuilder errorMessage = new StringBuilder("Parser encountered errors:\n");
-
-            for (var error : p.getErrors()) {
-                errorMessage.append(error).append("\n");
-            }
-
-            throw new AssertionError(errorMessage.toString());
         }
     }
 }
