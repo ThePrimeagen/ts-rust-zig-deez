@@ -48,8 +48,8 @@ struct BuiltinFunctionKey {
 }
 
 /// Wraps evaluation results
-alias EvalResult = SumType!(long, bool, This[], string,
-        ErrorValue, void*, Character, Unit, Function, BuiltinFunctionKey, const This*);
+alias EvalResult = SumType!(long, bool, This[], This[This], string, ErrorValue,
+        void*, Character, Unit, Function, BuiltinFunctionKey, const This*);
 
 /// Type for result array
 alias Results = EvalResult.Types[2];

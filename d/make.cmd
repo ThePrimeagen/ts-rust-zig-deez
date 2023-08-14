@@ -53,7 +53,7 @@
 
 :"test"
 	@echo "===> Testing"
-	dub test
+	dub test -b unittest
 	@goto exit
 
 :"repl"

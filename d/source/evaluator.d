@@ -191,19 +191,20 @@ unittest {
 /// Basic array test
 unittest {
     const auto input = "[1, 2 * 2, 3 + 3]";
-    const Array expected = Array[EvalResult(1), EvalResult(4), EvalResult(6)];
+    const long[3] expected = [1, 4, 6];
 
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[]) {
-        result.match!((Array arr) {
-            foreach (i, value; arr.elements.enumerate(0)) {
-                assert(value == expected[i],
-                    format("Int value %s does not match expected value %s", value, expected[i]));
+    evaluator.results[][0].match!((long _) => assert(false, "Expected array value in statement"),
+        (Results arr) {
+            foreach (i, value; arr.enumerate(0)) {
+                value.match!((long v) {
+                assert(v == expected[i],
+                    format("Int value %s does not match expected value %s", v, expected[i]));
+                }, _ => assert(false, format("Expected int value in array index %d", i)));
             }
-        }, _ => assert(false, format("Expected array value in statement %s", i)));
-    }
+        }, _ => assert(false, "Expected array value in statement"));
 }
 
 /// Array and string len test
@@ -243,7 +244,7 @@ unittest {
     const auto input = "len([9,8,7]);
     first([9,8,7]);
     last([9,8,7]);";
-    const long expected[3] = [3, 9, 7];
+    const long[3] expected = [3, 9, 7];
 
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
@@ -255,33 +256,52 @@ unittest {
         }, _ => assert(false, format("Expected number in statement %s", i)));
     }
 }
-
-/// Builtin rest function base test
+/*
+/// Basic hashmap test
 unittest {
-    const auto input = "rest([9,8,7]);";
-    const long expected[2] = [8, 7];
+    const auto input = "let people = [{\"name\": \"Alice\", \"age\": 24}, {\"name\": \"Anna\", \"age\": 28}];
+people[1][\"age\"] + people[0][\"age\"];";
+    const long expected = 52;
 
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
     foreach (i, result; evaluator.results[]) {
-        result.match!((Array!long value) {
+        result.match!((long value) {
             assert(value == expected,
-                format("Int values %s does not match expected values %s", value, expected));
-        }, _ => assert(false, format("Expected array in statement %s", i)));
+                format("Int value %s does not match expected value %s", value, expected));
+        }, _ => assert(false, format("Expected number in statement %s", i)));
     }
+}
+*/
+/// Builtin rest function base test
+unittest {
+    const auto input = "rest([9,8,7]);";
+    const long[2] expected = [8, 7];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    evaluator.results[][0].match!((Results arr) {
+    foreach (i, result; arr.enumerate(0)) {
+        result.match!((long value) {
+            assert(value == expected[i],
+                format("Int value %s does not match expected value %s", value, expected[i]));
+        }, _ => assert(false, format("Expected int in array value %d", i)));
+    }
+    }, _ => assert(false, "Expected array value"));
 }
 
 /// Builtin rest function empty test
 unittest {
     const auto input = "rest([3]);";
-    const long expected[0] = [];
+    const long[0] expected = [];
 
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
     foreach (i, result; evaluator.results[]) {
-        result.match!((Array!long value) {
+        result.match!((Results value) {
             assert(value.empty, "Int values expected to be empty");
         }, _ => assert(false, format("Expected array in statement %s", i)));
     }
@@ -426,7 +446,7 @@ unittest {
         auto result = evaluator.results[][$ - 1];
 
         result.match!((ReturnValue value) {
-            return value.match!((long lValue) => assert(lValue == expected[i],
+            return (*value).match!((long lValue) => assert(lValue == expected[i],
                 format("Number value %s does not match expected value %d", lValue, expected[i])),
                 _ => assert(false, format("Unhandled type in program %d", i)));
         }, _ => assert(false, format("Unhandled type in program %d", i)));
@@ -495,7 +515,8 @@ unittest {
         "let identity = fn(x) { return x; }; identity(5);",
         "let double = fn(x) { x * 2; }; double(5);",
         "let add = fn(x, y) { x + y; }; add(5, 5);",
-        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", "fn(x) { x; }(5)"
+        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+        "fn(x) { x; }(5)"
     ];
 
     const long[6] expected = [5, 5, 10, 10, 20, 5];
@@ -507,10 +528,16 @@ unittest {
 
         auto result = evaluator.results[][$ - 1];
 
-        result.match!((long value) {
+        result.match!((ReturnValue rValue) {
+              return (*rValue).match!((long value) {
+                  assert(value == expected[i],
+                      format("Number value %s does not match expected value %d", value, expected[i]));
+                  }, _ => assert(false, format("Unhandled type in program %d", i)));
+            },
+            (long value) {
             assert(value == expected[i],
                 format("Number value %s does not match expected value %d", value, expected[i]));
-        }, _ => assert(false, format("Unhandled type in program %d", i)));
+        }, _ => assert(false, format("Unhandled type in program %d :: %s", i, result)));
     }
 }
 
@@ -559,8 +586,10 @@ counter(0);
 
     auto result = evaluator.results[][$ - 1];
 
-    result.match!((bool value) {
-        assert(value == expected,
-            format("Bool value %s does not match expected value %s", value, expected));
+    result.match!((ReturnValue rValue) {
+        return (*rValue).match!((bool value) {
+            assert(value == expected,
+                format("Bool value %s does not match expected value %s", value, expected));
+        }, _ => assert(false, "Unhandled type in program"));
     }, _ => assert(false, "Unhandled type in program"));
 }

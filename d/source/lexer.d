@@ -33,6 +33,7 @@ enum TokenTag : ubyte {
     Gt,
     Comma,
     Semicolon,
+    Colon,
     LParen,
     RParen,
     LSquirly,
@@ -90,9 +91,9 @@ shared static this()
         TokenTag.Assign: "=", TokenTag.Plus: "+", TokenTag.Minus: "-",
         TokenTag.Bang: "!", TokenTag.Asterisk: "*", TokenTag.Slash: "/",
         TokenTag.Lt: "<", TokenTag.Gt: ">", TokenTag.Comma: ":",
-        TokenTag.Semicolon: ";", TokenTag.LParen: "(", TokenTag.RParen: ")",
-        TokenTag.LSquirly: "{", TokenTag.RSquirly: "}", TokenTag.LBracket: "[",
-        TokenTag.RBracket: "]"
+        TokenTag.Semicolon: ";", TokenTag.Colon: ":", TokenTag.LParen: "(",
+        TokenTag.RParen: ")", TokenTag.LSquirly: "{", TokenTag.RSquirly: "}",
+        TokenTag.LBracket: "[", TokenTag.RBracket: "]"
     ];
 
     foreach (e; tempKeywords.byKeyValue) {
@@ -247,10 +248,10 @@ public:
             static foreach (match; [
                 Unigram('+', Plus), Unigram('-', Minus), Unigram('/', Slash),
                 Unigram('*', Asterisk), Unigram('<', Lt), Unigram('>', Gt),
-                Unigram(';', Semicolon), Unigram(',', Comma), Unigram('(',
-                        LParen), Unigram(')', RParen), Unigram('{', LSquirly),
-                Unigram('}', RSquirly), Unigram('[', LBracket),
-                Unigram(']', RBracket), Unigram('\0', Eof)
+                Unigram(';', Semicolon), Unigram(':', Colon), Unigram(',',
+                        Comma), Unigram('(', LParen), Unigram(')', RParen),
+                Unigram('{', LSquirly), Unigram('}', RSquirly),
+                Unigram('[', LBracket), Unigram(']', RBracket), Unigram('\0', Eof)
             ]) {
         case match.ch:
                 this.tokens.start.put(this.position);
@@ -470,13 +471,31 @@ unittest {
 
 /// Basic lexer test
 unittest {
-    const auto input = "=+(){},;";
-    const ulong[] expectedStart = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    const auto input = "=+(){},;:";
+    const ulong[] expectedStart = [0, 1, 2, 3, 4, 5, 6, 7, 8, input.length];
 
     with (TokenTag) {
         const auto expectedTag = [
             Assign, Plus, LParen, RParen, LSquirly, RSquirly, Comma, Semicolon,
-            Eof
+            Colon, Eof
+        ];
+
+        auto lexer = Lexer(input);
+        lexer.tokenize();
+
+        validateTokenize(lexer, expectedStart, expectedTag);
+    }
+}
+
+/// Basic hashmap test
+unittest {
+    const auto input = "{\"name\": \"Alice\", \"age\": 24};";
+    const ulong[] expectedStart = [0, 2, 7, 10, 16, 19, 23, 25, 27, 28, input.length];
+
+    with (TokenTag) {
+        const auto expectedTag = [
+            LSquirly, String, Colon, String, Comma, String, Colon, Int,
+            RSquirly, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);
@@ -635,7 +654,7 @@ if (5 < 10) {
         45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87,
         88, 90, 91, 92, 93, 94, 95, 97, 99, 101, 104, 106, 107, 110, 113, 114,
         116, 118, 120, 122, 126, 133, 137, 139, 141, 146, 150, 157, 162, 164,
-        167, 170, 173, 175, 177, 180, 183, 184, 188, 190, 191, 193, 194,
+        167, 170, 173, 175, 177, 180, 183, 184, 186, 187, 188, 190, 191, 192,
         input.length
     ];
 
@@ -649,7 +668,7 @@ if (5 < 10) {
             Int, Lt, Int, Gt, Int, Semicolon, If, LParen, Int, Lt, Int, RParen,
             LSquirly, Return, True, Semicolon, RSquirly, Else, LSquirly,
             Return, False, Semicolon, RSquirly, Int, Eq, Int, Semicolon, Int,
-            NotEq, Int, Semicolon, LBracket, Int, Comma, Int, RBracket, Eof
+            NotEq, Int, Semicolon, LBracket, Int, Comma, Int, RBracket, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);

@@ -45,8 +45,8 @@ EvalResult len(EvalResult[] vars...)
 
     alias arrLen(T) = mixin("(", T, " value) => EvalResult(value.length)");
 
-    return vars[0].match!((Results value) => EvalResult(value.length),
-            arrLen!(string), _ => EvalResult(ErrorValue("`len` not supported for argument")));
+    return vars[0].match!((Results value) => EvalResult(value.length), arrLen!(string),
+            _ => EvalResult(ErrorValue("`len` not supported for argument")));
 }
 
 /// First element of array
@@ -57,11 +57,10 @@ EvalResult first(EvalResult[] vars...)
                 vars.length)));
     }
 
-//    alias firstElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
-//  return EvalResult(arr[0]); } else { return NIL_ATOM; } }");
+    //    alias firstElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
+    //  return EvalResult(arr[0]); } else { return NIL_ATOM; } }");
 
-    return vars[0].match!((Results arr) => (arr.length > 0) ? arr[0] : NIL_ATOM,
-        (string str) {
+    return vars[0].match!((Results arr) => (arr.length > 0) ? arr[0] : NIL_ATOM, (string str) {
         if (str.length > 0) {
             return EvalResult(Character(str[0]));
         } else {
@@ -78,11 +77,10 @@ EvalResult last(EvalResult[] vars...)
                 vars.length)));
     }
 
-//    alias lastElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
-//  return ReturnValue(arr[$ - 1]); } else { return NIL_RETURN_ATOM; } }");
+    //    alias lastElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
+    //  return ReturnValue(arr[$ - 1]); } else { return NIL_RETURN_ATOM; } }");
 
-    return vars[0].match!((Results arr) => (arr.length > 0) ? arr[$ - 1] : NIL_ATOM,
-        (string str) {
+    return vars[0].match!((Results arr) => (arr.length > 0) ? arr[$ - 1] : NIL_ATOM, (string str) {
         if (str.length > 0) {
             return EvalResult(Character(str[$ - 1]));
         } else {
@@ -99,15 +97,15 @@ EvalResult rest(EvalResult[] vars...)
                 vars.length)));
     }
 
-//    alias restOf(T) = mixin("(", T, " value) => ReturnValue(value[1 .. $])");
+    //    alias restOf(T) = mixin("(", T, " value) => ReturnValue(value[1 .. $])");
 
     return vars[0].match!((Results arr) {
-            if (arr.length > 1) {
-                return EvalResult(arr[1 .. $]);
-            } else {
-                return EMPTY_ARRAY_ATOM;
-            }
-        }, (string str) {
+        if (arr.length > 1) {
+            return EvalResult(arr[1 .. $]);
+        } else {
+            return EMPTY_ARRAY_ATOM;
+        }
+    }, (string str) {
         if (str.length > 1) {
             return EvalResult(str[1 .. $]);
         } else {
@@ -125,13 +123,13 @@ EvalResult push(EvalResult[] vars...)
     }
 
     // TODO: Generic array type would fix so many things, especially this builtin function
-//    alias pushValue(T) = mixin("(", T, "[] arr) {
-//      return vars[1].match!((", T, " value) => ReturnValue(arr ~ value),
-//          _ => ReturnValue(ErrorValue(\"`push` not supported for input argument\")));
-//    }");
+    //    alias pushValue(T) = mixin("(", T, "[] arr) {
+    //      return vars[1].match!((", T, " value) => ReturnValue(arr ~ value),
+    //          _ => ReturnValue(ErrorValue(\"`push` not supported for input argument\")));
+    //    }");
 
     return vars[0].match!((Results arr) => EvalResult(arr ~ vars[1]),
-        _ => EvalResult(ErrorValue("argument to `push` must be array")));
+            _ => EvalResult(ErrorValue("argument to `push` must be array")));
 }
 
 /// Print variable in stdout
@@ -142,9 +140,9 @@ EvalResult puts(EvalResult[] vars...)
 
     // Write repr of each entry in vararg
     foreach (var; vars) {
-        var.match!((Results arr) => writefln("%s", arr),
-            printValue!(bool), printNumber!(long),
-            printValue!(string), printValue!(void*), (_) {});
+        var.match!((Results arr) => writefln("%s", arr), printValue!(bool),
+                printNumber!(long), printValue!(string), printValue!(void*), (_) {
+        });
     }
 
     // End with unit effect
@@ -158,7 +156,8 @@ shared static this()
     import std.exception : assumeUnique;
 
     BuiltinFunction[string] tempBuiltinFunctions = [
-        "puts": &puts, "len": &len, "first": &first, "last": &last, "rest": &rest, "push": &push,
+        "puts": &puts, "len": &len, "first": &first, "last": &last,
+        "rest": &rest, "push": &push,
     ];
 
     builtinFunctions = assumeUnique(tempBuiltinFunctions);
@@ -305,15 +304,12 @@ private EvalResult stringInfix(InfixExpressionNode node, string lValue, EvalResu
 
     return left.match!((bool lValue) => boolInfix(node, lValue, right),
             (long lValue) => longInfix(node, lValue, right),
+            (string lValue) => stringInfix(node, lValue, right), (const ReturnValue lhsValue) {
+        return (*lhsValue).match!((bool lValue) => boolInfix(node, lValue,
+            right), (long lValue) => longInfix(node, lValue, right),
             (string lValue) => stringInfix(node, lValue, right),
-            (const ReturnValue lhsValue) {
-                return (*lhsValue).match!((bool lValue) => boolInfix(node, lValue, right),
-                    (long lValue) => longInfix(node, lValue, right),
-                    (string lValue) => stringInfix(node, lValue, right),
-                    _ => EvalResult(ErrorValue("Unsupported type in LHS of infix expression")));
-            },
-            (ErrorValue err) => EvalResult(err),
-            _ => UNIT_ATOM);
+            _ => EvalResult(ErrorValue("Unsupported type in LHS of infix expression")));
+    }, (ErrorValue err) => EvalResult(err), _ => UNIT_ATOM);
 }
 
 /// Evaluate if-then-else expression
@@ -546,13 +542,11 @@ EvalResult evalStatement(virtual!StatementNode node, ref Lexer lexer, Environmen
     if (node.expr !is null) {
         EvalResult result = eval(node.expr, lexer, env);
 
-        return result.match!((bool value) => EvalResult(value ? TRUE_RETURN_ATOM : FALSE_RETURN_ATOM),
-                (long value) => EvalResult(new EvalResult(value)),
-                (string value) => EvalResult(new EvalResult(value)),
-                (ErrorValue _) => result,
+        return result.match!((bool value) => EvalResult(value ? TRUE_RETURN_ATOM
+                : FALSE_RETURN_ATOM), (long value) => EvalResult(new EvalResult(value)),
+                (string value) => EvalResult(new EvalResult(value)), (ErrorValue _) => result,
                 (Results arr) => EvalResult(new EvalResult(arr)),
-                (ReturnValue _) => result,
-                _ => EvalResult(VOID_RETURN_ATOM));
+                (ReturnValue _) => result, _ => EvalResult(VOID_RETURN_ATOM));
     } else {
         return EvalResult(VOID_RETURN_ATOM);
     }

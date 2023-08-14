@@ -29,7 +29,7 @@ lint:
 
 test:
 	@echo "===> Testing"
-	DFLAGS="-L-L/usr/local/lib/" dub test
+	DFLAGS="-L-L/usr/local/lib/" dub test -b unittest
 
 repl:
 	@echo "===> Repl"

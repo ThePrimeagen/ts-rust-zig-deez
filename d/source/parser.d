@@ -1569,19 +1569,22 @@ unittest {
     const auto input = "let myArray = [1, 2 * 2, 3 + 3];
     myArray[2];";
 
+    const auto expected = "let myArray = [1, (2 * 2), (3 + 3)];
+(myArray[2]);";
+
     auto lexer = Lexer(input);
     lexer.tokenize();
 
     auto parser = Parser(lexer);
     parser.parseProgram();
 
-    validateParseProgram(input, lexer, parser);
+    validateParseProgram(expected, lexer, parser);
 }
 
 /// Array expression test
 unittest {
     const auto input = "5 * [1,2,3,4][1*2] * 6;";
-    const auto expected = "((5 * ([1,2,3,4][1*2])) * 6);";
+    const auto expected = "((5 * ([1, 2, 3, 4][(1 * 2)])) * 6);";
 
     auto lexer = Lexer(input);
     lexer.tokenize();
