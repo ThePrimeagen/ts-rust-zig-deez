@@ -43,7 +43,7 @@ public class Parser {
         }
 
         if (!errors.isEmpty()) {
-            throw new ParseProgramException(errors.stream().map(Throwable::getMessage).toList());
+            throw new ParseProgramException(errors);
         }
 
         return program;

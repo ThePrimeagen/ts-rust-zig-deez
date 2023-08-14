@@ -10,6 +10,7 @@ import root.ast.statements.Statement;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
+import root.parser.ParserException;
 
 import java.util.List;
 
@@ -445,7 +446,7 @@ public class ParserTest {
 
         var l = new Lexer(input);
         var p = new Parser(l);
-        List<String> errors = null;
+        List<ParserException> errors = null;
 
         try {
             p.parseProgram();
@@ -459,8 +460,9 @@ public class ParserTest {
                 "InvalidSyntax: Expected next token to be ), got eof\n" +
                 "01: let foo = add(a,b\n" +
                 "--------------------^",
-                errors.get(0)
+                errors.get(0).getMessage()
         );
+        Assertions.assertEquals("b", errors.get(0).getLocalizedToken().literal());
     }
 
     private void testIntegerLiteral(Expression expression, Long expectedValue) {
@@ -526,13 +528,7 @@ public class ParserTest {
         try {
             return p.parseProgram();
         } catch (ParseProgramException e) {
-            StringBuilder errorMessage = new StringBuilder("Parser encountered errors:\n");
-
-            for (var error : e.getParseErrors()) {
-                errorMessage.append(error).append("\n");
-            }
-
-            throw new AssertionError(errorMessage.toString());
+            throw new AssertionError("Parser encountered errors:\n" + e.getMessage());
         }
     }
 
