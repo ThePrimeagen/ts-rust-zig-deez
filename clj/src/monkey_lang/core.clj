@@ -3,4 +3,6 @@
 
 #_{:clj-kondo/ignore [:unused-binding]}
 (defn -main [& args]
-  (repl/run))
+  (let [path (first *command-line-args*)]
+  (cond (nil? path) (repl/run)
+        :else       (println path))))

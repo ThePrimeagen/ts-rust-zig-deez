@@ -17,7 +17,6 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] add make file and update docker image to support babashka instead of leiningen
 - [x] input validation for builtin functions to avoid crashes
 - [x] hash keys can have identifiers
-- [ ] refactor lexer using core.match, keyword?
 - [ ] try print statement after the error message when eval/run errs.
 - [ ] remove (comment) from the files
 - [ ] Add support for
@@ -29,7 +28,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [x] dot property reassignment
   - [x] while loop with continue and break
   - [x] for loop with continue and break
-  - [ ] import module
+  - [x] import module
   - [ ] more operators like %, bit operations and so on
   - [ ] implement go like channels
   - [ ] add character datatype
@@ -38,3 +37,4 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [ ] add |> for chaining functions just like clojure -> macro.
   - [ ] add support for structs
   - [ ] add support for comments
+  - [ ] add index expressions for strings

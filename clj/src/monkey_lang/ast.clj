@@ -1,5 +1,5 @@
 (ns monkey-lang.ast
-  (:refer-clojure :exclude [if int fn hash])
+  (:refer-clojure :exclude [if int fn hash import])
   (:require [monkey-lang.util :refer [third fourth pad]]
             [clojure.string :as str]))
 
@@ -19,6 +19,7 @@
 (def ^:const ASSIGN_EXPR :ast/assign-expr)
 (def ^:const WHILE_EXPR  :ast/while-expr)
 (def ^:const FOR_EXPR    :ast/for-expr)
+(def ^:const IMPORT_EXPR :ast/import-expr)
 (def ^:const FN_LIT      :ast/fn-lit)
 (def ^:const INT_LIT     :ast/int-lit)
 (def ^:const BOOL_LIT    :ast/bool-lit)
@@ -132,6 +133,12 @@
 (def for-increment   #(nth % 3 nil))
 (def for-consequence #(nth % 4 nil))
 
+
+(defmacro import [path]
+  `(vector ~IMPORT_EXPR ~path))
+
+(def import-path second)
+
 ;; Literals
 (defmacro int [val]
   `(vector ~INT_LIT ~val))
@@ -221,6 +228,7 @@
                              incre (str/trim-newline (to-str (for-increment ast)))
                              conse (to-str (for-consequence ast))]
                        (str "for (" initl " " condi "; " incre ") " conse))
+      :ast/import-expr (str "import(" (to-str (import-path ast)) ")")
       ;; literals
       :ast/ident-lit  (ident-literal ast)
       :ast/int-lit    (str (int-value ast))

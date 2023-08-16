@@ -2,7 +2,13 @@
   (:require [monkey-lang.ast     :as ast]
             [monkey-lang.object  :as object]
             [monkey-lang.env     :as env]
-            [monkey-lang.builtin :as builtin]))
+            [monkey-lang.builtin :as builtin]
+            [clojure.java.io     :as io]
+            [monkey-lang.parser  :as parser]
+            [clojure.string      :as str]))
+
+(def ^:const CWD (.getCanonicalPath (io/file ".")))
+(def ^:const MODULE_CACHE (atom {}))
 
 ;; anything has a body block has a scope
 (def ^:const GLOBAL_SCOPE 1)
@@ -75,7 +81,8 @@
   (if (and (object/is? left object/ARRAY)
            (object/is? index object/INTEGER))
     (builtin/invoke builtin/index [left index])
-  (if (object/is? left object/HASH)
+  (if (or (object/is? left object/HASH)
+          (object/is? left object/MODULE))
     (builtin/invoke builtin/at [left index])
   (object/error "Index operator not supported: %s" (object/kind left)))))
 
@@ -274,6 +281,34 @@
                           (if (object/is? conse object/CONTINUE)
                             (recur result)
                           (recur conse)))))))))))))
+      
+      :ast/import-expr  (let [path (ast/string-value (ast/import-path ast))
+                              ext  (when-not (str/ends-with? path ".monkey")
+                                     ".monkey")
+                              file (io/file CWD (str path ext))
+                              abs-path (.getCanonicalPath file)
+                              source   (try
+                                         (slurp file)
+                                       (catch java.io.FileNotFoundException _
+                                         (object/error "ImportError: Can't find the module '%s' at %s" path abs-path))
+                                       (catch Exception _
+                                         (object/error "IOError: Can't read the module '%s' at %s" path abs-path)))]
+                        (if (object/error? source)
+                          (-> source)
+                        (let [parsed (try
+                                       (parser/run source)
+                                     (catch clojure.lang.ExceptionInfo e
+                                       (object/error (parser/print-error e))))]
+                        (if (object/error? parsed)
+                          (-> parsed)
+                        (let [env    (env/create)
+                              evaled (run env GLOBAL_SCOPE parsed)]
+                        (if (object/error? evaled)
+                          (-> evaled)
+                        (let [exports (env/exports env)]
+                        (if (object/error? exports)
+                          (-> exports)
+                        (object/module exports)))))))))
 
       ;; literals
       :ast/ident-lit  (if-let [[value _env] (env/get env (ast/ident-literal ast))]
@@ -293,6 +328,9 @@
       :ast/hash-lit   (eval-hash env scope (ast/hash-pairs ast))
       :ast/null-lit   object/Null
       (assert ast (str "eval/run not implemented for " (or ast "nil"))))))
+
+(defn file [path]
+  )
 
 (comment
   "let fib = fn(n, a, b) { if (n == 0) { return a; } if (n == 1) { return b; } return fib(n - 1, b, n); };"

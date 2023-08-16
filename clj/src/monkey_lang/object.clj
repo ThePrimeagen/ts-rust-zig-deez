@@ -17,6 +17,7 @@
 (def ^:const ARRAY     :object/array)
 (def ^:const HASH      :object/hash)
 (def ^:const HASH-PAIR :object/hash-pair)
+(def ^:const MODULE    :object/module)
 
 (def ^:const True  [BOOLEAN true])
 (def ^:const False [BOOLEAN false])
@@ -29,8 +30,9 @@
 (defn value [obj]
   (case (kind obj)
     (:object/array
-     :object/hash) (deref (second obj))
-    #_else         (second obj)))
+     :object/hash)  (deref (second obj))
+     :object/module (value (second obj))
+    #_else          (second obj)))
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
@@ -52,12 +54,15 @@
 
 (def hash-value (comp value value))
 
+(defmacro module [exports]
+  `(vector ~MODULE ~exports))
+
 (defn hash-key [obj]
   (case (kind obj)
     :object/boolean (if (value obj) 1 0)
     :object/integer (value obj)
     :object/string  (clojure.core/hash (value obj))
-                    nil))
+    #_else          (-> nil)))
 
 (defmacro return [v]
   `(vector ~RETURN ~v))
@@ -92,18 +97,22 @@
 (defn inspect [obj]
   (case (kind obj)
     :object/string (str \" (value obj) \")
-    :object/fn     (ast/to-str (fn-ast obj))
+    :object/fn     "fn"
     :object/array 
       (let [elements (mapv inspect (value obj))]
       (str "[" (str/join ", " elements) "]"))
+    
     :object/hash-pair
       (->> (value obj)
            (mapv inspect)
            (str/join ": "))
+    
     :object/hash
       (let [pairs (for [pair (value obj)]
                     (inspect (second pair)))]
-                  (str "{" (str/join ", " pairs) "}"))
+      (str "{" (str/join ", " pairs) "}"))
+    
+    :object/module (inspect (second obj))
     :object/null  "null"
     :object/break "break"
     :object/continue "continue"

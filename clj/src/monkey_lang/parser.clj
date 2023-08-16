@@ -183,6 +183,14 @@
     (consequence <- parse-block-stmts)
     (jc/return (ast/for-expr initialize condition increment consequence))))
 
+(def parse-import
+  (jb/do
+    (lexer/expect token/IMPORT)
+    (lexer/expect token/LPAREN)
+    (path <- parse-string)
+    (lexer/expect token/RPAREN)
+    (jc/return (ast/import path))))
+
 (defn prefix-parse-fn [token]
   (case (token/kind token)
      :token/ident   parse-ident
@@ -192,6 +200,7 @@
      :token/fn      parse-fn
      :token/while   parse-while
      :token/for     parse-for
+     :token/import  parse-import
      :token/string  parse-string
      :token/l-bracket parse-array
      :token/l-brace parse-hash

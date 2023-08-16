@@ -43,6 +43,7 @@
   for {let x = 0; x < 10; x = x + 1} {
     
   }
+  let math = import(\"math\")
   ")
 
 (deftest lexer-test
@@ -192,5 +193,12 @@
                   [token/RBRACE "}"]
                   [token/LBRACE "{"]
                   [token/RBRACE "}"]
+                  [token/LET "let"]
+                  [token/IDENT "math"]
+                  [token/ASSIGN "="]
+                  [token/IMPORT "import"]
+                  [token/LPAREN "("]
+                  [token/STRING "math"]
+                  [token/RPAREN ")"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

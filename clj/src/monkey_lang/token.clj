@@ -39,6 +39,7 @@
 (def ^:const WHILE     :token/while)
 (def ^:const BREAK     :token/break)
 (def ^:const CONTINUE  :token/continue)
+(def ^:const IMPORT    :token/import)
 (def ^:const NULL      :token/null)
 
 (def char1->kind
@@ -79,6 +80,7 @@
    "while"  WHILE
    "break"  BREAK
    "continue" CONTINUE
+   "import" IMPORT
    "null"   NULL})
 
 (defmacro create [kind literal]
