@@ -4,6 +4,7 @@ import root.evaluation.Evaluator;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.MonkeyBoolean;
 import root.evaluation.objects.impl.MonkeyInteger;
+import root.evaluation.objects.impl.MonkeyNull;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
@@ -35,7 +36,7 @@ public class EvaluatorTest {
                 new IntegerTest(37, "3 * 3 * 3 + 10"),
                 new IntegerTest(37, "3 * (3 * 3) + 10"),
                 new IntegerTest(50, "(5 + 10 * 2 + 15 / 3) * 2 + -10")
-                );
+        );
 
         for (IntegerTest(long expected, String input) : tests) {
             testIntegerObject(expected, testEval(input));
@@ -89,6 +90,33 @@ public class EvaluatorTest {
         }
     }
 
+    private record ExpressionTest(Object expected, String input) {
+    }
+
+    @Test
+    void testIfElseExpression() {
+        var tests = List.of(
+                new ExpressionTest(10l, "if (true) { 10 }"),
+                new ExpressionTest(null, "if (false) { 10 }"),
+                new ExpressionTest(10l, "if (1) { 10 }"),
+                new ExpressionTest(10l, "if (1 < 2) { 10 }"),
+                new ExpressionTest(null, "if (1 > 2) { 10 }"),
+                new ExpressionTest(20l, "if (1 > 2) { 10 } else { 20 }"),
+                new ExpressionTest(10l, "if (1 < 2) { 10 } else { 20 }")
+        );
+
+        for (ExpressionTest(Object expected, String input) : tests) {
+            MonkeyObject<?> evaluated = testEval(input);
+
+            switch (expected) {
+                case Long l -> testIntegerObject(l, evaluated);
+                case Boolean b -> testBooleanObject(b, evaluated);
+                case null -> testNullObject(evaluated);
+                default -> throw new IllegalStateException("Unexpected value: " + expected);
+            }
+        }
+    }
+
     private MonkeyObject<?> testEval(String input) {
         var l = new Lexer(input);
         var p = new Parser(l);
@@ -103,14 +131,22 @@ public class EvaluatorTest {
     private void testIntegerObject(long expected, MonkeyObject<?> object) {
         switch (object) {
             case MonkeyInteger integer -> Assertions.assertEquals(expected, integer.getValue());
-            default -> throw new AssertionError("Object is not MonkeyInteger: %s %s".formatted(object.getClass(), object.inspect()));
+            default ->
+                    throw new AssertionError("Object is not MonkeyInteger: " + object);
         }
     }
 
     private void testBooleanObject(boolean expected, MonkeyObject<?> object) {
         switch (object) {
             case MonkeyBoolean bool -> Assertions.assertEquals(expected, bool.getValue());
-            default -> throw new AssertionError("Object is not MonkeyBoolean: %s %s".formatted(object.getClass(), object.inspect()));
+            default ->
+                    throw new AssertionError("Object is not MonkeyBoolean: " + object);
+        }
+    }
+
+    private void testNullObject(MonkeyObject<?> object) {
+        if (object != MonkeyNull.INSTANCE) {
+            throw new AssertionError("Object is not MonkeyNull: " + object);
         }
     }
 }

@@ -313,7 +313,7 @@ public class ParserTest {
 
         Assertions.assertNull(expression.getAlternative());
 
-        Assertions.assertEquals("if (x < y) {\nx\n}", expression.toString());
+        Assertions.assertEquals("if ((x < y)) {\nx\n}", expression.toString());
 
         input = "if (y > x) { x } else { y }";
         program = buildProgram(input);
@@ -337,7 +337,11 @@ public class ParserTest {
         ExpressionStatement alternative = (ExpressionStatement) expression.getAlternative().getStatements().get(0);
         testIdentifier(alternative.getExpression(), "y");
 
-        Assertions.assertEquals("if (y > x) {\nx\n} else {\ny\n}", expression.toString());
+        Assertions.assertEquals("if ((y > x)) {\nx\n} else {\ny\n}", expression.toString());
+
+        input = "if (true) { x }";
+        program = buildProgram(input);
+        Assertions.assertEquals("if (true) {\nx\n}", program.toString());
     }
 
     @Test

@@ -25,4 +25,9 @@ public abstract class MonkeyObject<T> {
     public void setValue(T value) {
         this.value = Objects.requireNonNull(value);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + " " + inspect();
+    }
 }
