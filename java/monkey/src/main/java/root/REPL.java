@@ -1,6 +1,8 @@
 package root;
 
 import root.ast.Program;
+import root.evaluation.Evaluator;
+import root.evaluation.objects.MonkeyObject;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
@@ -34,8 +36,9 @@ public class REPL {
 
             try {
                 Program program = parser.parseProgram();
+                MonkeyObject<?> evaluated = Evaluator.eval(program);
 
-                printStream.println(program);
+                printStream.println(evaluated.inspect());
             } catch (ParseProgramException e) {
                 printStream.println(e.getMessage());
             }

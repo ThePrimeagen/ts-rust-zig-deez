@@ -20,13 +20,17 @@ public class EvaluatorTest {
         var tests = List.of(
                 new IntegerLiteralTest(5, "5"),
                 new IntegerLiteralTest(10, "10"),
-                new IntegerLiteralTest(0, "0")
+                new IntegerLiteralTest(0, "0"),
+                new IntegerLiteralTest(-5, "-5"),
+                new IntegerLiteralTest(-10, "-10"),
+                new IntegerLiteralTest(100, "--100")
         );
 
         for (IntegerLiteralTest(long expected, String input) : tests) {
             testIntegerObject(expected, testEval(input));
         }
     }
+
     private record BooleanLiteralTest(boolean expected, String input) {
     }
 
@@ -35,6 +39,21 @@ public class EvaluatorTest {
         var tests = List.of(
                 new BooleanLiteralTest(true, "true"),
                 new BooleanLiteralTest(false, "false")
+        );
+
+        for (BooleanLiteralTest(boolean expected, String input) : tests) {
+            testBooleanObject(expected, testEval(input));
+        }
+    }
+
+    @Test
+    void testMinusOperator() {
+        var tests = List.of(
+                new BooleanLiteralTest(false, "!true"),
+                new BooleanLiteralTest(true, "!false"),
+                new BooleanLiteralTest(false, "!5"),
+                new BooleanLiteralTest(true, "!!5"),
+                new BooleanLiteralTest(true, "!!5")
         );
 
         for (BooleanLiteralTest(boolean expected, String input) : tests) {
