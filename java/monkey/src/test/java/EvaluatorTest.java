@@ -12,36 +12,64 @@ import java.util.List;
 
 public class EvaluatorTest {
 
-    private record IntegerLiteralTest(long expected, String input) {
+    private record IntegerTest(long expected, String input) {
     }
 
     @Test
-    void testIntegerLiterals() {
+    void testIntegerExpression() {
         var tests = List.of(
-                new IntegerLiteralTest(5, "5"),
-                new IntegerLiteralTest(10, "10"),
-                new IntegerLiteralTest(0, "0"),
-                new IntegerLiteralTest(-5, "-5"),
-                new IntegerLiteralTest(-10, "-10"),
-                new IntegerLiteralTest(100, "--100")
-        );
+                new IntegerTest(5, "5"),
+                new IntegerTest(10, "10"),
+                new IntegerTest(0, "0"),
+                new IntegerTest(-5, "-5"),
+                new IntegerTest(-10, "-10"),
+                new IntegerTest(100, "--100"),
+                new IntegerTest(10, "5 + 5 + 5 + 5 - 10"),
+                new IntegerTest(32, "2 * 2 * 2 * 2 * 2"),
+                new IntegerTest(0, "-50 + 100 + -50"),
+                new IntegerTest(20, "5 * 2 + 10"),
+                new IntegerTest(25, "5 + 2 * 10"),
+                new IntegerTest(0, "20 + 2 * -10"),
+                new IntegerTest(60, "50 / 2 * 2 + 10"),
+                new IntegerTest(30, "2 * (5 + 10)"),
+                new IntegerTest(37, "3 * 3 * 3 + 10"),
+                new IntegerTest(37, "3 * (3 * 3) + 10"),
+                new IntegerTest(50, "(5 + 10 * 2 + 15 / 3) * 2 + -10")
+                );
 
-        for (IntegerLiteralTest(long expected, String input) : tests) {
+        for (IntegerTest(long expected, String input) : tests) {
             testIntegerObject(expected, testEval(input));
         }
     }
 
-    private record BooleanLiteralTest(boolean expected, String input) {
+    private record BooleanTest(boolean expected, String input) {
     }
 
     @Test
-    void testBooleanLiterals() {
+    void testBooleanExpression() {
         var tests = List.of(
-                new BooleanLiteralTest(true, "true"),
-                new BooleanLiteralTest(false, "false")
+                new BooleanTest(true, "true"),
+                new BooleanTest(false, "false"),
+                new BooleanTest(true, "1 < 2"),
+                new BooleanTest(false, "1 > 2"),
+                new BooleanTest(false, "1 < 1"),
+                new BooleanTest(false, "1 > 1"),
+                new BooleanTest(true, "1 == 1"),
+                new BooleanTest(false, "1 != 1"),
+                new BooleanTest(false, "1 == 2"),
+                new BooleanTest(true, "1 != 2"),
+                new BooleanTest(true, "true == true"),
+                new BooleanTest(true, "false == false"),
+                new BooleanTest(false, "true == false"),
+                new BooleanTest(true, "true != false"),
+                new BooleanTest(true, "false != true"),
+                new BooleanTest(true, "(1 < 2) == true"),
+                new BooleanTest(false, "(1 < 2) == false"),
+                new BooleanTest(false, "(1 > 2) == true"),
+                new BooleanTest(true, "(1 > 2) == false")
         );
 
-        for (BooleanLiteralTest(boolean expected, String input) : tests) {
+        for (BooleanTest(boolean expected, String input) : tests) {
             testBooleanObject(expected, testEval(input));
         }
     }
@@ -49,14 +77,14 @@ public class EvaluatorTest {
     @Test
     void testMinusOperator() {
         var tests = List.of(
-                new BooleanLiteralTest(false, "!true"),
-                new BooleanLiteralTest(true, "!false"),
-                new BooleanLiteralTest(false, "!5"),
-                new BooleanLiteralTest(true, "!!5"),
-                new BooleanLiteralTest(true, "!!5")
+                new BooleanTest(false, "!true"),
+                new BooleanTest(true, "!false"),
+                new BooleanTest(false, "!5"),
+                new BooleanTest(true, "!!5"),
+                new BooleanTest(true, "!!5")
         );
 
-        for (BooleanLiteralTest(boolean expected, String input) : tests) {
+        for (BooleanTest(boolean expected, String input) : tests) {
             testBooleanObject(expected, testEval(input));
         }
     }
@@ -75,14 +103,14 @@ public class EvaluatorTest {
     private void testIntegerObject(long expected, MonkeyObject<?> object) {
         switch (object) {
             case MonkeyInteger integer -> Assertions.assertEquals(expected, integer.getValue());
-            default -> throw new AssertionError("Object is not MonkeyInteger: " + object);
+            default -> throw new AssertionError("Object is not MonkeyInteger: %s %s".formatted(object.getClass(), object.inspect()));
         }
     }
 
     private void testBooleanObject(boolean expected, MonkeyObject<?> object) {
         switch (object) {
             case MonkeyBoolean bool -> Assertions.assertEquals(expected, bool.getValue());
-            default -> throw new AssertionError("Object is not MonkeyBoolean: " + object);
+            default -> throw new AssertionError("Object is not MonkeyBoolean: %s %s".formatted(object.getClass(), object.inspect()));
         }
     }
 }

@@ -14,6 +14,10 @@ public class MonkeyBoolean extends MonkeyObject<Boolean> {
         setValue(value);
     }
 
+    public static MonkeyBoolean nativeToMonkey(boolean bool) {
+        return bool ? TRUE : FALSE;
+    }
+
     @Override
     public String inspect() {
         return String.valueOf(getValue());
