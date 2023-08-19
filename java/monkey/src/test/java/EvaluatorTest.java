@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import root.evaluation.Evaluator;
+import root.evaluation.objects.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.MonkeyBoolean;
 import root.evaluation.objects.impl.MonkeyInteger;
@@ -129,7 +130,7 @@ public class EvaluatorTest {
                             if (10 > 1) {
                                 return 10;
                             }
-                        
+                                                
                             return 1;
                         }""")
         );
@@ -140,13 +141,86 @@ public class EvaluatorTest {
         }
     }
 
+    @Test
+    void testErrorHandling() {
+        var tests = List.of(
+                List.of(
+                        "5 + true;",
+                        """
+                                Error evaluating the program: Operation + not supported for types INTEGER and BOOLEAN
+                                01: 5 + true;
+                                ------^------"""
+                ),
+                List.of(
+                        "5 + true; 5;",
+                        """
+                                Error evaluating the program: Operation + not supported for types INTEGER and BOOLEAN
+                                01: 5 + true; 5;
+                                ------^---------"""
+                ),
+                List.of(
+                        "-true",
+                        """
+                                Error evaluating the program: Operation - not supported for type BOOLEAN
+                                01: -true
+                                ----^----"""
+                ),
+                List.of(
+                        "true + false;",
+                        """
+                                Error evaluating the program: Operation + not supported for types BOOLEAN and BOOLEAN
+                                01: true + false;
+                                ---------^-------"""
+                ),
+                List.of(
+                        "5; true + false; 5",
+                        """
+                                Error evaluating the program: Operation + not supported for types BOOLEAN and BOOLEAN
+                                01: 5; true + false; 5
+                                ------------^---------"""
+                ),
+                List.of(
+                        "if (10 > 1) { true + false; }",
+                        """
+                                Error evaluating the program: Operation + not supported for types BOOLEAN and BOOLEAN
+                                01: if (10 > 1) { true + false; }
+                                -----------------------^---------"""
+                ),
+                List.of(
+                        """
+                                if (10 > 1) {
+                                    if (10 > 1) {
+                                        return true + false;
+                                    }
+                                    return 1;
+                                }""",
+                        """
+                                Error evaluating the program: Operation + not supported for types BOOLEAN and BOOLEAN
+                                03:         return true + false;
+                                ------------------------^-------"""
+                )
+        );
+
+        for (var test : tests) {
+            EvaluationException exception = null;
+            try {
+                testEval(test.get(0));
+            } catch (RuntimeException e) {
+                exception = (EvaluationException) e.getCause();
+            }
+
+            Assertions.assertNotNull(exception);
+            Assertions.assertEquals(test.get(1), exception.getMessage());
+        }
+    }
+
     private MonkeyObject<?> testEval(String input) {
         var l = new Lexer(input);
         var p = new Parser(l);
 
         try {
             return Evaluator.eval(p.parseProgram());
-        } catch (ParseProgramException e) {
+        } catch (ParseProgramException | EvaluationException e) {
             throw new RuntimeException(e);
         }
     }
@@ -154,16 +228,14 @@ public class EvaluatorTest {
     private void testIntegerObject(long expected, MonkeyObject<?> object) {
         switch (object) {
             case MonkeyInteger integer -> Assertions.assertEquals(expected, integer.getValue());
-            default ->
-                    throw new AssertionError("Object is not MonkeyInteger: " + object);
+            default -> throw new AssertionError("Object is not MonkeyInteger: " + object);
         }
     }
 
     private void testBooleanObject(boolean expected, MonkeyObject<?> object) {
         switch (object) {
             case MonkeyBoolean bool -> Assertions.assertEquals(expected, bool.getValue());
-            default ->
-                    throw new AssertionError("Object is not MonkeyBoolean: " + object);
+            default -> throw new AssertionError("Object is not MonkeyBoolean: " + object);
         }
     }
 

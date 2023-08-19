@@ -2,6 +2,7 @@ package root;
 
 import root.ast.Program;
 import root.evaluation.Evaluator;
+import root.evaluation.objects.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
@@ -39,7 +40,7 @@ public class REPL {
                 MonkeyObject<?> evaluated = Evaluator.eval(program);
 
                 printStream.println(evaluated.inspect());
-            } catch (ParseProgramException e) {
+            } catch (ParseProgramException | EvaluationException e) {
                 printStream.println(e.getMessage());
             }
 

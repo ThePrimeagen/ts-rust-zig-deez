@@ -7,6 +7,7 @@ import root.ast.statements.BlockStatement;
 import root.ast.statements.ExpressionStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
+import root.evaluation.objects.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.MonkeyBoolean;
 import root.evaluation.objects.impl.MonkeyInteger;
@@ -17,7 +18,7 @@ import java.util.List;
 
 public class Evaluator {
 
-    public static MonkeyObject<?> eval(Node node) {
+    public static MonkeyObject<?> eval(Node node) throws EvaluationException {
         return switch (node) {
             case Program program -> evalStatements(program.getStatements(), true);
             case BlockStatement blockStatement -> evalStatements(blockStatement.getStatements(), false);
@@ -31,12 +32,17 @@ public class Evaluator {
                 MonkeyObject<?> returnValue = eval(returnStatement.getReturnValue());
                 yield new MonkeyReturn<>(returnValue);
             }
+
+            // Should be impossible (after everything is implemented)
             default ->
-                    throw new IllegalStateException("Unexpected value: %s %s".formatted(node.getClass().getSimpleName(), node));
+                    throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
+                            node.getClass().getSimpleName(),
+                            node
+                    ));
         };
     }
 
-    private static MonkeyObject<?> evalStatements(List<Statement> statements, boolean unwrapReturn) {
+    private static MonkeyObject<?> evalStatements(List<Statement> statements, boolean unwrapReturn) throws EvaluationException {
         MonkeyObject<?> object = MonkeyNull.INSTANCE;
 
         for (var statement : statements) {
@@ -53,7 +59,7 @@ public class Evaluator {
         return object;
     }
 
-    private static MonkeyObject<?> evalPrefixExpression(PrefixExpression prefixExpression) {
+    private static MonkeyObject<?> evalPrefixExpression(PrefixExpression prefixExpression) throws EvaluationException {
         MonkeyObject<?> expressionResult = eval(prefixExpression.getRight());
 
         return switch (prefixExpression.getToken().type()) {
@@ -64,13 +70,16 @@ public class Evaluator {
                     yield new MonkeyInteger(-integer.getValue());
                 }
 
-                yield MonkeyNull.INSTANCE;
+                throw new EvaluationException(prefixExpression.getToken(), "Operation - not supported for type %s", expressionResult.getType());
             }
-            default -> throw new IllegalStateException("Unexpected value: " + prefixExpression.getToken().type());
+
+            // Should be impossible
+            default ->
+                    throw new IllegalStateException("Unexpected value (unreachable code): " + prefixExpression.getToken().type());
         };
     }
 
-    private static MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) {
+    private static MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) throws EvaluationException {
         MonkeyObject<?> left = eval(infixExpression.getLeft());
         MonkeyObject<?> rigth = eval(infixExpression.getRight());
 
@@ -82,7 +91,14 @@ public class Evaluator {
             case EQUAL -> MonkeyBoolean.nativeToMonkey(left == rigth);
             case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left != rigth);
 
-            default -> throw new IllegalStateException("Unexpected value: " + infixExpression.getToken().type());
+            default ->
+                    throw new EvaluationException(
+                            infixExpression.getToken(),
+                            "Operation %s not supported for types %s and %s",
+                            infixExpression.getToken().literal(),
+                            left.getType(),
+                            rigth.getType()
+                    );
         };
     }
 
@@ -98,11 +114,13 @@ public class Evaluator {
             case LT -> MonkeyBoolean.nativeToMonkey(left.getValue() < right.getValue());
             case GT -> MonkeyBoolean.nativeToMonkey(left.getValue() > right.getValue());
 
-            default -> throw new IllegalStateException("Unexpected value: " + infixExpression.getToken().type());
+            // Should be impossible
+            default ->
+                    throw new IllegalStateException("Unexpected value (unreachable code):" + infixExpression.getToken().type());
         };
     }
 
-    private static MonkeyObject<?> evalIfExpression(IfExpression ifExpression) {
+    private static MonkeyObject<?> evalIfExpression(IfExpression ifExpression) throws EvaluationException {
         MonkeyObject<?> conditionResult = eval(ifExpression.getCondition());
 
         if (isTruthy(conditionResult)) {
