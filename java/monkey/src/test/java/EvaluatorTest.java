@@ -117,6 +117,29 @@ public class EvaluatorTest {
         }
     }
 
+    @Test
+    void testReturnStatement() {
+        var tests = List.of(
+                new IntegerTest(10, "return 10;"),
+                new IntegerTest(10, "return 10; 9;"),
+                new IntegerTest(10, "return 2 * 5; 9;"),
+                new IntegerTest(10, "9; return 2 * 5; 9;"),
+                new IntegerTest(10, """
+                        if (10 > 1) {
+                            if (10 > 1) {
+                                return 10;
+                            }
+                        
+                            return 1;
+                        }""")
+        );
+
+        for (IntegerTest(long expected, String input) : tests) {
+            MonkeyObject<?> evaluated = testEval(input);
+            testIntegerObject(expected, evaluated);
+        }
+    }
+
     private MonkeyObject<?> testEval(String input) {
         var l = new Lexer(input);
         var p = new Parser(l);

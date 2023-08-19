@@ -5,38 +5,49 @@ import root.ast.Program;
 import root.ast.expressions.*;
 import root.ast.statements.BlockStatement;
 import root.ast.statements.ExpressionStatement;
+import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
 import root.evaluation.objects.MonkeyObject;
-import root.evaluation.objects.ObjectType;
 import root.evaluation.objects.impl.MonkeyBoolean;
 import root.evaluation.objects.impl.MonkeyInteger;
 import root.evaluation.objects.impl.MonkeyNull;
+import root.evaluation.objects.impl.MonkeyReturn;
 
 import java.util.List;
-import java.util.Objects;
 
 public class Evaluator {
 
     public static MonkeyObject<?> eval(Node node) {
         return switch (node) {
-            case Program program -> evalStatements(program.getStatements());
-            case BlockStatement blockStatement -> evalStatements(blockStatement.getStatements());
+            case Program program -> evalStatements(program.getStatements(), true);
+            case BlockStatement blockStatement -> evalStatements(blockStatement.getStatements(), false);
             case ExpressionStatement expression -> eval(expression.getExpression());
             case IntegerLiteralExpression integerLiteral -> new MonkeyInteger(integerLiteral.getValue());
             case BooleanLiteralExpression booleanLiteral -> MonkeyBoolean.nativeToMonkey(booleanLiteral.getValue());
             case PrefixExpression prefixExpression -> evalPrefixExpression(prefixExpression);
             case InfixExpression infixExpression -> evalInfixExpression(infixExpression);
             case IfExpression ifExpression -> evalIfExpression(ifExpression);
+            case ReturnStatement returnStatement -> {
+                MonkeyObject<?> returnValue = eval(returnStatement.getReturnValue());
+                yield new MonkeyReturn<>(returnValue);
+            }
             default ->
                     throw new IllegalStateException("Unexpected value: %s %s".formatted(node.getClass().getSimpleName(), node));
         };
     }
 
-    private static MonkeyObject<?> evalStatements(List<Statement> statements) {
+    private static MonkeyObject<?> evalStatements(List<Statement> statements, boolean unwrapReturn) {
         MonkeyObject<?> object = MonkeyNull.INSTANCE;
 
         for (var statement : statements) {
             object = eval(statement);
+            // Maybe an exception is more idiomatic? What are the performance implications of this choice?
+            if (object instanceof MonkeyReturn<?> monkeyReturn) {
+                if (unwrapReturn) {
+                    return monkeyReturn.returnValue;
+                }
+                return monkeyReturn;
+            }
         }
 
         return object;
