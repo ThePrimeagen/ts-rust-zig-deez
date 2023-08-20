@@ -1,4 +1,4 @@
-package root.evaluation.objects;
+package root.evaluation;
 
 import root.LocalizedToken;
 import root.util.ExceptionUtil;

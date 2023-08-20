@@ -242,4 +242,24 @@ public class LexerTest {
             Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
         }
     }
+
+    @Test
+    void testNullToken() {
+        String input = """
+                let a = null""";
+
+        Lexer l = new Lexer(input);
+
+        Token[] expected = {
+                TokenType.LET.token(),
+                TokenType.IDENTIFIER.createToken("a"),
+                TokenType.ASSIGN.token(),
+                TokenType.NULL.token()
+        };
+
+        for (Token t : expected) {
+            Token g = l.nextToken();
+            Assertions.assertEquals(t, g);
+        }
+    }
 }

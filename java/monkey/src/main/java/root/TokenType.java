@@ -31,7 +31,8 @@ public enum TokenType {
     FALSE("false"),
     IF("if"),
     ELSE("else"),
-    RETURN("return");
+    RETURN("return"),
+    NULL("null"); // My additon.
 
     private final Token token;
 

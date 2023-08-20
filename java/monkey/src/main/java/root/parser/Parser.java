@@ -67,6 +67,12 @@ public class Parser {
 
         proceedToNextToken();
 
+        // A modification I made to support the new Unit type for functions that don't return anything
+        if (currentTokenIs(TokenType.SEMI)) {
+            returnStatement.setReturnValue(UnitExpression.INSTANCE);
+            return returnStatement;
+        }
+
         returnStatement.setReturnValue(parseExpression(OperatorPrecedence.LOWEST));
 
         if (peekTokenIs(TokenType.SEMI)) {
@@ -135,6 +141,7 @@ public class Parser {
             case IDENTIFIER -> () -> new IdentifierExpression(currentToken, currentToken.literal());
             case INT -> () -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
             case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
+            case NULL -> () -> new NullLiteralExpression(currentToken);
             case BANG, MINUS -> this::parsePrefixExpression;
             case LPAREN -> this::parseGroupedExpression;
             case IF -> this::parseIfExpression;

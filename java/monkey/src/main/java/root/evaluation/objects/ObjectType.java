@@ -6,4 +6,5 @@ public enum ObjectType {
     BOOLEAN,
     INTEGER,
     RETURN_VALUE_OBJ,
+    UNIT,
 }

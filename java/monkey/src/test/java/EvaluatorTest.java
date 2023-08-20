@@ -1,11 +1,12 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import root.evaluation.Evaluator;
-import root.evaluation.objects.EvaluationException;
+import root.evaluation.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.MonkeyBoolean;
 import root.evaluation.objects.impl.MonkeyInteger;
 import root.evaluation.objects.impl.MonkeyNull;
+import root.evaluation.objects.impl.MonkeyUnit;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
@@ -68,7 +69,17 @@ public class EvaluatorTest {
                 new BooleanTest(true, "(1 < 2) == true"),
                 new BooleanTest(false, "(1 < 2) == false"),
                 new BooleanTest(false, "(1 > 2) == true"),
-                new BooleanTest(true, "(1 > 2) == false")
+                new BooleanTest(true, "(1 > 2) == false"),
+                new BooleanTest(true, "null == null"),
+                new BooleanTest(true, "!null == true"),
+                new BooleanTest(false, "null != null"),
+                new BooleanTest(true, "null != !null"),
+                new BooleanTest(true, "null != 10"),
+                new BooleanTest(true, "null != 0"),
+                new BooleanTest(false, "null == false"),
+                new BooleanTest(false, "null == true"),
+                new BooleanTest(false, "null == 10"),
+                new BooleanTest(false, "null == 0")
         );
 
         for (BooleanTest(boolean expected, String input) : tests) {
@@ -77,13 +88,14 @@ public class EvaluatorTest {
     }
 
     @Test
-    void testMinusOperator() {
+    void testBangOperator() {
         var tests = List.of(
                 new BooleanTest(false, "!true"),
                 new BooleanTest(true, "!false"),
                 new BooleanTest(false, "!5"),
                 new BooleanTest(true, "!!5"),
-                new BooleanTest(true, "!!5")
+                new BooleanTest(false, "!!!0"),
+                new BooleanTest(true, "!null")
         );
 
         for (BooleanTest(boolean expected, String input) : tests) {
@@ -97,35 +109,31 @@ public class EvaluatorTest {
     @Test
     void testIfElseExpression() {
         var tests = List.of(
-                new ExpressionTest(10l, "if (true) { 10 }"),
+                new ExpressionTest(10, "if (true) { 10 }"),
                 new ExpressionTest(null, "if (false) { 10 }"),
-                new ExpressionTest(10l, "if (1) { 10 }"),
-                new ExpressionTest(10l, "if (1 < 2) { 10 }"),
+                new ExpressionTest(10, "if (1) { 10 }"),
+                new ExpressionTest(10, "if (1 < 2) { 10 }"),
                 new ExpressionTest(null, "if (1 > 2) { 10 }"),
-                new ExpressionTest(20l, "if (1 > 2) { 10 } else { 20 }"),
-                new ExpressionTest(10l, "if (1 < 2) { 10 } else { 20 }")
+                new ExpressionTest(20, "if (1 > 2) { 10 } else { 20 }"),
+                new ExpressionTest(10, "if (1 < 2) { 10 } else { 20 }"),
+                new ExpressionTest(10, "if (!null) { 10 } else { 20 }")
         );
 
         for (ExpressionTest(Object expected, String input) : tests) {
             MonkeyObject<?> evaluated = testEval(input);
-
-            switch (expected) {
-                case Long l -> testIntegerObject(l, evaluated);
-                case Boolean b -> testBooleanObject(b, evaluated);
-                case null -> testNullObject(evaluated);
-                default -> throw new IllegalStateException("Unexpected value: " + expected);
-            }
+            testObject(expected, evaluated);
         }
     }
 
     @Test
     void testReturnStatement() {
         var tests = List.of(
-                new IntegerTest(10, "return 10;"),
-                new IntegerTest(10, "return 10; 9;"),
-                new IntegerTest(10, "return 2 * 5; 9;"),
-                new IntegerTest(10, "9; return 2 * 5; 9;"),
-                new IntegerTest(10, """
+                new ExpressionTest(10, "return 10;"),
+                new ExpressionTest(10, "return 10; 9;"),
+                new ExpressionTest(10, "return 2 * 5; 9;"),
+                new ExpressionTest(10, "9; return 2 * 5; 9;"),
+                new ExpressionTest(MonkeyUnit.INSTANCE, "9; return; 9;"),
+                new ExpressionTest(10, """
                         if (10 > 1) {
                             if (10 > 1) {
                                 return 10;
@@ -135,9 +143,9 @@ public class EvaluatorTest {
                         }""")
         );
 
-        for (IntegerTest(long expected, String input) : tests) {
+        for (ExpressionTest(Object expected, String input) : tests) {
             MonkeyObject<?> evaluated = testEval(input);
-            testIntegerObject(expected, evaluated);
+            testObject(expected, evaluated);
         }
     }
 
@@ -214,6 +222,35 @@ public class EvaluatorTest {
         }
     }
 
+    @Test
+    void testNullOperations() {
+        var tests = List.of(
+                "null + null",
+                "null + 10",
+                "-5 + null",
+                "null - null",
+                "null - 10",
+                "-5 - null",
+                "null / null",
+                "null / 10",
+                "5 / null",
+                "null * null",
+                "null * 10",
+                "5 * null",
+                "null < null",
+                "null < 5",
+                "5 < null",
+                "null > null",
+                "null > 5",
+                "5 > null",
+                "-null"
+        );
+
+        for (var input : tests) {
+            testNullObject(testEval(input));
+        }
+    }
+
     private MonkeyObject<?> testEval(String input) {
         var l = new Lexer(input);
         var p = new Parser(l);
@@ -222,6 +259,17 @@ public class EvaluatorTest {
             return Evaluator.eval(p.parseProgram());
         } catch (ParseProgramException | EvaluationException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void testObject(Object expected, MonkeyObject<?> object) {
+        switch (expected) {
+            case Long l -> testIntegerObject(l, object);
+            case Integer i -> testIntegerObject(i, object);
+            case Boolean b -> testBooleanObject(b, object);
+            case MonkeyUnit unit -> Assertions.assertEquals(object, unit);
+            case null -> testNullObject(object);
+            default -> throw new IllegalStateException("Unexpected value: " + expected);
         }
     }
 

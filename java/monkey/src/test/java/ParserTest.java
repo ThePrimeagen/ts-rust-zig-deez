@@ -7,6 +7,7 @@ import root.ast.statements.ExpressionStatement;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
+import root.evaluation.objects.impl.MonkeyUnit;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
@@ -24,7 +25,8 @@ public class ParserTest {
         var tests = List.of(
                 new InputStatementTest("let x = 5;", "x", 5),
                 new InputStatementTest("let y = true;", "y", true),
-                new InputStatementTest("let foobar = y;", "foobar", "y")
+                new InputStatementTest("let foobar = y;", "foobar", "y"),
+                new InputStatementTest("let nil = null;", "nil", null)
         );
 
         for (InputStatementTest(String input, String expectedIdentifier, Object expectedValue) : tests) {
@@ -44,13 +46,15 @@ public class ParserTest {
         var tests = List.of(
                 new ReturnStatementTest("return 5;", 5),
                 new ReturnStatementTest("return true;", true),
-                new ReturnStatementTest("return y;", "y")
+                new ReturnStatementTest("return y;", "y"),
+                new ReturnStatementTest("return;", MonkeyUnit.INSTANCE),
+                new ReturnStatementTest("return null;", null)
         );
 
         for (ReturnStatementTest(String input, Object expectedValue) : tests) {
             var program = buildProgram(input);
             Assertions.assertEquals(1, program.getStatements().size());
-            var letStatement = (ReturnStatement) program.getStatements().get(0);
+            var letStatement = Assertions.assertInstanceOf(ReturnStatement.class, program.getStatements().get(0));
 
             testReturnStatement(letStatement, expectedValue);
         }
@@ -124,6 +128,21 @@ public class ParserTest {
         testBooleanLiteral(((ExpressionStatement) program.getStatements().get(1)).getExpression(), false);
     }
 
+    @Test
+    void testNullLiteralExpression() {
+        var input = "true; false;";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(2, program.getStatements().size());
+
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
+
+        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(0)).getExpression(), true);
+        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(1)).getExpression(), false);
+    }
+
     private record PrefixTestRecord(String input, String operator, Object right) {
     }
 
@@ -133,7 +152,8 @@ public class ParserTest {
                 new PrefixTestRecord("!5", "!", 5),
                 new PrefixTestRecord("- 15;", "-", 15),
                 new PrefixTestRecord("!true", "!", true),
-                new PrefixTestRecord("!false", "!", false)
+                new PrefixTestRecord("!false", "!", false),
+                new PrefixTestRecord("!null", "!", null)
         );
 
         for (PrefixTestRecord(String input, String operator, Object right) : prefixTests) {
@@ -462,8 +482,8 @@ public class ParserTest {
         Assertions.assertEquals(1, errors.size());
         Assertions.assertEquals(
                 "InvalidSyntax: Expected next token to be ), got eof\n" +
-                "01: let foo = add(a,b\n" +
-                "--------------------^",
+                        "01: let foo = add(a,b\n" +
+                        "--------------------^",
                 errors.get(0).getMessage()
         );
         Assertions.assertEquals("b", errors.get(0).getLocalizedToken().literal());
@@ -496,12 +516,22 @@ public class ParserTest {
         }
     }
 
+    private void testNullLiteral(Expression expression) {
+        Assertions.assertInstanceOf(NullLiteralExpression.class, expression);
+    }
+
+    private void testUnitExpression(Expression expression) {
+        Assertions.assertInstanceOf(UnitExpression.class, expression);
+    }
+
     private void testLiteralExpression(Expression expression, Object expected) {
         switch (expected) {
             case Integer i -> testIntegerLiteral(expression, i.longValue());
             case Long i -> testIntegerLiteral(expression, i);
             case String s -> testIdentifier(expression, s);
             case Boolean b -> testBooleanLiteral(expression, b);
+            case MonkeyUnit ignored -> testUnitExpression(expression);
+            case null -> testNullLiteral(expression);
             default -> throw new AssertionError("Type of exp not handled. got=" + expected.getClass().getSimpleName());
         }
     }

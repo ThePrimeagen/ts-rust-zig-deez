@@ -73,6 +73,7 @@ public class Lexer {
                     case "if" -> TokenType.IF.token();
                     case "else" -> TokenType.ELSE.token();
                     case "return" -> TokenType.RETURN.token();
+                    case "null" -> TokenType.NULL.token();
                     default -> TokenType.IDENTIFIER.createToken(ident);
                 };
             }

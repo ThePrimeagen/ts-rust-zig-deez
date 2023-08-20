@@ -7,12 +7,8 @@ import root.ast.statements.BlockStatement;
 import root.ast.statements.ExpressionStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
-import root.evaluation.objects.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
-import root.evaluation.objects.impl.MonkeyBoolean;
-import root.evaluation.objects.impl.MonkeyInteger;
-import root.evaluation.objects.impl.MonkeyNull;
-import root.evaluation.objects.impl.MonkeyReturn;
+import root.evaluation.objects.impl.*;
 
 import java.util.List;
 
@@ -32,6 +28,9 @@ public class Evaluator {
                 MonkeyObject<?> returnValue = eval(returnStatement.getReturnValue());
                 yield new MonkeyReturn<>(returnValue);
             }
+
+            case UnitExpression ignored -> MonkeyUnit.INSTANCE;
+            case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
 
             // Should be impossible (after everything is implemented)
             default ->
@@ -63,11 +62,15 @@ public class Evaluator {
         MonkeyObject<?> expressionResult = eval(prefixExpression.getRight());
 
         return switch (prefixExpression.getToken().type()) {
-            case BANG -> MonkeyBoolean.nativeToMonkey(isTruthy(expressionResult));
+            case BANG -> MonkeyBoolean.nativeToMonkey(!isTruthy(expressionResult));
 
             case MINUS -> {
                 if (expressionResult instanceof MonkeyInteger integer) {
                     yield new MonkeyInteger(-integer.getValue());
+                }
+
+                if (expressionResult instanceof MonkeyNull) {
+                    yield MonkeyNull.INSTANCE;
                 }
 
                 throw new EvaluationException(prefixExpression.getToken(), "Operation - not supported for type %s", expressionResult.getType());
@@ -91,14 +94,20 @@ public class Evaluator {
             case EQUAL -> MonkeyBoolean.nativeToMonkey(left == rigth);
             case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left != rigth);
 
-            default ->
-                    throw new EvaluationException(
-                            infixExpression.getToken(),
-                            "Operation %s not supported for types %s and %s",
-                            infixExpression.getToken().literal(),
-                            left.getType(),
-                            rigth.getType()
-                    );
+            default -> {
+                // ¯\_(ツ)_/¯
+                if (left instanceof MonkeyNull || rigth instanceof MonkeyNull) {
+                    yield MonkeyNull.INSTANCE;
+                }
+
+                throw new EvaluationException(
+                        infixExpression.getToken(),
+                        "Operation %s not supported for types %s and %s",
+                        infixExpression.getToken().literal(),
+                        left.getType(),
+                        rigth.getType()
+                );
+            }
         };
     }
 
