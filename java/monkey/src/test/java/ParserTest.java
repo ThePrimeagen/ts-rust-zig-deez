@@ -93,8 +93,7 @@ public class ParserTest {
 
         Assertions.assertEquals(1, program.getStatements().size());
 
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-        var statement = (ExpressionStatement) program.getStatements().get(0);
+        var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
         testIdentifier(statement.getExpression(), "foobar");
     }
@@ -107,8 +106,7 @@ public class ParserTest {
 
         Assertions.assertEquals(1, program.getStatements().size());
 
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-        var statement = (ExpressionStatement) program.getStatements().get(0);
+        var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
         testIntegerLiteral(statement.getExpression(), 5L);
     }
@@ -121,26 +119,24 @@ public class ParserTest {
 
         Assertions.assertEquals(2, program.getStatements().size());
 
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
+        var statement1 = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var statement2 = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
 
-        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(0)).getExpression(), true);
-        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(1)).getExpression(), false);
+        testBooleanLiteral(statement1.getExpression(), true);
+        testBooleanLiteral(statement2.getExpression(), false);
     }
 
     @Test
     void testNullLiteralExpression() {
-        var input = "true; false;";
+        var input = "null;";
 
         var program = buildProgram(input);
 
-        Assertions.assertEquals(2, program.getStatements().size());
+        Assertions.assertEquals(1, program.getStatements().size());
 
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
+        var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
-        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(0)).getExpression(), true);
-        testBooleanLiteral(((ExpressionStatement) program.getStatements().get(1)).getExpression(), false);
+        testNullLiteral(statement.getExpression());
     }
 
     private record PrefixTestRecord(String input, String operator, Object right) {
@@ -161,8 +157,7 @@ public class ParserTest {
 
             Assertions.assertEquals(1, program.getStatements().size());
 
-            Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-            var statement = (ExpressionStatement) program.getStatements().get(0);
+            var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
             testPrefixExpression(statement.getExpression(), operator, right);
         }
@@ -194,8 +189,7 @@ public class ParserTest {
 
             Assertions.assertEquals(1, program.getStatements().size());
 
-            Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-            var statement = (ExpressionStatement) program.getStatements().get(0);
+            var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
             testInfixExpression(statement.getExpression(), leftValue, operator, rightValue);
         }
@@ -319,16 +313,13 @@ public class ParserTest {
         var program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-        ExpressionStatement statement = (ExpressionStatement) program.getStatements().get(0);
+        var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
-        Assertions.assertInstanceOf(IfExpression.class, statement.getExpression());
-        IfExpression expression = (IfExpression) statement.getExpression();
+        var expression = Assertions.assertInstanceOf(IfExpression.class, statement.getExpression());
         testInfixExpression(expression.getCondition(), "x", "<", "y");
 
         Assertions.assertEquals(1, expression.getConsequence().getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, expression.getConsequence().getStatements().get(0));
-        ExpressionStatement consequence = (ExpressionStatement) expression.getConsequence().getStatements().get(0);
+        var consequence = Assertions.assertInstanceOf(ExpressionStatement.class, expression.getConsequence().getStatements().get(0));
         testIdentifier(consequence.getExpression(), "x");
 
         Assertions.assertNull(expression.getAlternative());
@@ -339,22 +330,18 @@ public class ParserTest {
         program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-        statement = (ExpressionStatement) program.getStatements().get(0);
+        statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
-        Assertions.assertInstanceOf(IfExpression.class, statement.getExpression());
-        expression = (IfExpression) statement.getExpression();
+        expression = Assertions.assertInstanceOf(IfExpression.class, statement.getExpression());
         testInfixExpression(expression.getCondition(), "y", ">", "x");
 
         Assertions.assertEquals(1, expression.getConsequence().getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, expression.getConsequence().getStatements().get(0));
-        consequence = (ExpressionStatement) expression.getConsequence().getStatements().get(0);
+        consequence = Assertions.assertInstanceOf(ExpressionStatement.class, expression.getConsequence().getStatements().get(0));
         testIdentifier(consequence.getExpression(), "x");
 
         Assertions.assertNotNull(expression.getAlternative());
         Assertions.assertEquals(1, expression.getAlternative().getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, expression.getAlternative().getStatements().get(0));
-        ExpressionStatement alternative = (ExpressionStatement) expression.getAlternative().getStatements().get(0);
+        var alternative = Assertions.assertInstanceOf(ExpressionStatement.class, expression.getAlternative().getStatements().get(0));
         testIdentifier(alternative.getExpression(), "y");
 
         Assertions.assertEquals("if ((y > x)) {\nx\n} else {\ny\n}", expression.toString());
@@ -370,13 +357,9 @@ public class ParserTest {
         var program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var expressionStatement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
-        ExpressionStatement expressionStatement = (ExpressionStatement) program.getStatements().get(0);
-
-        Assertions.assertInstanceOf(FunctionLiteralExpression.class, expressionStatement.getExpression());
-
-        FunctionLiteralExpression function = (FunctionLiteralExpression) expressionStatement.getExpression();
+        var function = Assertions.assertInstanceOf(FunctionLiteralExpression.class, expressionStatement.getExpression());
 
         Assertions.assertEquals(2, function.getParameters().size());
         testLiteralExpression(function.getParameters().get(0), "x");
@@ -384,9 +367,7 @@ public class ParserTest {
 
         Assertions.assertEquals(1, function.getBody().getStatements().size());
 
-        Assertions.assertInstanceOf(ExpressionStatement.class, function.getBody().getStatements().get(0));
-
-        ExpressionStatement expression = (ExpressionStatement) function.getBody().getStatements().get(0);
+        var expression = Assertions.assertInstanceOf(ExpressionStatement.class, function.getBody().getStatements().get(0));
 
         testInfixExpression(expression.getExpression(), "x", "+", "y");
 
@@ -423,13 +404,8 @@ public class ParserTest {
         var program = buildProgram(input);
 
         Assertions.assertEquals(1, program.getStatements().size());
-        Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
-
-        ExpressionStatement statement = (ExpressionStatement) program.getStatements().get(0);
-
-        Assertions.assertInstanceOf(CallExpression.class, statement.getExpression());
-
-        CallExpression callExpression = (CallExpression) statement.getExpression();
+        var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var callExpression = Assertions.assertInstanceOf(CallExpression.class, statement.getExpression());
 
         testIdentifier(callExpression.getFunction(), "add");
         Assertions.assertEquals(3, callExpression.getArguments().size());
@@ -481,9 +457,10 @@ public class ParserTest {
         Assertions.assertNotNull(errors);
         Assertions.assertEquals(1, errors.size());
         Assertions.assertEquals(
-                "InvalidSyntax: Expected next token to be ), got eof\n" +
-                        "01: let foo = add(a,b\n" +
-                        "--------------------^",
+                """
+                        InvalidSyntax: Expected next token to be ), got eof
+                        01: let foo = add(a,b
+                        --------------------^""",
                 errors.get(0).getMessage()
         );
         Assertions.assertEquals("b", errors.get(0).getLocalizedToken().literal());

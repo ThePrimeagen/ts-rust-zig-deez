@@ -1,7 +1,6 @@
 package root.ast.expressions;
 
 import root.LocalizedToken;
-import root.Token;
 import root.ast.statements.BlockStatement;
 
 public class IfExpression extends Expression {
