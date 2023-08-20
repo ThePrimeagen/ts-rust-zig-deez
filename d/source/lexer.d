@@ -490,12 +490,14 @@ unittest {
 /// Basic hashmap test
 unittest {
     const auto input = "{\"name\": \"Alice\", \"age\": 24};";
-    const ulong[] expectedStart = [0, 2, 7, 10, 16, 19, 23, 25, 27, 28, input.length];
+    const ulong[] expectedStart = [
+        0, 2, 7, 10, 16, 19, 23, 25, 27, 28, input.length
+    ];
 
     with (TokenTag) {
         const auto expectedTag = [
-            LSquirly, String, Colon, String, Comma, String, Colon, Int,
-            RSquirly, Semicolon, Eof
+            LSquirly, String, Colon, String, Comma, String, Colon, Int, RSquirly,
+            Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);
@@ -668,7 +670,8 @@ if (5 < 10) {
             Int, Lt, Int, Gt, Int, Semicolon, If, LParen, Int, Lt, Int, RParen,
             LSquirly, Return, True, Semicolon, RSquirly, Else, LSquirly,
             Return, False, Semicolon, RSquirly, Int, Eq, Int, Semicolon, Int,
-            NotEq, Int, Semicolon, LBracket, Int, Comma, Int, RBracket, Semicolon, Eof
+            NotEq, Int, Semicolon, LBracket, Int, Comma, Int, RBracket, Semicolon,
+            Eof
         ];
 
         auto lexer = Lexer(input);

@@ -8,6 +8,7 @@
  */
 
 import atom;
+import hashable;
 import lexer;
 import parser;
 
@@ -16,11 +17,13 @@ import openmethods;
 mixin(registerMethods);
 
 import std.array : appender, Appender;
+import std.bitmanip : peek;
 import std.conv : to;
 import std.format : format;
 import std.range : empty;
 import std.stdio : writefln;
 import std.sumtype : match;
+import std.typecons : Tuple;
 
 /// Rep of operators for expressions
 /// Duplicated from Lexer, but we need to only index tag enum, not special
@@ -357,12 +360,78 @@ private EvalResult stringInfix(InfixExpressionNode node, string lValue, EvalResu
     return EvalResult(elements);
 }
 
-/// Array index expression handlers
-private EvalResult longIndex(IndexExpressionNode node, EvalResult lhs, long idx,
-        ref Lexer lexer, Environment* env)
+/// Evaluate hashmap literal
+@method EvalResult _eval(HashLiteralNode node, ref Lexer lexer, Environment* env)
 {
-    return lhs.match!((Results left) => evalArrayIndexExpression(left, idx, lexer, env),
-            _ => EvalResult(ErrorValue("Index operator not supported for non-array on LHS")));
+    ResultMap pairsResult;
+
+    foreach (keyNode, valueNode; node.pairs) {
+        auto key = eval(keyNode, lexer, env);
+
+        if (key.match!((ErrorValue _) => true, _ => false)) {
+            return key;
+        }
+
+        if (key.match!((bool _) => false, (long _) => false, (string _) => false, _ => true)) {
+            return EvalResult(ErrorValue("Unusable hash key"));
+        }
+
+        auto value = eval(valueNode, lexer, env);
+
+        if (value.match!((ErrorValue _) => true, _ => false)) {
+            return value;
+        }
+
+        auto hashedKey = key.match!((bool value) => HashKey(value ? 1 : 0,
+                HashType.Boolean), (long value) => HashKey(value, HashType.Int),
+                (string value) => hashGen(value), _ => assert(false, "Unreachable statement"));
+
+        pairsResult[hashedKey] = HashPair(key, value);
+    }
+
+    return EvalResult(pairsResult);
+}
+
+/// Array/Hashmap index expression handlers
+private EvalResult longIndex(IndexExpressionNode node, EvalResult lhs, long idx)
+{
+    return lhs.match!((Results left) => (idx < 0 || idx >= left.length) ? NIL_ATOM
+            : left[idx], (ResultMap left) {
+        auto key = HashKey(idx, HashType.Int);
+        if (key !in left) {
+            return NIL_ATOM;
+        }
+
+        return left[key].value;
+    }, _ => EvalResult(ErrorValue("Index operator not supported for non-array/map on LHS")));
+}
+
+private EvalResult stringIndex(IndexExpressionNode node, EvalResult lhs, string idx)
+{
+    return lhs.match!((ResultMap left) {
+        if (idx is null || idx.empty) {
+            return NIL_ATOM;
+        }
+
+        auto key = hashGen(idx);
+        if (key !in left) {
+            return NIL_ATOM;
+        }
+
+        return left[key].value;
+    }, _ => EvalResult(ErrorValue("Index operator not supported for non-map on LHS")));
+}
+
+private EvalResult boolIndex(IndexExpressionNode node, EvalResult lhs, bool idx)
+{
+    return lhs.match!((ResultMap left) {
+        auto key = HashKey(idx ? 1 : 0, HashType.Boolean);
+        if (key !in left) {
+            return NIL_ATOM;
+        }
+
+        return left[key].value;
+    }, _ => EvalResult(ErrorValue("Index operator not supported for non-map on LHS")));
 }
 
 /// Evaluate array index expression
@@ -373,23 +442,15 @@ private EvalResult longIndex(IndexExpressionNode node, EvalResult lhs, long idx,
         return lhs;
     }
 
-    // TODO: check that LHS = hashmap
     auto index = eval(node.index, lexer, env);
 
-    return index.match!((long idx) => longIndex(node, lhs, idx, lexer, env),
-            (ErrorValue _) => index, (ReturnValue value) {
-        return (*value).match!((long idx) => longIndex(node, lhs, idx, lexer, env),
-            _ => EvalResult(ErrorValue("Index operator not supported for non-numeric on RHS")));
-    }, _ => EvalResult(ErrorValue("Index operator not supported for non-numeric on RHS")));
-}
-
-EvalResult evalArrayIndexExpression(Results lhs, long index, ref Lexer lexer, Environment* env)
-{
-    if (index < 0 || index >= lhs.length) {
-        return NIL_ATOM;
-    }
-
-    return lhs[index];
+    return index.match!((bool idx) => boolIndex(node, lhs, idx),
+            (string idx) => stringIndex(node, lhs, idx), (long idx) => longIndex(node,
+                lhs, idx), (ErrorValue _) => index, (ReturnValue value) {
+        return (*value).match!((bool idx) => boolIndex(node, lhs, idx),
+            (string idx) => stringIndex(node, lhs, idx), (long idx) => longIndex(node, lhs, idx),
+            _ => EvalResult(ErrorValue("Index operator not supported on RHS")));
+    }, _ => EvalResult(ErrorValue("Index operator not supported on RHS")));
 }
 
 /// Evaluate function call

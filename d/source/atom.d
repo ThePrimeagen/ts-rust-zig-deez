@@ -7,6 +7,7 @@
  * Version: 0.0.1
  */
 
+import hashable;
 import lexer : Lexer;
 import parser : BlockStatement, IdentifierNode;
 
@@ -48,14 +49,21 @@ struct BuiltinFunctionKey {
 }
 
 /// Wraps evaluation results
-alias EvalResult = SumType!(long, bool, This[], This[This], string, ErrorValue,
-        void*, Character, Unit, Function, BuiltinFunctionKey, const This*);
+alias EvalResult = SumType!(long, bool, This[], Tuple!(This, "key", This,
+        "value")[HashKey], string, ErrorValue, void*, Character, Unit,
+        Function, BuiltinFunctionKey, const This*);
 
 /// Type for result array
 alias Results = EvalResult.Types[2];
 
+/// Type for result hashmap
+alias ResultMap = EvalResult.Types[3];
+
 /// Useful for return statement
 alias ReturnValue = EvalResult.Types[$ - 1];
+
+/// Mostly for logging purposes in REPL; compiled version may not have this
+alias HashPair = Tuple!(EvalResult, "key", EvalResult, "value");
 
 /// Wrapper around builtin functions for interpretation
 alias BuiltinFunction = EvalResult function(EvalResult[]...);

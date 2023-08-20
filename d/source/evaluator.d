@@ -11,6 +11,7 @@ import atom;
 import expression;
 import parser;
 
+import std.algorithm.iteration : joiner;
 import std.array : appender, Appender, empty;
 import std.conv : to;
 import std.format : format;
@@ -88,9 +89,20 @@ public:
         } else {
             auto endResult = finalResults[$ - 1];
 
-            return endResult.match!((ErrorValue result) => result.message, (ReturnValue result) {
+            return endResult.match!((ResultMap m) {
+                auto reprBuilder = appender!(string[]);
+                reprBuilder.reserve(m.length);
+
+                foreach (pair; m.values()) {
+                    reprBuilder.put(format("%s: %s", pair.key, pair.value));
+                }
+
+                const auto blockRepr = reprBuilder[].joiner(",").to!string;
+                return (blockRepr != "") ? "{" ~ blockRepr ~ "}" : "{}";
+            }, (ErrorValue result) => result.message, (ReturnValue result) {
                 return (*result).match!((Unit _) => "", (ErrorValue result) => result.message,
-                    (Character c) => format("'%c'", c.value), (value) => format("%s", value));
+                    (Character c) => format("'%c'", c.value),
+                    (long value) => format("%d", value), (value) => format("%s", value));
             }, (Function _) => "<Function>", (Unit _) => "", (result) => format("%s", result));
         }
     }
@@ -196,15 +208,15 @@ unittest {
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    evaluator.results[][0].match!((long _) => assert(false, "Expected array value in statement"),
-        (Results arr) {
-            foreach (i, value; arr.enumerate(0)) {
-                value.match!((long v) {
+    evaluator.results[][0].match!((long _) => assert(false,
+            "Expected array value in statement"), (Results arr) {
+        foreach (i, value; arr.enumerate(0)) {
+            value.match!((long v) {
                 assert(v == expected[i],
-                    format("Int value %s does not match expected value %s", v, expected[i]));
-                }, _ => assert(false, format("Expected int value in array index %d", i)));
-            }
-        }, _ => assert(false, "Expected array value in statement"));
+                format("Int value %s does not match expected value %s", v, expected[i]));
+            }, _ => assert(false, format("Expected int value in array index %d", i)));
+        }
+    }, _ => assert(false, "Expected array value in statement"));
 }
 
 /// Array and string len test
@@ -237,6 +249,29 @@ unittest {
                 format("Int value %s does not match expected value %s", value, expected));
         }, _ => assert(false, format("Expected array value in statement %s", i)));
     }
+}
+
+/// Hashmap index test
+unittest {
+    const auto input = "let people = [{\"name\": \"Alice\", \"age\": 24}, {\"name\": \"Anna\", \"age\": 28}];
+people[1][\"age\"];
+people[0][\"name\"];
+";
+    const long expectedInt = 28;
+    const string expectedString = "Alice";
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    evaluator.results[][1].match!((long value) {
+        assert(value == expectedInt,
+            format("Int value %s does not match expected value %s", value, expectedInt));
+    }, _ => assert(false, "Expected int value in map statement"));
+
+    evaluator.results[][2].match!((string value) {
+        assert(value == expectedString,
+            format("String value %s does not match expected value %s", value, expectedString));
+    }, _ => assert(false, "Expected string value in map statement"));
 }
 
 /// Builtin function test
@@ -283,12 +318,12 @@ unittest {
     evaluator.evalProgram();
 
     evaluator.results[][0].match!((Results arr) {
-    foreach (i, result; arr.enumerate(0)) {
-        result.match!((long value) {
-            assert(value == expected[i],
+        foreach (i, result; arr.enumerate(0)) {
+            result.match!((long value) {
+                assert(value == expected[i],
                 format("Int value %s does not match expected value %s", value, expected[i]));
-        }, _ => assert(false, format("Expected int in array value %d", i)));
-    }
+            }, _ => assert(false, format("Expected int in array value %d", i)));
+        }
     }, _ => assert(false, "Expected array value"));
 }
 
@@ -515,8 +550,7 @@ unittest {
         "let identity = fn(x) { return x; }; identity(5);",
         "let double = fn(x) { x * 2; }; double(5);",
         "let add = fn(x, y) { x + y; }; add(5, 5);",
-        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
-        "fn(x) { x; }(5)"
+        "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", "fn(x) { x; }(5)"
     ];
 
     const long[6] expected = [5, 5, 10, 10, 20, 5];
@@ -529,12 +563,11 @@ unittest {
         auto result = evaluator.results[][$ - 1];
 
         result.match!((ReturnValue rValue) {
-              return (*rValue).match!((long value) {
-                  assert(value == expected[i],
-                      format("Number value %s does not match expected value %d", value, expected[i]));
-                  }, _ => assert(false, format("Unhandled type in program %d", i)));
-            },
-            (long value) {
+            return (*rValue).match!((long value) {
+                assert(value == expected[i],
+                format("Number value %s does not match expected value %d", value, expected[i]));
+            }, _ => assert(false, format("Unhandled type in program %d", i)));
+        }, (long value) {
             assert(value == expected[i],
                 format("Number value %s does not match expected value %d", value, expected[i]));
         }, _ => assert(false, format("Unhandled type in program %d :: %s", i, result)));
@@ -589,7 +622,7 @@ counter(0);
     result.match!((ReturnValue rValue) {
         return (*rValue).match!((bool value) {
             assert(value == expected,
-                format("Bool value %s does not match expected value %s", value, expected));
+            format("Bool value %s does not match expected value %s", value, expected));
         }, _ => assert(false, "Unhandled type in program"));
     }, _ => assert(false, "Unhandled type in program"));
 }

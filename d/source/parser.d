@@ -71,7 +71,8 @@ shared static this()
         TokenTag.Int: &parseInt, TokenTag.True: &parseBoolean,
         TokenTag.False: &parseBoolean, TokenTag.LParen: &parseGroupedExpression,
         TokenTag.If: &parseIfExpression, TokenTag.Function: &parseFunctionLiteral,
-        TokenTag.LBracket: &parseArrayExpression
+        TokenTag.LBracket: &parseArrayExpression,
+        TokenTag.LSquirly: &parseHashExpression
     ];
 
     InfixRule[TokenTag] tempInfixRules = [
@@ -98,6 +99,7 @@ shared static this()
         TokenTag.RSquirly: InfixRule(null, Precedence.Lowest),
         TokenTag.Comma: InfixRule(null, Precedence.Lowest),
         TokenTag.Semicolon: InfixRule(null, Precedence.Lowest),
+        TokenTag.Colon: InfixRule(null, Precedence.Lowest),
         TokenTag.Eof: InfixRule(null, Precedence.Lowest),
     ];
 
@@ -216,6 +218,47 @@ ExpressionNode parseArrayExpression(ref Parser parser)
     auto elements = parser.parseCallArguments(TokenTag.RBracket);
 
     return new ArrayLiteralNode(start, elements);
+}
+
+/// Parse expressions grouped by curly braces
+ExpressionNode parseHashExpression(ref Parser parser)
+{
+    const auto start = parser.position;
+    ExpressionNode[ExpressionNode] pairs;
+
+    parser.skipToken();
+
+    if (parser.seekToken(0) == TokenTag.RSquirly) {
+        parser.skipToken();
+        return new HashLiteralNode(start, pairs);
+    }
+
+    // expect lsquirly before mapping and rsquirly at end of hashmap
+    do {
+        auto key = parser.parseExpression(Precedence.Lowest);
+
+        if (parser.seekToken(0) != TokenTag.Colon) {
+            return null;
+        }
+
+        parser.skipToken();
+        pairs[key] = parser.parseExpression(Precedence.Lowest);
+
+        // Expect either comma or rbrace or else :(
+        auto nextToken = parser.seekToken(0);
+
+        if (nextToken == TokenTag.Comma) {
+            parser.skipToken();
+        } else if (nextToken == TokenTag.RSquirly) {
+            parser.skipToken();
+            return new HashLiteralNode(start, pairs);
+        } else {
+            return null;
+        }
+    }
+    while (parser.position < parser.tokenCount);
+
+    return null;
 }
 
 /// Parse if-else statements
@@ -870,6 +913,55 @@ class IndexExpressionNode : ExpressionNode {
     override string show(ref Lexer lexer)
     {
         return format("(%s[%s])", this.lhs.show(lexer), this.index.show(lexer));
+    }
+}
+
+/// Expression node for Hash maps
+class HashLiteralNode : ExpressionNode {
+    ExpressionNode[ExpressionNode] pairs; /// Arguments for hashmap expression
+
+    /**
+     * Constructs the hashmap literal expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * args = the expressions as hashmap inputs
+     */
+    this(ulong mainIdx, ExpressionNode[ExpressionNode] pairs)
+    {
+        super(mainIdx);
+        this.pairs = pairs;
+    }
+
+    /// Show the left curly brace
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.LSquirly);
+    }
+
+    /// Create hashmap expression string
+    override string show(ref Lexer lexer)
+    {
+        string hashmapListing = "";
+        if (!this.pairs.empty()) {
+            auto elementBuilder = appender!(string[]);
+            elementBuilder.reserve(this.pairs.length);
+
+            foreach (key, value; this.pairs) {
+                auto keyRepr = key.show(lexer);
+
+                if (keyRepr !is null && keyRepr != "") {
+                    auto valRepr = value.show(lexer);
+
+                    if (valRepr !is null && valRepr != "") {
+                        elementBuilder.put(format("%s: %s", keyRepr, valRepr));
+                    }
+                }
+            }
+
+            hashmapListing = elementBuilder[].joiner(", ").to!string;
+        }
+
+        return format("{%s}", hashmapListing);
     }
 }
 
@@ -1554,6 +1646,23 @@ unittest {
 unittest {
     const auto input = "fn(x, y) { x + y; }(2, 3);";
     const auto expected = "fn(x, y) { (x + y); }(2, 3);";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Hashmap parameter test
+unittest {
+    const auto input = "let hash = {\"name\": \"Monkey\"};
+    hash[\"name\"];";
+
+    const auto expected = "let hash = {name: Monkey};
+(hash[name]);";
 
     auto lexer = Lexer(input);
     lexer.tokenize();
