@@ -3,10 +3,7 @@ import org.junit.jupiter.api.Test;
 import root.evaluation.Evaluator;
 import root.evaluation.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
-import root.evaluation.objects.impl.MonkeyBoolean;
-import root.evaluation.objects.impl.MonkeyInteger;
-import root.evaluation.objects.impl.MonkeyNull;
-import root.evaluation.objects.impl.MonkeyUnit;
+import root.evaluation.objects.impl.*;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
@@ -248,6 +245,20 @@ public class EvaluatorTest {
                                 Error evaluating the program: Cannot divide by 0
                                 01: 38 / 0
                                 -------^--"""
+                ),
+                List.of(
+                        "let a = fn () { return; }()",
+                        """
+                                Error evaluating the program: Cannot bind unit (void) to a variable
+                                01: let a = fn () { return; }()
+                                ----^--------------------------"""
+                ),
+                List.of(
+                        "let a = 5; a()",
+                        """
+                                Error evaluating the program: Cannot call non Function object
+                                01: let a = 5; a()
+                                ----------------^-"""
                 )
 
         );
@@ -280,7 +291,8 @@ public class EvaluatorTest {
                 "null * null",
                 "null * 10",
                 "5 * null",
-                "-null"
+                "-null",
+                "fn(x) { if (x < 0) { null } else { x } }(-32)"
         );
 
         for (var input : tests) {
@@ -288,12 +300,75 @@ public class EvaluatorTest {
         }
     }
 
+    @Test
+    void testLetStatement() {
+        var tests = List.of(
+                new IntegerTest(5, """
+                        let a = 5;
+                        a;"""),
+                new IntegerTest(25, """
+                        let a = 5 * 5;
+                        a;"""),
+                new IntegerTest(10, """
+                        let a = 10;
+                        let b = a;
+                        b"""),
+                new IntegerTest(15, """
+                        let a = 5;
+                        let b = a;
+                        let c = a + b + 5;
+                        c;""")
+        );
+
+        for (IntegerTest(long expected, String input) : tests) {
+            testIntegerObject(expected, testEval(input));
+        }
+    }
+
+    @Test
+    void testFunctionObject() {
+        var input = "fn(x) { x + 2; };";
+
+        var evaluated = testEval(input);
+        var function = Assertions.assertInstanceOf(MonkeyFunction.class, evaluated);
+
+        Assertions.assertEquals(1, function.getFunctionLiteral().getParameters().size());
+        Assertions.assertEquals("x", function.getFunctionLiteral().getParameters().get(0).toString());
+        Assertions.assertEquals("{\n(x + 2)\n}", function.getFunctionLiteral().getBody().toString());
+    }
+
+    @Test
+    void testEvalFunction() {
+        var tests = List.of(
+                new IntegerTest(5, "let identity = fn(x) { x; }; identity(5);"),
+                new IntegerTest(9, "let identity = fn(x) { return x; }; identity(9);"),
+                new IntegerTest(10, "let double = fn(x) { x * 2; }; double(5);"),
+                new IntegerTest(12, "let add = fn(x, y) { x + y; }; add(5, 7);"),
+                new IntegerTest(20, "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));"),
+                new IntegerTest(3, "fn(x) { x; }(3);"),
+                new IntegerTest(4, """
+                        let newAdder = fn(x) {
+                             fn(y) { x + y };
+                        };
+                        let addTwo = newAdder(2);
+                        addTwo(2);"""),
+                new IntegerTest(55, """
+                        let fibonacci = fn(x) { if (x < 1) { return 0 } if (x == 1) { return 1 } return fibonacci(x - 1) + fibonacci(x - 2) }
+                        fibonacci(10)""")
+        );
+
+        for (IntegerTest(long expected, String input) : tests) {
+            testIntegerObject(expected, testEval(input));
+        }
+    }
+
     private MonkeyObject<?> testEval(String input) {
         var l = new Lexer(input);
         var p = new Parser(l);
+        var evaluator = new Evaluator();
 
         try {
-            return Evaluator.eval(p.parseProgram());
+            return evaluator.eval(p.parseProgram());
         } catch (ParseProgramException | EvaluationException e) {
             throw new RuntimeException(e);
         }
@@ -311,17 +386,13 @@ public class EvaluatorTest {
     }
 
     private void testIntegerObject(long expected, MonkeyObject<?> object) {
-        switch (object) {
-            case MonkeyInteger integer -> Assertions.assertEquals(expected, integer.getValue());
-            default -> throw new AssertionError("Object is not MonkeyInteger: " + object);
-        }
+        var integer = Assertions.assertInstanceOf(MonkeyInteger.class, object);
+        Assertions.assertEquals(expected, integer.getValue());
     }
 
     private void testBooleanObject(boolean expected, MonkeyObject<?> object) {
-        switch (object) {
-            case MonkeyBoolean bool -> Assertions.assertEquals(expected, bool.getValue());
-            default -> throw new AssertionError("Object is not MonkeyBoolean: " + object);
-        }
+        var bool = Assertions.assertInstanceOf(MonkeyBoolean.class, object);
+        Assertions.assertEquals(expected, bool.getValue());
     }
 
     private void testNullObject(MonkeyObject<?> object) {

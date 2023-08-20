@@ -3,10 +3,7 @@ package root.evaluation;
 import root.ast.Node;
 import root.ast.Program;
 import root.ast.expressions.*;
-import root.ast.statements.BlockStatement;
-import root.ast.statements.ExpressionStatement;
-import root.ast.statements.ReturnStatement;
-import root.ast.statements.Statement;
+import root.ast.statements.*;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.*;
 
@@ -14,7 +11,17 @@ import java.util.List;
 
 public class Evaluator {
 
-    public static MonkeyObject<?> eval(Node node) throws EvaluationException {
+    private final Environment environment;
+
+    public Evaluator() {
+        environment = new Environment();
+    }
+
+    public Evaluator(Environment environment) {
+        this.environment = environment;
+    }
+
+    public MonkeyObject<?> eval(Node node) throws EvaluationException {
         return switch (node) {
             case Program program -> evalStatements(program.getStatements(), true);
             case BlockStatement blockStatement -> evalStatements(blockStatement.getStatements(), false);
@@ -29,19 +36,40 @@ public class Evaluator {
                 yield new MonkeyReturn<>(returnValue);
             }
 
+            case LetStatement letStatement -> {
+                MonkeyObject<?> value = eval(letStatement.getValue());
+                if (value == MonkeyUnit.INSTANCE) {
+                    throw new EvaluationException(letStatement.getToken(), "Cannot bind unit (void) to a variable");
+                }
+                yield environment.set(letStatement.getName().getValue(), value);
+            }
+            case IdentifierExpression identifier -> evalIdentifierExpression(identifier);
+
+            case FunctionLiteralExpression functionLiteral -> new MonkeyFunction(environment, functionLiteral);
+            case CallExpression callExpression -> evalCallExpression(callExpression);
+
             case UnitExpression ignored -> MonkeyUnit.INSTANCE;
             case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
 
             // Should be impossible (after everything is implemented)
-            default ->
-                    throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
-                            node.getClass().getSimpleName(),
-                            node
-                    ));
+            default -> throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
+                    node.getClass().getSimpleName(),
+                    node
+            ));
         };
     }
 
-    private static MonkeyObject<?> evalStatements(List<Statement> statements, boolean unwrapReturn) throws EvaluationException {
+    private MonkeyObject<?> evalCallExpression(CallExpression callExpression) throws EvaluationException {
+        MonkeyObject<?> objectToCall = eval(callExpression.getFunction());
+
+        if (objectToCall instanceof MonkeyFunction functionToCall) {
+            return unwrapReturnValue(functionToCall.getValue().apply(this, callExpression.getArguments()));
+        } else {
+            throw new EvaluationException(callExpression.getToken(), "Cannot call non Function object");
+        }
+    }
+
+    private MonkeyObject<?> evalStatements(List<Statement> statements, boolean unwrapReturn) throws EvaluationException {
         MonkeyObject<?> object = MonkeyNull.INSTANCE;
 
         for (var statement : statements) {
@@ -58,7 +86,7 @@ public class Evaluator {
         return object;
     }
 
-    private static MonkeyObject<?> evalPrefixExpression(PrefixExpression prefixExpression) throws EvaluationException {
+    private MonkeyObject<?> evalPrefixExpression(PrefixExpression prefixExpression) throws EvaluationException {
         MonkeyObject<?> expressionResult = eval(prefixExpression.getRight());
 
         return switch (prefixExpression.getToken().type()) {
@@ -82,7 +110,7 @@ public class Evaluator {
         };
     }
 
-    private static MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) throws EvaluationException {
+    private MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) throws EvaluationException {
         MonkeyObject<?> left = eval(infixExpression.getLeft());
         MonkeyObject<?> right = eval(infixExpression.getRight());
 
@@ -117,7 +145,7 @@ public class Evaluator {
         };
     }
 
-    private static MonkeyObject<?> evalIntegerInfixExpression(
+    private MonkeyObject<?> evalIntegerInfixExpression(
             InfixExpression infixExpression,
             MonkeyInteger left,
             MonkeyInteger right
@@ -144,7 +172,7 @@ public class Evaluator {
         };
     }
 
-    private static MonkeyObject<?> evalIfExpression(IfExpression ifExpression) throws EvaluationException {
+    private MonkeyObject<?> evalIfExpression(IfExpression ifExpression) throws EvaluationException {
         MonkeyObject<?> conditionResult = eval(ifExpression.getCondition());
 
         if (isTruthy(conditionResult)) {
@@ -156,11 +184,24 @@ public class Evaluator {
         return MonkeyNull.INSTANCE;
     }
 
+    private MonkeyObject<?> evalIdentifierExpression(IdentifierExpression identifier) throws EvaluationException {
+        return environment.get(identifier.getValue()).orElseThrow(() ->
+                new EvaluationException(identifier.getToken(), "Variable %s is not declared!", identifier.getValue()));
+    }
+
     private static boolean isTruthy(MonkeyObject<?> object) {
         return switch (object) {
             case MonkeyBoolean bool -> bool.getValue();
             case MonkeyNull ignored -> false;
             default -> true;
         };
+    }
+
+    private static <T> MonkeyObject<T> unwrapReturnValue(MonkeyObject<T> returnValue) {
+        if (returnValue instanceof MonkeyReturn<T> monkeyReturn) {
+            return monkeyReturn.returnValue;
+        }
+
+        return returnValue;
     }
 }

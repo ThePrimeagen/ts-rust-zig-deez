@@ -7,4 +7,5 @@ public enum ObjectType {
     INTEGER,
     RETURN_VALUE_OBJ,
     UNIT,
+    FUNCTION,
 }

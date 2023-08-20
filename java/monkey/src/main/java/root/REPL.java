@@ -28,6 +28,7 @@ public class REPL {
 
     public void start() {
         var scanner = new Scanner(inputStream);
+        var evaluator = new Evaluator();
 
         printPrompt();
         while (scanner.hasNextLine()) {
@@ -37,7 +38,7 @@ public class REPL {
 
             try {
                 Program program = parser.parseProgram();
-                MonkeyObject<?> evaluated = Evaluator.eval(program);
+                MonkeyObject<?> evaluated = evaluator.eval(program);
 
                 printStream.println(evaluated.inspect());
             } catch (ParseProgramException | EvaluationException e) {
