@@ -117,7 +117,7 @@ public class Parser {
         ParserSupplier<Expression> prefixFn = prefixParseFn();
 
         if (prefixFn == null) {
-            throw new ParserException("Unexpected token found (no prefix parse function): " + currentToken.literal(), currentToken);
+            throw new ParserException("Unexpected token found: " + currentToken.literal(), currentToken);
         }
         Expression leftExpression = prefixFn.get();
 

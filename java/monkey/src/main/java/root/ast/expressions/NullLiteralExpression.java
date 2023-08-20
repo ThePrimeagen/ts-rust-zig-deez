@@ -10,10 +10,10 @@ import root.LocalizedToken;
  * or "let a = fn(){}()" which is pretty ugly.
  * <p>
  * I also changed the way null behaves, trying to make it a little more safe: the -
- * operation on null evaluates to null, and all infix (except == and !=) operations where one
- * side is null evaluate to null. Is this a good idea? I don't know, just experimenting.
- * For the equality operator, only null == null evaluates to true. All other comparisons
- * with null return false
+ * operation on null evaluates to null, and all math operations where one side is null evaluate
+ * to null. Is this a good idea? I don't know, just experimenting. For the equality operator,
+ * only null == null evaluates to true. All other comparisons with null return false. For
+ * comparisons, if one side is null a Null value error is generated
  */
 public class NullLiteralExpression extends Expression {
 

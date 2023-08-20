@@ -84,20 +84,26 @@ public class Evaluator {
 
     private static MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) throws EvaluationException {
         MonkeyObject<?> left = eval(infixExpression.getLeft());
-        MonkeyObject<?> rigth = eval(infixExpression.getRight());
+        MonkeyObject<?> right = eval(infixExpression.getRight());
 
-        if (left instanceof MonkeyInteger integerLeft && rigth instanceof MonkeyInteger integerRight) {
+        if (left instanceof MonkeyInteger integerLeft && right instanceof MonkeyInteger integerRight) {
             return evalIntegerInfixExpression(infixExpression, integerLeft, integerRight);
         }
 
         return switch (infixExpression.getToken().type()) {
-            case EQUAL -> MonkeyBoolean.nativeToMonkey(left == rigth);
-            case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left != rigth);
+            case EQUAL -> MonkeyBoolean.nativeToMonkey(left == right);
+            case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left != right);
 
             default -> {
                 // ¯\_(ツ)_/¯
-                if (left instanceof MonkeyNull || rigth instanceof MonkeyNull) {
-                    yield MonkeyNull.INSTANCE;
+                if (left == MonkeyNull.INSTANCE || right == MonkeyNull.INSTANCE) {
+                    yield switch (infixExpression.getToken().type()) {
+                        case PLUS, MINUS, ASTERISK, SLASH -> MonkeyNull.INSTANCE;
+                        default -> {
+                            var detail = left == right ? "both values are" : left == MonkeyNull.INSTANCE ? "left value is" : "right value is";
+                            throw new EvaluationException(infixExpression.getToken(), "Null value error: %s null", detail);
+                        }
+                    };
                 }
 
                 throw new EvaluationException(
@@ -105,18 +111,27 @@ public class Evaluator {
                         "Operation %s not supported for types %s and %s",
                         infixExpression.getToken().literal(),
                         left.getType(),
-                        rigth.getType()
+                        right.getType()
                 );
             }
         };
     }
 
-    private static MonkeyObject<?> evalIntegerInfixExpression(InfixExpression infixExpression, MonkeyInteger left, MonkeyInteger right) {
+    private static MonkeyObject<?> evalIntegerInfixExpression(
+            InfixExpression infixExpression,
+            MonkeyInteger left,
+            MonkeyInteger right
+    ) throws EvaluationException {
         return switch (infixExpression.getToken().type()) {
             case PLUS -> new MonkeyInteger(left.getValue() + right.getValue());
             case MINUS -> new MonkeyInteger(left.getValue() - right.getValue());
             case ASTERISK -> new MonkeyInteger(left.getValue() * right.getValue());
-            case SLASH -> new MonkeyInteger(left.getValue() / right.getValue());
+            case SLASH -> {
+                if (right.getValue() == 0) {
+                    throw new EvaluationException(infixExpression.getToken(), "Cannot divide by 0");
+                }
+                yield new MonkeyInteger(left.getValue() / right.getValue());
+            }
 
             case EQUAL -> MonkeyBoolean.nativeToMonkey(left.getValue() == right.getValue());
             case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left.getValue() != right.getValue());

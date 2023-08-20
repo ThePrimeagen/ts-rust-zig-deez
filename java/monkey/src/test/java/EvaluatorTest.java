@@ -206,7 +206,50 @@ public class EvaluatorTest {
                                 Error evaluating the program: Operation + not supported for types BOOLEAN and BOOLEAN
                                 03:         return true + false;
                                 ------------------------^-------"""
+                ),
+                List.of(
+                        "null < null",
+                        """
+                                Error evaluating the program: Null value error: both values are null
+                                01: null < null
+                                ---------^-----"""
+                ),
+                List.of(
+                        "null < 5",
+                        """
+                                Error evaluating the program: Null value error: left value is null
+                                01: null < 5
+                                ---------^--"""
+                ),
+                List.of(
+                        "5 < null",
+                        """
+                                Error evaluating the program: Null value error: right value is null
+                                01: 5 < null
+                                ------^-----"""
+                ),
+                List.of(
+                        "null > null",
+                        """
+                                Error evaluating the program: Null value error: both values are null
+                                01: null > null
+                                ---------^-----"""
+                ),
+                List.of(
+                        "null > 5",
+                        """
+                                Error evaluating the program: Null value error: left value is null
+                                01: null > 5
+                                ---------^--"""
+                ),
+                List.of(
+                        "38 / 0",
+                        """
+                                Error evaluating the program: Cannot divide by 0
+                                01: 38 / 0
+                                -------^--"""
                 )
+
         );
 
         for (var test : tests) {
@@ -237,12 +280,6 @@ public class EvaluatorTest {
                 "null * null",
                 "null * 10",
                 "5 * null",
-                "null < null",
-                "null < 5",
-                "5 < null",
-                "null > null",
-                "null > 5",
-                "5 > null",
                 "-null"
         );
 
