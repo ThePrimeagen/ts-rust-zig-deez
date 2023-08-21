@@ -352,6 +352,13 @@ public class EvaluatorTest {
                         };
                         let addTwo = newAdder(2);
                         addTwo(2);"""),
+                new IntegerTest(10, """
+                        let a = 10;
+                        let add_to_a = fn () {
+                            let a = a + 10;
+                        }
+                        add_to_a();
+                        a"""),
                 new IntegerTest(55, """
                         let fibonacci = fn(x) { if (x < 1) { return 0 } if (x == 1) { return 1 } return fibonacci(x - 1) + fibonacci(x - 2) }
                         fibonacci(10)""")

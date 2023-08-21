@@ -31,26 +31,13 @@ public class Evaluator {
             case PrefixExpression prefixExpression -> evalPrefixExpression(prefixExpression);
             case InfixExpression infixExpression -> evalInfixExpression(infixExpression);
             case IfExpression ifExpression -> evalIfExpression(ifExpression);
-            case ReturnStatement returnStatement -> {
-                MonkeyObject<?> returnValue = eval(returnStatement.getReturnValue());
-                yield new MonkeyReturn<>(returnValue);
-            }
-
-            case LetStatement letStatement -> {
-                MonkeyObject<?> value = eval(letStatement.getValue());
-                if (value == MonkeyUnit.INSTANCE) {
-                    throw new EvaluationException(letStatement.getToken(), "Cannot bind unit (void) to a variable");
-                }
-                yield environment.set(letStatement.getName().getValue(), value);
-            }
+            case ReturnStatement returnStatement -> evalReturnStatement(returnStatement);
+            case LetStatement letStatement -> evalLetStatement(letStatement);
             case IdentifierExpression identifier -> evalIdentifierExpression(identifier);
-
             case FunctionLiteralExpression functionLiteral -> new MonkeyFunction(environment, functionLiteral);
             case CallExpression callExpression -> evalCallExpression(callExpression);
-
             case UnitExpression ignored -> MonkeyUnit.INSTANCE;
             case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
-
             // Should be impossible (after everything is implemented)
             default -> throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
                     node.getClass().getSimpleName(),
@@ -91,7 +78,6 @@ public class Evaluator {
 
         return switch (prefixExpression.getToken().type()) {
             case BANG -> MonkeyBoolean.nativeToMonkey(!isTruthy(expressionResult));
-
             case MINUS -> {
                 if (expressionResult instanceof MonkeyInteger integer) {
                     yield new MonkeyInteger(-integer.getValue());
@@ -186,7 +172,20 @@ public class Evaluator {
 
     private MonkeyObject<?> evalIdentifierExpression(IdentifierExpression identifier) throws EvaluationException {
         return environment.get(identifier.getValue()).orElseThrow(() ->
-                new EvaluationException(identifier.getToken(), "Variable %s is not declared!", identifier.getValue()));
+                new EvaluationException(identifier.getToken(), "Variable %s is not declared", identifier.getValue()));
+    }
+
+    private MonkeyObject<?> evalLetStatement(LetStatement letStatement) throws EvaluationException {
+        MonkeyObject<?> value = eval(letStatement.getValue());
+        if (value == MonkeyUnit.INSTANCE) {
+            throw new EvaluationException(letStatement.getToken(), "Cannot bind unit (void) to a variable");
+        }
+        return environment.set(letStatement.getName().getValue(), value);
+    }
+
+    private MonkeyObject<?> evalReturnStatement(ReturnStatement returnStatement) throws EvaluationException {
+        MonkeyObject<?> returnValue = eval(returnStatement.getReturnValue());
+        return new MonkeyReturn<>(returnValue);
     }
 
     private static boolean isTruthy(MonkeyObject<?> object) {
