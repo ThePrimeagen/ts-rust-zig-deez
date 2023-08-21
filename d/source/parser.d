@@ -454,7 +454,7 @@ class ExpressionStatement : StatementNode {
 
     override string show(ref Lexer lexer)
     {
-        return (this.expr !is null) ? expr.show(lexer) ~ ";" : "";
+        return format("%s;", this.expr.show(lexer));
     }
 }
 
@@ -483,8 +483,7 @@ class LetStatement : StatementNode {
     /// Create statement string
     override string show(ref Lexer lexer)
     {
-        return format("let %s = %s;", super.tokenLiteral(lexer),
-                (this.expr !is null) ? this.expr.show(lexer) : "");
+        return format("let %s = %s;", super.tokenLiteral(lexer), this.expr.show(lexer));
     }
 }
 
@@ -513,7 +512,7 @@ class ReturnStatement : StatementNode {
     /// Create statement string
     override string show(ref Lexer lexer)
     {
-        return format("return%s;", (this.expr !is null) ? ' ' ~ this.expr.show(lexer) : "");
+        return (this.expr !is null) ? format("return %s;", this.expr.show(lexer)) : "return;";
     }
 }
 
@@ -553,7 +552,7 @@ class BlockStatement : StatementNode {
         }
 
         const auto blockRepr = reprBuilder[].joiner("\n").to!string;
-        return (blockRepr != "") ? "{ " ~ blockRepr ~ " }" : "{}";
+        return (blockRepr != "") ? format("{ %s }", blockRepr) : "{}";
     }
 }
 
@@ -675,7 +674,7 @@ class PrefixExpressionNode : ExpressionNode {
     /// Create expression string
     override string show(ref Lexer lexer)
     {
-        return format("%s%s", lexer.tagRepr(mainIdx), (this.expr !is null) ? expr.show(lexer) : "");
+        return format("%s%s", lexer.tagRepr(mainIdx), expr.show(lexer));
     }
 }
 
@@ -704,8 +703,7 @@ class InfixExpressionNode : ExpressionNode {
     /// Create expression string
     override string show(ref Lexer lexer)
     {
-        return format("(%s%s%s)", (this.lhs !is null) ? lhs.show(lexer) ~ " " : "",
-                lexer.tagRepr(mainIdx), (this.rhs !is null) ? " " ~ rhs.show(lexer) : "");
+        return format("(%s %s %s)", lhs.show(lexer), lexer.tagRepr(mainIdx), rhs.show(lexer));
     }
 }
 
@@ -740,9 +738,9 @@ class IfExpressionNode : ExpressionNode {
     /// Create expression string
     override string show(ref Lexer lexer)
     {
-        return format("if %s %s%s", (this.expr !is null) ? expr.show(lexer) : "",
-                (this.trueBranch !is null) ? trueBranch.show(lexer) : "",
-                (this.falseBranch !is null) ? " else " ~ falseBranch.show(lexer) : "");
+        return format("if %s %s%s", expr.show(lexer), (this.trueBranch !is null)
+                ? trueBranch.show(lexer) : "", (this.falseBranch !is null)
+                ? format(" else %s", falseBranch.show(lexer)) : "");
     }
 }
 

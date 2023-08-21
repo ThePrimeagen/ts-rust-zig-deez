@@ -35,10 +35,9 @@ private const string[TokenTag.Return + 1] OPS_TAG = [
 ];
 
 /// Builtin functions
-/// Measure length of array or string
 private alias evalResult(T) = mixin("(", T, " value) => EvalResult(value)");
-//private alias builtinResult(T) = mixin("(", T, " value) => ReturnValue(value)");
 
+/// Measure length of array or string
 EvalResult len(EvalResult[] vars...)
 {
     if (vars.length != 1) {
@@ -60,9 +59,6 @@ EvalResult first(EvalResult[] vars...)
                 vars.length)));
     }
 
-    //    alias firstElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
-    //  return EvalResult(arr[0]); } else { return NIL_ATOM; } }");
-
     return vars[0].match!((Results arr) => (arr.length > 0) ? arr[0] : NIL_ATOM, (string str) {
         if (str.length > 0) {
             return EvalResult(Character(str[0]));
@@ -80,9 +76,6 @@ EvalResult last(EvalResult[] vars...)
                 vars.length)));
     }
 
-    //    alias lastElement(T) = mixin("(", T, " arr) { if (arr.length > 0) {
-    //  return ReturnValue(arr[$ - 1]); } else { return NIL_RETURN_ATOM; } }");
-
     return vars[0].match!((Results arr) => (arr.length > 0) ? arr[$ - 1] : NIL_ATOM, (string str) {
         if (str.length > 0) {
             return EvalResult(Character(str[$ - 1]));
@@ -99,8 +92,6 @@ EvalResult rest(EvalResult[] vars...)
         return EvalResult(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 1 argument",
                 vars.length)));
     }
-
-    //    alias restOf(T) = mixin("(", T, " value) => ReturnValue(value[1 .. $])");
 
     return vars[0].match!((Results arr) {
         if (arr.length > 1) {
@@ -124,12 +115,6 @@ EvalResult push(EvalResult[] vars...)
         return EvalResult(ErrorValue(format("Wrong number of arguments. Got %d arguments, want 2 arguments",
                 vars.length)));
     }
-
-    // TODO: Generic array type would fix so many things, especially this builtin function
-    //    alias pushValue(T) = mixin("(", T, "[] arr) {
-    //      return vars[1].match!((", T, " value) => ReturnValue(arr ~ value),
-    //          _ => ReturnValue(ErrorValue(\"`push` not supported for input argument\")));
-    //    }");
 
     return vars[0].match!((Results arr) => EvalResult(arr ~ vars[1]),
             _ => EvalResult(ErrorValue("argument to `push` must be array")));
@@ -346,8 +331,6 @@ private EvalResult stringInfix(InfixExpressionNode node, string lValue, EvalResu
 /// Evaluate array literal
 @method EvalResult _eval(ArrayLiteralNode node, ref Lexer lexer, Environment* env)
 {
-    //return evalExpressionsForArray(node.elements, lexer, env);
-
     auto elements = evalExpressions(node.elements, lexer, env);
 
     if (elements.length == 1) {
@@ -395,8 +378,13 @@ private EvalResult stringInfix(InfixExpressionNode node, string lValue, EvalResu
 /// Array/Hashmap index expression handlers
 private EvalResult longIndex(IndexExpressionNode node, EvalResult lhs, long idx)
 {
-    return lhs.match!((Results left) => (idx < 0 || idx >= left.length) ? NIL_ATOM
-            : left[idx], (ResultMap left) {
+    return lhs.match!((Results left) {
+        if (idx < 0 || idx >= left.length) {
+            return NIL_ATOM;
+        }
+
+        return left[idx];
+    }, (ResultMap left) {
         auto key = HashKey(idx, HashType.Int);
         if (key !in left) {
             return NIL_ATOM;
@@ -468,7 +456,6 @@ private EvalResult boolIndex(IndexExpressionNode node, EvalResult lhs, bool idx)
             }
         }
 
-        //return EvalResult(builtinFunctions[key.name](args));
         return builtinFunctions[key.name](args);
     }, (Function literal) {
         auto args = evalExpressions(node.args, lexer, env);
@@ -491,59 +478,6 @@ EvalResult applyFunction(Function literal, EvalResult[] args, ref Lexer lexer)
     return evalStatement(*literal.functionBody, lexer, extendedEnv);
 }
 
-/// Evaluate remaining expressions as array of values
-/*
-EvalResult evalExpressionsArray(T)(T first, ExpressionNode[] exprs,
-        ref Lexer lexer, Environment* env)
-{
-    if (exprs.empty()) {
-        return EvalResult([first]);
-    }
-
-    auto results = appender!(T[])();
-    results.reserve(exprs.length + 1);
-    results.put(first);
-
-    // Evaluate expressions until we hit error
-    foreach (expression; exprs) {
-        auto result = eval(expression, lexer, env);
-        string errMsg = result.match!((ErrorValue err) => err.message, (T value) {
-            results.put(value);
-            return "";
-        }, _ => "Type mismatch for array");
-
-        if (!errMsg.empty) {
-            return EvalResult(ErrorValue(errMsg));
-        }
-    }
-
-    return EvalResult(results[]);
-}
-
-/// Evaluate all expressions in array until either error or completion
-EvalResult evalExpressionsForArray(ExpressionNode[] exprs, ref Lexer lexer, Environment* env)
-{
-    if (exprs.empty()) {
-        return EvalResult(cast(Results)([]));
-    }
-
-    auto firstResult = eval(exprs[0], lexer, env);
-    if (firstResult.match!((ErrorValue _) => true, _ => false)) {
-        return firstResult;
-    }
-
-    // FIXME: Arrays with maximum of 2 dimensions supported
-    return firstResult.match!((bool value) => evalExpressionsArray(value,
-            exprs[1 .. $], lexer, env), (long value) => evalExpressionsArray(value,
-            exprs[1 .. $], lexer, env), (Array!long value) => evalExpressionsArray(value,
-            exprs[1 .. $], lexer, env), (Array!bool value) => evalExpressionsArray(value,
-            exprs[1 .. $], lexer, env), (string value) => evalExpressionsArray(value,
-            exprs[1 .. $], lexer, env), (Array!string value) => evalExpressionsArray(value,
-            exprs[1 .. $], lexer, env), //(void* _) => UNIT_ATOM,
-            //(Unit _) => UNIT_ATOM,
-            _ => UNIT_ATOM);
-}
-*/
 /// Evaluate all expressions in param listing until either error or completion
 EvalResult[] evalExpressions(ExpressionNode[] exprs, ref Lexer lexer, Environment* env)
 {

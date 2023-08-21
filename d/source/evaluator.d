@@ -98,7 +98,7 @@ public:
                 }
 
                 const auto blockRepr = reprBuilder[].joiner(",").to!string;
-                return (blockRepr != "") ? "{" ~ blockRepr ~ "}" : "{}";
+                return (blockRepr != "") ? format("{%s}", blockRepr) : "{}";
             }, (ErrorValue result) => result.message, (ReturnValue result) {
                 return (*result).match!((Unit _) => "", (ErrorValue result) => result.message,
                     (Character c) => format("'%c'", c.value),
@@ -291,7 +291,7 @@ unittest {
         }, _ => assert(false, format("Expected number in statement %s", i)));
     }
 }
-/*
+
 /// Basic hashmap test
 unittest {
     const auto input = "let people = [{\"name\": \"Alice\", \"age\": 24}, {\"name\": \"Anna\", \"age\": 28}];
@@ -301,14 +301,12 @@ people[1][\"age\"] + people[0][\"age\"];";
     auto evaluator = prepareEvaluator(input);
     evaluator.evalProgram();
 
-    foreach (i, result; evaluator.results[]) {
-        result.match!((long value) {
-            assert(value == expected,
-                format("Int value %s does not match expected value %s", value, expected));
-        }, _ => assert(false, format("Expected number in statement %s", i)));
-    }
+    evaluator.results[][1].match!((long value) {
+        assert(value == expected,
+            format("Int value %d does not match expected value %d", value, expected));
+    }, _ => assert(false, "Expected number in statement 1"));
 }
-*/
+
 /// Builtin rest function base test
 unittest {
     const auto input = "rest([9,8,7]);";

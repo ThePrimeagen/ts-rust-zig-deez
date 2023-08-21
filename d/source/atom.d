@@ -29,7 +29,7 @@ struct Nil {
 
 /// Wrapper around error message for evaluation result
 struct ErrorValue {
-    string message; /// Main error message
+    string message;
 }
 
 /// Wrapper around Function components for evaluation result
@@ -44,6 +44,7 @@ struct Character {
     char value;
 }
 
+/// Name of builtin function as strong type
 struct BuiltinFunctionKey {
     string name;
 }
@@ -70,7 +71,6 @@ alias BuiltinFunction = EvalResult function(EvalResult[]...);
 
 /// Describe type of atom for inspection
 static const UNIT_INSTANCE = Unit(); /// Instance of void atom
-//static const NIL_INSTANCE = Nil(); /// Instance of null atom
 
 static const EMPTY_ARRAY_ATOM = EvalResult(cast(EvalResult[])([])); /// Evaluation instance of empty array
 static const UNIT_ATOM = EvalResult(UNIT_INSTANCE); /// Evaluation instance of void atom
@@ -79,7 +79,6 @@ static const TRUE_ATOM = EvalResult(true); /// Evaluation instance of true value
 static const FALSE_ATOM = EvalResult(false); /// Evaluation instance of false value
 
 static const VOID_RETURN_ATOM = &UNIT_ATOM; /// Return instance of void atom as return value
-//static const NIL_RETURN_ATOM = &(NIL_INSTANCE); /// Return instance of nil atom as return value
 static const NIL_RETURN_ATOM = &NIL_ATOM; /// Return instance of nil atom as return value
 static const TRUE_RETURN_ATOM = &TRUE_ATOM; /// Return instance of true atom as return value
 static const FALSE_RETURN_ATOM = &FALSE_ATOM; /// Return instance of false atom as return value

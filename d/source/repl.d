@@ -13,6 +13,7 @@ import lexer;
 import parser;
 import deimos.linenoise;
 import std.conv : to;
+import std.format : format;
 import std.range : enumerate;
 import std.stdio : writefln;
 import std.string : strip;
@@ -46,8 +47,9 @@ void repl()
             continue;
         }
 
-        auto currLexer = Lexer((prevLexer.input != "") ? cast(string)(prevLexer.input) ~ ";" ~ input
-                : input, prevLexer.position, prevLexer.tokens, prevLexer.endPosition);
+        auto currLexer = Lexer((prevLexer.input != "") ? format("%s;%s",
+                cast(string)(prevLexer.input), input) : input,
+                prevLexer.position, prevLexer.tokens, prevLexer.endPosition);
 
         auto oldTokenCount = prevLexer.tokens.tag[].length;
 
