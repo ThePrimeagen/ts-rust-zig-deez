@@ -259,6 +259,20 @@ public class EvaluatorTest {
                                 Error evaluating the program: Cannot call non Function object
                                 01: let a = 5; a()
                                 ----------------^-"""
+                ),
+                List.of(
+                        "let a = fn() { 10 }; a(90)",
+                        """
+                                Error evaluating the program: Wrong number of arguments. Expected 0, got 1
+                                01: let a = fn() { 10 }; a(90)
+                                --------------------------^---"""
+                ),
+                List.of(
+                        "fn () { put(8) }()",
+                        """
+                                Error evaluating the program: Variable put is not declared
+                                01: fn () { put(8) }()
+                                ------------^---------"""
                 )
 
         );
@@ -366,6 +380,21 @@ public class EvaluatorTest {
 
         for (IntegerTest(long expected, String input) : tests) {
             testIntegerObject(expected, testEval(input));
+        }
+    }
+
+    @Test
+    void testBuiltinFunctions() {
+        var tests = List.of(
+                new ExpressionTest(MonkeyUnit.class, "puts(10)"),
+                new ExpressionTest(MonkeyUnit.class, "fn () { putsNoln(8) }()"),
+                new ExpressionTest(MonkeyInteger.class, "let time = miliTime(); time"),
+                new ExpressionTest(MonkeyInteger.class, "let time = nanoTime();")
+        );
+
+        for (ExpressionTest(Object expected, String input) : tests) {
+            MonkeyObject<?> evaluated = testEval(input);
+            Assertions.assertInstanceOf((Class<?>) expected, evaluated);
         }
     }
 

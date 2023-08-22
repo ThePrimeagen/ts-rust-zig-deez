@@ -2,13 +2,11 @@ package root.evaluation.objects.impl;
 
 import root.ast.expressions.FunctionLiteralExpression;
 import root.evaluation.Environment;
-import root.evaluation.EvaluationException;
 import root.evaluation.Evaluator;
-import root.evaluation.objects.MonkeyFunctionInterface;
-import root.evaluation.objects.MonkeyObject;
+import root.evaluation.objects.AbstractMonkeyFunction;
 import root.evaluation.objects.ObjectType;
 
-public class MonkeyFunction extends MonkeyObject<MonkeyFunctionInterface> {
+public class MonkeyFunction extends AbstractMonkeyFunction {
 
     private final FunctionLiteralExpression functionLiteral;
 
@@ -16,24 +14,18 @@ public class MonkeyFunction extends MonkeyObject<MonkeyFunctionInterface> {
         super(ObjectType.FUNCTION);
         this.functionLiteral = functionLiteral;
 
-        setValue((evaluator, expressions) -> {
+        setValue((callToken, arguments) -> {
             var parameters = functionLiteral.getParameters();
             var body = functionLiteral.getBody();
 
-            if (parameters.size() != expressions.size()) {
-                throw new EvaluationException(
-                        functionLiteral.getToken(),
-                        "Wrong number of arguments. Expected %d, got %d",
-                        parameters.size(),
-                        expressions.size()
-                );
+            if (arguments.size() != parameters.size()) {
+                throwWorngNumberOfArgumentsError(callToken, parameters.size(), arguments.size());
             }
 
             var environment = new Environment(creationEnv);
 
             for (int i = 0; i < parameters.size(); i++) {
-                MonkeyObject<?> parameterValue = evaluator.eval(expressions.get(i));
-                environment.set(parameters.get(i).getValue(), parameterValue);
+                environment.set(parameters.get(i).getValue(), arguments.get(i));
             }
 
             var functionEvaluator = new Evaluator(environment);

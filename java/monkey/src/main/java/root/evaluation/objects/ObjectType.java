@@ -8,4 +8,5 @@ public enum ObjectType {
     RETURN_VALUE_OBJ,
     UNIT,
     FUNCTION,
+    BUILTIN_OBJ,
 }

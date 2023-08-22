@@ -4,10 +4,13 @@ import root.ast.Node;
 import root.ast.Program;
 import root.ast.expressions.*;
 import root.ast.statements.*;
+import root.evaluation.objects.AbstractMonkeyFunction;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Evaluator {
 
@@ -49,8 +52,14 @@ public class Evaluator {
     private MonkeyObject<?> evalCallExpression(CallExpression callExpression) throws EvaluationException {
         MonkeyObject<?> objectToCall = eval(callExpression.getFunction());
 
-        if (objectToCall instanceof MonkeyFunction functionToCall) {
-            return unwrapReturnValue(functionToCall.getValue().apply(this, callExpression.getArguments()));
+        if (objectToCall instanceof AbstractMonkeyFunction functionToCall) {
+            var arguments = new ArrayList<MonkeyObject<?>>();
+
+            for (var expression : callExpression.getArguments()) {
+                arguments.add(eval(expression));
+            }
+
+            return unwrapReturnValue(functionToCall.getValue().apply(callExpression.getToken(), arguments));
         } else {
             throw new EvaluationException(callExpression.getToken(), "Cannot call non Function object");
         }
@@ -171,8 +180,15 @@ public class Evaluator {
     }
 
     private MonkeyObject<?> evalIdentifierExpression(IdentifierExpression identifier) throws EvaluationException {
-        return environment.get(identifier.getValue()).orElseThrow(() ->
-                new EvaluationException(identifier.getToken(), "Variable %s is not declared", identifier.getValue()));
+        Optional<MonkeyObject<?>> value = environment.get(identifier.getValue());
+
+        if (value.isEmpty()) {
+            return BuiltinFunctions.getFunction(identifier.getValue()).orElseThrow(() ->
+                    new EvaluationException(identifier.getToken(), "Variable %s is not declared", identifier.getValue())
+            );
+        }
+
+        return value.get();
     }
 
     private MonkeyObject<?> evalLetStatement(LetStatement letStatement) throws EvaluationException {
