@@ -318,6 +318,7 @@
                       (object/error "Identifier not found: %s" (ast/ident-literal ast))))
       
       :ast/int-lit    (object/integer (ast/int-value ast))
+      :ast/float-lit  (object/float (ast/float-value ast))
       :ast/bool-lit   (object/boolean (ast/bool-value ast))
       :ast/string-lit (object/string (ast/string-value ast))
       :ast/array-lit  (let [elements (eval-exprs env scope (ast/array-elements ast))]
@@ -328,9 +329,6 @@
       :ast/hash-lit   (eval-hash env scope (ast/hash-pairs ast))
       :ast/null-lit   object/Null
       (assert ast (str "eval/run not implemented for " (or ast "nil"))))))
-
-(defn file [path]
-  )
 
 (comment
   "let fib = fn(n, a, b) { if (n == 0) { return a; } if (n == 1) { return b; } return fib(n - 1, b, n); };"

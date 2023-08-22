@@ -44,6 +44,8 @@
     
   }
   let math = import(\"math\")
+  1535.
+  156465.12532
   ")
 
 (deftest lexer-test
@@ -200,5 +202,7 @@
                   [token/LPAREN "("]
                   [token/STRING "math"]
                   [token/RPAREN ")"]
+                  [token/FLOAT "1535."]
+                  [token/FLOAT "156465.12532"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

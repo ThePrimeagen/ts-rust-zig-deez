@@ -1,5 +1,5 @@
 (ns monkey-lang.lexer
-  (:refer-clojure :exclude [next peek])  
+  (:refer-clojure :exclude [next peek float])  
   (:require [jdsl.combinator   :as jc]
             [jdsl.basic        :as jb]
             [jdsl.char-stream  :as cs]
@@ -32,6 +32,14 @@
     (lit <- (jc/many+ jp/digit))
     (jc/return (token/create token/INT lit))))
 
+(def float
+  (jb/do
+    (whole-num <- (jc/many+ jp/digit))
+    (decimal   <- (jp/char \.))
+    (fraction  <- (jc/many* jp/digit))
+    (let [lit (concat whole-num [decimal] fraction)]
+    (jc/return (token/create token/FLOAT lit)))))
+
 (def identifier
   (jp/satisfy (some-fn ju/alpha-num? #{\! \_})))
 
@@ -57,6 +65,7 @@
   (jc/choice [double-char 
               single-char 
               string 
+              (jc/attempt float)
               integer 
               (jc/attempt keywords)
               EOF

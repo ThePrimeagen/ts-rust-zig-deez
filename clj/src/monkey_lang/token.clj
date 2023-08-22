@@ -5,6 +5,7 @@
 (def ^:const EOF       :token/eof)
 (def ^:const IDENT     :token/ident)
 (def ^:const INT       :token/int)
+(def ^:const FLOAT     :token/float)
 (def ^:const STRING    :token/string)
 (def ^:const ASSIGN    :token/assign)
 (def ^:const PLUS      :token/plus)

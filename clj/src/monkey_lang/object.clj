@@ -1,10 +1,10 @@
 (ns monkey-lang.object
   (:refer-clojure :exclude [boolean fn hash ref])
   (:require [monkey-lang.util :refer [third]]
-            [monkey-lang.ast :as ast]
             [clojure.string :as str]))
 
 (def ^:const INTEGER   :object/integer)
+(def ^:const FLOAT     :object/float)
 (def ^:const BOOLEAN   :object/boolean)
 (def ^:const NULL      :object/null)
 (def ^:const RETURN    :object/return)
@@ -36,6 +36,9 @@
 
 (defmacro integer [v]
   `(vector ~INTEGER ~v))
+
+(defmacro float [v]
+  `(vector ~FLOAT ~v))
 
 (defmacro string [v]
   `(vector ~STRING ~v))

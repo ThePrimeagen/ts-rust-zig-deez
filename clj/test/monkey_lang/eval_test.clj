@@ -171,4 +171,6 @@
     (is (= (evaluate "let x = 0; for (let x = 0; x < 15; x = x + 1) { if (x < 10) { continue; }; break; }; x;") 10))
     (is (= (evaluate "let x = 0; for (let x = 0; x < 15; x = x + 1) { if (x > 10) { break; }; }; x;") 11)))
   (testing "import expr"
-    (is (= (with-out-str (evaluate "let hello = import(\"examples/hello\"); hello.main()")) (with-out-str (println "Hello Monkey!"))))))
+    (is (= (with-out-str (evaluate "let hello = import(\"examples/hello\"); hello.main()")) (with-out-str (println "Hello Monkey!")))))
+  (testing "float literals"
+    (is (= (evaluate "let x = 1.25; x;") 1.25))))

@@ -22,6 +22,7 @@
 (def ^:const IMPORT_EXPR :ast/import-expr)
 (def ^:const FN_LIT      :ast/fn-lit)
 (def ^:const INT_LIT     :ast/int-lit)
+(def ^:const FLOAT_LIT   :ast/float-lit)
 (def ^:const BOOL_LIT    :ast/bool-lit)
 (def ^:const IDENT_LIT   :ast/ident-lit)
 (def ^:const STRING_LIT  :ast/string-lit)
@@ -146,6 +147,12 @@
 (def int-value second)
 
 
+(defmacro float [val]
+  `(vector ~FLOAT_LIT ~val))
+
+(def float-value second)
+
+
 (defmacro bool [val]
   `(vector ~BOOL_LIT ~val))
 
@@ -232,6 +239,7 @@
       ;; literals
       :ast/ident-lit  (ident-literal ast)
       :ast/int-lit    (str (int-value ast))
+      :ast/float-lit  (str (float-value ast))
       :ast/bool-lit   (str (bool-value ast))
       :ast/string-lit (str \" (string-value ast) \")
       :ast/array-lit  (str "[" (str/join ", "(mapv to-str (array-elements ast))) "]")

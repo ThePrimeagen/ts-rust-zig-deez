@@ -51,6 +51,12 @@
     (let [parsed-int (Integer/parseInt (token/literal integer))]
     (jc/return (ast/int parsed-int)))))
 
+(def parse-float
+  (jb/do
+    (float <- (lexer/expect token/FLOAT))
+    (let [parsed-int (Float/parseFloat (token/literal float))]
+    (jc/return (ast/float parsed-int)))))
+
 (def parse-null
   (jb/do
     (lexer/expect token/NULL)
@@ -195,6 +201,7 @@
   (case (token/kind token)
      :token/ident   parse-ident
      :token/int     parse-int
+     :token/float   parse-float
      :token/l-paren parse-group
      :token/if      parse-if
      :token/fn      parse-fn
