@@ -1,5 +1,5 @@
 (ns monkey-lang.ast
-  (:refer-clojure :exclude [if int fn hash import])
+  (:refer-clojure :exclude [if int fn hash import float])
   (:require [monkey-lang.util :refer [third fourth pad]]
             [clojure.string :as str]))
 

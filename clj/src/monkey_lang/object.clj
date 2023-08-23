@@ -1,5 +1,5 @@
 (ns monkey-lang.object
-  (:refer-clojure :exclude [boolean fn hash ref])
+  (:refer-clojure :exclude [boolean fn hash ref float])
   (:require [monkey-lang.util :refer [third]]
             [clojure.string :as str]))
 
