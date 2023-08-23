@@ -173,4 +173,10 @@
   (testing "import expr"
     (is (= (with-out-str (evaluate "let hello = import(\"examples/hello\"); hello.main()")) (with-out-str (println "Hello Monkey!")))))
   (testing "float literals"
-    (is (= (evaluate "let x = 1.25; x;") 1.25))))
+    (is (= (evaluate "let x = 1.25; x;") 1.25)))
+  (testing "hex literals"
+    (is (= (evaluate "let x = 0xff; x;") 255)))
+  (testing "octal literals"
+    (is (= (evaluate "let x = 01060; x;") 560)))
+  (testing "binary literals"
+    (is (= (evaluate "let x = 0b001111; x;") 15))))

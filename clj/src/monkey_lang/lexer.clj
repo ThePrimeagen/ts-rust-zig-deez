@@ -40,6 +40,24 @@
     (let [lit (concat whole-num [decimal] fraction)]
     (jc/return (token/create token/FLOAT lit)))))
 
+(def hex
+  (jb/do
+    (jp/string "0x")
+    (lit     <- (jc/many+ jp/hex))
+    (jc/return (token/create token/HEX lit))))
+
+(def octal
+  (jb/do
+    (jp/string "0")
+    (lit     <- (jc/many+ jp/octal))
+    (jc/return (token/create token/OCTAL lit))))
+
+(def binary
+  (jb/do
+    (jp/string "0b")
+    (lit     <- (jc/many+ (jp/any-of "01")))
+    (jc/return (token/create token/BINARY lit))))
+
 (def identifier
   (jp/satisfy (some-fn ju/alpha-num? #{\! \_})))
 
@@ -63,10 +81,13 @@
 
 (def tokens
   (jc/choice [double-char 
-              single-char 
-              string 
+              single-char
+              string
               (jc/attempt float)
-              integer 
+              (jc/attempt hex)
+              (jc/attempt binary)
+              (jc/attempt octal)
+              integer
               (jc/attempt keywords)
               EOF
               illegal]))
@@ -98,4 +119,5 @@
   (run "=+(){},;|")
   (run "== != <= >= < > = /")
   (run "let x1 = 5")
+  (run "0x")
   ())

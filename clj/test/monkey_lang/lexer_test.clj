@@ -38,7 +38,7 @@
     if (x > 1) {
       break;
     }
-    conitnue;
+    continue;
   }
   for {let x = 0; x < 10; x = x + 1} {
     
@@ -46,6 +46,9 @@
   let math = import(\"math\")
   1535.
   156465.12532
+  0x45
+  0421
+  0b00011
   ")
 
 (deftest lexer-test
@@ -173,7 +176,7 @@
                   [token/BREAK "break"]
                   [token/SEMICOLON ";"]
                   [token/RBRACE "}"]
-                  [token/IDENT "conitnue"]
+                  [token/CONTINUE "continue"]
                   [token/SEMICOLON ";"]
                   [token/RBRACE "}"]
                   [token/FOR "for"]
@@ -204,5 +207,8 @@
                   [token/RPAREN ")"]
                   [token/FLOAT "1535."]
                   [token/FLOAT "156465.12532"]
+                  [token/HEX "45"]
+                  [token/OCTAL "421"]
+                  [token/BINARY "00011"]
                   [token/EOF ""]]]
     (is (= result (lexer/run program))))))

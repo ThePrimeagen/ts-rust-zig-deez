@@ -48,14 +48,32 @@
 (def parse-int
   (jb/do
     (integer <- (lexer/expect token/INT))
-    (let [parsed-int (Integer/parseInt (token/literal integer))]
-    (jc/return (ast/int parsed-int)))))
+    (let [parsed (Integer/parseInt (token/literal integer))]
+    (jc/return (ast/int parsed)))))
 
 (def parse-float
   (jb/do
     (float <- (lexer/expect token/FLOAT))
-    (let [parsed-int (Float/parseFloat (token/literal float))]
-    (jc/return (ast/float parsed-int)))))
+    (let [parsed (Float/parseFloat (token/literal float))]
+    (jc/return (ast/float parsed)))))
+
+(def parse-hex
+  (jb/do
+    (hex <- (lexer/expect token/HEX))
+    (let [parsed (Integer/parseInt (token/literal hex) 16)]
+    (jc/return (ast/int parsed)))))
+
+(def parse-octal
+  (jb/do
+    (octal <- (lexer/expect token/OCTAL))
+    (let [parsed (Integer/parseInt (token/literal octal) 8)]
+    (jc/return (ast/int parsed)))))
+
+(def parse-binary
+  (jb/do
+    (binary <- (lexer/expect token/BINARY))
+    (let [parsed (Integer/parseInt (token/literal binary) 2)]
+    (jc/return (ast/int parsed)))))
 
 (def parse-null
   (jb/do
@@ -202,6 +220,9 @@
      :token/ident   parse-ident
      :token/int     parse-int
      :token/float   parse-float
+     :token/hex     parse-hex
+     :token/octal   parse-octal
+     :token/binary  parse-binary
      :token/l-paren parse-group
      :token/if      parse-if
      :token/fn      parse-fn
