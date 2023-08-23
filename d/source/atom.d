@@ -9,7 +9,7 @@
 
 import hashable;
 import lexer : Lexer;
-import parser : BlockStatement, IdentifierNode;
+import parser : ExpressionNode, BlockStatement, IdentifierNode;
 
 import std.format : format;
 import std.meta : AliasSeq;
@@ -49,10 +49,15 @@ struct BuiltinFunctionKey {
     string name;
 }
 
+/// Quotes given expression
+struct Quote {
+    ExpressionNode node;
+}
+
 /// Wraps evaluation results
 alias EvalResult = SumType!(long, bool, This[], Tuple!(This, "key", This,
         "value")[HashKey], string, ErrorValue, void*, Character, Unit,
-        Function, BuiltinFunctionKey, const This*);
+        Function, BuiltinFunctionKey, Quote, const This*);
 
 /// Type for result array
 alias Results = EvalResult.Types[2];

@@ -99,7 +99,8 @@ public:
 
                 const auto blockRepr = reprBuilder[].joiner(",").to!string;
                 return (blockRepr != "") ? format("{%s}", blockRepr) : "{}";
-            }, (ErrorValue result) => result.message, (ReturnValue result) {
+            }, (Quote value) => format("QUOTE(%s)", value.node.show(this.parser.lexer)),
+                    (ErrorValue result) => result.message, (ReturnValue result) {
                 return (*result).match!((Unit _) => "", (ErrorValue result) => result.message,
                     (Character c) => format("'%c'", c.value),
                     (long value) => format("%d", value), (value) => format("%s", value));
@@ -289,6 +290,29 @@ unittest {
             assert(value == expected[i],
                 format("Int value %s does not match expected value %s", value, expected[i]));
         }, _ => assert(false, format("Expected number in statement %s", i)));
+    }
+}
+
+/// Quote function test
+unittest {
+    const auto input = "quote(foobar);
+quote(10 + 5);
+quote(foobar + 10 + 5 + barfoo);";
+
+    const string[3] expected = [
+        "foobar", "(10 + 5)", "(((foobar + 10) + 5) + barfoo)"
+    ];
+
+    auto evaluator = prepareEvaluator(input);
+    evaluator.evalProgram();
+
+    foreach (i, result; evaluator.results[]) {
+        result.match!((Quote value) {
+            auto quotedValue = value.node.show(evaluator.parser.lexer);
+
+            assert(quotedValue == expected[i],
+                format("Quoted node %s does not match expected value %s", quotedValue, expected[i]));
+        }, _ => assert(false, format("Expected number in statement %d", i)));
     }
 }
 

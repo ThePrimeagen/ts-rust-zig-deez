@@ -144,8 +144,8 @@ shared static this()
     import std.exception : assumeUnique;
 
     BuiltinFunction[string] tempBuiltinFunctions = [
-        "puts": &puts, "len": &len, "first": &first, "last": &last,
-        "rest": &rest, "push": &push,
+        "quote": null, "puts": &puts, "len": &len, "first": &first,
+        "last": &last, "rest": &rest, "push": &push,
     ];
 
     builtinFunctions = assumeUnique(tempBuiltinFunctions);
@@ -447,6 +447,10 @@ private EvalResult boolIndex(IndexExpressionNode node, EvalResult lhs, bool idx)
     auto exprValue = eval(node.functionBody, lexer, env);
 
     return exprValue.match!((BuiltinFunctionKey key) {
+        if (key.name == "quote") {
+            return EvalResult(Quote(node.args[0]));
+        }
+
         auto args = evalExpressions(node.args, lexer, env);
 
         if (args.length == 1) {
