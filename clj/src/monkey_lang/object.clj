@@ -1,5 +1,5 @@
 (ns monkey-lang.object
-  (:refer-clojure :exclude [boolean fn hash ref float])
+  (:refer-clojure :exclude [boolean fn hash ref float number?])
   (:require [monkey-lang.util :refer [third]]
             [clojure.string :as str]))
 
@@ -96,6 +96,15 @@
 
 (defn error? [obj]
   (= ERROR (kind obj)))
+
+(defn number [num]
+  (cond (float? num)   (float num)
+        (integer? num) (integer num)
+        :else          (error "Expected number found: %s" (type num))))
+
+(defn number? [obj]
+ (or (is? obj INTEGER)
+     (is? obj FLOAT)))
 
 (defn inspect [obj]
   (case (kind obj)

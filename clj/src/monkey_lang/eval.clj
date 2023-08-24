@@ -42,7 +42,7 @@
 (defn eval-integer-infix-expr [left operator right]
   (case operator
     ("-" "+" "/" "*")
-      (object/integer ((op->fn operator) (object/value left) (object/value right)))
+      (object/number ((op->fn operator) (object/value left) (object/value right)))
     (">" "<" ">=" "<=" "==" "!=")
       (object/boolean ((op->fn operator) (object/value left) (object/value right)))
     (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right))))
@@ -53,10 +53,8 @@
     (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right))))
 
 (defn eval-infix [left operator right]
-  (if-not (= (object/kind left) (object/kind right))
-    (object/error "Type Mismatch: %s %s %s" (object/kind left) operator (object/kind right))
-  (if (and (object/is? left  object/INTEGER)
-           (object/is? right object/INTEGER))
+  (if (and (object/number? left)
+           (object/number? right))
     (eval-integer-infix-expr left operator right)
   (if (and (object/is? left  object/STRING)
            (object/is? right object/STRING))
@@ -64,7 +62,7 @@
   (case operator
     ("=="
      "!=") (object/boolean ((op->fn operator) (object/value left) (object/value right)))
-  (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right)))))))
+  (object/error "Unknown Operator: %s %s %s" (object/kind left) operator (object/kind right))))))
 
 (defn eval-exprs [env scope exprs]
   (loop [exprs  exprs

@@ -17,7 +17,9 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
 - [x] add make file and update docker image to support babashka instead of leiningen
 - [x] input validation for builtin functions to avoid crashes
 - [x] hash keys can have identifiers
+- [ ] ast should contain reference to lexed element
 - [ ] try print statement after the error message when eval/run errs.
+- [ ] add error type constants instead of string errors
 - [ ] remove (comment) from the files
 - [ ] Add support for
   - [x] null 
@@ -29,6 +31,7 @@ Use `lein run` or `bb run` run the interpretor and `lein test` or
   - [x] while loop with continue and break
   - [x] for loop with continue and break
   - [x] import module
+  - [x] add support for floats, hexadecimals, octals, binary
   - [ ] more operators like %, bit operations and so on
   - [ ] implement go like channels
   - [ ] add character datatype

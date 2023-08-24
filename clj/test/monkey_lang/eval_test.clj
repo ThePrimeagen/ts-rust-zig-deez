@@ -72,8 +72,8 @@
     (is (= (evaluate "let f = fn(x) { return x;  x + 10;};f(10);"), 10))
     (is (= (evaluate "let f = fn(x) { let result = x + 10; return result; return 10;};f(10);"), 20)))
   (testing "Error Handling"
-    (is (= (evaluate "5 + true;") "Type Mismatch: integer + boolean"))
-    (is (= (evaluate "5 + true; 5;") "Type Mismatch: integer + boolean"))
+    (is (= (evaluate "5 + true;") "Unknown Operator: integer + boolean"))
+    (is (= (evaluate "5 + true; 5;") "Unknown Operator: integer + boolean"))
     (is (= (evaluate "-true") "Unknown Operator: - boolean"))
     (is (= (evaluate "true + false;") "Unknown Operator: boolean + boolean"))
     (is (= (evaluate "5; true + false; 5") "Unknown Operator: boolean + boolean"))
