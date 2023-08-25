@@ -4,7 +4,17 @@ import root.LocalizedToken;
 import root.Token;
 import root.TokenType;
 
+import java.util.Map;
+
 public class Lexer {
+
+    private static final Map<Character, String> VALID_ESCAPES = Map.of(
+            'n', "\n",
+            't', "\t",
+            '\\', "\\",
+            '"', "\"",
+            '\'', "'"
+    );
 
     private final String input;
     private final String[] lines;
@@ -62,6 +72,7 @@ public class Lexer {
             case '>' -> TokenType.GT.token();
             case '<' -> TokenType.LT.token();
             case '\0' -> TokenType.EOF.token();
+            case '"', '\'' -> readString(currentChar);
 
             case Character c when isLetter(c) -> {
                 var ident = this.indent(currentChar);
@@ -80,6 +91,50 @@ public class Lexer {
             case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number(currentChar));
             default -> TokenType.ILLEGAL.createToken(String.valueOf(currentChar));
         };
+    }
+
+    private Token readString(Character startingChar) {
+        char character;
+        var stringBuilder = new StringBuilder();
+
+        while ((character = this.readCc()) != '\0') {
+            // Support for escape characters
+            if (character == '\\') {
+                char slash = character;
+                char escaped = this.readCc();
+
+                if (VALID_ESCAPES.containsKey(escaped)) {
+                    stringBuilder.append(VALID_ESCAPES.get(escaped));
+                    continue;
+                } else {
+                    stringBuilder.append(slash).append(escaped);
+                    // skipping to the end of the string
+                    while ((character = this.readCc()) != '\0') {
+                        if (character == startingChar) {
+                            break;
+                        }
+                        stringBuilder.append(character);
+                    }
+
+                    // TODO maybe create a Lexing exception to better explain errors like this
+                    return TokenType.ILLEGAL.createToken(stringBuilder.toString());
+                }
+            }
+
+            if (character == startingChar) {
+                break;
+            }
+
+            stringBuilder.append(character);
+        }
+
+        String string = stringBuilder.toString();
+
+        if (character != startingChar || string.isEmpty()) {
+            return TokenType.ILLEGAL.createToken(string);
+        }
+
+        return TokenType.STRING.createToken(string);
     }
 
     private void advance() {

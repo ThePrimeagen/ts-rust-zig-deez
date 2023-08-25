@@ -44,7 +44,12 @@ public class LexerTest {
                 let result = add(five, ten);
 
                 !-/*5;
-                5 < 10 > 5;""";
+                5 < 10 > 5;
+                "foobar"
+                '"single quotes\\n"'
+                "\\"escaped quotes\\""
+                "'single in double'"
+                "foo bar\"""";
         Lexer l = new Lexer(input);
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
@@ -95,6 +100,11 @@ public class LexerTest {
                 new Token(TokenType.GT, ">"),
                 new Token(TokenType.INT, "5"),
                 new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.STRING, "foobar"),
+                new Token(TokenType.STRING, "\"single quotes\n\""),
+                new Token(TokenType.STRING, "\"escaped quotes\""),
+                new Token(TokenType.STRING, "'single in double'"),
+                new Token(TokenType.STRING, "foo bar"),
                 new Token(TokenType.EOF, "eof"),
         };
         Assertions.assertDoesNotThrow(() -> {
@@ -187,11 +197,11 @@ public class LexerTest {
         String input = """
                 let a = 10;
                 let b = 5;
-                
+                                
                 fn add(a,b) {
                     return a + b
                 }
-                
+                                
                 let foo = add(a, b)
                 """;
 
@@ -239,6 +249,38 @@ public class LexerTest {
 
         for (LocalizedToken t : expected) {
             LocalizedToken g = l.nextLocalized();
+            Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
+
+    @Test
+    void testStringToken() {
+        String input = """
+                let a = "Hello world! 日本語 \\"acentuação\\" `123' \\n \\t \\\\";
+                'single\\nquote'
+                "multi
+                line"
+                "invalid \\y escape"
+                "not closed
+                """;
+
+        Token[] expected = {
+                TokenType.LET.token(),
+                TokenType.IDENTIFIER.createToken("a"),
+                TokenType.ASSIGN.token(),
+                TokenType.STRING.createToken("Hello world! 日本語 \"acentuação\" `123' \n \t \\"),
+                TokenType.SEMI.token(),
+                TokenType.STRING.createToken("single\nquote"),
+                TokenType.STRING.createToken("multi\nline"),
+                TokenType.ILLEGAL.createToken("invalid \\y escape"),
+                TokenType.ILLEGAL.createToken("not closed\n"),
+                TokenType.EOF.token(),
+        };
+
+        Lexer l = new Lexer(input);
+
+        for (Token t : expected) {
+            Token g = l.nextToken();
             Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
         }
     }

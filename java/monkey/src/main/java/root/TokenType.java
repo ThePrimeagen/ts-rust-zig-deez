@@ -11,6 +11,7 @@ public enum TokenType {
     RPAREN(")"),
     LSQIRLY("{"),
     RSQIRLY("}"),
+    STRING,
 
     // Operations
     ASSIGN("="),
@@ -32,7 +33,7 @@ public enum TokenType {
     IF("if"),
     ELSE("else"),
     RETURN("return"),
-    NULL("null"); // My additon.
+    NULL("null"); // My addition.
 
     private final Token token;
 

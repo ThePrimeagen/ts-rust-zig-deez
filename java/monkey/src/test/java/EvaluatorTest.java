@@ -273,6 +273,13 @@ public class EvaluatorTest {
                                 Error evaluating the program: Variable put is not declared
                                 01: fn () { put(8) }()
                                 ------------^---------"""
+                ),
+                List.of(
+                        "\"hello\" - \"world\"",
+                        """
+                                Error evaluating the program: Operation - not supported between Strings
+                                01: "hello" - "world"
+                                ------------^--------"""
                 )
 
         );
@@ -389,12 +396,35 @@ public class EvaluatorTest {
                 new ExpressionTest(MonkeyUnit.class, "puts(10)"),
                 new ExpressionTest(MonkeyUnit.class, "fn () { putsNoln(8) }()"),
                 new ExpressionTest(MonkeyInteger.class, "let time = miliTime(); time"),
-                new ExpressionTest(MonkeyInteger.class, "let time = nanoTime();")
+                new ExpressionTest(3, "len(\"abc\")"),
+                new ExpressionTest(7, "len(\"abc\" + \" \" + \"def\")"),
+                new ExpressionTest("HELLO", "uppercase(\"hello\")"),
+                new ExpressionTest("HI, THIS IS A NUMBER: 42", "uppercase(\"Hi, this is a number: \" + 42)"),
+                new ExpressionTest("world", "lowercase(\"WORLD\")"),
+                new ExpressionTest("testing escapes: \n\t\"", "lowercase(\"Testing Escapes: \\n\\t\\\"\")")
         );
 
         for (ExpressionTest(Object expected, String input) : tests) {
             MonkeyObject<?> evaluated = testEval(input);
-            Assertions.assertInstanceOf((Class<?>) expected, evaluated);
+            testObject(expected, evaluated);
+        }
+    }
+
+    @Test
+    void testStringExpressions() {
+        var tests = List.of(
+                new ExpressionTest("hello world!", "let a = \"hello world!\""),
+                new ExpressionTest("ana bob", "\"ana\" + \" \" + \"bob\""),
+                new ExpressionTest("the value of b is: 10", "let b = 2*5; \"the value of b is: \" + b"),
+                new ExpressionTest(true, "\"bob\" > \"ana\""),
+                new ExpressionTest(true, "\"aaron\" < \"sharon\""),
+                new ExpressionTest(true, "\"Hello world\" == \"Hello \" + \"world\""),
+                new ExpressionTest(true, "\"Hello world\" != \"hello \" + \"world\"")
+        );
+
+        for (ExpressionTest(Object expected, String input) : tests) {
+            MonkeyObject<?> evaluated = testEval(input);
+            testObject(expected, evaluated);
         }
     }
 
@@ -415,7 +445,9 @@ public class EvaluatorTest {
             case Long l -> testIntegerObject(l, object);
             case Integer i -> testIntegerObject(i, object);
             case Boolean b -> testBooleanObject(b, object);
+            case String s -> testStringObject(s, object);
             case MonkeyUnit unit -> Assertions.assertEquals(object, unit);
+            case Class<?> clazz -> Assertions.assertInstanceOf(clazz, object);
             case null -> testNullObject(object);
             default -> throw new IllegalStateException("Unexpected value: " + expected);
         }
@@ -429,6 +461,11 @@ public class EvaluatorTest {
     private void testBooleanObject(boolean expected, MonkeyObject<?> object) {
         var bool = Assertions.assertInstanceOf(MonkeyBoolean.class, object);
         Assertions.assertEquals(expected, bool.getValue());
+    }
+
+    private void testStringObject(String expected, MonkeyObject<?> object) {
+        var string = Assertions.assertInstanceOf(MonkeyString.class, object);
+        Assertions.assertEquals(expected, string.getValue());
     }
 
     private void testNullObject(MonkeyObject<?> object) {

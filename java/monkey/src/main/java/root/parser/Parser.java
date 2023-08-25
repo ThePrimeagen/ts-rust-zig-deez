@@ -142,6 +142,7 @@ public class Parser {
             case INT -> () -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
             case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
             case NULL -> () -> new NullLiteralExpression(currentToken);
+            case STRING -> () -> new StringLiteralExpression(currentToken);
             case BANG, MINUS -> this::parsePrefixExpression;
             case LPAREN -> this::parseGroupedExpression;
             case IF -> this::parseIfExpression;

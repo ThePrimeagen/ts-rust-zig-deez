@@ -139,6 +139,19 @@ public class ParserTest {
         testNullLiteral(statement.getExpression());
     }
 
+    @Test
+    void testStringLiteralExpression() {
+        var input = "\"Hello\\nworld!\"";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+
+        var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+
+        testStringLiteral(statement.getExpression(), "Hello\nworld!");
+    }
+
     private record PrefixTestRecord(String input, String operator, Object right) {
     }
 
@@ -495,6 +508,12 @@ public class ParserTest {
 
     private void testNullLiteral(Expression expression) {
         Assertions.assertInstanceOf(NullLiteralExpression.class, expression);
+    }
+
+    private void testStringLiteral(Expression expression, String value) {
+        var stringLiteralExpression = Assertions.assertInstanceOf(StringLiteralExpression.class, expression);
+        Assertions.assertEquals(value, stringLiteralExpression.toString());
+        Assertions.assertEquals(value, stringLiteralExpression.tokenLiteral());
     }
 
     private void testUnitExpression(Expression expression) {

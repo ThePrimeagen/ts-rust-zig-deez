@@ -1,5 +1,6 @@
 package root.evaluation;
 
+import root.TokenType;
 import root.ast.Node;
 import root.ast.Program;
 import root.ast.expressions.*;
@@ -41,6 +42,7 @@ public class Evaluator {
             case CallExpression callExpression -> evalCallExpression(callExpression);
             case UnitExpression ignored -> MonkeyUnit.INSTANCE;
             case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
+            case StringLiteralExpression string -> new MonkeyString(string.toString());
             // Should be impossible (after everything is implemented)
             default -> throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
                     node.getClass().getSimpleName(),
@@ -113,20 +115,25 @@ public class Evaluator {
             return evalIntegerInfixExpression(infixExpression, integerLeft, integerRight);
         }
 
-        return switch (infixExpression.getToken().type()) {
+        if (left instanceof MonkeyString leftString && right instanceof MonkeyString rightString) {
+            return evalStringInfixExpression(infixExpression, leftString, rightString);
+        }
+
+        TokenType operation = infixExpression.getToken().type();
+
+        // We support string concatenation even if only one side is a String
+        if (operation == TokenType.PLUS && (left instanceof MonkeyString || right instanceof MonkeyString)) {
+            return new MonkeyString(left.inspect() + right.inspect());
+        }
+
+        return switch (operation) {
             case EQUAL -> MonkeyBoolean.nativeToMonkey(left == right);
             case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left != right);
 
             default -> {
                 // ¯\_(ツ)_/¯
                 if (left == MonkeyNull.INSTANCE || right == MonkeyNull.INSTANCE) {
-                    yield switch (infixExpression.getToken().type()) {
-                        case PLUS, MINUS, ASTERISK, SLASH -> MonkeyNull.INSTANCE;
-                        default -> {
-                            var detail = left == right ? "both values are" : left == MonkeyNull.INSTANCE ? "left value is" : "right value is";
-                            throw new EvaluationException(infixExpression.getToken(), "Null value error: %s null", detail);
-                        }
-                    };
+                    yield evalNullInfixExpression(infixExpression, left, right);
                 }
 
                 throw new EvaluationException(
@@ -137,6 +144,36 @@ public class Evaluator {
                         right.getType()
                 );
             }
+        };
+    }
+
+    private MonkeyObject<?> evalNullInfixExpression(
+            InfixExpression infixExpression,
+            MonkeyObject<?> left,
+            MonkeyObject<?> right
+    ) throws EvaluationException {
+        return switch (infixExpression.getToken().type()) {
+            case PLUS, MINUS, ASTERISK, SLASH -> MonkeyNull.INSTANCE;
+            default -> {
+                var detail = left == right ? "both values are" : left == MonkeyNull.INSTANCE ? "left value is" : "right value is";
+                throw new EvaluationException(infixExpression.getToken(), "Null value error: %s null", detail);
+            }
+        };
+    }
+
+    private MonkeyObject<?> evalStringInfixExpression(
+            InfixExpression infixExpression,
+            MonkeyString leftString,
+            MonkeyString rightString
+    ) throws EvaluationException {
+        return switch (infixExpression.getToken().type()) {
+            case PLUS -> new MonkeyString(leftString.getValue() + rightString.getValue());
+            case EQUAL -> MonkeyBoolean.nativeToMonkey(leftString.getValue().equals(rightString.getValue()));
+            case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(!leftString.getValue().equals(rightString.getValue()));
+            case GT -> MonkeyBoolean.nativeToMonkey(leftString.getValue().compareTo(rightString.getValue()) > 0);
+            case LT -> MonkeyBoolean.nativeToMonkey(leftString.getValue().compareTo(rightString.getValue()) < 0);
+
+            default -> throw new EvaluationException(infixExpression.getToken(), "Operation %s not supported between Strings", infixExpression.getOperator());
         };
     }
 

@@ -9,4 +9,5 @@ public enum ObjectType {
     UNIT,
     FUNCTION,
     BUILTIN_OBJ,
+    STRING,
 }
