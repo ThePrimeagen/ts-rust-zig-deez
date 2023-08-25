@@ -3,25 +3,15 @@
 (name monkey)
 
 (generate_opam_files true)
-
-(source
- (github username/reponame))
-
-(authors "Author Name")
-
-(maintainers "Maintainer Name")
-
-(license LICENSE)
-
-(documentation https://url/to/documentation)
+(source (github username/reponame))
+(authors "TJ DeVries")
+(maintainers "TJ DeVries")
 
 (package
  (name monkey)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune ppx_deriving ppx_expect 
-          ppx_sexp_conv sexplib)
- (tags
-  (topics "to describe" your project)))
+ (synopsis "Monkeylang implementation")
+ (description "Monkeylang implementation, using OCaml 5 features")
+ (depends ocaml dune ppx_deriving ppx_expect fmt
+          ppx_sexp_conv sexplib))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

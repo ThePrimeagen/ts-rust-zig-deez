@@ -262,8 +262,8 @@ and eval_integer_infix operator left right =
     | Token.Slash -> Ok (make_int ( / ))
     | Token.LessThan -> Ok (make_bool ( < ))
     | Token.GreaterThan -> Ok (make_bool ( > ))
-    | Token.Equal -> Ok (make_bool Caml.( == ))
-    | Token.NotEqual -> Ok (make_bool Caml.( != ))
+    | Token.Equal -> Ok (make_bool Stdlib.( == ))
+    | Token.NotEqual -> Ok (make_bool Stdlib.( != ))
     | tok -> Fmt.error "unexpected int infix op: %a" Token.pp tok
   in
   Ok (maker left right)
