@@ -22,7 +22,7 @@ public abstract class MonkeyObject<T> {
         return value;
     }
 
-    public void setValue(T value) {
+    protected void setValue(T value) {
         this.value = Objects.requireNonNull(value);
     }
 

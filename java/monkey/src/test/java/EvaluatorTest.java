@@ -280,6 +280,27 @@ public class EvaluatorTest {
                                 Error evaluating the program: Operation - not supported between Strings
                                 01: "hello" - "world"
                                 ------------^--------"""
+                ),
+                List.of(
+                        "[1, 2, 3][3]",
+                        """
+                                Error evaluating the program: Index 3 outside of range [0:3)
+                                01: [1, 2, 3][3]
+                                --------------^-"""
+                ),
+                List.of(
+                        "[1, 2][-1]",
+                        """
+                                Error evaluating the program: Index -1 outside of range [0:2)
+                                01: [1, 2][-1]
+                                -----------^--"""
+                ),
+                List.of(
+                        "[1, 2][\"hello\"]",
+                        """
+                                Error evaluating the program: Index to an array must be an Expression that yields an Int
+                                01: [1, 2]["hello"]
+                                -----------^-------"""
                 )
 
         );
@@ -398,11 +419,22 @@ public class EvaluatorTest {
                 new ExpressionTest(MonkeyInteger.class, "let time = miliTime(); time"),
                 new ExpressionTest(3, "len(\"abc\")"),
                 new ExpressionTest(0, "len(\"\")"),
+                new ExpressionTest(4, "len([1, 2, 3, 4])"),
+                new ExpressionTest(0, "len([])"),
                 new ExpressionTest(7, "len(\"abc\" + \" \" + \"def\")"),
                 new ExpressionTest("HELLO", "uppercase(\"hello\")"),
                 new ExpressionTest("HI, THIS IS A NUMBER: 42", "uppercase(\"Hi, this is a number: \" + 42)"),
                 new ExpressionTest("world", "lowercase(\"WORLD\")"),
-                new ExpressionTest("testing escapes: \n\t\"", "lowercase(\"Testing Escapes: \\n\\t\\\"\")")
+                new ExpressionTest("testing escapes: \n\t\"", "lowercase(\"Testing Escapes: \\n\\t\\\"\")"),
+                new ExpressionTest(1, "first([1, 2, 3, 4])"),
+                new ExpressionTest(null, "first([])"),
+                new ExpressionTest(49, "last([10 * 8, 7 * 7])"),
+                new ExpressionTest(MonkeyArray.class, "rest([1 * 1, 2 * 2, 3 * 3])"),
+                new ExpressionTest(2, "len(rest([1 * 1, 2 * 2, 3 * 3]))"),
+                new ExpressionTest(1, "len(push([], 'test'))"),
+                new ExpressionTest(0, "let arr = []; push(arr, 10); len(arr)"),
+                new ExpressionTest(null, "rest(rest(rest(rest([1 * 1, 2 * 2, 3 * 3]))))"),
+                new ExpressionTest(null, "rest([])")
         );
 
         for (ExpressionTest(Object expected, String input) : tests) {
@@ -426,6 +458,46 @@ public class EvaluatorTest {
         for (ExpressionTest(Object expected, String input) : tests) {
             MonkeyObject<?> evaluated = testEval(input);
             testObject(expected, evaluated);
+        }
+    }
+
+    @Test
+    void testArrayLiterals() {
+        var input = "[1, 2 * 2, 3 + 3]";
+
+        MonkeyObject<?> result = testEval(input);
+        var array = Assertions.assertInstanceOf(MonkeyArray.class, result);
+        Assertions.assertEquals(3, array.getValue().size());
+        testIntegerObject(1, array.getValue().get(0));
+        testIntegerObject(4, array.getValue().get(1));
+        testIntegerObject(6, array.getValue().get(2));
+    }
+
+    @Test
+    void testArrayIndexExpression() {
+        var tests = List.of(
+                new IntegerTest(1, "[1, 2, 3][0]"),
+                new IntegerTest(2, "[1, 2, 3][1]"),
+                new IntegerTest(3, "[1, 2, 3][2]"),
+                new IntegerTest(1, "let i = 0; [1][i]"),
+                new IntegerTest(3, "[1, 2, 3][1 + 1]"),
+                new IntegerTest(2, "let myArr = [1, 2, 3]; myArr[1]"),
+                new IntegerTest(6, "let myArr = [1, 2, 3]; myArr[0] + myArr[1] + myArr[2]"),
+                new IntegerTest(2, "let myArr = [1, 2, 3]; let i = myArr[0]; myArr[i]"),
+                new IntegerTest(10, """
+                        let myArr = [1, 2, 3, 4];
+                        let sum = fn (arr, acc, i) {
+                            if (i < 0) {
+                                return acc;
+                            }
+                            let acc = acc + arr[i];
+                            return sum(arr, acc, i - 1);
+                        }
+                        sum(myArr, 0, 3);""")
+        );
+
+        for (IntegerTest(long expected, String input) : tests) {
+            testIntegerObject(expected, testEval(input));
         }
     }
 

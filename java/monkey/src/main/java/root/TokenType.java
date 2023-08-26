@@ -11,6 +11,8 @@ public enum TokenType {
     RPAREN(")"),
     LSQIRLY("{"),
     RSQIRLY("}"),
+    LBRACKET("["),
+    RBRACKET("]"),
     STRING,
 
     // Operations

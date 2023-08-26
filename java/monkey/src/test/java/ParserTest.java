@@ -310,6 +310,14 @@ public class ParserTest {
                 List.of(
                         "add(a + b + c * d / f + g)",
                         "add((((a + b) + ((c * d) / f)) + g))"
+                ),
+                List.of(
+                        "a * [1, 2, 3, 4][b * c] * d",
+                        "((a * ([1, 2, 3, 4][(b * c)])) * d)"
+                ),
+                List.of(
+                        "add(a * b[2], b[1], 2 * [1, 2][1])",
+                        "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"
                 )
         );
 
@@ -477,6 +485,45 @@ public class ParserTest {
                 errors.get(0).getMessage()
         );
         Assertions.assertEquals("b", errors.get(0).getLocalizedToken().literal());
+    }
+
+    @Test
+    void testParsingArrayLiterals() {
+        var input = "[1, 2 + 5, 6 * 2];\n" +
+                    "[];";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(2, program.getStatements().size());
+        var expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var array = Assertions.assertInstanceOf(ArrayLiteralExpression.class, expression.getExpression());
+
+        Assertions.assertEquals(3, array.getElements().size());
+        testIntegerLiteral(array.getElements().get(0), 1L);
+        testInfixExpression(array.getElements().get(1), 2, "+", 5);
+        testInfixExpression(array.getElements().get(2), 6, "*", 2);
+        Assertions.assertEquals("[1, (2 + 5), (6 * 2)]", array.toString());
+
+        expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
+        array = Assertions.assertInstanceOf(ArrayLiteralExpression.class, expression.getExpression());
+
+        Assertions.assertEquals(0, array.getElements().size());
+        Assertions.assertEquals("[]", array.toString());
+    }
+
+    @Test
+    void testParsingIndexExpressions() {
+        var input = "myArray[1 + 1]";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        var expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var index = Assertions.assertInstanceOf(IndexExpression.class, expression.getExpression());
+
+        testIdentifier(index.getLeft(), "myArray");
+        testInfixExpression(index.getIndex(), 1, "+", 1);
+        Assertions.assertEquals("(myArray[(1 + 1)])", index.toString());
     }
 
     private void testIntegerLiteral(Expression expression, Long expectedValue) {

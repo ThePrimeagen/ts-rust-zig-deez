@@ -1,20 +1,18 @@
 package root.ast.expressions;
 
 import root.LocalizedToken;
-import root.Token;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class CallExpression extends Expression {
 
     private final Expression function;
-    private final List<Expression> arguments = new ArrayList<>();
+    private final List<Expression> arguments;
 
-    public CallExpression(LocalizedToken token, Expression function) {
+    public CallExpression(LocalizedToken token, Expression function, List<Expression> arguments) {
         this.function = function;
         this.token = token;
+        this.arguments = arguments;
     }
 
     public Expression getFunction() {

@@ -45,6 +45,7 @@ public class LexerTest {
 
                 !-/*5;
                 5 < 10 > 5;
+                [1, 2]
                 "foobar"
                 '"single quotes\\n"'
                 "\\"escaped quotes\\""
@@ -101,6 +102,11 @@ public class LexerTest {
                 new Token(TokenType.GT, ">"),
                 new Token(TokenType.INT, "5"),
                 new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.LBRACKET, "["),
+                new Token(TokenType.INT, "1"),
+                new Token(TokenType.COMMA, ","),
+                new Token(TokenType.INT, "2"),
+                new Token(TokenType.RBRACKET, "]"),
                 new Token(TokenType.STRING, "foobar"),
                 new Token(TokenType.STRING, "\"single quotes\n\""),
                 new Token(TokenType.STRING, "\"escaped quotes\""),

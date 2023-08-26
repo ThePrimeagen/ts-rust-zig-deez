@@ -1,18 +1,12 @@
 package root.evaluation;
 
-import root.LocalizedToken;
 import root.evaluation.objects.AbstractMonkeyFunction;
 import root.evaluation.objects.MonkeyFunctionInterface;
 import root.evaluation.objects.MonkeyObject;
-import root.evaluation.objects.impl.BuiltinFunction;
-import root.evaluation.objects.impl.MonkeyInteger;
-import root.evaluation.objects.impl.MonkeyString;
-import root.evaluation.objects.impl.MonkeyUnit;
+import root.evaluation.objects.ObjectType;
+import root.evaluation.objects.impl.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public enum BuiltinFunctions {
 
@@ -28,36 +22,90 @@ public enum BuiltinFunctions {
         return MonkeyUnit.INSTANCE;
     }),
     MILI_TIME("miliTime", (callToken, arguments) -> {
-        if (!arguments.isEmpty()) {
-            AbstractMonkeyFunction.throwWorngNumberOfArgumentsError(callToken, 0, arguments.size());
-        }
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 0, arguments.size());
 
         return new MonkeyInteger(System.currentTimeMillis());
     }),
     NANO_TIME("nanoTime", (callToken, arguments) -> {
-        if (!arguments.isEmpty()) {
-            AbstractMonkeyFunction.throwWorngNumberOfArgumentsError(callToken, 0, arguments.size());
-        }
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 0, arguments.size());
 
         return new MonkeyInteger(System.nanoTime());
     }),
     LEN("len", (callToken, arguments) -> {
-        if (arguments.size() != 1) {
-            AbstractMonkeyFunction.throwWorngNumberOfArgumentsError(callToken, 1, arguments.size());
-        }
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
         MonkeyObject<?> argument = arguments.get(0);
 
-        // This function will also accept Arrays and Objects
+        // This function will also accept Objects
         return switch (argument) {
             case MonkeyString string -> new MonkeyInteger(string.getValue().length());
+            case MonkeyArray array -> new MonkeyInteger(array.getValue().size());
             default ->
                     throw new EvaluationException(callToken, "Argument to `len` not supported, got %s", argument.getType());
         };
     }),
-    UPPERCASE("uppercase", (callToken, arguments) ->
-            new MonkeyString(checkSingleStringArgument(callToken, arguments, "uppercase").getValue().toUpperCase())),
-    LOWERCASE("lowercase", (callToken, arguments) ->
-            new MonkeyString(checkSingleStringArgument(callToken, arguments, "lowercase").getValue().toLowerCase()));
+    UPPERCASE("uppercase", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.STRING, "uppercase");
+
+        return new MonkeyString(((MonkeyString) arguments.get(0)).getValue().toUpperCase());
+    }),
+    LOWERCASE("lowercase", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.STRING, "lowercase");
+
+        return new MonkeyString(((MonkeyString) arguments.get(0)).getValue().toLowerCase());
+    }),
+    FIRST("first", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "first");
+
+        var array = (MonkeyArray) arguments.get(0);
+
+        if (array.getValue().isEmpty()) {
+            return MonkeyNull.INSTANCE;
+        }
+        return array.getValue().get(0);
+    }),
+    LAST("last", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "last");
+
+        var array = (MonkeyArray) arguments.get(0);
+
+        if (array.getValue().isEmpty()) {
+            return MonkeyNull.INSTANCE;
+        }
+        return array.getValue().get(array.getValue().size() - 1);
+    }),
+    REST("rest", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "rest");
+
+        var array = (MonkeyArray) arguments.get(0);
+
+        if (array.getValue().isEmpty()) {
+            return MonkeyNull.INSTANCE;
+        }
+
+        var newArray = new ArrayList<MonkeyObject<?>>();
+
+        for (int i = 1; i < array.getValue().size(); i++) {
+            newArray.add(array.getValue().get(i));
+        }
+
+        return new MonkeyArray(newArray);
+    }),
+    PUSH("push", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 2, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "rest");
+
+        var array = (MonkeyArray) arguments.get(0);
+
+        var elementsCopy = new ArrayList<>(array.getValue());
+        elementsCopy.add(arguments.get(1));
+
+        return new MonkeyArray(elementsCopy);
+    });
 
     private final String identifier;
     private final BuiltinFunction builtinFunction;
@@ -95,27 +143,5 @@ public enum BuiltinFunctions {
 
             System.out.print(arg.inspect());
         }
-    }
-
-    private static MonkeyString checkSingleStringArgument(
-            LocalizedToken callToken,
-            List<MonkeyObject<?>> arguments,
-            String functionName
-    ) throws EvaluationException {
-        if (arguments.size() != 1) {
-            AbstractMonkeyFunction.throwWorngNumberOfArgumentsError(callToken, 1, arguments.size());
-        }
-        MonkeyObject<?> argument = arguments.get(0);
-
-        if (argument instanceof MonkeyString string) {
-            return string;
-        }
-
-        throw new EvaluationException(
-                callToken,
-                "Argument to %s not supported, got %s. Only Strings are accepted",
-                functionName,
-                argument.getType()
-        );
     }
 }

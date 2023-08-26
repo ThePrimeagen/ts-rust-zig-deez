@@ -147,6 +147,7 @@ public class Parser {
             case LPAREN -> this::parseGroupedExpression;
             case IF -> this::parseIfExpression;
             case FUNC -> this::parseFunctionLiteral;
+            case LBRACKET -> this::parseArrayLiteralExpression;
             default -> null;
         };
     }
@@ -162,6 +163,7 @@ public class Parser {
         return switch (tokenType) {
             case PLUS, MINUS, SLASH, ASTERISK, EQUAL, NOT_EQUAL, LT, GT -> this::parseInfixExpression;
             case LPAREN -> this::parseCallExpression;
+            case LBRACKET -> this::parseIndexExpression;
             default -> null;
         };
     }
@@ -177,27 +179,46 @@ public class Parser {
     }
 
     private CallExpression parseCallExpression(Expression function) throws ParserException {
-        var callExpression = new CallExpression(currentToken, function);
-        parseCallArguments(callExpression);
-        return callExpression;
+        LocalizedToken callToken = currentToken;
+        List<Expression> arguments = parseExpressionList(TokenType.RPAREN);
+
+        return new CallExpression(callToken, function, arguments);
     }
 
-    private void parseCallArguments(CallExpression callExpression) throws ParserException {
-        if (peekTokenIs(TokenType.RPAREN)) {
-            proceedToNextToken();
-            return;
-        }
+    private Expression parseIndexExpression(Expression left) throws ParserException {
+        LocalizedToken openBracketToken = currentToken;
 
         proceedToNextToken();
-        var argument = parseExpression(OperatorPrecedence.LOWEST);
-        callExpression.getArguments().add(argument);
 
-        if (peekTokenIs(TokenType.COMMA)) {
+        Expression index = parseExpression(OperatorPrecedence.LOWEST);
+
+        expectPeek(TokenType.RBRACKET);
+
+        return new IndexExpression(openBracketToken, left, index);
+    }
+
+    private List<Expression> parseExpressionList(TokenType limitingToken) throws ParserException {
+        var expressions = new ArrayList<Expression>();
+
+        if (peekTokenIs(limitingToken)) {
             proceedToNextToken();
-            parseCallArguments(callExpression);
-        } else {
-            expectPeek(TokenType.RPAREN);
+            return expressions;
         }
+
+        while (true) {
+            proceedToNextToken();
+            var argument = parseExpression(OperatorPrecedence.LOWEST);
+            expressions.add(argument);
+            if (peekTokenIs(TokenType.COMMA)) {
+                proceedToNextToken();
+            } else {
+                break;
+            }
+        }
+
+        expectPeek(limitingToken);
+
+        return expressions;
     }
 
     private Expression parseGroupedExpression() throws ParserException {
@@ -238,7 +259,7 @@ public class Parser {
 
         expectPeek(TokenType.LPAREN);
 
-        parseFunctionparameters(functionLiteral);
+        parseFunctionParameters(functionLiteral);
 
         expectPeek(TokenType.LSQIRLY);
 
@@ -247,7 +268,7 @@ public class Parser {
         return functionLiteral;
     }
 
-    private void parseFunctionparameters(FunctionLiteralExpression functionLiteral) throws ParserException {
+    private void parseFunctionParameters(FunctionLiteralExpression functionLiteral) throws ParserException {
         if (peekTokenIs(TokenType.RPAREN)) {
             proceedToNextToken();
             return;
@@ -259,10 +280,17 @@ public class Parser {
 
         if (peekTokenIs(TokenType.COMMA)) {
             proceedToNextToken();
-            parseFunctionparameters(functionLiteral);
+            parseFunctionParameters(functionLiteral);
         } else {
             expectPeek(TokenType.RPAREN);
         }
+    }
+
+    private Expression parseArrayLiteralExpression() throws ParserException {
+        LocalizedToken openBracketToken = currentToken;
+        List<Expression> elements = parseExpressionList(TokenType.RBRACKET);
+
+        return new ArrayLiteralExpression(openBracketToken, elements);
     }
 
     private BlockStatement parseBlockStatement() throws ParserException {

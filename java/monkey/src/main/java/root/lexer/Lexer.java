@@ -47,6 +47,8 @@ public class Lexer {
             case '}' -> TokenType.RSQIRLY.token();
             case '(' -> TokenType.LPAREN.token();
             case ')' -> TokenType.RPAREN.token();
+            case '[' -> TokenType.LBRACKET.token();
+            case ']' -> TokenType.RBRACKET.token();
             case ',' -> TokenType.COMMA.token();
             case ';' -> TokenType.SEMI.token();
             case '+' -> TokenType.PLUS.token();

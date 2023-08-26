@@ -10,4 +10,5 @@ public enum ObjectType {
     FUNCTION,
     BUILTIN_OBJ,
     STRING,
+    ARRAY,
 }

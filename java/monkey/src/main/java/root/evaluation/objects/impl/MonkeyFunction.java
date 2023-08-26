@@ -18,9 +18,7 @@ public class MonkeyFunction extends AbstractMonkeyFunction {
             var parameters = functionLiteral.getParameters();
             var body = functionLiteral.getBody();
 
-            if (arguments.size() != parameters.size()) {
-                throwWorngNumberOfArgumentsError(callToken, parameters.size(), arguments.size());
-            }
+            checkArgumentCount(callToken, parameters.size(), arguments.size());
 
             var environment = new Environment(creationEnv);
 

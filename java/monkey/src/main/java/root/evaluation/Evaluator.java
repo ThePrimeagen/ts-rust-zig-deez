@@ -43,6 +43,8 @@ public class Evaluator {
             case UnitExpression ignored -> MonkeyUnit.INSTANCE;
             case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
             case StringLiteralExpression string -> new MonkeyString(string.toString());
+            case ArrayLiteralExpression array -> evalArrayLiteralExpression(array);
+            case IndexExpression index -> evalIndexExpression(index);
             // Should be impossible (after everything is implemented)
             default -> throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
                     node.getClass().getSimpleName(),
@@ -51,20 +53,63 @@ public class Evaluator {
         };
     }
 
+    private MonkeyObject<?> evalIndexExpression(IndexExpression index) throws EvaluationException {
+        MonkeyObject<?> left = eval(index.getLeft());
+
+        // The switch will have more arms when implementing Objects
+        return switch (left) {
+            case MonkeyArray array -> {
+                MonkeyObject<?> indexer = eval(index.getIndex());
+
+                if (indexer instanceof MonkeyInteger integer) {
+                    if (integer.getValue() < 0 || integer.getValue() >= array.getValue().size()) {
+                        // In the original spec, we're supposed to return Null here, but that seems like a bad idea when
+                        // you can store nulls in arrays
+                        throw new EvaluationException(
+                                index.getIndex().getToken(),
+                                "Index %d outside of range [%d:%d)",
+                                indexer.getValue(),
+                                0,
+                                array.getValue().size()
+                        );
+                    }
+
+                    yield array.getValue().get(integer.getValue().intValue());
+                }
+
+                throw new EvaluationException(
+                        index.getIndex().getToken(),
+                        "Index to an array must be an Expression that yields an Int"
+                );
+            }
+            default -> throw new EvaluationException(index.getLeft().getToken(), "Index operator not supported for %s", left.getType());
+        };
+    }
+
+    private MonkeyObject<?> evalArrayLiteralExpression(ArrayLiteralExpression array) throws EvaluationException {
+        var elements = evalExpressions(array.getElements());
+        return new MonkeyArray(elements);
+    }
+
     private MonkeyObject<?> evalCallExpression(CallExpression callExpression) throws EvaluationException {
         MonkeyObject<?> objectToCall = eval(callExpression.getFunction());
 
         if (objectToCall instanceof AbstractMonkeyFunction functionToCall) {
-            var arguments = new ArrayList<MonkeyObject<?>>();
-
-            for (var expression : callExpression.getArguments()) {
-                arguments.add(eval(expression));
-            }
-
+            var arguments = evalExpressions(callExpression.getArguments());
             return unwrapReturnValue(functionToCall.getValue().apply(callExpression.getToken(), arguments));
         } else {
             throw new EvaluationException(callExpression.getToken(), "Cannot call non Function object");
         }
+    }
+
+    private List<MonkeyObject<?>> evalExpressions(List<Expression> expressions) throws EvaluationException {
+        var objects = new ArrayList<MonkeyObject<?>>();
+
+        for (var expression : expressions) {
+            objects.add(eval(expression));
+        }
+
+        return objects;
     }
 
     private MonkeyObject<?> evalStatements(List<Statement> statements, boolean unwrapReturn) throws EvaluationException {
@@ -245,6 +290,7 @@ public class Evaluator {
         return switch (object) {
             case MonkeyBoolean bool -> bool.getValue();
             case MonkeyNull ignored -> false;
+            case MonkeyUnit ignored -> false;
             default -> true;
         };
     }
