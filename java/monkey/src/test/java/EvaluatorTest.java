@@ -397,6 +397,7 @@ public class EvaluatorTest {
                 new ExpressionTest(MonkeyUnit.class, "fn () { putsNoln(8) }()"),
                 new ExpressionTest(MonkeyInteger.class, "let time = miliTime(); time"),
                 new ExpressionTest(3, "len(\"abc\")"),
+                new ExpressionTest(0, "len(\"\")"),
                 new ExpressionTest(7, "len(\"abc\" + \" \" + \"def\")"),
                 new ExpressionTest("HELLO", "uppercase(\"hello\")"),
                 new ExpressionTest("HI, THIS IS A NUMBER: 42", "uppercase(\"Hi, this is a number: \" + 42)"),

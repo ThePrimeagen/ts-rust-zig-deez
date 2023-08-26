@@ -130,7 +130,7 @@ public class Lexer {
 
         String string = stringBuilder.toString();
 
-        if (character != startingChar || string.isEmpty()) {
+        if (character != startingChar) {
             return TokenType.ILLEGAL.createToken(string);
         }
 

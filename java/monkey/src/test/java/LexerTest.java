@@ -49,6 +49,7 @@ public class LexerTest {
                 '"single quotes\\n"'
                 "\\"escaped quotes\\""
                 "'single in double'"
+                ""
                 "foo bar\"""";
         Lexer l = new Lexer(input);
         Token[] expected = {
@@ -104,6 +105,7 @@ public class LexerTest {
                 new Token(TokenType.STRING, "\"single quotes\n\""),
                 new Token(TokenType.STRING, "\"escaped quotes\""),
                 new Token(TokenType.STRING, "'single in double'"),
+                new Token(TokenType.STRING, ""),
                 new Token(TokenType.STRING, "foo bar"),
                 new Token(TokenType.EOF, "eof"),
         };
