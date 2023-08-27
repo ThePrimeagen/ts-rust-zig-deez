@@ -10,7 +10,6 @@ import root.parser.ParseProgramException;
 import root.parser.Parser;
 
 import java.util.List;
-import java.util.Objects;
 
 public class EvaluatorTest {
 
@@ -377,8 +376,8 @@ public class EvaluatorTest {
         var function = Assertions.assertInstanceOf(MonkeyFunction.class, evaluated);
 
         Assertions.assertEquals(1, function.getFunctionLiteral().getParameters().size());
-        Assertions.assertEquals("x", function.getFunctionLiteral().getParameters().get(0).toString());
-        Assertions.assertEquals("{\n(x + 2)\n}", function.getFunctionLiteral().getBody().toString());
+        Assertions.assertEquals("x", function.getFunctionLiteral().getParameters().get(0).stringRep());
+        Assertions.assertEquals("{\n(x + 2)\n}", function.getFunctionLiteral().getBody().stringRep());
     }
 
     @Test

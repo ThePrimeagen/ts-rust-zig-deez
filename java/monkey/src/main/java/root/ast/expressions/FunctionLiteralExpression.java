@@ -1,7 +1,7 @@
 package root.ast.expressions;
 
 import root.LocalizedToken;
-import root.Token;
+import root.ast.Node;
 import root.ast.statements.BlockStatement;
 
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ public class FunctionLiteralExpression extends Expression {
     private BlockStatement body;
 
     public FunctionLiteralExpression(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     public List<IdentifierExpression> getParameters() {
@@ -30,8 +30,8 @@ public class FunctionLiteralExpression extends Expression {
     }
 
     @Override
-    public String toString() {
-        var params = parameters.stream().map(Object::toString).collect(Collectors.joining(", "));
-        return "fn(%s) %s".formatted(params, body);
+    public String stringRep() {
+        var params = parameters.stream().map(Node::stringRep).collect(Collectors.joining(", "));
+        return "fn(%s) %s".formatted(params, body.stringRep());
     }
 }

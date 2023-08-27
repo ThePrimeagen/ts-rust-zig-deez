@@ -1,7 +1,6 @@
 package root.ast.statements;
 
 import root.LocalizedToken;
-import root.Token;
 import root.ast.expressions.Expression;
 
 public class ReturnStatement extends Statement {
@@ -9,7 +8,7 @@ public class ReturnStatement extends Statement {
     private Expression returnValue;
 
     public ReturnStatement(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     public Expression getReturnValue() {
@@ -21,7 +20,7 @@ public class ReturnStatement extends Statement {
     }
 
     @Override
-    public String toString() {
-        return "%s %s;".formatted(tokenLiteral(), returnValue);
+    public String stringRep() {
+        return "%s %s;".formatted(tokenLiteral(), returnValue.stringRep());
     }
 }

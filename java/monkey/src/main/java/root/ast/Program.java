@@ -10,6 +10,10 @@ public class Program extends Node {
 
     private final List<Statement> statements = new ArrayList<>();
 
+    public Program() {
+        super(null);
+    }
+
     public List<Statement> getStatements() {
         return statements;
     }
@@ -23,7 +27,7 @@ public class Program extends Node {
     }
 
     @Override
-    public String toString() {
-        return statements.stream().map(Object::toString).collect(Collectors.joining("\n"));
+    public String stringRep() {
+        return statements.stream().map(Node::stringRep).collect(Collectors.joining("\n"));
     }
 }

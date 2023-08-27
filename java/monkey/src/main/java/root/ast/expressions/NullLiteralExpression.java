@@ -18,11 +18,11 @@ import root.LocalizedToken;
 public class NullLiteralExpression extends Expression {
 
     public NullLiteralExpression(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     @Override
-    public String toString() {
+    public String stringRep() {
         return "null";
     }
 }

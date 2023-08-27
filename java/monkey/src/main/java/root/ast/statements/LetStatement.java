@@ -1,7 +1,6 @@
 package root.ast.statements;
 
 import root.LocalizedToken;
-import root.Token;
 import root.ast.expressions.Expression;
 import root.ast.expressions.IdentifierExpression;
 
@@ -11,7 +10,7 @@ public class LetStatement extends Statement {
     private Expression value;
 
     public LetStatement(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     public IdentifierExpression getName() {
@@ -31,7 +30,7 @@ public class LetStatement extends Statement {
     }
 
     @Override
-    public String toString() {
-        return "%s %s = %s;".formatted(tokenLiteral(), name, value);
+    public String stringRep() {
+        return "%s %s = %s;".formatted(tokenLiteral(), name.stringRep(), value.stringRep());
     }
 }

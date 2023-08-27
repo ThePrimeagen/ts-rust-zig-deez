@@ -8,7 +8,7 @@ public class BooleanLiteralExpression extends Expression {
     private final Boolean value;
 
     public BooleanLiteralExpression(LocalizedToken token, boolean value) {
-        this.token = token;
+        super(token);
         this.value = value;
     }
 
@@ -17,7 +17,7 @@ public class BooleanLiteralExpression extends Expression {
     }
 
     @Override
-    public String toString() {
+    public String stringRep() {
         return tokenLiteral();
     }
 }

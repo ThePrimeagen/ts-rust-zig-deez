@@ -8,7 +8,7 @@ public class IdentifierExpression extends Expression {
     private String value;
 
     public IdentifierExpression(LocalizedToken token, String value) {
-        this.token = token;
+        super(token);
         this.value = value;
     }
 
@@ -21,7 +21,7 @@ public class IdentifierExpression extends Expression {
     }
 
     @Override
-    public String toString() {
+    public String stringRep() {
         return value;
     }
 }

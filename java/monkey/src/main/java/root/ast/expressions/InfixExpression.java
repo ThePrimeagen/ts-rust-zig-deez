@@ -1,7 +1,6 @@
 package root.ast.expressions;
 
 import root.LocalizedToken;
-import root.Token;
 
 public class InfixExpression extends Expression {
 
@@ -10,7 +9,7 @@ public class InfixExpression extends Expression {
     private Expression right;
 
     public InfixExpression(LocalizedToken token, String operator, Expression left) {
-        this.token = token;
+        super(token);
         this.operator = operator;
         this.left = left;
     }
@@ -32,7 +31,7 @@ public class InfixExpression extends Expression {
     }
 
     @Override
-    public String toString() {
-        return "(%s %s %s)".formatted(left, operator, right);
+    public String stringRep() {
+        return "(%s %s %s)".formatted(left.stringRep(), operator, right.stringRep());
     }
 }

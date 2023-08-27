@@ -8,7 +8,7 @@ public class IntegerLiteralExpression extends Expression {
     private final Long value;
 
     public IntegerLiteralExpression(LocalizedToken token, long value) {
-        this.token = token;
+        super(token);
         this.value = value;
     }
 
@@ -17,7 +17,7 @@ public class IntegerLiteralExpression extends Expression {
     }
 
     @Override
-    public String toString() {
+    public String stringRep() {
         return tokenLiteral();
     }
 }

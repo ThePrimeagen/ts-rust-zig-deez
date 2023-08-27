@@ -1,7 +1,7 @@
 package root.ast.statements;
 
 import root.LocalizedToken;
-import root.Token;
+import root.ast.Node;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ public class BlockStatement extends Statement {
     private final List<Statement> statements = new ArrayList<>();
 
     public BlockStatement(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     public List<Statement> getStatements() {
@@ -24,8 +24,8 @@ public class BlockStatement extends Statement {
     }
 
     @Override
-    public String toString() {
-        var statements = this.statements.stream().map(Object::toString).collect(Collectors.joining("\n"));
+    public String stringRep() {
+        var statements = this.statements.stream().map(Node::stringRep).collect(Collectors.joining("\n"));
         return "{\n%s\n}".formatted(statements);
     }
 }

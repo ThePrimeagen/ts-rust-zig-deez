@@ -47,23 +47,24 @@ public class ParserTest {
                 new ReturnStatementTest("return 5;", 5),
                 new ReturnStatementTest("return true;", true),
                 new ReturnStatementTest("return y;", "y"),
-                new ReturnStatementTest("return;", MonkeyUnit.INSTANCE),
+                new ReturnStatementTest("return ;", MonkeyUnit.INSTANCE),
                 new ReturnStatementTest("return null;", null)
         );
 
         for (ReturnStatementTest(String input, Object expectedValue) : tests) {
             var program = buildProgram(input);
             Assertions.assertEquals(1, program.getStatements().size());
-            var letStatement = Assertions.assertInstanceOf(ReturnStatement.class, program.getStatements().get(0));
+            var returnStatement = Assertions.assertInstanceOf(ReturnStatement.class, program.getStatements().get(0));
 
-            testReturnStatement(letStatement, expectedValue);
+            testReturnStatement(returnStatement, expectedValue);
+            Assertions.assertEquals(input, returnStatement.stringRep());
         }
     }
 
     @Test
     void testString() {
         var codeLine = "let myVar = anotherVar;";
-        var program = new Program() {
+        Program program = new Program() {
             {
                 getStatements().add(
                         new LetStatement(TokenType.LET.token().localize(
@@ -82,7 +83,50 @@ public class ParserTest {
             }
         };
 
-        Assertions.assertEquals("let myVar = anotherVar;", program.toString());
+        Assertions.assertEquals("let myVar = anotherVar;", program.stringRep());
+
+        var input = """
+                let shift = fn(arr, elem) {
+                    if (len(arr) == 0) {
+                        return push(arr, elem);
+                    }
+                                
+                    let iter = fn(acc, rest_) {
+                        let first_ = first(rest_);
+                        putsNoln("first_ " + first_ + " ");
+                        if (!first_) {
+                        puts();
+                            return acc;
+                        }
+                        let acc = push(acc, first_);
+                        puts("acc " + acc + " ");
+                        return iter(acc, rest(rest_));
+                    }
+                                
+                    iter(push([], elem), arr);
+                };""";
+
+        program = buildProgram(input);
+
+        Assertions.assertEquals("""
+                let shift = fn(arr, elem) {
+                if ((len(arr) == 0)) {
+                return push(arr, elem);
+                }
+                let iter = fn(acc, rest_) {
+                let first_ = first(rest_);
+                putsNoln((("first_ " + first_) + " "))
+                if ((!first_)) {
+                puts()
+                return acc;
+                }
+                let acc = push(acc, first_);
+                puts((("acc " + acc) + " "))
+                return iter(acc, rest(rest_));
+                };
+                iter(push([], elem), arr)
+                };""",
+                program.stringRep());
     }
 
     @Test
@@ -324,7 +368,7 @@ public class ParserTest {
         for (List<String> test : tests) {
             var program = buildProgram(test.get(0));
 
-            Assertions.assertEquals(test.get(1), program.toString());
+            Assertions.assertEquals(test.get(1), program.stringRep());
         }
     }
 
@@ -345,7 +389,7 @@ public class ParserTest {
 
         Assertions.assertNull(expression.getAlternative());
 
-        Assertions.assertEquals("if ((x < y)) {\nx\n}", expression.toString());
+        Assertions.assertEquals("if ((x < y)) {\nx\n}", expression.stringRep());
 
         input = "if (y > x) { x } else { y }";
         program = buildProgram(input);
@@ -365,11 +409,11 @@ public class ParserTest {
         var alternative = Assertions.assertInstanceOf(ExpressionStatement.class, expression.getAlternative().getStatements().get(0));
         testIdentifier(alternative.getExpression(), "y");
 
-        Assertions.assertEquals("if ((y > x)) {\nx\n} else {\ny\n}", expression.toString());
+        Assertions.assertEquals("if ((y > x)) {\nx\n} else {\ny\n}", expression.stringRep());
 
         input = "if (true) { x }";
         program = buildProgram(input);
-        Assertions.assertEquals("if (true) {\nx\n}", program.toString());
+        Assertions.assertEquals("if (true) {\nx\n}", program.stringRep());
     }
 
     @Test
@@ -392,7 +436,7 @@ public class ParserTest {
 
         testInfixExpression(expression.getExpression(), "x", "+", "y");
 
-        Assertions.assertEquals("fn(x, y) {\n(x + y)\n}", function.toString());
+        Assertions.assertEquals("fn(x, y) {\n(x + y)\n}", function.stringRep());
     }
 
     private record FunctionParameterTest(String input, List<String> expectedParams) {
@@ -454,7 +498,7 @@ public class ParserTest {
             Assertions.assertEquals(expectedArguments.size(), call.getArguments().size());
 
             for (int i = 0; i < expectedArguments.size(); i++) {
-                Assertions.assertEquals(expectedArguments.get(i), call.getArguments().get(i).toString());
+                Assertions.assertEquals(expectedArguments.get(i), call.getArguments().get(i).stringRep());
             }
         }
     }
@@ -502,13 +546,13 @@ public class ParserTest {
         testIntegerLiteral(array.getElements().get(0), 1L);
         testInfixExpression(array.getElements().get(1), 2, "+", 5);
         testInfixExpression(array.getElements().get(2), 6, "*", 2);
-        Assertions.assertEquals("[1, (2 + 5), (6 * 2)]", array.toString());
+        Assertions.assertEquals("[1, (2 + 5), (6 * 2)]", array.stringRep());
 
         expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(1));
         array = Assertions.assertInstanceOf(ArrayLiteralExpression.class, expression.getExpression());
 
         Assertions.assertEquals(0, array.getElements().size());
-        Assertions.assertEquals("[]", array.toString());
+        Assertions.assertEquals("[]", array.stringRep());
     }
 
     @Test
@@ -523,7 +567,7 @@ public class ParserTest {
 
         testIdentifier(index.getLeft(), "myArray");
         testInfixExpression(index.getIndex(), 1, "+", 1);
-        Assertions.assertEquals("(myArray[(1 + 1)])", index.toString());
+        Assertions.assertEquals("(myArray[(1 + 1)])", index.stringRep());
     }
 
     private void testIntegerLiteral(Expression expression, Long expectedValue) {
@@ -559,7 +603,7 @@ public class ParserTest {
 
     private void testStringLiteral(Expression expression, String value) {
         var stringLiteralExpression = Assertions.assertInstanceOf(StringLiteralExpression.class, expression);
-        Assertions.assertEquals('"' + value + '"', stringLiteralExpression.toString());
+        Assertions.assertEquals('"' + value + '"', stringLiteralExpression.stringRep());
         Assertions.assertEquals(value, stringLiteralExpression.tokenLiteral());
     }
 

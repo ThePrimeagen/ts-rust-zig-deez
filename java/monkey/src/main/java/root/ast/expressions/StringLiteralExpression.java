@@ -5,11 +5,11 @@ import root.LocalizedToken;
 public class StringLiteralExpression extends Expression {
 
     public StringLiteralExpression(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     @Override
-    public String toString() {
-        return "\"%s\"".formatted(token.literal());
+    public String stringRep() {
+        return "\"%s\"".formatted(getToken().literal());
     }
 }

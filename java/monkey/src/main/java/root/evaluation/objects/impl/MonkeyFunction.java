@@ -38,6 +38,6 @@ public class MonkeyFunction extends AbstractMonkeyFunction {
 
     @Override
     public String inspect() {
-        return functionLiteral.toString();
+        return functionLiteral.stringRep();
     }
 }

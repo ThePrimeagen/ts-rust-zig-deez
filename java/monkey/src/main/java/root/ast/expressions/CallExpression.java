@@ -1,6 +1,8 @@
 package root.ast.expressions;
 
 import root.LocalizedToken;
+import root.ast.Node;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,8 +12,8 @@ public class CallExpression extends Expression {
     private final List<Expression> arguments;
 
     public CallExpression(LocalizedToken token, Expression function, List<Expression> arguments) {
+        super(token);
         this.function = function;
-        this.token = token;
         this.arguments = arguments;
     }
 
@@ -24,8 +26,8 @@ public class CallExpression extends Expression {
     }
 
     @Override
-    public String toString() {
-        var arguments = this.arguments.stream().map(Object::toString).collect(Collectors.joining(", "));
-        return "%s(%s)".formatted(function, arguments);
+    public String stringRep() {
+        var arguments = this.arguments.stream().map(Node::stringRep).collect(Collectors.joining(", "));
+        return "%s(%s)".formatted(function.stringRep(), arguments);
     }
 }

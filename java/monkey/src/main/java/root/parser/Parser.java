@@ -274,7 +274,7 @@ public class Parser {
             return;
         }
 
-        proceedToNextToken();
+        expectPeek(TokenType.IDENTIFIER);
         var identifier = new IdentifierExpression(currentToken, currentToken.literal());
         functionLiteral.getParameters().add(identifier);
 

@@ -10,7 +10,7 @@ public class IfExpression extends Expression {
     private BlockStatement alternative;
 
     public IfExpression(LocalizedToken token) {
-        this.token = token;
+        super(token);
     }
 
     public Expression getCondition() {
@@ -38,11 +38,11 @@ public class IfExpression extends Expression {
     }
 
     @Override
-    public String toString() {
-        var ifString = "if (%s) %s".formatted(condition, consequence);
+    public String stringRep() {
+        var ifString = "if (%s) %s".formatted(condition.stringRep(), consequence.stringRep());
 
         if (alternative != null) {
-            ifString += " else %s".formatted(alternative);
+            ifString += " else %s".formatted(alternative.stringRep());
         }
 
         return ifString;

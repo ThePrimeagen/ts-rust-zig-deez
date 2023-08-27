@@ -9,10 +9,11 @@ public class UnitExpression extends Expression {
     public static UnitExpression INSTANCE = new UnitExpression();
 
     private UnitExpression() {
+        super(null);
     }
 
     @Override
-    public String toString() {
+    public String stringRep() {
         return "";
     }
 }
