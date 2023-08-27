@@ -10,6 +10,6 @@ public class StringLiteralExpression extends Expression {
 
     @Override
     public String toString() {
-        return token.literal();
+        return "\"%s\"".formatted(token.literal());
     }
 }

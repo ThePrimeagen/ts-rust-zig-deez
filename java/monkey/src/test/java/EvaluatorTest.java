@@ -3,12 +3,14 @@ import org.junit.jupiter.api.Test;
 import root.evaluation.Evaluator;
 import root.evaluation.EvaluationException;
 import root.evaluation.objects.MonkeyObject;
+import root.evaluation.objects.ObjectType;
 import root.evaluation.objects.impl.*;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
 
 import java.util.List;
+import java.util.Objects;
 
 public class EvaluatorTest {
 
@@ -429,12 +431,22 @@ public class EvaluatorTest {
                 new ExpressionTest(1, "first([1, 2, 3, 4])"),
                 new ExpressionTest(null, "first([])"),
                 new ExpressionTest(49, "last([10 * 8, 7 * 7])"),
-                new ExpressionTest(MonkeyArray.class, "rest([1 * 1, 2 * 2, 3 * 3])"),
+                new ExpressionTest(List.of(4, 9), "rest([1 * 1, 2 * 2, 3 * 3])"),
                 new ExpressionTest(2, "len(rest([1 * 1, 2 * 2, 3 * 3]))"),
-                new ExpressionTest(1, "len(push([], 'test'))"),
-                new ExpressionTest(0, "let arr = []; push(arr, 10); len(arr)"),
+                new ExpressionTest(List.of(), "rest([20])"),
                 new ExpressionTest(null, "rest(rest(rest(rest([1 * 1, 2 * 2, 3 * 3]))))"),
-                new ExpressionTest(null, "rest([])")
+                new ExpressionTest(null, "rest([])"),
+                new ExpressionTest(List.of("test"), "push([], 'test')"),
+                new ExpressionTest(List.of("test", 28), "push(push([], 'test'), 28)"),
+                new ExpressionTest(List.of(), "let arr = []; push(arr, 10); arr"),
+                new ExpressionTest(List.of("h", "e", "l", "l", "o", "!"), "chars('hello!')"),
+                new ExpressionTest(List.of(), "chars('')"),
+                new ExpressionTest(ObjectType.INTEGER.name(), "typeof(2 * 5)"),
+                new ExpressionTest(ObjectType.ARRAY.name(), "typeof([])"),
+                new ExpressionTest(ObjectType.STRING.name(), "typeof('test')"),
+                new ExpressionTest(ObjectType.FUNCTION.name(), "let func = fn (x) { x * x}; typeof(func)"),
+                new ExpressionTest(ObjectType.NULL.name(), "typeof(first([]))"),
+                new ExpressionTest(ObjectType.UNIT.name(), "typeof(puts(10 * 7))")
         );
 
         for (ExpressionTest(Object expected, String input) : tests) {
@@ -521,6 +533,7 @@ public class EvaluatorTest {
             case String s -> testStringObject(s, object);
             case MonkeyUnit unit -> Assertions.assertEquals(object, unit);
             case Class<?> clazz -> Assertions.assertInstanceOf(clazz, object);
+            case List<?> list -> testArrayObject(list, object);
             case null -> testNullObject(object);
             default -> throw new IllegalStateException("Unexpected value: " + expected);
         }
@@ -539,6 +552,15 @@ public class EvaluatorTest {
     private void testStringObject(String expected, MonkeyObject<?> object) {
         var string = Assertions.assertInstanceOf(MonkeyString.class, object);
         Assertions.assertEquals(expected, string.getValue());
+    }
+
+    private void testArrayObject(List<?> expected, MonkeyObject<?> object) {
+        var array = Assertions.assertInstanceOf(MonkeyArray.class, object);
+        Assertions.assertEquals(expected.size(), array.getValue().size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            testObject(expected.get(i), array.getValue().get(i));
+        }
     }
 
     private void testNullObject(MonkeyObject<?> object) {

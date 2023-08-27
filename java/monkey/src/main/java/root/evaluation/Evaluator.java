@@ -42,7 +42,7 @@ public class Evaluator {
             case CallExpression callExpression -> evalCallExpression(callExpression);
             case UnitExpression ignored -> MonkeyUnit.INSTANCE;
             case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
-            case StringLiteralExpression string -> new MonkeyString(string.toString());
+            case StringLiteralExpression string -> new MonkeyString(string.tokenLiteral());
             case ArrayLiteralExpression array -> evalArrayLiteralExpression(array);
             case IndexExpression index -> evalIndexExpression(index);
             // Should be impossible (after everything is implemented)

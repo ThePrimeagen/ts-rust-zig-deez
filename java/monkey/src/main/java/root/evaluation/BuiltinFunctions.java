@@ -105,6 +105,24 @@ public enum BuiltinFunctions {
         elementsCopy.add(arguments.get(1));
 
         return new MonkeyArray(elementsCopy);
+    }),
+    CHARS("chars", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.STRING, "chars");
+
+        var string = (MonkeyString) arguments.get(0);
+        char[] chars = string.getValue().toCharArray();
+        var monkeyChars = new ArrayList<MonkeyObject<?>>();
+
+        for (char c : chars) {
+            monkeyChars.add(new MonkeyString(String.valueOf(c)));
+        }
+
+        return new MonkeyArray(monkeyChars);
+    }),
+    TYPEOF("typeof", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        return new MonkeyString(arguments.get(0).getType().name());
     });
 
     private final String identifier;

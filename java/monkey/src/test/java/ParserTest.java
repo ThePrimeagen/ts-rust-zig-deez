@@ -559,7 +559,7 @@ public class ParserTest {
 
     private void testStringLiteral(Expression expression, String value) {
         var stringLiteralExpression = Assertions.assertInstanceOf(StringLiteralExpression.class, expression);
-        Assertions.assertEquals(value, stringLiteralExpression.toString());
+        Assertions.assertEquals('"' + value + '"', stringLiteralExpression.toString());
         Assertions.assertEquals(value, stringLiteralExpression.tokenLiteral());
     }
 
