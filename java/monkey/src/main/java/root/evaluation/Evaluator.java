@@ -40,7 +40,6 @@ public class Evaluator {
             case IdentifierExpression identifier -> evalIdentifierExpression(identifier);
             case FunctionLiteralExpression functionLiteral -> new MonkeyFunction(environment, functionLiteral);
             case CallExpression callExpression -> evalCallExpression(callExpression);
-            case UnitExpression ignored -> MonkeyUnit.INSTANCE;
             case NullLiteralExpression ignored -> MonkeyNull.INSTANCE;
             case StringLiteralExpression string -> new MonkeyString(string.tokenLiteral());
             case ArrayLiteralExpression array -> evalArrayLiteralExpression(array);
@@ -71,10 +70,7 @@ public class Evaluator {
                     yield array.getValue().get(integer.getValue().intValue());
                 }
 
-                throw new EvaluationException(
-                        index.getIndex().getToken(),
-                        "Index to an array must be an Expression that yields an Int"
-                );
+                throw new EvaluationException(index.getIndex().getToken(), "Index to an array must be an Expression that yields an Int");
             }
             default ->
                     throw new EvaluationException(index.getLeft().getToken(), "Index operator not supported for %s", left.getType());
@@ -149,13 +145,14 @@ public class Evaluator {
 
     private MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) throws EvaluationException {
         MonkeyObject<?> left = eval(infixExpression.getLeft());
-        MonkeyObject<?> right = eval(infixExpression.getRight());
 
         TokenType operation = infixExpression.getToken().type();
 
         if (operation == TokenType.AND || operation == TokenType.OR) {
-            return evalBooleanLogicOperation(infixExpression, left, right);
+            return evalBooleanLogicOperation(infixExpression, left);
         }
+
+        MonkeyObject<?> right = eval(infixExpression.getRight());
 
         if (left instanceof MonkeyInteger integerLeft && right instanceof MonkeyInteger integerRight) {
             return evalIntegerInfixExpression(infixExpression, integerLeft, integerRight);
@@ -191,10 +188,25 @@ public class Evaluator {
         };
     }
 
-    private MonkeyObject<?> evalBooleanLogicOperation(InfixExpression infixExpression, MonkeyObject<?> left, MonkeyObject<?> right) {
+    // We only evaluate the right side if necessary
+    private MonkeyObject<?> evalBooleanLogicOperation(InfixExpression infixExpression, MonkeyObject<?> left) throws EvaluationException {
         return switch (infixExpression.getToken().type()) {
-            case AND -> MonkeyBoolean.nativeToMonkey(isTruthy(left) && isTruthy(right));
-            case OR -> MonkeyBoolean.nativeToMonkey(isTruthy(left) || isTruthy(right));
+            case AND -> {
+                if (isTruthy(left)) {
+                    MonkeyObject<?> right = eval(infixExpression.getRight());
+                    yield MonkeyBoolean.nativeToMonkey(isTruthy(right));
+                }
+
+                yield MonkeyBoolean.FALSE;
+            }
+            case OR -> {
+                if (isTruthy(left)) {
+                    yield MonkeyBoolean.TRUE;
+                }
+
+                MonkeyObject<?> right = eval(infixExpression.getRight());
+                yield MonkeyBoolean.nativeToMonkey(isTruthy(right));
+            }
 
             // Should not be thrown by using the language
             default ->
@@ -289,9 +301,6 @@ public class Evaluator {
 
     private MonkeyObject<?> evalLetStatement(LetStatement letStatement) throws EvaluationException {
         MonkeyObject<?> value = eval(letStatement.getValue());
-        if (value == MonkeyUnit.INSTANCE) {
-            throw new EvaluationException(letStatement.getToken(), "Cannot bind unit (void) to a variable");
-        }
         return environment.set(letStatement.getName().getValue(), value);
     }
 
@@ -304,7 +313,6 @@ public class Evaluator {
         return switch (object) {
             case MonkeyBoolean bool -> bool.getValue();
             case MonkeyNull ignored -> false;
-            case MonkeyUnit ignored -> false;
             default -> true;
         };
     }

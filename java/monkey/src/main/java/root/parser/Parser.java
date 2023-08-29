@@ -67,12 +67,6 @@ public class Parser {
 
         proceedToNextToken();
 
-        // A modification I made to support the new Unit type for functions that don't return anything
-        if (currentTokenIs(TokenType.SEMI)) {
-            returnStatement.setReturnValue(UnitExpression.INSTANCE);
-            return returnStatement;
-        }
-
         returnStatement.setReturnValue(parseExpression(OperatorPrecedence.LOWEST));
 
         if (peekTokenIs(TokenType.SEMI)) {

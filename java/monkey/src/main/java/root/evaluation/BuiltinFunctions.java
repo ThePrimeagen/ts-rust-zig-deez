@@ -14,12 +14,12 @@ public enum BuiltinFunctions {
         BuiltinFunctions.printArgs(arguments);
         System.out.println();
 
-        return MonkeyUnit.INSTANCE;
+        return MonkeyNull.INSTANCE;
     }),
     PUTS_NO_NEWLINE("putsNoln", (callToken, arguments) -> {
         BuiltinFunctions.printArgs(arguments);
 
-        return MonkeyUnit.INSTANCE;
+        return MonkeyNull.INSTANCE;
     }),
     MILI_TIME("miliTime", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 0, arguments.size());

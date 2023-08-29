@@ -7,7 +7,6 @@ import root.ast.statements.ExpressionStatement;
 import root.ast.statements.LetStatement;
 import root.ast.statements.ReturnStatement;
 import root.ast.statements.Statement;
-import root.evaluation.objects.impl.MonkeyUnit;
 import root.lexer.Lexer;
 import root.parser.ParseProgramException;
 import root.parser.Parser;
@@ -47,7 +46,6 @@ public class ParserTest {
                 new ReturnStatementTest("return 5;", 5),
                 new ReturnStatementTest("return true;", true),
                 new ReturnStatementTest("return y;", "y"),
-                new ReturnStatementTest("return ;", MonkeyUnit.INSTANCE),
                 new ReturnStatementTest("return null;", null)
         );
 
@@ -109,23 +107,23 @@ public class ParserTest {
         program = buildProgram(input);
 
         Assertions.assertEquals("""
-                let shift = fn(arr, elem) {
-                if ((len(arr) == 0)) {
-                return push(arr, elem);
-                }
-                let iter = fn(acc, rest_) {
-                let first_ = first(rest_);
-                putsNoln((("first_ " + first_) + " "))
-                if ((!first_)) {
-                puts()
-                return acc;
-                }
-                let acc = push(acc, first_);
-                puts((("acc " + acc) + " "))
-                return iter(acc, rest(rest_));
-                };
-                iter(push([], elem), arr)
-                };""",
+                        let shift = fn(arr, elem) {
+                        if ((len(arr) == 0)) {
+                        return push(arr, elem);
+                        }
+                        let iter = fn(acc, rest_) {
+                        let first_ = first(rest_);
+                        putsNoln((("first_ " + first_) + " "))
+                        if ((!first_)) {
+                        puts()
+                        return acc;
+                        }
+                        let acc = push(acc, first_);
+                        puts((("acc " + acc) + " "))
+                        return iter(acc, rest(rest_));
+                        };
+                        iter(push([], elem), arr)
+                        };""",
                 program.stringRep());
     }
 
@@ -523,36 +521,46 @@ public class ParserTest {
 
     @Test
     void testErrorMessages() {
-        var input = """
-                let foo = add(a,b
-                """;
-
-        var l = new Lexer(input);
-        var p = new Parser(l);
-        List<ParserException> errors = null;
-
-        try {
-            p.parseProgram();
-        } catch (ParseProgramException e) {
-            errors = e.getParseErrors();
-        }
-
-        Assertions.assertNotNull(errors);
-        Assertions.assertEquals(1, errors.size());
-        Assertions.assertEquals(
-                """
-                        InvalidSyntax: Expected next token to be ), got eof
-                        01: let foo = add(a,b
-                        --------------------^""",
-                errors.get(0).getMessage()
+        var tests = List.of(
+                List.of(
+                        "let foo = add(a,b",
+                        """
+                                InvalidSyntax: Expected next token to be ), got eof
+                                01: let foo = add(a,b
+                                --------------------^""",
+                        "b"
+                ),
+                List.of(
+                        "let a = fn () { return; }()",
+                        """
+                                InvalidSyntax: Unexpected token found: ;
+                                01: let a = fn () { return; }()
+                                --------------------------^----""",
+                        ";"
+                )
         );
-        Assertions.assertEquals("b", errors.get(0).getLocalizedToken().literal());
+
+        for (var test : tests) {
+            var l = new Lexer(test.get(0));
+            var p = new Parser(l);
+            List<ParserException> errors = null;
+
+            try {
+                p.parseProgram();
+            } catch (ParseProgramException e) {
+                errors = e.getParseErrors();
+            }
+
+            Assertions.assertNotNull(errors);
+            Assertions.assertEquals(test.get(1), errors.get(0).getMessage());
+            Assertions.assertEquals(test.get(2), errors.get(0).getLocalizedToken().literal());
+        }
     }
 
     @Test
     void testParsingArrayLiterals() {
         var input = "[1, 2 + 5, 6 * 2];\n" +
-                    "[];";
+                "[];";
 
         var program = buildProgram(input);
 
@@ -625,17 +633,12 @@ public class ParserTest {
         Assertions.assertEquals(value, stringLiteralExpression.tokenLiteral());
     }
 
-    private void testUnitExpression(Expression expression) {
-        Assertions.assertInstanceOf(UnitExpression.class, expression);
-    }
-
     private void testLiteralExpression(Expression expression, Object expected) {
         switch (expected) {
             case Integer i -> testIntegerLiteral(expression, i.longValue());
             case Long i -> testIntegerLiteral(expression, i);
             case String s -> testIdentifier(expression, s);
             case Boolean b -> testBooleanLiteral(expression, b);
-            case MonkeyUnit ignored -> testUnitExpression(expression);
             case null -> testNullLiteral(expression);
             default -> throw new AssertionError("Type of exp not handled. got=" + expected.getClass().getSimpleName());
         }
