@@ -26,6 +26,8 @@ public enum TokenType {
     GT(">"),
     EQUAL("=="),
     NOT_EQUAL("!="),
+    AND("&&"), // My addition.
+    OR("||"), // My addition.
 
     // Keywords
     FUNC("fn"),

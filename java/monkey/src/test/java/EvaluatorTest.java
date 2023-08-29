@@ -77,7 +77,15 @@ public class EvaluatorTest {
                 new BooleanTest(false, "null == false"),
                 new BooleanTest(false, "null == true"),
                 new BooleanTest(false, "null == 10"),
-                new BooleanTest(false, "null == 0")
+                new BooleanTest(false, "null == 0"),
+                new BooleanTest(true, "false && false || true "),
+                new BooleanTest(false, "false && (false || true)"),
+                new BooleanTest(true, "10 < 2 || 10 + 2 == 12"),
+                new BooleanTest(false, "10 < 2 && 10 + 2 == 12"),
+                new BooleanTest(true, "null || 10"),
+                new BooleanTest(false, "'hi' && null"),
+                new BooleanTest(true, "let double = fn (n) { 2 * n }; double(10) == 20 || false"),
+                new BooleanTest(true, "let arr = [1, 2, 3]; arr[1] * 2 == 4 || false")
         );
 
         for (BooleanTest(boolean expected, String input) : tests) {
@@ -283,20 +291,6 @@ public class EvaluatorTest {
                                 ------------^--------"""
                 ),
                 List.of(
-                        "[1, 2, 3][3]",
-                        """
-                                Error evaluating the program: Index 3 outside of range [0:3)
-                                01: [1, 2, 3][3]
-                                --------------^-"""
-                ),
-                List.of(
-                        "[1, 2][-1]",
-                        """
-                                Error evaluating the program: Index -1 outside of range [0:2)
-                                01: [1, 2][-1]
-                                -----------^--"""
-                ),
-                List.of(
                         "[1, 2][\"hello\"]",
                         """
                                 Error evaluating the program: Index to an array must be an Expression that yields an Int
@@ -487,15 +481,18 @@ public class EvaluatorTest {
     @Test
     void testArrayIndexExpression() {
         var tests = List.of(
-                new IntegerTest(1, "[1, 2, 3][0]"),
-                new IntegerTest(2, "[1, 2, 3][1]"),
-                new IntegerTest(3, "[1, 2, 3][2]"),
-                new IntegerTest(1, "let i = 0; [1][i]"),
-                new IntegerTest(3, "[1, 2, 3][1 + 1]"),
-                new IntegerTest(2, "let myArr = [1, 2, 3]; myArr[1]"),
-                new IntegerTest(6, "let myArr = [1, 2, 3]; myArr[0] + myArr[1] + myArr[2]"),
-                new IntegerTest(2, "let myArr = [1, 2, 3]; let i = myArr[0]; myArr[i]"),
-                new IntegerTest(10, """
+                new ExpressionTest(1, "[1, 2, 3][0]"),
+                new ExpressionTest(2, "[1, 2, 3][1]"),
+                new ExpressionTest(3, "[1, 2, 3][2]"),
+                new ExpressionTest(null, "[1, 2, 3][3]"),
+                new ExpressionTest(null, "[1, 2, 3][-1]"),
+                new ExpressionTest(1, "let i = 0; [1][i]"),
+                new ExpressionTest(3, "[1, 2, 3][1 + 1]"),
+                new ExpressionTest(6, "[1, 2, 3, 4, 5][2 * 2] + 1"),
+                new ExpressionTest(2, "let myArr = [1, 2, 3]; myArr[1]"),
+                new ExpressionTest(6, "let myArr = [1, 2, 3]; myArr[0] + myArr[1] + myArr[2]"),
+                new ExpressionTest(2, "let myArr = [1, 2, 3]; let i = myArr[0]; myArr[i]"),
+                new ExpressionTest(10, """
                         let myArr = [1, 2, 3, 4];
                         let sum = fn (arr, acc, i) {
                             if (i < 0) {
@@ -507,8 +504,8 @@ public class EvaluatorTest {
                         sum(myArr, 0, 3);""")
         );
 
-        for (IntegerTest(long expected, String input) : tests) {
-            testIntegerObject(expected, testEval(input));
+        for (ExpressionTest(Object expected, String input) : tests) {
+            testObject(expected, testEval(input));
         }
     }
 
