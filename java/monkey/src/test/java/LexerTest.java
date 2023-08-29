@@ -52,6 +52,7 @@ public class LexerTest {
                 "'single in double'"
                 ""
                 "foo bar\"""";
+
         Lexer l = new Lexer(input);
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
@@ -161,7 +162,9 @@ public class LexerTest {
                 } else {
                     return false;
                 }
-                10 == 10; 10 != 9;""";
+                10 == 10; 10 != 9;
+                true || false
+                10 && null""";
 
         Lexer l = new Lexer(input);
 
@@ -191,6 +194,12 @@ public class LexerTest {
                 TokenType.NOT_EQUAL.token(),
                 TokenType.INT.createToken("9"),
                 TokenType.SEMI.token(),
+                TokenType.TRUE.token(),
+                TokenType.OR.token(),
+                TokenType.FALSE.token(),
+                TokenType.INT.createToken("10"),
+                TokenType.AND.token(),
+                TokenType.NULL.token(),
                 TokenType.EOF.token(),
         };
 

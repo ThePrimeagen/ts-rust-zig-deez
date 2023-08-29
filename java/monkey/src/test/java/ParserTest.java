@@ -238,7 +238,9 @@ public class ParserTest {
                 new InfixTestRecord("5 != 5;", 5, "!=", 5),
                 new InfixTestRecord("true == true", true, "==", true),
                 new InfixTestRecord("true != false;", true, "!=", false),
-                new InfixTestRecord("false == false", false, "==", false)
+                new InfixTestRecord("false == false", false, "==", false),
+                new InfixTestRecord("false || true ", false, "||", true),
+                new InfixTestRecord("true && false", true, "&&", false)
         );
 
         for (InfixTestRecord(String input, Object leftValue, String operator, Object rightValue) : infixTests) {
@@ -362,6 +364,22 @@ public class ParserTest {
                 List.of(
                         "add(a * b[2], b[1], 2 * [1, 2][1])",
                         "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"
+                ),
+                List.of(
+                        "true && false || true",
+                        "((true && false) || true)"
+                ),
+                List.of(
+                        "10 + 2 == 12 && 54 > 12",
+                        "(((10 + 2) == 12) && (54 > 12))"
+                ),
+                List.of(
+                        "a[10](27) * 7 && fn(n) { n }(76) || 32 / 1",
+                        "((((a[10])(27) * 7) && fn(n) {\nn\n}(76)) || (32 / 1))"
+                ),
+                List.of(
+                        "10 && 2 && null && 7 || 0",
+                        "((((10 && 2) && null) && 7) || 0)"
                 )
         );
 

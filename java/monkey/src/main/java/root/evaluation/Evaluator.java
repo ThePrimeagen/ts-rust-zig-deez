@@ -47,10 +47,11 @@ public class Evaluator {
             case IndexExpression index -> evalIndexExpression(index);
 
             // Should be impossible
-            default -> throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
-                    node.getClass().getSimpleName(),
-                    node
-            ));
+            default ->
+                    throw new IllegalStateException("INTERPRETER BUG: Unexpected value (unreachable code): %s %s".formatted(
+                            node.getClass().getSimpleName(),
+                            node
+                    ));
         };
     }
 
@@ -64,15 +65,7 @@ public class Evaluator {
 
                 if (indexer instanceof MonkeyInteger integer) {
                     if (integer.getValue() < 0 || integer.getValue() >= array.getValue().size()) {
-                        // In the original spec, we're supposed to return Null here, but that seems like a bad idea when
-                        // you can store nulls in arrays
-                        throw new EvaluationException(
-                                index.getIndex().getToken(),
-                                "Index %d outside of range [%d:%d)",
-                                indexer.getValue(),
-                                0,
-                                array.getValue().size()
-                        );
+                        yield MonkeyNull.INSTANCE;
                     }
 
                     yield array.getValue().get(integer.getValue().intValue());
@@ -83,7 +76,8 @@ public class Evaluator {
                         "Index to an array must be an Expression that yields an Int"
                 );
             }
-            default -> throw new EvaluationException(index.getLeft().getToken(), "Index operator not supported for %s", left.getType());
+            default ->
+                    throw new EvaluationException(index.getLeft().getToken(), "Index operator not supported for %s", left.getType());
         };
     }
 
@@ -149,13 +143,19 @@ public class Evaluator {
 
             // Should be impossible
             default ->
-                    throw new IllegalStateException("Unexpected value (unreachable code): " + prefixExpression.getToken().type());
+                    throw new IllegalStateException("INTERPRETER BUG: Unexpected value (unreachable code): " + prefixExpression.getToken().type());
         };
     }
 
     private MonkeyObject<?> evalInfixExpression(InfixExpression infixExpression) throws EvaluationException {
         MonkeyObject<?> left = eval(infixExpression.getLeft());
         MonkeyObject<?> right = eval(infixExpression.getRight());
+
+        TokenType operation = infixExpression.getToken().type();
+
+        if (operation == TokenType.AND || operation == TokenType.OR) {
+            return evalBooleanLogicOperation(infixExpression, left, right);
+        }
 
         if (left instanceof MonkeyInteger integerLeft && right instanceof MonkeyInteger integerRight) {
             return evalIntegerInfixExpression(infixExpression, integerLeft, integerRight);
@@ -165,9 +165,7 @@ public class Evaluator {
             return evalStringInfixExpression(infixExpression, leftString, rightString);
         }
 
-        TokenType operation = infixExpression.getToken().type();
-
-        // We support string concatenation even if only one side is a String
+        // We support string concatenation even if only one side is a String. A change from the spec
         if (operation == TokenType.PLUS && (left instanceof MonkeyString || right instanceof MonkeyString)) {
             return new MonkeyString(left.inspect() + right.inspect());
         }
@@ -177,7 +175,7 @@ public class Evaluator {
             case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left != right);
 
             default -> {
-                // ¯\_(ツ)_/¯
+                // ¯\_(ツ)_/¯ A change from the spec
                 if (left == MonkeyNull.INSTANCE || right == MonkeyNull.INSTANCE) {
                     yield evalNullInfixExpression(infixExpression, left, right);
                 }
@@ -190,6 +188,17 @@ public class Evaluator {
                         right.getType()
                 );
             }
+        };
+    }
+
+    private MonkeyObject<?> evalBooleanLogicOperation(InfixExpression infixExpression, MonkeyObject<?> left, MonkeyObject<?> right) {
+        return switch (infixExpression.getToken().type()) {
+            case AND -> MonkeyBoolean.nativeToMonkey(isTruthy(left) && isTruthy(right));
+            case OR -> MonkeyBoolean.nativeToMonkey(isTruthy(left) || isTruthy(right));
+
+            // Should not be thrown by using the language
+            default ->
+                    throw new IllegalStateException("INTERPRETER BUG: " + infixExpression.getToken().type() + " is not a Boolean logic operator");
         };
     }
 
@@ -219,7 +228,11 @@ public class Evaluator {
             case GT -> MonkeyBoolean.nativeToMonkey(leftString.getValue().compareTo(rightString.getValue()) > 0);
             case LT -> MonkeyBoolean.nativeToMonkey(leftString.getValue().compareTo(rightString.getValue()) < 0);
 
-            default -> throw new EvaluationException(infixExpression.getToken(), "Operation %s not supported between Strings", infixExpression.getOperator());
+            default -> throw new EvaluationException(
+                    infixExpression.getToken(),
+                    "Operation %s not supported between Strings",
+                    infixExpression.getOperator()
+            );
         };
     }
 
@@ -246,7 +259,7 @@ public class Evaluator {
 
             // Should be impossible
             default ->
-                    throw new IllegalStateException("Unexpected value (unreachable code):" + infixExpression.getToken().type());
+                    throw new IllegalStateException("INTERPRETER BUG: Unexpected value (unreachable code): " + infixExpression.getToken().type());
         };
     }
 

@@ -4,6 +4,8 @@ import root.TokenType;
 
 public enum OperatorPrecedence {
     LOWEST,
+    OR,             // ||
+    AND,            // &&
     EQUALS,         // == or !=
     LESS_GREATER,   // > or <
     SUM,            // + or -
@@ -20,6 +22,8 @@ public enum OperatorPrecedence {
             case LT, GT             -> LESS_GREATER;
             case PLUS, MINUS        -> SUM;
             case SLASH, ASTERISK    -> PRODUCT;
+            case OR                 -> OR;
+            case AND                -> AND;
             default                 -> LOWEST;
         };
     }

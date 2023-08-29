@@ -74,6 +74,22 @@ public class Lexer {
             case '>' -> TokenType.GT.token();
             case '<' -> TokenType.LT.token();
             case '\0' -> TokenType.EOF.token();
+            case '&' -> {
+                if (this.getCc() == '&') {
+                    this.advance();
+                    yield TokenType.AND.token();
+                }
+
+                yield TokenType.ILLEGAL.createToken("&");
+            }
+            case '|' -> {
+                if (this.getCc() == '|') {
+                    this.advance();
+                    yield TokenType.OR.token();
+                }
+
+                yield TokenType.ILLEGAL.createToken("|");
+            }
             case '"', '\'' -> readString(currentChar);
 
             case Character c when isLetter(c) -> {
