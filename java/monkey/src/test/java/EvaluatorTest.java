@@ -404,7 +404,29 @@ public class EvaluatorTest {
                         a"""),
                 new IntegerTest(55, """
                         let fibonacci = fn(x) { if (x < 1) { return 0 } if (x == 1) { return 1 } return fibonacci(x - 1) + fibonacci(x - 2) }
-                        fibonacci(10)""")
+                        fibonacci(10)"""),
+                new IntegerTest(117_669_030_460_994L, """
+                        let fibonacci = fn(n) {
+                            let cache = [0, 1];
+                                                
+                            let iter = fn (n, cache) {
+                                if (len(cache) > n) {
+                                    return [cache[n], cache];
+                                }
+                                                
+                                let fibOne = iter(n - 1, cache);
+                                let cache = fibOne[1];
+                                let fibTwo = iter(n - 2, cache);
+                                let result = fibOne[0] + fibTwo[0];
+                                let cache = push(cache, result);
+                                                
+                                [result, cache]
+                            }
+                                                
+                            iter(n, cache)[0]
+                        }
+                                                
+                        fibonacci(69)""")
         );
 
         for (IntegerTest(long expected, String input) : tests) {

@@ -45,7 +45,8 @@ public class Evaluator {
             case StringLiteralExpression string -> new MonkeyString(string.tokenLiteral());
             case ArrayLiteralExpression array -> evalArrayLiteralExpression(array);
             case IndexExpression index -> evalIndexExpression(index);
-            // Should be impossible (after everything is implemented)
+
+            // Should be impossible
             default -> throw new IllegalStateException("Unexpected value (unreachable code): %s %s".formatted(
                     node.getClass().getSimpleName(),
                     node
