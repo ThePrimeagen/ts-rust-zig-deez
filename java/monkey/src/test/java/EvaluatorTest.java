@@ -78,14 +78,24 @@ public class EvaluatorTest {
                 new BooleanTest(false, "null == true"),
                 new BooleanTest(false, "null == 10"),
                 new BooleanTest(false, "null == 0"),
-                new BooleanTest(true, "false && false || true "),
+                new BooleanTest(true, "true && true"),
+                new BooleanTest(false, "true && false"),
+                new BooleanTest(false, "false && true"),
+                new BooleanTest(false, "false && false"),
+                new BooleanTest(true, "true || true"),
+                new BooleanTest(true, "true || false"),
+                new BooleanTest(true, "false || true"),
+                new BooleanTest(false, "false || false"),
+                new BooleanTest(true, "false && false || true"),
                 new BooleanTest(false, "false && (false || true)"),
                 new BooleanTest(true, "10 < 2 || 10 + 2 == 12"),
                 new BooleanTest(false, "10 < 2 && 10 + 2 == 12"),
                 new BooleanTest(true, "null || 10"),
                 new BooleanTest(false, "'hi' && null"),
                 new BooleanTest(true, "let double = fn (n) { 2 * n }; double(10) == 20 || false"),
-                new BooleanTest(true, "let arr = [1, 2, 3]; arr[1] * 2 == 4 || false")
+                new BooleanTest(true, "let arr = [1, 2, 3]; arr[1] * 2 == 4 || false"),
+                new BooleanTest(false, "let arr = [1, 2, 3]; let i = null; i && arr[i] == 2"),
+                new BooleanTest(true, "true || 0 / 0")
         );
 
         for (BooleanTest(boolean expected, String input) : tests) {
