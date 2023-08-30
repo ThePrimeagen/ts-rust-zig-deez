@@ -10,6 +10,7 @@
 import atom;
 import expression;
 import parser;
+import quote : NodeADT;
 
 import std.algorithm.iteration : joiner;
 import std.array : appender, Appender, empty;
@@ -99,7 +100,8 @@ public:
 
                 const auto blockRepr = reprBuilder[].joiner(",").to!string;
                 return (blockRepr != "") ? format("{%s}", blockRepr) : "{}";
-            }, (Quote value) => format("QUOTE(%s)", value.node.show(this.parser.lexer)),
+            }, (Quote value) => format("%s",
+                    value.node.match!(node => node.show(this.parser.lexer))),
                     (ErrorValue result) => result.message, (ReturnValue result) {
                 return (*result).match!((Unit _) => "", (ErrorValue result) => result.message,
                     (Character c) => format("'%c'", c.value),
@@ -297,10 +299,13 @@ unittest {
 unittest {
     const auto input = "quote(foobar);
 quote(10 + 5);
-quote(foobar + 10 + 5 + barfoo);";
+quote(foobar + 10 + 5 + barfoo);
+quote(unquote(quote(4 + 4)));
+quote(unquote(4 + 4) + unquote(quote(4 + 4)));";
 
-    const string[3] expected = [
-        "foobar", "(10 + 5)", "(((foobar + 10) + 5) + barfoo)"
+    const string[5] expected = [
+        "foobar", "(10 + 5)", "(((foobar + 10) + 5) + barfoo)", "(4 + 4)",
+        "(8 + (4 + 4))"
     ];
 
     auto evaluator = prepareEvaluator(input);
@@ -308,7 +313,7 @@ quote(foobar + 10 + 5 + barfoo);";
 
     foreach (i, result; evaluator.results[]) {
         result.match!((Quote value) {
-            auto quotedValue = value.node.show(evaluator.parser.lexer);
+            auto quotedValue = value.node.match!(node => node.show(evaluator.parser.lexer));
 
             assert(quotedValue == expected[i],
                 format("Quoted node %s does not match expected value %s", quotedValue, expected[i]));

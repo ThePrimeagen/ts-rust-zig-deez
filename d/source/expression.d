@@ -11,6 +11,7 @@ import atom;
 import hashable;
 import lexer;
 import parser;
+import quote;
 
 import openmethods;
 
@@ -144,8 +145,8 @@ shared static this()
     import std.exception : assumeUnique;
 
     BuiltinFunction[string] tempBuiltinFunctions = [
-        "quote": null, "puts": &puts, "len": &len, "first": &first,
-        "last": &last, "rest": &rest, "push": &push,
+        "quote": null  /* handled by another function */ , "puts": &puts,
+        "len": &len, "first": &first, "last": &last, "rest": &rest, "push": &push,
     ];
 
     builtinFunctions = assumeUnique(tempBuiltinFunctions);
@@ -441,6 +442,27 @@ private EvalResult boolIndex(IndexExpressionNode node, EvalResult lhs, bool idx)
     }, _ => EvalResult(ErrorValue("Index operator not supported on RHS")));
 }
 
+/// Helper functions for evaluating unquote calls
+NodeADT convertObjectToASTNode(EvalResult result)
+{
+    return result.match!((bool value) => NodeADT(new BooleanResultNode(value)),
+            (long value) => NodeADT(new IntResultNode(value)),
+            (string value) => NodeADT(new StringResultNode(value)), (Quote value) => value.node,
+            _ => assert(false, "Unreachable object to convert into AST node"));
+}
+
+NodeADT modifyAndEvalUnquote(ref Lexer lexer, Environment* env, NodeADT node)
+{
+    return node.match!((CallExpressionNode callNode) {
+        if (callNode.functionBody.show(lexer) != "unquote" || callNode.args.length != 1) {
+            return node;
+        }
+
+        auto unquoted = eval(callNode.args[0], lexer, env);
+        return convertObjectToASTNode(unquoted);
+    }, exprNode => node);
+}
+
 /// Evaluate function call
 @method EvalResult _eval(CallExpressionNode node, ref Lexer lexer, Environment* env)
 {
@@ -448,7 +470,8 @@ private EvalResult boolIndex(IndexExpressionNode node, EvalResult lhs, bool idx)
 
     return exprValue.match!((BuiltinFunctionKey key) {
         if (key.name == "quote") {
-            return EvalResult(Quote(node.args[0]));
+            auto newNode = modify(node.args[0], lexer, env, &modifyAndEvalUnquote);
+            return EvalResult(Quote(newNode));
         }
 
         auto args = evalExpressions(node.args, lexer, env);

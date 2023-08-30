@@ -9,7 +9,8 @@
 
 import hashable;
 import lexer : Lexer;
-import parser : ExpressionNode, BlockStatement, IdentifierNode;
+import parser : BlockStatement, IdentifierNode;
+import quote : NodeADT;
 
 import std.format : format;
 import std.meta : AliasSeq;
@@ -49,9 +50,9 @@ struct BuiltinFunctionKey {
     string name;
 }
 
-/// Quotes given expression
+/// Wrapper around ADT of parse node
 struct Quote {
-    ExpressionNode node;
+    NodeADT node;
 }
 
 /// Wraps evaluation results

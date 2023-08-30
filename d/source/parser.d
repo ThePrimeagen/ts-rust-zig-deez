@@ -580,7 +580,7 @@ class IdentifierNode : ExpressionNode {
     }
 }
 
-/// String node for expressions
+/// String nodes for expressions
 class StringNode : ExpressionNode {
     /**
      * Constructs string nodes.
@@ -604,7 +604,33 @@ class StringNode : ExpressionNode {
     }
 }
 
-/// Integer node for expressions
+class StringResultNode : ExpressionNode {
+    string value; /// Raw string value
+
+    /**
+     * Constructs string raw value nodes.
+     * Params: value = the string value
+     */
+    this(string value)
+    {
+        super(0);
+        this.value = value;
+    }
+
+    /// Show the main int token
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.String);
+    }
+
+    /// Create int string
+    override string show(ref Lexer lexer)
+    {
+        return this.value;
+    }
+}
+
+/// Integer nodes for expressions
 class IntNode : ExpressionNode {
     /**
      * Constructs int nodes.
@@ -628,7 +654,33 @@ class IntNode : ExpressionNode {
     }
 }
 
-/// Boolean node for expressions
+class IntResultNode : ExpressionNode {
+    long value; /// Raw int value
+
+    /**
+     * Constructs integer raw value nodes.
+     * Params: value = the integer value
+     */
+    this(long value)
+    {
+        super(0);
+        this.value = value;
+    }
+
+    /// Show the main int token
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.Int);
+    }
+
+    /// Create int string
+    override string show(ref Lexer lexer)
+    {
+        return format("%d", this.value);
+    }
+}
+
+/// Boolean nodes for expressions
 class BooleanNode : ExpressionNode {
     /**
      * Constructs boolean nodes.
@@ -649,6 +701,32 @@ class BooleanNode : ExpressionNode {
     override string show(ref Lexer lexer)
     {
         return lexer.tagRepr(mainIdx);
+    }
+}
+
+class BooleanResultNode : ExpressionNode {
+    bool value; /// Raw bool value
+
+    /**
+     * Constructs boolean raw value nodes.
+     * Params: value = the boolean value
+     */
+    this(bool value)
+    {
+        super(0);
+        this.value = value;
+    }
+
+    /// Show the main boolean value
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(this.value ? TokenTag.True : TokenTag.False);
+    }
+
+    /// Create boolean string
+    override string show(ref Lexer lexer)
+    {
+        return to!string(this.value ? TokenTag.True : TokenTag.False);
     }
 }
 
