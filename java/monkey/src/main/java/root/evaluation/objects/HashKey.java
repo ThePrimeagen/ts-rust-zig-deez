@@ -8,16 +8,16 @@ public class HashKey {
 
     private final int baseHash;
 
-    private final String keyStringRep;
+    private final MonkeyObject<?> originalObject;
 
     public HashKey(MonkeyObject<?> object) {
         this.type = object.getType();
         this.baseHash = object.getValue().hashCode();
-        this.keyStringRep = object.inspect();
+        this.originalObject = object;
     }
 
-    public String getKeyStringRep() {
-        return keyStringRep;
+    public MonkeyObject<?> getOriginalObject() {
+        return originalObject;
     }
 
     @Override

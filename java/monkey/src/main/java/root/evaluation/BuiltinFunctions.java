@@ -120,31 +120,83 @@ public enum BuiltinFunctions {
     }),
     SET("set", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 3, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.HASH, "set");
 
-        MonkeyHashable hashable = MonkeyHashable.checkIsHashable(arguments.get(1), callToken);
-        var hash = (MonkeyHash) arguments.get(0);
-        var newHash = new MonkeyHash(new LinkedHashMap<>(hash.getValue()));
-        newHash.getValue().put(hashable.hashKey(), arguments.get(2));
+        return switch (arguments.get(0)) {
+            case MonkeyHash hash -> {
+                MonkeyHashable hashable = MonkeyHashable.checkIsHashable(arguments.get(1), callToken);
 
-        return newHash;
+                var newMap = new LinkedHashMap<>(hash.getValue());
+                newMap.put(hashable.hashKey(), arguments.get(2));
+
+                yield new MonkeyHash(newMap);
+            }
+            case MonkeyArray array -> {
+                MonkeyInteger indexObj = MonkeyArray.verifyIndexIsInteger(arguments.get(1), callToken);
+                int index = indexObj.getValue().intValue();
+
+                if (index < 0 || index >= array.getValue().size()) {
+                    yield array;
+                }
+
+                var newArray = new ArrayList<>(array.getValue());
+                newArray.set(index, arguments.get(2));
+
+                yield new MonkeyArray(newArray);
+            }
+            default ->
+                    throw new EvaluationException(callToken, "Argument to `set` must be HASH or ARRAY, got %s", arguments.get(0).getType());
+        };
     }),
     REMOVE("remove", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 2, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.HASH, "remove");
 
-        MonkeyHashable hashable = MonkeyHashable.checkIsHashable(arguments.get(1), callToken);
+        return switch (arguments.get(0)) {
+            case MonkeyHash hash -> {
+                MonkeyHashable hashable = MonkeyHashable.checkIsHashable(arguments.get(1), callToken);
+                HashKey key = hashable.hashKey();
+
+                if (!hash.getValue().containsKey(key)) {
+                    yield hash;
+                }
+
+                var newMap = new LinkedHashMap<>(hash.getValue());
+                newMap.remove(key);
+
+                yield new MonkeyHash(newMap);
+            }
+            case MonkeyArray array -> {
+                MonkeyInteger indexObj = MonkeyArray.verifyIndexIsInteger(arguments.get(1), callToken);
+                int index = indexObj.getValue().intValue();
+
+                if (index < 0 || index >= array.getValue().size()) {
+                    yield array;
+                }
+
+                var newArray = new ArrayList<>(array.getValue());
+                newArray.remove(index);
+
+                yield new MonkeyArray(newArray);
+            }
+            default ->
+                    throw new EvaluationException(callToken, "Argument to `remove` must be HASH or ARRAY, got %s", arguments.get(0).getType());
+        };
+    }),
+    AS_LIST("asList", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.HASH, "asList");
+
         var hash = (MonkeyHash) arguments.get(0);
-        HashKey key = hashable.hashKey();
+        List<MonkeyObject<?>> asList = hash
+                .getValue()
+                .entrySet()
+                .stream()
+                .flatMap(entry -> {
+                    List<MonkeyObject<?>> list = List.of(entry.getKey().getOriginalObject(), entry.getValue());
+                    return list.stream();
+                })
+                .toList();
 
-        if (!hash.getValue().containsKey(key)) {
-            return hash;
-        }
-
-        var newHash = new MonkeyHash(new LinkedHashMap<>(hash.getValue()));
-        newHash.getValue().remove(key);
-
-        return newHash;
+        return new MonkeyArray(asList);
     }),
     TYPEOF("typeof", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());

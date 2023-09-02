@@ -61,16 +61,13 @@ public class Evaluator {
         return switch (left) {
             case MonkeyArray array -> {
                 MonkeyObject<?> indexer = eval(index.getIndex());
+                MonkeyInteger integer = MonkeyArray.verifyIndexIsInteger(indexer, index.getIndex().getToken());
 
-                if (indexer instanceof MonkeyInteger integer) {
-                    if (integer.getValue() < 0 || integer.getValue() >= array.getValue().size()) {
-                        yield MonkeyNull.INSTANCE;
-                    }
-
-                    yield array.getValue().get(integer.getValue().intValue());
+                if (integer.getValue() < 0 || integer.getValue() >= array.getValue().size()) {
+                    yield MonkeyNull.INSTANCE;
                 }
 
-                throw new EvaluationException(index.getIndex().getToken(), "Index to an array must be an Expression that yields an Int");
+                yield array.getValue().get(integer.getValue().intValue());
             }
             case MonkeyHash hash -> {
                 MonkeyObject<?> indexer = eval(index.getIndex());
