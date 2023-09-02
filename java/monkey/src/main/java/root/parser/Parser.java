@@ -142,6 +142,7 @@ public class Parser {
             case IF -> this::parseIfExpression;
             case FUNC -> this::parseFunctionLiteral;
             case LBRACKET -> this::parseArrayLiteralExpression;
+            case LSQIRLY -> this::parseHashLiteralExpression;
             default -> null;
         };
     }
@@ -280,11 +281,38 @@ public class Parser {
         }
     }
 
-    private Expression parseArrayLiteralExpression() throws ParserException {
+    private ArrayLiteralExpression parseArrayLiteralExpression() throws ParserException {
         LocalizedToken openBracketToken = currentToken;
         List<Expression> elements = parseExpressionList(TokenType.RBRACKET);
 
         return new ArrayLiteralExpression(openBracketToken, elements);
+    }
+
+    private HashLiteralExpression parseHashLiteralExpression() throws ParserException {
+        LocalizedToken openBraceToken = currentToken;
+        var pairs = new ArrayList<HashLiteralExpression.KeyValuePair>();
+
+        while (!peekTokenIs(TokenType.RSQIRLY)) {
+            proceedToNextToken();
+            Expression key = parseExpression(OperatorPrecedence.LOWEST);
+
+            expectPeek(TokenType.COLON);
+
+            proceedToNextToken();
+            Expression value = parseExpression(OperatorPrecedence.LOWEST);
+
+            pairs.add(new HashLiteralExpression.KeyValuePair(key, value));
+
+            if (peekTokenIs(TokenType.COMMA)) {
+                proceedToNextToken();
+            } else if (!peekTokenIs(TokenType.RSQIRLY)) {
+                throw new ParserException("Expected next token to be , or } in Hash Literal", peekToken);
+            }
+        }
+
+        expectPeek(TokenType.RSQIRLY);
+
+        return new HashLiteralExpression(openBraceToken, pairs);
     }
 
     private BlockStatement parseBlockStatement() throws ParserException {

@@ -10,4 +10,5 @@ public enum ObjectType {
     BUILTIN_OBJ,
     STRING,
     ARRAY,
+    HASH,
 }

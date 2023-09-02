@@ -7,6 +7,7 @@ public enum TokenType {
     INT,
     COMMA(","),
     SEMI(";"),
+    COLON(":"),
     LPAREN("("),
     RPAREN(")"),
     LSQIRLY("{"),

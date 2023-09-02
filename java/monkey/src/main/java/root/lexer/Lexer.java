@@ -73,7 +73,7 @@ public class Lexer {
             case '/' -> TokenType.SLASH.token();
             case '>' -> TokenType.GT.token();
             case '<' -> TokenType.LT.token();
-            case '\0' -> TokenType.EOF.token();
+            case ':' -> TokenType.COLON.token();
             case '&' -> {
                 if (this.getCc() == '&') {
                     this.advance();
@@ -91,6 +91,7 @@ public class Lexer {
                 yield TokenType.ILLEGAL.createToken("|");
             }
             case '"', '\'' -> readString(currentChar);
+            case '\0' -> TokenType.EOF.token();
 
             case Character c when isLetter(c) -> {
                 var ident = this.indent(currentChar);

@@ -51,7 +51,8 @@ public class LexerTest {
                 "\\"escaped quotes\\""
                 "'single in double'"
                 ""
-                "foo bar\"""";
+                "foo bar"
+                {"foo": "bar"}""";
 
         Lexer l = new Lexer(input);
         Token[] expected = {
@@ -114,6 +115,11 @@ public class LexerTest {
                 new Token(TokenType.STRING, "'single in double'"),
                 new Token(TokenType.STRING, ""),
                 new Token(TokenType.STRING, "foo bar"),
+                new Token(TokenType.LSQIRLY, "{"),
+                new Token(TokenType.STRING, "foo"),
+                new Token(TokenType.COLON, ":"),
+                new Token(TokenType.STRING, "bar"),
+                new Token(TokenType.RSQIRLY, "}"),
                 new Token(TokenType.EOF, "eof"),
         };
         Assertions.assertDoesNotThrow(() -> {

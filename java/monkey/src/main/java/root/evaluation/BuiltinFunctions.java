@@ -1,9 +1,6 @@
 package root.evaluation;
 
-import root.evaluation.objects.AbstractMonkeyFunction;
-import root.evaluation.objects.MonkeyFunctionInterface;
-import root.evaluation.objects.MonkeyObject;
-import root.evaluation.objects.ObjectType;
+import root.evaluation.objects.*;
 import root.evaluation.objects.impl.*;
 
 import java.util.*;
@@ -39,6 +36,7 @@ public enum BuiltinFunctions {
         return switch (argument) {
             case MonkeyString string -> new MonkeyInteger(string.getValue().length());
             case MonkeyArray array -> new MonkeyInteger(array.getValue().size());
+            case MonkeyHash hash -> new MonkeyInteger(hash.getValue().size());
             default ->
                     throw new EvaluationException(callToken, "Argument to `len` not supported, got %s", argument.getType());
         };
@@ -119,6 +117,34 @@ public enum BuiltinFunctions {
         }
 
         return new MonkeyArray(monkeyChars);
+    }),
+    SET("set", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 3, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.HASH, "set");
+
+        MonkeyHashable hashable = MonkeyHashable.checkIsHashable(arguments.get(1), callToken);
+        var hash = (MonkeyHash) arguments.get(0);
+        var newHash = new MonkeyHash(new LinkedHashMap<>(hash.getValue()));
+        newHash.getValue().put(hashable.hashKey(), arguments.get(2));
+
+        return newHash;
+    }),
+    REMOVE("remove", (callToken, arguments) -> {
+        AbstractMonkeyFunction.checkArgumentCount(callToken, 2, arguments.size());
+        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.HASH, "remove");
+
+        MonkeyHashable hashable = MonkeyHashable.checkIsHashable(arguments.get(1), callToken);
+        var hash = (MonkeyHash) arguments.get(0);
+        HashKey key = hashable.hashKey();
+
+        if (!hash.getValue().containsKey(key)) {
+            return hash;
+        }
+
+        var newHash = new MonkeyHash(new LinkedHashMap<>(hash.getValue()));
+        newHash.getValue().remove(key);
+
+        return newHash;
     }),
     TYPEOF("typeof", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());

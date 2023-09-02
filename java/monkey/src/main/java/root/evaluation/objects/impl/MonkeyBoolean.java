@@ -1,9 +1,11 @@
 package root.evaluation.objects.impl;
 
+import root.evaluation.objects.HashKey;
+import root.evaluation.objects.MonkeyHashable;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.ObjectType;
 
-public class MonkeyBoolean extends MonkeyObject<Boolean> {
+public class MonkeyBoolean extends MonkeyObject<Boolean> implements MonkeyHashable {
 
     public static final MonkeyBoolean TRUE = new MonkeyBoolean(true);
 
@@ -21,5 +23,10 @@ public class MonkeyBoolean extends MonkeyObject<Boolean> {
     @Override
     public String inspect() {
         return String.valueOf(getValue());
+    }
+
+    @Override
+    public HashKey hashKey() {
+        return new HashKey(this);
     }
 }

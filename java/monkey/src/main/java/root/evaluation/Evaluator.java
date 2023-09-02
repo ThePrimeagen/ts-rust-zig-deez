@@ -6,12 +6,12 @@ import root.ast.Program;
 import root.ast.expressions.*;
 import root.ast.statements.*;
 import root.evaluation.objects.AbstractMonkeyFunction;
+import root.evaluation.objects.HashKey;
+import root.evaluation.objects.MonkeyHashable;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class Evaluator {
 
@@ -44,6 +44,7 @@ public class Evaluator {
             case StringLiteralExpression string -> new MonkeyString(string.tokenLiteral());
             case ArrayLiteralExpression array -> evalArrayLiteralExpression(array);
             case IndexExpression index -> evalIndexExpression(index);
+            case HashLiteralExpression hash -> evalHashLiteralExpression(hash);
 
             // Should be impossible
             default ->
@@ -57,7 +58,6 @@ public class Evaluator {
     private MonkeyObject<?> evalIndexExpression(IndexExpression index) throws EvaluationException {
         MonkeyObject<?> left = eval(index.getLeft());
 
-        // The switch will have more arms when implementing Objects
         return switch (left) {
             case MonkeyArray array -> {
                 MonkeyObject<?> indexer = eval(index.getIndex());
@@ -72,9 +72,33 @@ public class Evaluator {
 
                 throw new EvaluationException(index.getIndex().getToken(), "Index to an array must be an Expression that yields an Int");
             }
+            case MonkeyHash hash -> {
+                MonkeyObject<?> indexer = eval(index.getIndex());
+
+
+                MonkeyHashable hashable = MonkeyHashable.checkIsHashable(indexer, index.getIndex().getToken());
+                MonkeyObject<?> objectInMap = hash.getValue().get(hashable.hashKey());
+
+                yield objectInMap == null ? MonkeyNull.INSTANCE : objectInMap;
+            }
             default ->
                     throw new EvaluationException(index.getLeft().getToken(), "Index operator not supported for %s", left.getType());
         };
+    }
+
+    private MonkeyObject<?> evalHashLiteralExpression(HashLiteralExpression hash) throws EvaluationException {
+        var pairs = new LinkedHashMap<HashKey, MonkeyObject<?>>();
+
+        for (HashLiteralExpression.KeyValuePair(Expression key, Expression value) : hash.getPairs()) {
+            MonkeyObject<?> keyObject = eval(key);
+
+            if (keyObject instanceof MonkeyHashable hashable) {
+                MonkeyObject<?> valueObject = eval(value);
+                pairs.put(hashable.hashKey(), valueObject);
+            }
+        }
+
+        return new MonkeyHash(pairs);
     }
 
     private MonkeyObject<?> evalArrayLiteralExpression(ArrayLiteralExpression array) throws EvaluationException {

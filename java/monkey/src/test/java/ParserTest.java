@@ -12,7 +12,9 @@ import root.parser.ParseProgramException;
 import root.parser.Parser;
 import root.parser.ParserException;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ParserTest {
 
@@ -560,7 +562,7 @@ public class ParserTest {
     @Test
     void testParsingArrayLiterals() {
         var input = "[1, 2 + 5, 6 * 2];\n" +
-                "[];";
+                    "[];";
 
         var program = buildProgram(input);
 
@@ -594,6 +596,70 @@ public class ParserTest {
         testIdentifier(index.getLeft(), "myArray");
         testInfixExpression(index.getIndex(), 1, "+", 1);
         Assertions.assertEquals("(myArray[(1 + 1)])", index.stringRep());
+    }
+
+    private record HashLiteralTest(Map<Object, Object> expected, String input) {
+    }
+
+    @Test
+    void testParseHashLiterals() {
+        var tests = List.of(
+                new HashLiteralTest(Map.of(), "{}"),
+                new HashLiteralTest(
+                        new LinkedHashMap<>() {
+                            {
+                                put("\"one\"", 1);
+                                put("\"two\"", 2);
+                                put("\"three\"", 3);
+                            }
+                        },
+                        """
+                                {"one" : 1, "two" : 2, "three": 3}"""
+                ),
+                new HashLiteralTest(
+                        new LinkedHashMap<>() {
+                            {
+                                put(true, "\"verdadeiro\"");
+                                put(false, "\"falso\"");
+                            }
+                        },
+                        """
+                                {true: "verdadeiro", false: "falso"}"""
+                ),
+                new HashLiteralTest(Map.of(1, 100), "{1: 100}")
+        );
+
+        for (HashLiteralTest(Map<Object, Object> expected, String input) : tests) {
+            var program = buildProgram(input);
+
+            Assertions.assertEquals(1, program.getStatements().size());
+            var expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+            var hash = Assertions.assertInstanceOf(HashLiteralExpression.class, expression.getExpression());
+            Assertions.assertEquals(expected.size(), hash.getPairs().size());
+
+            int i = 0;
+
+            for (var entry : expected.entrySet()) {
+                testLiteralExpression(hash.getPairs().get(i).key(), entry.getKey());
+                testLiteralExpression(hash.getPairs().get(i).value(), entry.getValue());
+                i++;
+            }
+        }
+    }
+
+    @Test
+    void testParseHashLiteralsWithExpressions() {
+        var input = "{ 3 - 1 : 2 * 5 }";
+
+        var program = buildProgram(input);
+
+        Assertions.assertEquals(1, program.getStatements().size());
+        var expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
+        var hash = Assertions.assertInstanceOf(HashLiteralExpression.class, expression.getExpression());
+        Assertions.assertEquals(1, hash.getPairs().size());
+
+        testInfixExpression(hash.getPairs().get(0).key(), 3, "-", 1);
+        testInfixExpression(hash.getPairs().get(0).value(), 2, "*", 5);
     }
 
     private void testIntegerLiteral(Expression expression, Long expectedValue) {
@@ -637,6 +703,7 @@ public class ParserTest {
         switch (expected) {
             case Integer i -> testIntegerLiteral(expression, i.longValue());
             case Long i -> testIntegerLiteral(expression, i);
+            case String s when s.startsWith("\"") && s.endsWith("\"") -> testStringLiteral(expression, s.substring(1, s.length() - 1));
             case String s -> testIdentifier(expression, s);
             case Boolean b -> testBooleanLiteral(expression, b);
             case null -> testNullLiteral(expression);
