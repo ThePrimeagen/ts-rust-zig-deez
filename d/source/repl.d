@@ -31,6 +31,7 @@ void repl()
 
     char* currLine;
     auto env = new Environment();
+    auto macroEnv = new Environment();
 
     // Context for REPL continuation
     auto prevLexer = Lexer("");
@@ -85,7 +86,10 @@ void repl()
             continue;
         }
 
-        auto evaluator = Evaluator(currParser, env, oldStatementCount);
+        auto evaluator = Evaluator(currParser, env, macroEnv, oldStatementCount);
+
+        evaluator.defineMacros();
+        evaluator.expandMacros();
         evaluator.evalProgram();
 
         auto result = evaluator.showResult();

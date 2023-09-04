@@ -40,6 +40,13 @@ struct Function {
     Environment* env; /// Environment containing symbols
 }
 
+/// Wrapper around Macro components for evaluation result
+struct Macro {
+    IdentifierNode[]* parameters; /// Macro parameters
+    BlockStatement* macroBody; /// Main macro body
+    Environment* env; /// Environment containing symbols
+}
+
 /// Wrapper around character
 struct Character {
     char value;
@@ -58,7 +65,7 @@ struct Quote {
 /// Wraps evaluation results
 alias EvalResult = SumType!(long, bool, This[], Tuple!(This, "key", This,
         "value")[HashKey], string, ErrorValue, void*, Character, Unit,
-        Function, BuiltinFunctionKey, Quote, const This*);
+        Function, Macro, BuiltinFunctionKey, Quote, const This*);
 
 /// Type for result array
 alias Results = EvalResult.Types[2];
@@ -100,6 +107,19 @@ Environment* newEnclosedEnvironment(Environment* outer)
 
 /// Environment extension for function
 Environment* extendFunctionEnv(Function literal, EvalResult[] args, ref Lexer lexer)
+{
+    auto enclosedEnv = newEnclosedEnvironment(literal.env);
+
+    foreach (paramIdx, param; (*literal.parameters).enumerate(0)) {
+        const auto id = param.show(lexer);
+        enclosedEnv.items[id] = args[paramIdx];
+    }
+
+    return enclosedEnv;
+}
+
+/// Environment extension for macro
+Environment* extendMacroEnv(Macro literal, Quote[] args, ref Lexer lexer)
 {
     auto enclosedEnv = newEnclosedEnvironment(literal.env);
 

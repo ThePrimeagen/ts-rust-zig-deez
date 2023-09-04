@@ -71,6 +71,7 @@ shared static this()
         TokenTag.Int: &parseInt, TokenTag.True: &parseBoolean,
         TokenTag.False: &parseBoolean, TokenTag.LParen: &parseGroupedExpression,
         TokenTag.If: &parseIfExpression, TokenTag.Function: &parseFunctionLiteral,
+        TokenTag.Macro: &parseMacroLiteral,
         TokenTag.LBracket: &parseArrayExpression,
         TokenTag.LSquirly: &parseHashExpression
     ];
@@ -348,6 +349,38 @@ ExpressionNode parseFunctionLiteral(ref Parser parser)
     return new FunctionLiteralNode(start, params, functionBlock);
 }
 
+/// Parse macro literals
+ExpressionNode parseMacroLiteral(ref Parser parser)
+{
+    const auto start = parser.position;
+    const auto tokenTags = parser.tokenTags;
+
+    // expect lparen and skip before macro parameters
+    if (parser.peek() != TokenTag.LParen) {
+        parser.skipToken();
+
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LParen], tokenTags[parser.position]));
+
+        return null;
+    }
+
+    parser.skipTokens(2);
+    auto params = parser.parseFunctionParameters();
+
+    // expect lsquirly and skip before block statement
+    if (tokenTags[parser.position] != TokenTag.LSquirly) {
+        parser.errors.put(format("Expected next token to be '%s'; got %s instead",
+                tagReprs[TokenTag.LSquirly], tokenTags[parser.position]));
+
+        return null;
+    }
+
+    auto macroBlock = parser.parseBlockStatement();
+
+    return new MacroLiteralNode(start, params, macroBlock);
+}
+
 /// Parse call expressions
 ExpressionNode parseCallExpression(ref Parser parser, ref ExpressionNode functionBody, Precedence _)
 {
@@ -484,6 +517,11 @@ class LetStatement : StatementNode {
     override string show(ref Lexer lexer)
     {
         return format("let %s = %s;", super.tokenLiteral(lexer), this.expr.show(lexer));
+    }
+
+    string varName(ref Lexer lexer)
+    {
+        return super.tokenLiteral(lexer);
     }
 }
 
@@ -866,7 +904,55 @@ class FunctionLiteralNode : ExpressionNode {
         }
 
         return format("fn(%s) %s", paramListing, (this.functionBody !is null)
-                ? functionBody.show(lexer) : "{}");
+                ? this.functionBody.show(lexer) : "{}");
+    }
+}
+
+/// Expression node for macro literals
+class MacroLiteralNode : ExpressionNode {
+    IdentifierNode[] parameters; /// Macro parameters
+    BlockStatement macroBody; /// Main macro body
+
+    /**
+     * Constructs the macro literal expression
+     * Params:
+     * mainIdx = the index of the operator tag
+     * parameters = the macro parameters
+     * functionBody = the body of the macro
+     */
+    this(ulong mainIdx, IdentifierNode[] parameters, ref BlockStatement macroBody)
+    {
+        super(mainIdx);
+        this.parameters = parameters;
+        this.macroBody = macroBody;
+    }
+
+    /// Show the if keyword
+    override string tokenLiteral(ref Lexer lexer)
+    {
+        return to!string(TokenTag.Macro);
+    }
+
+    /// Create expression string
+    override string show(ref Lexer lexer)
+    {
+        string paramListing = "";
+        if (this.parameters !is null && this.parameters.length) {
+            auto paramsBuilder = appender!(string[]);
+            paramsBuilder.reserve(this.parameters.length);
+
+            foreach (param; this.parameters) {
+                auto repr = param.show(lexer);
+                if (repr !is null && repr != "") {
+                    paramsBuilder.put(repr);
+                }
+            }
+
+            paramListing = paramsBuilder[].joiner(", ").to!string;
+        }
+
+        return format("macro(%s) %s", paramListing, (this.macroBody !is null)
+                ? this.macroBody.show(lexer) : "{}");
     }
 }
 
@@ -1722,6 +1808,20 @@ unittest {
 unittest {
     const auto input = "fn(x, y) { x + y; }(2, 3);";
     const auto expected = "fn(x, y) { (x + y); }(2, 3);";
+
+    auto lexer = Lexer(input);
+    lexer.tokenize();
+
+    auto parser = Parser(lexer);
+    parser.parseProgram();
+
+    validateParseProgram(expected, lexer, parser);
+}
+
+/// Macro literal test
+unittest {
+    const auto input = "macro(x, y) { return x + y; }";
+    const auto expected = "macro(x, y) { return (x + y); };";
 
     auto lexer = Lexer(input);
     lexer.tokenize();

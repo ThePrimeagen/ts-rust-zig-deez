@@ -21,8 +21,8 @@ import std.range : enumerate;
 /// Wrapper around ParseNode for input in modifier function
 alias NodeADT = SumType!(CallExpressionNode, IdentifierNode, HashLiteralNode,
         InfixExpressionNode, PrefixExpressionNode, IndexExpressionNode, IfExpressionNode,
-        FunctionLiteralNode, ArrayLiteralNode, BooleanNode, IntNode, StringNode,
-        BooleanResultNode, IntResultNode, StringResultNode, ExpressionStatement,
+        FunctionLiteralNode, MacroLiteralNode, ArrayLiteralNode, BooleanNode,
+        IntNode, StringNode, BooleanResultNode, IntResultNode, StringResultNode, ExpressionStatement,
         BlockStatement, ReturnStatement, LetStatement, ExpressionNode, StatementNode);
 
 /// Wrapper around node modifier functions
@@ -146,6 +146,21 @@ NodeADT modify(virtual!ExpressionNode node, ref Lexer lexer, Environment* env,
     return NodeADT(node);
 }
 
+/// Return modified macro definition node
+@method NodeADT _modify(MacroLiteralNode node, ref Lexer lexer, Environment* env,
+        NodeModifierFunction modifier)
+{
+    foreach (i, parameter; node.parameters.enumerate(0)) {
+        node.parameters[i] = modify(parameter, lexer, env, modifier)
+            .match!((IdentifierNode node) => node, _ => assert(false, "Unhandled parameter case"));
+    }
+
+    node.macroBody = modifyStatement(node.macroBody, lexer, env, modifier)
+        .match!((BlockStatement node) => node, _ => assert(false, "Unhandled true branch case"));
+
+    return NodeADT(node);
+}
+
 /// Return modified array node
 @method NodeADT _modify(ArrayLiteralNode node, ref Lexer lexer, Environment* env,
         NodeModifierFunction modifier)
@@ -228,8 +243,7 @@ NodeADT modifyStatement(virtual!StatementNode node, ref Lexer lexer,
 {
     foreach (i, statement; node.statements.enumerate(0)) {
         node.statements[i] = modifyStatement(statement, lexer, env, modifier)
-            .match!((BlockStatement node) => node, _ => assert(false, "Unhandled statement case"));
-
+            .match!((StatementNode node) => node, _ => assert(false, "Unhandled statement case"));
     }
 
     return NodeADT(node);

@@ -10,9 +10,10 @@
 import atom;
 import expression;
 import parser;
-import quote : NodeADT;
+import quote;
 
 import std.algorithm.iteration : joiner;
+import std.algorithm.mutation : remove;
 import std.array : appender, Appender, empty;
 import std.conv : to;
 import std.format : format;
@@ -26,6 +27,7 @@ struct Evaluator {
 private:
     Parser parser; /// Stores statement nodes for evaluation
     Environment* env; /// Environment for variables and definitions
+    Environment* macroEnv; /// Environment for macros
     StatementNode[] progStatements; /// Program statements
     ulong position; /// Current statement cursor
     ulong statementCount; /// Cached statement count
@@ -37,11 +39,13 @@ public:
      * Params:
      * parser = the parser with statements to evaluate
      * env = the environment
+     * macroEnv = the macro environment
      */
-    this(ref Parser parser, Environment* env)
+    this(ref Parser parser, Environment* env, Environment* macroEnv)
     {
         this.parser = parser;
         this.env = env;
+        this.macroEnv = macroEnv;
         this.results = appender!(EvalResult[]);
         this.position = 0;
         this.progStatements = parser.program.statements[];
@@ -52,17 +56,67 @@ public:
      * Constucts the evaluator from the checkpoint.
      * Params:
      * parser = the parser with statements to evaluate
-     * env = the environment
+     * env = the main environment
+     * macroEnv = the macro environment
      * position = the starting statement
      */
-    this(ref Parser parser, Environment* env, ulong position)
+    this(ref Parser parser, Environment* env, Environment* macroEnv, ulong position)
     {
         this.parser = parser;
         this.env = env;
+        this.macroEnv = macroEnv;
         this.results = appender!(EvalResult[]);
         this.position = position;
         this.progStatements = parser.program.statements[];
         this.statementCount = progStatements.length;
+    }
+
+    /// Add macros in its own environment
+    void defineMacros()
+    {
+        auto definitions = appender!(ulong[]);
+
+        for (ulong i = this.position; i < this.statementCount; i++) {
+            auto statement = this.progStatements[i];
+
+            // Check if statement is macro definition
+            auto letStatement = cast(LetStatement)(statement);
+
+            if (letStatement !is null) {
+                auto macroLiteral = cast(MacroLiteralNode)(letStatement.expr);
+
+                if (macroLiteral !is null) {
+                    // Add macro
+                    auto macroNode = Macro(&macroLiteral.parameters,
+                            &macroLiteral.macroBody, this.macroEnv);
+                    auto key = letStatement.varName(this.parser.lexer);
+                    this.macroEnv.items[key] = macroNode;
+
+                    definitions.put(i);
+                }
+            }
+        }
+
+        // TODO: Find faster delete in place
+        auto defArray = definitions[];
+        foreach_reverse (idx; defArray) {
+            this.progStatements.remove(idx);
+        }
+
+        if (!defArray.empty) {
+            parser.program.statements = this.progStatements.appender();
+        }
+    }
+
+    /// Expand every macro in the program
+    void expandMacros()
+    {
+        for (ulong i = this.position; i < this.statementCount; i++) {
+            this.progStatements[i] = modifyStatement(this.progStatements[i],
+                    this.parser.lexer, this.macroEnv, &modifyAndExpandMacro).match!(
+                    (StatementNode st) => st, _ => assert(false,
+                    "Cannot modify non-statement node during macro expansion"));
+        }
     }
 
     /// Evaluate the entire program
@@ -106,7 +160,8 @@ public:
                 return (*result).match!((Unit _) => "", (ErrorValue result) => result.message,
                     (Character c) => format("'%c'", c.value),
                     (long value) => format("%d", value), (value) => format("%s", value));
-            }, (Function _) => "<Function>", (Unit _) => "", (result) => format("%s", result));
+            }, (Function _) => "<Function>", (Macro _) => "<Macro>", (Unit _) => "",
+                    (result) => format("%s", result));
         }
     }
 }
@@ -123,7 +178,13 @@ private Evaluator* prepareEvaluator(const string input)
     parser.parseProgram();
 
     auto env = new Environment();
-    return new Evaluator(parser, env);
+    auto macroEnv = new Environment();
+    auto evaluator = new Evaluator(parser, env, macroEnv);
+
+    evaluator.defineMacros();
+    evaluator.expandMacros();
+
+    return evaluator;
 }
 
 /// Basic integer test
@@ -651,5 +712,32 @@ counter(0);
             assert(value == expected,
             format("Bool value %s does not match expected value %s", value, expected));
         }, _ => assert(false, "Unhandled type in program"));
+    }, _ => assert(false, "Unhandled type in program"));
+}
+
+/// Basic macro test
+unittest {
+    const string input = "let unless = macro(condition, consequence, alternative) {
+      quote(if (!(unquote(condition))) {
+          unquote(consequence);
+          } else {
+          unquote(alternative);
+          });
+    };
+
+unless(10 > 5, \"nope, not greater\", \"yep, greater\");
+";
+
+    const string expected = "yep, greater";
+
+    auto evaluator = prepareEvaluator(input);
+
+    evaluator.evalProgram();
+
+    auto result = evaluator.results[][$ - 1];
+
+    result.match!((string value) {
+        assert(value == expected,
+            format("string value %s does not match expected value %d", value, expected));
     }, _ => assert(false, "Unhandled type in program"));
 }

@@ -329,6 +329,12 @@ private EvalResult stringInfix(InfixExpressionNode node, string lValue, EvalResu
     return EvalResult(Function(&node.parameters, &node.functionBody, env));
 }
 
+/// Generate macro literal from node
+@method EvalResult _eval(MacroLiteralNode node, ref Lexer lexer, Environment* env)
+{
+    return EvalResult(Macro(&node.parameters, &node.macroBody, env));
+}
+
 /// Evaluate array literal
 @method EvalResult _eval(ArrayLiteralNode node, ref Lexer lexer, Environment* env)
 {
@@ -460,6 +466,39 @@ NodeADT modifyAndEvalUnquote(ref Lexer lexer, Environment* env, NodeADT node)
 
         auto unquoted = eval(callNode.args[0], lexer, env);
         return convertObjectToASTNode(unquoted);
+    }, exprNode => node);
+}
+
+NodeADT modifyAndExpandMacro(ref Lexer lexer, Environment* env, NodeADT node)
+{
+    return node.match!((CallExpressionNode callNode) {
+        // check if call node is macro
+        auto id = cast(IdentifierNode)(callNode.functionBody);
+        if (id is null) {
+            return node;
+        }
+
+        const auto key = lexer.tagRepr(id.mainIdx);
+        if (key !in env.items) {
+            return node;
+        }
+
+        return env.items[key].match!((Macro macroLiteral) {
+            // quote arguments and extend macro environment
+            auto args = appender!(Quote[])();
+            foreach (arg; callNode.args) {
+                args.put(Quote(NodeADT(arg)));
+            }
+
+            auto extendedEnv = extendMacroEnv(macroLiteral, args[], lexer);
+
+            // evaluate macro body based on extended env
+            auto evaluated = evalStatement(*(macroLiteral.macroBody), lexer, extendedEnv);
+
+            // check if eval'd result is quote; otherwise, panic
+            return evaluated.match!((Quote quote) => quote.node, _ => assert(false,
+            "We only support returning AST nodes from macros"));
+        }, _ => node);
     }, exprNode => node);
 }
 

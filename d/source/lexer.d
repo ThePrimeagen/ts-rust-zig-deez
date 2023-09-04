@@ -41,6 +41,7 @@ enum TokenTag : ubyte {
     LBracket,
     RBracket,
     Function,
+    Macro,
     Let,
     True,
     False,
@@ -81,9 +82,9 @@ shared static this()
     import std.exception : assumeUnique;
 
     TokenTag[string] tempKeywords = [
-        "fn": TokenTag.Function, "let": TokenTag.Let, "true": TokenTag.True,
-        "false": TokenTag.False, "if": TokenTag.If, "else": TokenTag.Else,
-        "return": TokenTag.Return
+        "fn": TokenTag.Function, "let": TokenTag.Let, "macro": TokenTag.Macro,
+        "true": TokenTag.True, "false": TokenTag.False, "if": TokenTag.If,
+        "else": TokenTag.Else, "return": TokenTag.Return
     ];
 
     string[TokenTag] tempRepr = [
@@ -519,6 +520,7 @@ let firstName = \"Thorsten\";
 let lastName = \"Ball\";
 let fullName = fn(first, last) { first + \" \" + last };
 fullName(firstName, lastName);
+macro(x, y) { x + y; };
 ";
 
     const ulong[] expectedStart = [
@@ -526,7 +528,8 @@ fullName(firstName, lastName);
         45, 47, 51, 53, 55, 56, 58, 59, 61, 65, 72, 74, 77, 78, 82, 84, 87, 88,
         90, 94, 104, 107, 116, 118, 122, 131, 134, 139, 141, 145, 154, 156,
         158, 159, 164, 166, 170, 172, 174, 180, 183, 186, 188, 193, 194, 196,
-        204, 205, 214, 216, 224, 225, input.length
+        204, 205, 214, 216, 224, 225, 227, 232, 233, 234, 236, 237, 239, 241,
+        243, 245, 246, 248, 249, input.length
     ];
 
     with (TokenTag) {
@@ -539,7 +542,8 @@ fullName(firstName, lastName);
             Ident, Assign, String, Semicolon, Let, Ident, Assign, Function,
             LParen, Ident, Comma, Ident, RParen, LSquirly, Ident, Plus, String,
             Plus, Ident, RSquirly, Semicolon, Ident, LParen, Ident, Comma,
-            Ident, RParen, Semicolon, Eof
+            Ident, RParen, Semicolon, Macro, LParen, Ident, Comma, Ident, RParen,
+            LSquirly, Ident, Plus, Ident, Semicolon, RSquirly, Semicolon, Eof
         ];
 
         auto lexer = Lexer(input);
