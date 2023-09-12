@@ -89,10 +89,9 @@ public class Evaluator {
         for (HashLiteralExpression.KeyValuePair(Expression key, Expression value) : hash.getPairs()) {
             MonkeyObject<?> keyObject = eval(key);
 
-            if (keyObject instanceof MonkeyHashable hashable) {
-                MonkeyObject<?> valueObject = eval(value);
-                pairs.put(hashable.hashKey(), valueObject);
-            }
+            MonkeyHashable hashable = MonkeyHashable.checkIsHashable(keyObject, key.getToken());
+            MonkeyObject<?> valueObject = eval(value);
+            pairs.put(hashable.hashKey(), valueObject);
         }
 
         return new MonkeyHash(pairs);

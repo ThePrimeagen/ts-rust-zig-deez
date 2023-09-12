@@ -298,8 +298,21 @@ public class EvaluatorTest {
                                 Error evaluating the program: Index to an array must be an Expression that yields an Int
                                 01: [1, 2]["hello"]
                                 -----------^-------"""
+                ),
+                List.of(
+                        "{ [1, 2]: 3 }",
+                        """
+                                Error evaluating the program: Index to an hash must be an Expression that yields an Int, String or Boolean
+                                01: { [1, 2]: 3 }
+                                ------^----------"""
+                ),
+                List.of(
+                        "{ fn(x) { x }: 'func' }",
+                        """
+                                Error evaluating the program: Index to an hash must be an Expression that yields an Int, String or Boolean
+                                01: { fn(x) { x }: 'func' }
+                                ------^--------------------"""
                 )
-
         );
 
         for (var test : tests) {
@@ -419,6 +432,11 @@ public class EvaluatorTest {
                 new ExpressionTest(4, "len([1, 2, 3, 4])"),
                 new ExpressionTest(0, "len([])"),
                 new ExpressionTest(7, "len(\"abc\" + \" \" + \"def\")"),
+                new ExpressionTest(0, "len({})"),
+                new ExpressionTest(2, "len({1: 10, 2: 20})"),
+                new ExpressionTest(3, "len(set({1: 10, 2: 20}, 3, 30))"),
+                new ExpressionTest(2, "len(remove({1: 10, 2: 20}, 3))"),
+                new ExpressionTest(1, "len(remove({1: 10, 2: 20}, 2))"),
                 new ExpressionTest("HELLO", "uppercase(\"hello\")"),
                 new ExpressionTest("HI, THIS IS A NUMBER: 42", "uppercase(\"Hi, this is a number: \" + 42)"),
                 new ExpressionTest("world", "lowercase(\"WORLD\")"),
@@ -441,7 +459,17 @@ public class EvaluatorTest {
                 new ExpressionTest(ObjectType.STRING.name(), "typeof('test')"),
                 new ExpressionTest(ObjectType.FUNCTION.name(), "let func = fn (x) { x * x}; typeof(func)"),
                 new ExpressionTest(ObjectType.NULL.name(), "typeof(first([]))"),
-                new ExpressionTest(ObjectType.NULL.name(), "typeof(puts(10 * 7))")
+                new ExpressionTest(ObjectType.NULL.name(), "typeof(puts(10 * 7))"),
+                new ExpressionTest(ObjectType.HASH.name(), "typeof({'foo': 'bar'})"),
+                new ExpressionTest(List.of("foo", "bar"), "asList({'foo': 'bar'})"),
+                new ExpressionTest(List.of(1, 400), "let arr = [1, 2]; let arr = set(arr, 1, 20 * 20); arr"),
+                new ExpressionTest(List.of(1, 2), "let arr = [1, 2]; set(arr, 1, 20 * 20); arr"),
+                new ExpressionTest(List.of(1, 2), "let arr = [1, 2]; remove(arr, 1); arr"),
+                new ExpressionTest(List.of(2), "let arr = [1, 2]; let arr = remove(arr, 0); arr"),
+                new ExpressionTest(400, "let obj = { 10: 10 * 10 }; let obj = set(obj, 20, 20 * 20); obj[20]"),
+                new ExpressionTest(null, "let obj = { 10: 10 * 10 }; set(obj, 20, 20 * 20); obj[20]"),
+                new ExpressionTest(100, "let obj = { 10: 10 * 10 }; remove(obj, 10); obj[10]"),
+                new ExpressionTest(null, "let obj = { 10: 10 * 10 }; let obj = remove(obj, 10); obj[10]")
         );
 
         for (ExpressionTest(Object expected, String input) : tests) {
@@ -504,6 +532,29 @@ public class EvaluatorTest {
                             return sum(arr, acc, i - 1);
                         }
                         sum(myArr, 0, 3);""")
+        );
+
+        for (ExpressionTest(Object expected, String input) : tests) {
+            testObject(expected, testEval(input));
+        }
+    }
+
+    @Test
+    void testObjectLiterals() {
+        var tests = List.of(
+                new ExpressionTest("foo", "let obj = { 'bar': 'foo' }; obj['bar']"),
+                new ExpressionTest(10, "let obj = { 'ten': 10, 'foo': 'bar' }; obj['t' + 'e' + 'n']"),
+                new ExpressionTest(100, "let obj = { 10: 10 * 10 }; obj[fn(x){x*5}(2)]"),
+                new ExpressionTest(2, "let obj = { 'list': [1, 2, 3] }; obj['list'][1]"),
+                new ExpressionTest("falso", "let obj = { true: 'verdadeiro', false: 'falso' }; obj[10 < 2]"),
+                new ExpressionTest(6, """
+                        let obj = {
+                            'abs': fn (a) { if (a > 0) { a } else { -a } },
+                            'square': fn (a) { a * a }
+                        };
+                        let abs = 'abs';
+                        let square = 'square';
+                        obj[abs](-2) + obj[square](2)""")
         );
 
         for (ExpressionTest(Object expected, String input) : tests) {
