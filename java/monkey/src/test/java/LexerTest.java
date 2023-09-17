@@ -1,8 +1,9 @@
-import root.lexer.Lexer;
-import root.Token;
-import root.TokenType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import root.LocalizedToken;
+import root.Token;
+import root.TokenType;
+import root.lexer.Lexer;
 
 public class LexerTest {
 
@@ -43,43 +44,52 @@ public class LexerTest {
                 let result = add(five, ten);
 
                 !-/*5;
-                5 < 10 > 5;""";
+                5 < 10 > 5;
+                [1, 2]
+                "foobar"
+                '"single quotes\\n"'
+                "\\"escaped quotes\\""
+                "'single in double'"
+                ""
+                "foo bar"
+                {"foo": "bar"}""";
+
         Lexer l = new Lexer(input);
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
-                new Token(TokenType.IDENT, "five"),
+                new Token(TokenType.IDENTIFIER, "five"),
                 new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.INT, "5"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
-                new Token(TokenType.IDENT, "ten"),
+                new Token(TokenType.IDENTIFIER, "ten"),
                 new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.INT, "10"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
-                new Token(TokenType.IDENT, "add"),
+                new Token(TokenType.IDENTIFIER, "add"),
                 new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.FUNC, "fn"),
                 new Token(TokenType.LPAREN, "("),
-                new Token(TokenType.IDENT, "x"),
+                new Token(TokenType.IDENTIFIER, "x"),
                 new Token(TokenType.COMMA, ","),
-                new Token(TokenType.IDENT, "y"),
+                new Token(TokenType.IDENTIFIER, "y"),
                 new Token(TokenType.RPAREN, ")"),
                 new Token(TokenType.LSQIRLY, "{"),
-                new Token(TokenType.IDENT, "x"),
+                new Token(TokenType.IDENTIFIER, "x"),
                 new Token(TokenType.PLUS, "+"),
-                new Token(TokenType.IDENT, "y"),
+                new Token(TokenType.IDENTIFIER, "y"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.RSQIRLY, "}"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
-                new Token(TokenType.IDENT, "result"),
+                new Token(TokenType.IDENTIFIER, "result"),
                 new Token(TokenType.ASSIGN, "="),
-                new Token(TokenType.IDENT, "add"),
+                new Token(TokenType.IDENTIFIER, "add"),
                 new Token(TokenType.LPAREN, "("),
-                new Token(TokenType.IDENT, "five"),
+                new Token(TokenType.IDENTIFIER, "five"),
                 new Token(TokenType.COMMA, ","),
-                new Token(TokenType.IDENT, "ten"),
+                new Token(TokenType.IDENTIFIER, "ten"),
                 new Token(TokenType.RPAREN, ")"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.BANG, "!"),
@@ -94,6 +104,22 @@ public class LexerTest {
                 new Token(TokenType.GT, ">"),
                 new Token(TokenType.INT, "5"),
                 new Token(TokenType.SEMI, ";"),
+                new Token(TokenType.LBRACKET, "["),
+                new Token(TokenType.INT, "1"),
+                new Token(TokenType.COMMA, ","),
+                new Token(TokenType.INT, "2"),
+                new Token(TokenType.RBRACKET, "]"),
+                new Token(TokenType.STRING, "foobar"),
+                new Token(TokenType.STRING, "\"single quotes\n\""),
+                new Token(TokenType.STRING, "\"escaped quotes\""),
+                new Token(TokenType.STRING, "'single in double'"),
+                new Token(TokenType.STRING, ""),
+                new Token(TokenType.STRING, "foo bar"),
+                new Token(TokenType.LSQIRLY, "{"),
+                new Token(TokenType.STRING, "foo"),
+                new Token(TokenType.COLON, ":"),
+                new Token(TokenType.STRING, "bar"),
+                new Token(TokenType.RSQIRLY, "}"),
                 new Token(TokenType.EOF, "eof"),
         };
         Assertions.assertDoesNotThrow(() -> {
@@ -114,16 +140,16 @@ public class LexerTest {
         Lexer l = new Lexer(input);
         Token[] expected = {
                 new Token(TokenType.LET, "let"),
-                new Token(TokenType.IDENT, "two_plus_two"),
+                new Token(TokenType.IDENTIFIER, "two_plus_two"),
                 new Token(TokenType.ASSIGN, "="),
                 new Token(TokenType.INT, "2"),
                 new Token(TokenType.PLUS, "+"),
                 new Token(TokenType.INT, "2"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.LET, "let"),
-                new Token(TokenType.IDENT, "_result"),
+                new Token(TokenType.IDENTIFIER, "_result"),
                 new Token(TokenType.ASSIGN, "="),
-                new Token(TokenType.IDENT, "two_plus_two"),
+                new Token(TokenType.IDENTIFIER, "two_plus_two"),
                 new Token(TokenType.SEMI, ";"),
                 new Token(TokenType.EOF, "eof"),
         };
@@ -142,7 +168,9 @@ public class LexerTest {
                 } else {
                     return false;
                 }
-                10 == 10; 10 != 9;""";
+                10 == 10; 10 != 9;
+                true || false
+                10 && null""";
 
         Lexer l = new Lexer(input);
 
@@ -172,12 +200,131 @@ public class LexerTest {
                 TokenType.NOT_EQUAL.token(),
                 TokenType.INT.createToken("9"),
                 TokenType.SEMI.token(),
+                TokenType.TRUE.token(),
+                TokenType.OR.token(),
+                TokenType.FALSE.token(),
+                TokenType.INT.createToken("10"),
+                TokenType.AND.token(),
+                TokenType.NULL.token(),
                 TokenType.EOF.token(),
         };
 
         for (Token t : expected) {
             Token g = l.nextToken();
             Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
+
+    @Test
+    void testLocalization() {
+        String input = """
+                let a = 10;
+                let b = 5;
+                                
+                fn add(a,b) {
+                    return a + b
+                }
+                                
+                let foo = add(a, b)
+                """;
+
+        LocalizedToken[] expected = {
+                TokenType.LET.token().localize(0, 0, "let a = 10;"),
+                TokenType.IDENTIFIER.createToken("a").localize(0, 4, "let a = 10;"),
+                TokenType.ASSIGN.token().localize(0, 6, "let a = 10;"),
+                TokenType.INT.createToken("10").localize(0, 8, "let a = 10;"),
+                TokenType.SEMI.token().localize(0, 10, "let a = 10;"),
+
+                TokenType.LET.token().localize(1, 0, "let b = 5;"),
+                TokenType.IDENTIFIER.createToken("b").localize(1, 4, "let b = 5;"),
+                TokenType.ASSIGN.token().localize(1, 6, "let b = 5;"),
+                TokenType.INT.createToken("5").localize(1, 8, "let b = 5;"),
+                TokenType.SEMI.token().localize(1, 9, "let b = 5;"),
+
+                TokenType.FUNC.token().localize(3, 0, "fn add(a,b) {"),
+                TokenType.IDENTIFIER.createToken("add").localize(3, 3, "fn add(a,b) {"),
+                TokenType.LPAREN.token().localize(3, 6, "fn add(a,b) {"),
+                TokenType.IDENTIFIER.createToken("a").localize(3, 7, "fn add(a,b) {"),
+                TokenType.COMMA.token().localize(3, 8, "fn add(a,b) {"),
+                TokenType.IDENTIFIER.createToken("b").localize(3, 9, "fn add(a,b) {"),
+                TokenType.RPAREN.token().localize(3, 10, "fn add(a,b) {"),
+                TokenType.LSQIRLY.token().localize(3, 12, "fn add(a,b) {"),
+
+                TokenType.RETURN.token().localize(4, 4, "    return a + b"),
+                TokenType.IDENTIFIER.createToken("a").localize(4, 11, "    return a + b"),
+                TokenType.PLUS.token().localize(4, 13, "    return a + b"),
+                TokenType.IDENTIFIER.createToken("b").localize(4, 15, "    return a + b"),
+
+                TokenType.RSQIRLY.token().localize(5, 0, "}"),
+
+                TokenType.LET.token().localize(7, 0, "let foo = add(a, b)"),
+                TokenType.IDENTIFIER.createToken("foo").localize(7, 4, "let foo = add(a, b)"),
+                TokenType.ASSIGN.token().localize(7, 8, "let foo = add(a, b)"),
+                TokenType.IDENTIFIER.createToken("add").localize(7, 10, "let foo = add(a, b)"),
+                TokenType.LPAREN.token().localize(7, 13, "let foo = add(a, b)"),
+                TokenType.IDENTIFIER.createToken("a").localize(7, 14, "let foo = add(a, b)"),
+                TokenType.COMMA.token().localize(7, 15, "let foo = add(a, b)"),
+                TokenType.IDENTIFIER.createToken("b").localize(7, 17, "let foo = add(a, b)"),
+                TokenType.RPAREN.token().localize(7, 18, "let foo = add(a, b)"),
+        };
+
+        Lexer l = new Lexer(input);
+
+        for (LocalizedToken t : expected) {
+            LocalizedToken g = l.nextLocalized();
+            Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
+
+    @Test
+    void testStringToken() {
+        String input = """
+                let a = "Hello world! 日本語 \\"acentuação\\" `123' \\n \\t \\\\";
+                'single\\nquote'
+                "multi
+                line"
+                "invalid \\y escape"
+                "not closed
+                """;
+
+        Token[] expected = {
+                TokenType.LET.token(),
+                TokenType.IDENTIFIER.createToken("a"),
+                TokenType.ASSIGN.token(),
+                TokenType.STRING.createToken("Hello world! 日本語 \"acentuação\" `123' \n \t \\"),
+                TokenType.SEMI.token(),
+                TokenType.STRING.createToken("single\nquote"),
+                TokenType.STRING.createToken("multi\nline"),
+                TokenType.ILLEGAL.createToken("invalid \\y escape"),
+                TokenType.ILLEGAL.createToken("not closed\n"),
+                TokenType.EOF.token(),
+        };
+
+        Lexer l = new Lexer(input);
+
+        for (Token t : expected) {
+            Token g = l.nextToken();
+            Assertions.assertEquals(t, g, "Wanted %s, got %s".formatted(t, g));
+        }
+    }
+
+    @Test
+    void testNullToken() {
+        String input = """
+                let a = null""";
+
+        Lexer l = new Lexer(input);
+
+        Token[] expected = {
+                TokenType.LET.token(),
+                TokenType.IDENTIFIER.createToken("a"),
+                TokenType.ASSIGN.token(),
+                TokenType.NULL.token()
+        };
+
+        for (Token t : expected) {
+            Token g = l.nextToken();
+            Assertions.assertEquals(t, g);
         }
     }
 }

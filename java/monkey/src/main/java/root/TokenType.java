@@ -3,14 +3,18 @@ package root;
 public enum TokenType {
     ILLEGAL,
     EOF("eof"),
-    IDENT,
+    IDENTIFIER,
     INT,
     COMMA(","),
     SEMI(";"),
+    COLON(":"),
     LPAREN("("),
     RPAREN(")"),
     LSQIRLY("{"),
     RSQIRLY("}"),
+    LBRACKET("["),
+    RBRACKET("]"),
+    STRING,
 
     // Operations
     ASSIGN("="),
@@ -23,6 +27,8 @@ public enum TokenType {
     GT(">"),
     EQUAL("=="),
     NOT_EQUAL("!="),
+    AND("&&"), // My addition.
+    OR("||"), // My addition.
 
     // Keywords
     FUNC("fn"),
@@ -31,7 +37,8 @@ public enum TokenType {
     FALSE("false"),
     IF("if"),
     ELSE("else"),
-    RETURN("return");
+    RETURN("return"),
+    NULL("null"); // My addition.
 
     private final Token token;
 
@@ -54,5 +61,9 @@ public enum TokenType {
             );
         }
         return token;
+    }
+
+    public String tokenOrName() {
+        return token == null ? name() : token.literal();
     }
 }

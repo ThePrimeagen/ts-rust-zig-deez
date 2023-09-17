@@ -1,14 +1,14 @@
 package root.ast.statements;
 
-import root.Token;
+import root.LocalizedToken;
 import root.ast.expressions.Expression;
 
 public class ExpressionStatement extends Statement {
 
     private Expression expression;
 
-    public ExpressionStatement(Token token) {
-        this.token = token;
+    public ExpressionStatement(LocalizedToken token) {
+        super(token);
     }
 
     public Expression getExpression() {
@@ -20,7 +20,7 @@ public class ExpressionStatement extends Statement {
     }
 
     @Override
-    public String toString() {
-        return String.valueOf(expression);
+    public String stringRep() {
+        return expression.stringRep();
     }
 }

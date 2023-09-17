@@ -1,13 +1,14 @@
 package root.ast.expressions;
 
+import root.LocalizedToken;
 import root.Token;
 
 public class IdentifierExpression extends Expression {
 
     private String value;
 
-    public IdentifierExpression(Token token, String value) {
-        this.token = token;
+    public IdentifierExpression(LocalizedToken token, String value) {
+        super(token);
         this.value = value;
     }
 
@@ -20,7 +21,7 @@ public class IdentifierExpression extends Expression {
     }
 
     @Override
-    public String toString() {
+    public String stringRep() {
         return value;
     }
 }

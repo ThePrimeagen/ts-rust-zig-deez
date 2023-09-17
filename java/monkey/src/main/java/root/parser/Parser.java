@@ -1,13 +1,10 @@
 package root.parser;
 
-import root.Token;
+import root.LocalizedToken;
 import root.TokenType;
 import root.ast.Program;
 import root.ast.expressions.*;
-import root.ast.statements.ExpressionStatement;
-import root.ast.statements.LetStatement;
-import root.ast.statements.ReturnStatement;
-import root.ast.statements.Statement;
+import root.ast.statements.*;
 import root.lexer.Lexer;
 
 import java.util.ArrayList;
@@ -17,91 +14,94 @@ public class Parser {
 
     private final Lexer lexer;
 
-    private Token currentToken;
+    private LocalizedToken currentToken;
 
-    private Token peekToken;
+    private LocalizedToken peekToken;
 
-    public final List<String> errors = new ArrayList<>();
+    private final List<ParserException> errors = new ArrayList<>();
 
     public Parser(Lexer lexer) {
         this.lexer = lexer;
 
-        this.proceedToNextToken();
-        this.proceedToNextToken();
+        proceedToNextToken();
+        proceedToNextToken();
     }
 
-    public Program parseProgram() {
-        Program program = new Program();
+    public Program parseProgram() throws ParseProgramException {
+        var program = new Program();
 
-        while (!curTokenIs(TokenType.EOF)) {
+        while (!currentTokenIs(TokenType.EOF)) {
             try {
                 Statement statement = parseStatement();
                 if (statement != null) {
                     program.getStatements().add(statement);
                 }
             } catch (ParserException pe) {
-                this.errors.add(pe.getMessage());
+                errors.add(pe);
             }
             proceedToNextToken();
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ParseProgramException(errors);
         }
 
         return program;
     }
 
-    private void peekError(TokenType expected) throws ParserException {
-        throw new ParserException("Expected next token to be %s, got %s".formatted(expected.name(), this.currentToken.type().name()));
-    }
-
     private void proceedToNextToken() {
-        this.currentToken = this.peekToken;
-        this.peekToken = this.lexer.nextToken();
+        currentToken = peekToken;
+        peekToken = lexer.nextLocalized();
     }
 
     private Statement parseStatement() throws ParserException {
-        return switch (this.currentToken.type()) {
-            case LET -> this.parseLetStatement();
-            case RETURN -> this.parseReturnStatement();
-            default -> this.parseExpressionStatement();
+        return switch (currentToken.type()) {
+            case LET -> parseLetStatement();
+            case RETURN -> parseReturnStatement();
+            default -> parseExpressionStatement();
         };
     }
 
-    private ReturnStatement parseReturnStatement() {
-        ReturnStatement returnStatement = new ReturnStatement(this.currentToken);
+    private ReturnStatement parseReturnStatement() throws ParserException {
+        var returnStatement = new ReturnStatement(currentToken);
 
-        this.proceedToNextToken();
+        proceedToNextToken();
 
-        // TODO: We're skipping the expressions until we encounter a semicolon or EOF
-        while (!this.curTokenIs(TokenType.SEMI) && !this.curTokenIs(TokenType.EOF)) {
-            this.proceedToNextToken();
+        returnStatement.setReturnValue(parseExpression(OperatorPrecedence.LOWEST));
+
+        if (peekTokenIs(TokenType.SEMI)) {
+            proceedToNextToken();
         }
 
         return returnStatement;
     }
 
     private LetStatement parseLetStatement() throws ParserException {
-        LetStatement letStatement = new LetStatement(this.currentToken);
+        var letStatement = new LetStatement(currentToken);
 
-        this.expectPeek(TokenType.IDENT);
+        expectPeek(TokenType.IDENTIFIER);
 
-        letStatement.setName(new IdentifierExpression(this.currentToken, this.currentToken.literal()));
+        letStatement.setName(new IdentifierExpression(currentToken, currentToken.literal()));
 
-        this.expectPeek(TokenType.ASSIGN);
+        expectPeek(TokenType.ASSIGN);
+        proceedToNextToken();
 
-        // TODO: We're skipping the expressions until we encounter a semicolon or EOF
-        while (!this.curTokenIs(TokenType.SEMI) && !this.curTokenIs(TokenType.EOF)) {
-            this.proceedToNextToken();
+        letStatement.setValue(parseExpression(OperatorPrecedence.LOWEST));
+
+        if (peekTokenIs(TokenType.SEMI)) {
+            proceedToNextToken();
         }
 
         return letStatement;
     }
 
     private ExpressionStatement parseExpressionStatement() throws ParserException {
-        ExpressionStatement statement = new ExpressionStatement(this.currentToken);
+        var statement = new ExpressionStatement(currentToken);
 
-        statement.setExpression(this.parseExpression(OperatorPrecedence.LOWEST));
+        statement.setExpression(parseExpression(OperatorPrecedence.LOWEST));
 
-        if (this.peekTokenIs(TokenType.SEMI)) {
-            this.proceedToNextToken();
+        if (peekTokenIs(TokenType.SEMI)) {
+            proceedToNextToken();
         }
 
         return statement;
@@ -111,7 +111,7 @@ public class Parser {
         ParserSupplier<Expression> prefixFn = prefixParseFn();
 
         if (prefixFn == null) {
-            throw new ParserException("No prefix parse function found for " + currentToken.type());
+            throw new ParserException("Unexpected token found: " + currentToken.literal(), currentToken);
         }
         Expression leftExpression = prefixFn.get();
 
@@ -132,11 +132,17 @@ public class Parser {
 
     private ParserSupplier<Expression> prefixParseFn() {
         return switch (currentToken.type()) {
-            case IDENT -> () -> new IdentifierExpression(currentToken, currentToken.literal());
-            // NumberFormatException should never be thrown here, since we already know it's an INT
-            // token and those contain valid int representations in their values
+            case IDENTIFIER -> () -> new IdentifierExpression(currentToken, currentToken.literal());
             case INT -> () -> new IntegerLiteralExpression(currentToken, Long.parseLong(currentToken.literal()));
+            case TRUE, FALSE -> () -> new BooleanLiteralExpression(currentToken, currentTokenIs(TokenType.TRUE));
+            case NULL -> () -> new NullLiteralExpression(currentToken);
+            case STRING -> () -> new StringLiteralExpression(currentToken);
             case BANG, MINUS -> this::parsePrefixExpression;
+            case LPAREN -> this::parseGroupedExpression;
+            case IF -> this::parseIfExpression;
+            case FUNC -> this::parseFunctionLiteral;
+            case LBRACKET -> this::parseArrayLiteralExpression;
+            case LSQIRLY -> this::parseHashLiteralExpression;
             default -> null;
         };
     }
@@ -150,7 +156,9 @@ public class Parser {
 
     private ParserFunction<Expression, Expression> infixParseFn(TokenType tokenType) {
         return switch (tokenType) {
-            case PLUS, MINUS, SLASH, ASTERISK, EQUAL, NOT_EQUAL, LT, GT -> this::parseInfixExpression;
+            case PLUS, MINUS, SLASH, ASTERISK, EQUAL, NOT_EQUAL, LT, GT, AND, OR -> this::parseInfixExpression;
+            case LPAREN -> this::parseCallExpression;
+            case LBRACKET -> this::parseIndexExpression;
             default -> null;
         };
     }
@@ -165,27 +173,186 @@ public class Parser {
         return expression;
     }
 
-    private boolean curTokenIs(TokenType type) {
-        return this.currentToken.type() == type;
+    private CallExpression parseCallExpression(Expression function) throws ParserException {
+        LocalizedToken callToken = currentToken;
+        List<Expression> arguments = parseExpressionList(TokenType.RPAREN);
+
+        return new CallExpression(callToken, function, arguments);
+    }
+
+    private Expression parseIndexExpression(Expression left) throws ParserException {
+        LocalizedToken openBracketToken = currentToken;
+
+        proceedToNextToken();
+
+        Expression index = parseExpression(OperatorPrecedence.LOWEST);
+
+        expectPeek(TokenType.RBRACKET);
+
+        return new IndexExpression(openBracketToken, left, index);
+    }
+
+    private List<Expression> parseExpressionList(TokenType limitingToken) throws ParserException {
+        var expressions = new ArrayList<Expression>();
+
+        if (peekTokenIs(limitingToken)) {
+            proceedToNextToken();
+            return expressions;
+        }
+
+        while (true) {
+            proceedToNextToken();
+            var argument = parseExpression(OperatorPrecedence.LOWEST);
+            expressions.add(argument);
+            if (peekTokenIs(TokenType.COMMA)) {
+                proceedToNextToken();
+            } else {
+                break;
+            }
+        }
+
+        expectPeek(limitingToken);
+
+        return expressions;
+    }
+
+    private Expression parseGroupedExpression() throws ParserException {
+        proceedToNextToken();
+
+        Expression expression = parseExpression(OperatorPrecedence.LOWEST);
+
+        expectPeek(TokenType.RPAREN);
+
+        return expression;
+    }
+
+    private IfExpression parseIfExpression() throws ParserException {
+        var ifExpression = new IfExpression(currentToken);
+
+        expectPeek(TokenType.LPAREN);
+        proceedToNextToken();
+
+        ifExpression.setCondition(parseExpression(OperatorPrecedence.LOWEST));
+
+        expectPeek(TokenType.RPAREN);
+        expectPeek(TokenType.LSQIRLY);
+
+        ifExpression.setConsequence(parseBlockStatement());
+
+        if (peekTokenIs(TokenType.ELSE)) {
+            proceedToNextToken();
+            expectPeek(TokenType.LSQIRLY);
+
+            ifExpression.setAlternative(parseBlockStatement());
+        }
+
+        return ifExpression;
+    }
+
+    private FunctionLiteralExpression parseFunctionLiteral() throws ParserException {
+        var functionLiteral = new FunctionLiteralExpression(currentToken);
+
+        expectPeek(TokenType.LPAREN);
+
+        parseFunctionParameters(functionLiteral);
+
+        expectPeek(TokenType.LSQIRLY);
+
+        functionLiteral.setBody(parseBlockStatement());
+
+        return functionLiteral;
+    }
+
+    private void parseFunctionParameters(FunctionLiteralExpression functionLiteral) throws ParserException {
+        if (peekTokenIs(TokenType.RPAREN)) {
+            proceedToNextToken();
+            return;
+        }
+
+        expectPeek(TokenType.IDENTIFIER);
+        var identifier = new IdentifierExpression(currentToken, currentToken.literal());
+        functionLiteral.getParameters().add(identifier);
+
+        if (peekTokenIs(TokenType.COMMA)) {
+            proceedToNextToken();
+            parseFunctionParameters(functionLiteral);
+        } else {
+            expectPeek(TokenType.RPAREN);
+        }
+    }
+
+    private ArrayLiteralExpression parseArrayLiteralExpression() throws ParserException {
+        LocalizedToken openBracketToken = currentToken;
+        List<Expression> elements = parseExpressionList(TokenType.RBRACKET);
+
+        return new ArrayLiteralExpression(openBracketToken, elements);
+    }
+
+    private HashLiteralExpression parseHashLiteralExpression() throws ParserException {
+        LocalizedToken openBraceToken = currentToken;
+        var pairs = new ArrayList<HashLiteralExpression.KeyValuePair>();
+
+        while (!peekTokenIs(TokenType.RSQIRLY)) {
+            proceedToNextToken();
+            Expression key = parseExpression(OperatorPrecedence.LOWEST);
+
+            expectPeek(TokenType.COLON);
+
+            proceedToNextToken();
+            Expression value = parseExpression(OperatorPrecedence.LOWEST);
+
+            pairs.add(new HashLiteralExpression.KeyValuePair(key, value));
+
+            if (peekTokenIs(TokenType.COMMA)) {
+                proceedToNextToken();
+            } else if (!peekTokenIs(TokenType.RSQIRLY)) {
+                throw new ParserException("Expected next token to be , or } in Hash Literal", peekToken);
+            }
+        }
+
+        expectPeek(TokenType.RSQIRLY);
+
+        return new HashLiteralExpression(openBraceToken, pairs);
+    }
+
+    private BlockStatement parseBlockStatement() throws ParserException {
+        var blockStatement = new BlockStatement(currentToken);
+
+        proceedToNextToken();
+
+        while (!currentTokenIs(TokenType.RSQIRLY) && !currentTokenIs(TokenType.EOF)) {
+            blockStatement.addStatement(parseStatement());
+            proceedToNextToken();
+        }
+
+        if (!currentTokenIs(TokenType.RSQIRLY)) {
+            throw new ParserException("Block statement needs to be closed", currentToken);
+        }
+
+        return blockStatement;
+    }
+
+    private boolean currentTokenIs(TokenType type) {
+        return currentToken.type() == type;
     }
 
     private OperatorPrecedence curPrecedence() {
-        return OperatorPrecedence.precedenceForTokenType(this.currentToken.type());
+        return OperatorPrecedence.precedenceForTokenType(currentToken.type());
     }
 
     private boolean peekTokenIs(TokenType type) {
-        return this.peekToken.type() == type;
+        return peekToken.type() == type;
     }
 
     private OperatorPrecedence peekPrecedence() {
-        return OperatorPrecedence.precedenceForTokenType(this.peekToken.type());
+        return OperatorPrecedence.precedenceForTokenType(peekToken.type());
     }
 
     private void expectPeek(TokenType type) throws ParserException {
-        if (this.peekTokenIs(type)) {
-            this.proceedToNextToken();
+        if (peekTokenIs(type)) {
+            proceedToNextToken();
         } else {
-            this.peekError(type);
+            throw new ParserException("Expected next token to be %s, got %s".formatted(type.tokenOrName(), peekToken.literal()), currentToken);
         }
     }
 }

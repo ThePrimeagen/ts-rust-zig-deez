@@ -3,16 +3,16 @@ package root.ast.expressions;
 import root.LocalizedToken;
 import root.Token;
 
-public class IntegerLiteralExpression extends Expression {
+public class BooleanLiteralExpression extends Expression {
 
-    private final Long value;
+    private final Boolean value;
 
-    public IntegerLiteralExpression(LocalizedToken token, long value) {
+    public BooleanLiteralExpression(LocalizedToken token, boolean value) {
         super(token);
         this.value = value;
     }
 
-    public Long getValue() {
+    public Boolean getValue() {
         return value;
     }
 
