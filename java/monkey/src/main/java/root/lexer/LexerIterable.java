@@ -17,7 +17,7 @@ public class LexerIterable implements Iterable<Token> {
 
     @Override
     public Iterator<Token> iterator() {
-        return new LexerIterator(this.lexer);
+        return new LexerIterator(lexer);
     }
 
     private record LexerIterator(Lexer lexer) implements Iterator<Token> {
