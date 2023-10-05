@@ -49,7 +49,7 @@ Without Docker:
 - `fmt`
 - `lint`
 - `test` — should run all the available tests
-- `ready` — should run fmt, lint ant test
+- `ready` — should run fmt, lint and test
 
 Docker:
 
