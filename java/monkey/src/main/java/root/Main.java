@@ -32,10 +32,8 @@ public class Main {
         String input;
 
         if (args.length == 1 && (file = new File(args[0])).exists()) {
-            try {
-                var inputStream = new FileInputStream(file);
+            try (var inputStream = new FileInputStream(file)) {
                 input = new String(inputStream.readAllBytes());
-                inputStream.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

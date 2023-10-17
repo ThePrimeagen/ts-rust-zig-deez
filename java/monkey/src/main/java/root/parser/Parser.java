@@ -8,11 +8,12 @@ import root.ast.statements.*;
 import root.lexer.Lexer;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Parser {
 
-    private final Lexer lexer;
+    private final Iterator<LocalizedToken> lexer;
 
     private LocalizedToken currentToken;
 
@@ -21,7 +22,7 @@ public class Parser {
     private final List<ParserException> errors = new ArrayList<>();
 
     public Parser(Lexer lexer) {
-        this.lexer = lexer;
+        this.lexer = lexer.iter();
 
         proceedToNextToken();
         proceedToNextToken();
@@ -51,7 +52,7 @@ public class Parser {
 
     private void proceedToNextToken() {
         currentToken = peekToken;
-        peekToken = lexer.nextLocalized();
+        peekToken = lexer.next();
     }
 
     private Statement parseStatement() throws ParserException {

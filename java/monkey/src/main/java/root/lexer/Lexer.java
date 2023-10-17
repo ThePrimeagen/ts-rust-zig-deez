@@ -4,6 +4,7 @@ import root.LocalizedToken;
 import root.Token;
 import root.TokenType;
 
+import java.util.Iterator;
 import java.util.Map;
 
 public class Lexer {
@@ -25,6 +26,10 @@ public class Lexer {
     public Lexer(String input) {
         this.input = input;
         this.lines = input.split("\n");
+    }
+
+    public Iterator<LocalizedToken> iter() {
+        return LexerIterable.fromLexer(this);
     }
 
     public LocalizedToken nextLocalized() {
@@ -119,21 +124,16 @@ public class Lexer {
         while ((character = this.readCc()) != '\0') {
             // Support for escape characters
             if (character == '\\') {
-                char slash = character;
                 char escaped = this.readCc();
 
                 if (VALID_ESCAPES.containsKey(escaped)) {
                     stringBuilder.append(VALID_ESCAPES.get(escaped));
                     continue;
                 } else {
-                    stringBuilder.append(slash).append(escaped);
+                    stringBuilder.append(character).append(escaped);
                     // skipping to the end of the string
-                    while ((character = this.readCc()) != '\0') {
-                        if (character == startingChar) {
-                            break;
-                        }
-                        stringBuilder.append(character);
-                    }
+                    Token rest = readString(startingChar);
+                    stringBuilder.append(rest.literal());
 
                     // TODO maybe create a Lexing exception to better explain errors like this
                     return TokenType.ILLEGAL.createToken(stringBuilder.toString());

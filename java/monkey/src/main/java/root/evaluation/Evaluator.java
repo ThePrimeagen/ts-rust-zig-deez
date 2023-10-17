@@ -86,11 +86,11 @@ public class Evaluator {
     private MonkeyObject<?> evalHashLiteralExpression(HashLiteralExpression hash) throws EvaluationException {
         var pairs = new LinkedHashMap<HashKey, MonkeyObject<?>>();
 
-        for (HashLiteralExpression.KeyValuePair(Expression key, Expression value) : hash.getPairs()) {
-            MonkeyObject<?> keyObject = eval(key);
+        for (var pair : hash.getPairs()) {
+            MonkeyObject<?> keyObject = eval(pair.key());
 
-            MonkeyHashable hashable = MonkeyHashable.checkIsHashable(keyObject, key.getToken());
-            MonkeyObject<?> valueObject = eval(value);
+            MonkeyHashable hashable = MonkeyHashable.checkIsHashable(keyObject, pair.key().getToken());
+            MonkeyObject<?> valueObject = eval(pair.value());
             pairs.put(hashable.hashKey(), valueObject);
         }
 
@@ -212,12 +212,12 @@ public class Evaluator {
     private MonkeyObject<?> evalBooleanLogicOperation(InfixExpression infixExpression, MonkeyObject<?> left) throws EvaluationException {
         return switch (infixExpression.getToken().type()) {
             case AND -> {
-                if (isTruthy(left)) {
-                    MonkeyObject<?> right = eval(infixExpression.getRight());
-                    yield MonkeyBoolean.nativeToMonkey(isTruthy(right));
+                if (!isTruthy(left)) {
+                    yield MonkeyBoolean.FALSE;
                 }
 
-                yield MonkeyBoolean.FALSE;
+                MonkeyObject<?> right = eval(infixExpression.getRight());
+                yield MonkeyBoolean.nativeToMonkey(isTruthy(right));
             }
             case OR -> {
                 if (isTruthy(left)) {
@@ -284,8 +284,8 @@ public class Evaluator {
                 yield new MonkeyInteger(left.getValue() / right.getValue());
             }
 
-            case EQUAL -> MonkeyBoolean.nativeToMonkey(left.getValue() == right.getValue());
-            case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(left.getValue() != right.getValue());
+            case EQUAL -> MonkeyBoolean.nativeToMonkey(left.getValue().equals(right.getValue()));
+            case NOT_EQUAL -> MonkeyBoolean.nativeToMonkey(!left.getValue().equals(right.getValue()));
             case LT -> MonkeyBoolean.nativeToMonkey(left.getValue() < right.getValue());
             case GT -> MonkeyBoolean.nativeToMonkey(left.getValue() > right.getValue());
 

@@ -284,6 +284,7 @@ public class LexerTest {
                 "multi
                 line"
                 "invalid \\y escape"
+                "Two \\h invalid \\g escapes"
                 "not closed
                 """;
 
@@ -296,6 +297,7 @@ public class LexerTest {
                 TokenType.STRING.createToken("single\nquote"),
                 TokenType.STRING.createToken("multi\nline"),
                 TokenType.ILLEGAL.createToken("invalid \\y escape"),
+                TokenType.ILLEGAL.createToken("Two \\h invalid \\g escapes"),
                 TokenType.ILLEGAL.createToken("not closed\n"),
                 TokenType.EOF.token(),
         };
