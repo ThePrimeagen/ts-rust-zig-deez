@@ -14,7 +14,7 @@ public class Main {
 
     public static void main(String[] args) {
         // Reading args as input if they exist
-        if (args.length > 0) {
+        if (args.length > 0 && !args[0].isBlank()) {
             runFileOrInput(args);
             return;
         }
