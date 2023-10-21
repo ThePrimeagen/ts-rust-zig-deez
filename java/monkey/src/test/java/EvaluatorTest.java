@@ -38,8 +38,8 @@ public class EvaluatorTest {
                 new IntegerTest(50, "(5 + 10 * 2 + 15 / 3) * 2 + -10")
         );
 
-        for (IntegerTest(long expected, String input) : tests) {
-            testIntegerObject(expected, testEval(input));
+        for (var test : tests) {
+            testIntegerObject(test.expected, testEval(test.input));
         }
     }
 
@@ -98,8 +98,8 @@ public class EvaluatorTest {
                 new BooleanTest(true, "true || 0 / 0")
         );
 
-        for (BooleanTest(boolean expected, String input) : tests) {
-            testBooleanObject(expected, testEval(input));
+        for (var test : tests) {
+            testBooleanObject(test.expected, testEval(test.input));
         }
     }
 
@@ -114,8 +114,8 @@ public class EvaluatorTest {
                 new BooleanTest(true, "!null")
         );
 
-        for (BooleanTest(boolean expected, String input) : tests) {
-            testBooleanObject(expected, testEval(input));
+        for (var test : tests) {
+            testBooleanObject(test.expected, testEval(test.input));
         }
     }
 
@@ -135,9 +135,9 @@ public class EvaluatorTest {
                 new ExpressionTest(10, "if (!null) { 10 } else { 20 }")
         );
 
-        for (ExpressionTest(Object expected, String input) : tests) {
-            MonkeyObject<?> evaluated = testEval(input);
-            testObject(expected, evaluated);
+        for (var test : tests) {
+            MonkeyObject<?> evaluated = testEval(test.input);
+            testObject(test.expected, evaluated);
         }
     }
 
@@ -158,9 +158,9 @@ public class EvaluatorTest {
                         }""")
         );
 
-        for (ExpressionTest(Object expected, String input) : tests) {
-            MonkeyObject<?> evaluated = testEval(input);
-            testObject(expected, evaluated);
+        for (var test : tests) {
+            MonkeyObject<?> evaluated = testEval(test.input);
+            testObject(test.expected, evaluated);
         }
     }
 
@@ -372,8 +372,8 @@ public class EvaluatorTest {
                         c;""")
         );
 
-        for (IntegerTest(long expected, String input) : tests) {
-            testIntegerObject(expected, testEval(input));
+        for (var test : tests) {
+            testIntegerObject(test.expected, testEval(test.input));
         }
     }
 
@@ -416,8 +416,8 @@ public class EvaluatorTest {
                         fibonacci(10)""")
         );
 
-        for (IntegerTest(long expected, String input) : tests) {
-            testIntegerObject(expected, testEval(input));
+        for (var test : tests) {
+            testIntegerObject(test.expected, testEval(test.input));
         }
     }
 
@@ -472,9 +472,9 @@ public class EvaluatorTest {
                 new ExpressionTest(null, "let obj = { 10: 10 * 10 }; let obj = remove(obj, 10); obj[10]")
         );
 
-        for (ExpressionTest(Object expected, String input) : tests) {
-            MonkeyObject<?> evaluated = testEval(input);
-            testObject(expected, evaluated);
+        for (var test : tests) {
+            MonkeyObject<?> evaluated = testEval(test.input);
+            testObject(test.expected, evaluated);
         }
     }
 
@@ -490,9 +490,9 @@ public class EvaluatorTest {
                 new ExpressionTest(true, "\"Hello world\" != \"hello \" + \"world\"")
         );
 
-        for (ExpressionTest(Object expected, String input) : tests) {
-            MonkeyObject<?> evaluated = testEval(input);
-            testObject(expected, evaluated);
+        for (var test : tests) {
+            MonkeyObject<?> evaluated = testEval(test.input);
+            testObject(test.expected, evaluated);
         }
     }
 
@@ -534,8 +534,8 @@ public class EvaluatorTest {
                         sum(myArr, 0, 3);""")
         );
 
-        for (ExpressionTest(Object expected, String input) : tests) {
-            testObject(expected, testEval(input));
+        for (var test : tests) {
+            testObject(test.expected, testEval(test.input));
         }
     }
 
@@ -557,8 +557,8 @@ public class EvaluatorTest {
                         obj[abs](-2) + obj[square](2)""")
         );
 
-        for (ExpressionTest(Object expected, String input) : tests) {
-            testObject(expected, testEval(input));
+        for (var test : tests) {
+            testObject(test.expected, testEval(test.input));
         }
     }
 

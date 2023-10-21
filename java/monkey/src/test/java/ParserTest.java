@@ -30,12 +30,12 @@ public class ParserTest {
                 new InputStatementTest("let nil = null;", "nil", null)
         );
 
-        for (InputStatementTest(String input, String expectedIdentifier, Object expectedValue) : tests) {
-            var program = buildProgram(input);
+        for (var test : tests) {
+            var program = buildProgram(test.input);
             Assertions.assertEquals(1, program.getStatements().size());
             var letStatement = (LetStatement) program.getStatements().get(0);
 
-            testLetStatement(letStatement, expectedIdentifier, expectedValue);
+            testLetStatement(letStatement, test.expectedIdentifier, test.expectedValue);
         }
     }
 
@@ -51,13 +51,13 @@ public class ParserTest {
                 new ReturnStatementTest("return null;", null)
         );
 
-        for (ReturnStatementTest(String input, Object expectedValue) : tests) {
-            var program = buildProgram(input);
+        for (var test : tests) {
+            var program = buildProgram(test.input);
             Assertions.assertEquals(1, program.getStatements().size());
             var returnStatement = Assertions.assertInstanceOf(ReturnStatement.class, program.getStatements().get(0));
 
-            testReturnStatement(returnStatement, expectedValue);
-            Assertions.assertEquals(input, returnStatement.stringRep());
+            testReturnStatement(returnStatement, test.expectedValue);
+            Assertions.assertEquals(test.input, returnStatement.stringRep());
         }
     }
 
@@ -209,14 +209,14 @@ public class ParserTest {
                 new PrefixTestRecord("!null", "!", null)
         );
 
-        for (PrefixTestRecord(String input, String operator, Object right) : prefixTests) {
-            Program program = buildProgram(input);
+        for (var test : prefixTests) {
+            Program program = buildProgram(test.input);
 
             Assertions.assertEquals(1, program.getStatements().size());
 
             var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
-            testPrefixExpression(statement.getExpression(), operator, right);
+            testPrefixExpression(statement.getExpression(), test.operator, test.right);
         }
     }
 
@@ -243,14 +243,14 @@ public class ParserTest {
                 new InfixTestRecord("true && false", true, "&&", false)
         );
 
-        for (InfixTestRecord(String input, Object leftValue, String operator, Object rightValue) : infixTests) {
-            var program = buildProgram(input);
+        for (var test : infixTests) {
+            var program = buildProgram(test.input);
 
             Assertions.assertEquals(1, program.getStatements().size());
 
             var statement = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
 
-            testInfixExpression(statement.getExpression(), leftValue, operator, rightValue);
+            testInfixExpression(statement.getExpression(), test.leftValue, test.operator, test.rightValue);
         }
     }
 
@@ -468,15 +468,15 @@ public class ParserTest {
                 new FunctionParameterTest("fn (x, y, z) {};", List.of("x", "y", "z"))
         );
 
-        for (FunctionParameterTest(String input, List<String> expectedParams) : tests) {
-            var program = buildProgram(input);
+        for (var test : tests) {
+            var program = buildProgram(test.input);
             Assertions.assertEquals(1, program.getStatements().size());
             var function = (FunctionLiteralExpression) ((ExpressionStatement) program.getStatements().get(0)).getExpression();
 
-            Assertions.assertEquals(expectedParams.size(), function.getParameters().size());
+            Assertions.assertEquals(test.expectedParams.size(), function.getParameters().size());
 
-            for (int i = 0; i < expectedParams.size(); i++) {
-                testLiteralExpression(function.getParameters().get(i), expectedParams.get(i));
+            for (int i = 0; i < test.expectedParams.size(); i++) {
+                testLiteralExpression(function.getParameters().get(i), test.expectedParams.get(i));
             }
         }
     }
@@ -508,15 +508,15 @@ public class ParserTest {
                 new CallParameterTest("func(1, 2 * 3 + 1, 98)", List.of("1", "((2 * 3) + 1)", "98"))
         );
 
-        for (CallParameterTest(String input, List<String> expectedArguments) : tests) {
-            var program = buildProgram(input);
+        for (var test : tests) {
+            var program = buildProgram(test.input);
             Assertions.assertEquals(1, program.getStatements().size());
             var call = (CallExpression) ((ExpressionStatement) program.getStatements().get(0)).getExpression();
 
-            Assertions.assertEquals(expectedArguments.size(), call.getArguments().size());
+            Assertions.assertEquals(test.expectedArguments.size(), call.getArguments().size());
 
-            for (int i = 0; i < expectedArguments.size(); i++) {
-                Assertions.assertEquals(expectedArguments.get(i), call.getArguments().get(i).stringRep());
+            for (int i = 0; i < test.expectedArguments.size(); i++) {
+                Assertions.assertEquals(test.expectedArguments.get(i), call.getArguments().get(i).stringRep());
             }
         }
     }
@@ -629,17 +629,17 @@ public class ParserTest {
                 new HashLiteralTest(Map.of(1, 100), "{1: 100}")
         );
 
-        for (HashLiteralTest(Map<Object, Object> expected, String input) : tests) {
-            var program = buildProgram(input);
+        for (var test : tests) {
+            var program = buildProgram(test.input);
 
             Assertions.assertEquals(1, program.getStatements().size());
             var expression = Assertions.assertInstanceOf(ExpressionStatement.class, program.getStatements().get(0));
             var hash = Assertions.assertInstanceOf(HashLiteralExpression.class, expression.getExpression());
-            Assertions.assertEquals(expected.size(), hash.getPairs().size());
+            Assertions.assertEquals(test.expected.size(), hash.getPairs().size());
 
             int i = 0;
 
-            for (var entry : expected.entrySet()) {
+            for (var entry : test.expected.entrySet()) {
                 testLiteralExpression(hash.getPairs().get(i).key(), entry.getKey());
                 testLiteralExpression(hash.getPairs().get(i).value(), entry.getValue());
                 i++;
