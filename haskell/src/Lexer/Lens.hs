@@ -1,5 +1,20 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
+-- |- language extensions for easier struct/record manipulation.
+
+{-
+                          README
+----------------------------------------------------------
+This Lexer is implemented using the Book's algorithm. It
+is very similar to src/Lexer/Monad.hs but using lenses
+This file is undocumented as src/Lexer/Monad.hs already is
+
+refer to README.md for more info.
+
+- This implementation is book compliant :)
+- src/Lexer/Parsec.hs is the most idiomatic the technique
+
+-}
 
 module Lexer.Lens where
 

@@ -2,13 +2,13 @@ module Token where
 
 import Data.Char (isLetter)
 
-type Tokenizer = String -> [Token]
+type Tokenizer = String -> [Token] -- type synonym. A function from String to Linked list of Token
 
-data Token
-    = Illegal
-    | Eof
-    | Ident String
-    | Int String
+data Token           -- enum Token {
+    = Illegal        --  Illegal,
+    | Eof            --  Eof,
+    | Ident String   --  Ident(String),
+    | Int String     -- ...
     | Assign
     | Plus
     | Minus
@@ -32,12 +32,12 @@ data Token
     | If
     | Else
     | Return
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)  -- #[derive(Debug, PartialEq, Eq)]
 
 isIdentChar :: Char -> Bool
-isIdentChar c = isLetter c || c == '_'
+isIdentChar c = isLetter c || c == '_' -- valid identifier characters
 
-identToken :: String -> Token
+identToken :: String -> Token    -- Simple Pattern matching
 identToken "fn" = Function
 identToken "let" = Let
 identToken "true" = TrueTok
