@@ -2,8 +2,8 @@
 
 require 'vendor/autoload.php';
 
-interface Value
-{
+interface Value {
     public function type(): string;
+
     public function inspect(): string;
 }

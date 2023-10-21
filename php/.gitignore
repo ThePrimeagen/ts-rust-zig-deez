@@ -5,3 +5,6 @@
 # Composer
 vendor
 .php-cs-fixer.cache
+
+# Coverage
+cover/

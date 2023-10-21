@@ -2,12 +2,9 @@
 
 require 'vendor/autoload.php';
 
-readonly class FunctionLiteral implements Expression
-{
+readonly class FunctionLiteral implements Expression {
     /**
-     * @param Token $token
      * @param Identifier[] $parameters
-     * @param BlockStatement $body
      */
     public function __construct(
         public Token $token,
@@ -16,17 +13,14 @@ readonly class FunctionLiteral implements Expression
     ) {
     }
 
-    public function tokenLiteral(): string
-    {
-        return "fn";
+    public function __toString(): string {
+        return 'fn('.implode(', ', $this->parameters).') '.$this->body;
     }
 
-    public function __toString(): string
-    {
-        return "fn(" . implode(", ", $this->parameters) . ") " . $this->body;
+    public function tokenLiteral(): string {
+        return 'fn';
     }
 
-    public function expressionNode(): void
-    {
+    public function expressionNode(): void {
     }
 }

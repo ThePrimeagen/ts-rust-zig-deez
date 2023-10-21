@@ -2,11 +2,8 @@
 
 require 'vendor/autoload.php';
 
-class Evaluator
-{
-
-    public function evaluate(Node $node, Scope $scope): ?Value
-    {
+class Evaluator {
+    public function evaluate(Node $node, Scope $scope): ?Value {
         return match (true) {
             // Statements
             $node instanceof Program => $this->evaluateProgram($node, $scope),
@@ -32,8 +29,7 @@ class Evaluator
         };
     }
 
-    private function evaluateProgram(Program $program, Scope $scope): ?Value
-    {
+    private function evaluateProgram(Program $program, Scope $scope): ?Value {
         $result = null;
 
         foreach ($program->statements as $statement) {
@@ -51,8 +47,7 @@ class Evaluator
         return $result;
     }
 
-    private function evaluateBlockStatement(BlockStatement $node, Scope $scope): ?Value
-    {
+    private function evaluateBlockStatement(BlockStatement $node, Scope $scope): ?Value {
         $result = null;
 
         foreach ($node->statements as $statement) {
@@ -66,8 +61,7 @@ class Evaluator
         return $result;
     }
 
-    private function evaluateIfExpression(IfExpression $node, Scope $scope): Value
-    {
+    private function evaluateIfExpression(IfExpression $node, Scope $scope): Value {
         $conditionValue = $this->evaluate($node->condition, $scope);
 
         if ($conditionValue instanceof ErrorValue) {
@@ -78,15 +72,14 @@ class Evaluator
             return $this->evaluate($node->consequence, $scope);
         }
 
-        if ($node->alternative !== null) {
+        if (null !== $node->alternative) {
             return $this->evaluate($node->alternative, $scope);
         }
 
         return NullValue::$NULL;
     }
 
-    private function evaluateReturnStatement(ReturnStatement $node, Scope $scope): Value
-    {
+    private function evaluateReturnStatement(ReturnStatement $node, Scope $scope): Value {
         $value = $this->evaluate($node->returnValue, $scope);
 
         if ($value instanceof ErrorValue) {
@@ -96,8 +89,7 @@ class Evaluator
         return new ReturnValue($value);
     }
 
-    private function evaluateLetStatement(LetStatement $node, Scope $scope): Value
-    {
+    private function evaluateLetStatement(LetStatement $node, Scope $scope): Value {
         $value = $this->evaluate($node->value, $scope);
 
         if ($value instanceof ErrorValue) {
@@ -109,8 +101,7 @@ class Evaluator
         return $value;
     }
 
-    private function evaluatePrefixExpression(PrefixExpression $node, Scope $scope): Value
-    {
+    private function evaluatePrefixExpression(PrefixExpression $node, Scope $scope): Value {
         $rightValue = $this->evaluate($node->right, $scope);
 
         if ($rightValue instanceof ErrorValue) {
@@ -124,8 +115,7 @@ class Evaluator
         };
     }
 
-    private function evaluateInfixExpression(InfixExpression $node, Scope $scope): Value
-    {
+    private function evaluateInfixExpression(InfixExpression $node, Scope $scope): Value {
         $left = $this->evaluate($node->left, $scope);
 
         if ($left instanceof ErrorValue) {
@@ -138,22 +128,22 @@ class Evaluator
             return $right;
         }
 
-        if (!($left instanceof $right)) {
+        if (!$left instanceof $right) {
             return new ErrorValue("Type mismatch: {$left->type()} {$node->token->type->name} {$right->type()}");
         }
 
         if ($left instanceof IntegerValue) {
-            /** @var IntegerValue $right */
+            // @var IntegerValue $right
             return $this->evaluateIntegerInfixExpression($node->token->type, $left, $right);
         }
 
         if ($left instanceof BooleanValue) {
-            /** @var BooleanValue $right */
+            // @var BooleanValue $right
             return $this->evaluateBooleanInfixExpression($node->token->type, $left, $right);
         }
 
         if ($left instanceof StringValue) {
-            /** @var StringValue $right */
+            // @var StringValue $right
 
             return $this->evaluateStringInfixExpression($node->token->type, $left, $right);
         }
@@ -161,20 +151,18 @@ class Evaluator
         return new ErrorValue("Unknown operator: {$left->type()} {$node->token->type->name} {$right->type()}");
     }
 
-    private function evaluateNotOperatorExpression(Value $value): Value
-    {
+    private function evaluateNotOperatorExpression(Value $value): Value {
         return match (true) {
             $value === BooleanValue::$TRUE => BooleanValue::$FALSE,
-            $value === BooleanValue::$FALSE/*, $value === NullValue::$NULL*/ => BooleanValue::$TRUE,
-                //            $value instanceof IntegerValue => $value->value === 0 ? BooleanValue::$TRUE : BooleanValue::$FALSE,
+            $value === BooleanValue::$FALSE/* , $value === NullValue::$NULL */ => BooleanValue::$TRUE,
+            //            $value instanceof IntegerValue => $value->value === 0 ? BooleanValue::$TRUE : BooleanValue::$FALSE,
             default => new ErrorValue("Unknown operator: !{$value->type()}"),
         };
     }
 
-    private function evaluateMinusOperatorExpression(Value $value): Value
-    {
+    private function evaluateMinusOperatorExpression(Value $value): Value {
         if ($value instanceof IntegerValue) {
-            if ($value->value === PHP_INT_MIN) {
+            if (PHP_INT_MIN === $value->value) {
                 return new ErrorValue("Integer overflow: -{$value->value}");
             }
 
@@ -184,8 +172,7 @@ class Evaluator
         return new ErrorValue("Unknown operator: -{$value->type()}");
     }
 
-    private function evaluateIntegerInfixExpression(TokenType $type, IntegerValue $left, IntegerValue $right): Value
-    {
+    private function evaluateIntegerInfixExpression(TokenType $type, IntegerValue $left, IntegerValue $right): Value {
         return match ($type) {
             // This is unsafe in PHP, as integers do not just overflow, they become floats.
             // See InterValue::add(), InterValue::subtract(), etc. for a safe implementation.
@@ -199,7 +186,6 @@ class Evaluator
             TokenType::Asterisk => IntegerValue::mul($left->value, $right->value),
             TokenType::Slash => IntegerValue::div($left->value, $right->value),
 
-
             TokenType::LessThan => BooleanValue::fromBool($left->value < $right->value),
             TokenType::GreaterThan => BooleanValue::fromBool($left->value > $right->value),
             TokenType::Equals => BooleanValue::fromBool($left->value === $right->value),
@@ -208,8 +194,7 @@ class Evaluator
         };
     }
 
-    private function evaluateBooleanInfixExpression(TokenType $type, BooleanValue $left, BooleanValue $right): BooleanValue | ErrorValue
-    {
+    private function evaluateBooleanInfixExpression(TokenType $type, BooleanValue $left, BooleanValue $right): BooleanValue|ErrorValue {
         return match ($type) {
             TokenType::Equals => BooleanValue::fromBool($left === $right),
             TokenType::NotEquals => BooleanValue::fromBool($left !== $right),
@@ -217,34 +202,30 @@ class Evaluator
         };
     }
 
-    private function evaluateStringInfixExpression(TokenType $type, StringValue $left, StringValue $right): StringValue | ErrorValue
-    {
+    private function evaluateStringInfixExpression(TokenType $type, StringValue $left, StringValue $right): StringValue|ErrorValue {
         return match ($type) {
-            TokenType::Plus => new StringValue($left->value . $right->value),
+            TokenType::Plus => new StringValue($left->value.$right->value),
             TokenType::Equals => BooleanValue::fromBool($left->value === $right->value),
             TokenType::NotEquals => BooleanValue::fromBool($left->value !== $right->value),
             default => new ErrorValue("Unknown operator: {$left->type()} {$type->name} {$right->type()}"),
         };
     }
 
-    private function evaluateIdentifier(Identifier $node, Scope $scope): Value
-    {
+    private function evaluateIdentifier(Identifier $node, Scope $scope): Value {
         $value = $scope->get($node->value);
 
-        if ($value === null) {
+        if (null === $value) {
             return new ErrorValue("Identifier not found: {$node->value}");
         }
 
         return $value;
     }
 
-    private function evaluateFunctionLiteral(FunctionLiteral $node, Scope $scope): FunctionValue
-    {
+    private function evaluateFunctionLiteral(FunctionLiteral $node, Scope $scope): FunctionValue {
         return new FunctionValue($node->parameters, $node->body, $scope);
     }
 
-    private function evaluateCallExpression(CallExpression $node, Scope $scope): Value
-    {
+    private function evaluateCallExpression(CallExpression $node, Scope $scope): Value {
         $function = $this->evaluate($node->function, $scope);
 
         if ($function instanceof ErrorValue) {
@@ -253,7 +234,7 @@ class Evaluator
 
         $arguments = $this->evaluateExpressions($node->arguments, $scope);
 
-        if (count($arguments) === 1 && $arguments[0] instanceof ErrorValue) {
+        if (1 === count($arguments) && $arguments[0] instanceof ErrorValue) {
             return $arguments[0];
         }
 
@@ -261,28 +242,23 @@ class Evaluator
     }
 
     /**
-     * @param Value $function
      * @param Value[] $arguments
-     * @return Value
      */
-    private function applyFunction(Value $function, array $arguments): Value
-    {
+    private function applyFunction(Value $function, array $arguments): Value {
         if (!$function instanceof FunctionValue) {
             return new ErrorValue("Not a function: {$function->type()}");
         }
 
         $childScope = $function->createChildScope($arguments);
         $value = $this->evaluate($function->body, $childScope);
+
         return ReturnValue::unwrap($value);
     }
 
     /**
-     * @param array $arguments
-     * @param Scope $scope
      * @return Value[]
      */
-    private function evaluateExpressions(array $arguments, Scope $scope): array
-    {
+    private function evaluateExpressions(array $arguments, Scope $scope): array {
         $result = [];
 
         foreach ($arguments as $argument) {

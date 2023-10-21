@@ -6,11 +6,13 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^10.1",
-        "friendsofphp/php-cs-fixer": "^3.17"
+        "friendsofphp/php-cs-fixer": "^3.17",
+        "phpunit/php-code-coverage": "^10.1"
     },
     "scripts": {
         "format": "vendor/bin/php-cs-fixer fix",
-        "test": "php -d xdebug.remote_enable=Off -d xdebug.remote_autostart=Off vendor/bin/phpunit",
-        "debug:test": "php -d xdebug.remote_enable=1 -d xdebug.remote_port=9003 vendor/bin/phpunit"
+        "test": "php -d xdebug.mode=off vendor/bin/phpunit",
+        "test:coverage": "php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-html cover --coverage-filter src",
+        "test:debug": "php -d xdebug.mode=debug -d xdebug.start_with_request=yes vendor/bin/phpunit"
     }
 }
