@@ -12,4 +12,4 @@ FROM eclipse-temurin:${JAVA_VERSION}-alpine
 WORKDIR /jmonkey
 COPY --from=build /jmonkey/monkey.jar .
 ENTRYPOINT ["java", "-jar", "monkey.jar"]
-CMD ["let fac = fn (n) { let it = fn (n, acc) { if (n < 1) { acc } else { it(n-1, n*acc) }}; it(n, 1) }; fac(pow(10))"]
+CMD ["let fac = fn (n) { let it = fn (n, acc) { if (n < 1) { acc } else { it(n-1, n*acc) }}; it(n, 1) }; puts(fac(10))"]
