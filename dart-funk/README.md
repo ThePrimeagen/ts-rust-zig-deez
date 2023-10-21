@@ -29,17 +29,17 @@ dart pub global activate --source=path <path to this package>
 ## Usage
 
 ```sh
-# Sample command
-$ mkay sample
+# REPL displaying tokens
+$ main --rlpl
 
-# Sample command option
-$ mkay sample --cyan
+# REPL displaying statements
+$ main --rppl
 
-# Show CLI version
-$ mkay --version
+# REPL 
+$ main --repl
 
 # Show usage help
-$ mkay --help
+$ main 
 ```
 
 ## Running Tests with coverage 🧪

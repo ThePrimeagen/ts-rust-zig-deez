@@ -6,7 +6,7 @@ void main() {
   group('AST Node', () {
     late Logger logger;
     setUp(() {
-      logger = Logger();
+      logger = Logger(level: Level.warning);
     });
     test(
       'should return valid Node when instantiated',
