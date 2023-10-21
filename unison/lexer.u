@@ -26,27 +26,27 @@ Lexer.lexer str =
     loop tup =
         (str, tokens) = tup 
         match str with 
-        "" -> tokens
-        lex -> processText str tokens |> loop
+            "" -> tokens
+            lex -> processText str tokens |> loop
     loop (str, [])
 
 Lexer.processText : Text -> [Token] -> (Text, [Token])
 Lexer.processText str tokens = 
     (ch, txt) = Text.uncons str |> Optional.getOrElse (?\NUL, "")
-    match ch with
-        x
-            | isWhitespace x -> (txt, tokens)
-            | x == ?= -> identEquals txt tokens
-            | x == ?! -> identNotEqual txt tokens
-            | isLetter(x) -> 
-                (var, rem) = identChar txt
-                val = fromCharList([ch]) ++ var
-                (rem, tokens :+ keyWords(val) )
-            | isDigit(x) -> 
-                (var, rem) = identNum txt
-                num = fromCharList([ch]) ++ var
-                (rem, tokens :+ Int num)
-        _ ->(txt, tokens :+ nextToken(ch))
+    match ch with 
+    _
+        | isWhitespace ch -> (txt, tokens)
+        | ch == ?= -> identEquals txt tokens
+        | ch == ?! -> identNotEqual txt tokens
+        | isLetter(ch) -> 
+            (var, rem) = identChar txt
+            val = fromCharList([ch]) ++ var
+            (rem, tokens :+ keyWords(val) )
+        | isDigit(ch) -> 
+            (var, rem) = identNum txt
+            num = fromCharList([ch]) ++ var
+            (rem, tokens :+ Int num)
+        | otherwise ->(txt, tokens :+ nextToken(ch))
 
 Lexer.identEquals : Text -> [Token] -> (Text, [Token])
 Lexer.identEquals str tokens =
@@ -79,3 +79,9 @@ Lexer.identNum str =
 Lexer.isLetter : Char -> Boolean
 Lexer.isLetter ch =
     ((?a <= ch) && (ch <= ?z)) || ((?A <= ch) && (ch <= ?Z)) || (ch == ?_)
+
+Test.testFile : '{IO, Exception} [Token]
+Test.testFile = do
+    path = FilePath "test.txt"
+    tokens = lexer << getText <| open path Read
+    tokens :+ Eof
