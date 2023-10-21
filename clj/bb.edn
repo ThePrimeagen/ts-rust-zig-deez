@@ -1,0 +1,11 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}
+        io.github.vikasg7/jdsl {:git/url "https://github.com/vikasg7/jdsl.git" 
+                                :git/sha "0c499412cb39204b7a8350a1916ad5c3e39a62b2"
+                                :deps/manifest :deps}}
+ :tasks {run  {:task (exec 'monkey-lang.core/-main)}
+         test {:extra-paths ["test"]
+               :extra-deps {io.github.cognitect-labs/test-runner 
+                           {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+               :task (exec 'cognitect.test-runner.api/test)
+               :org.babashka/cli {:coerce {:nses [:symbol]}}}}}
