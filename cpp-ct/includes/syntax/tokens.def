@@ -1,0 +1,117 @@
+// Purpose: This file defines all the x-macros for the tokens
+
+#ifndef MK_TOKEN
+    #define MK_TOKEN(name)
+#endif // TOKEN
+
+#ifndef MK_KEYWORD
+    #define MK_KEYWORD(name) MK_TOKEN(kw_ ## name)
+#endif // KEYWORD
+
+#ifndef MK_PUNCTUATOR
+    #define MK_PUNCTUATOR(name, str, lookahead) MK_TOKEN(name)
+#endif
+
+#ifndef MK_PUNCTUATOR_MULTI_CHAR
+    #define MK_PUNCTUATOR_MULTI_CHAR(name, str, lookahead) MK_TOKEN(name)
+#endif
+
+#ifndef MK_PUNCTUATOR_SINGLE_CHAR
+    #define MK_PUNCTUATOR_SINGLE_CHAR(name, str) MK_PUNCTUATOR(name, str, 0)
+#endif
+
+#ifndef MK_MISC
+    #define MK_MISC(name) MK_TOKEN(name)
+#endif
+
+#ifndef MK_LITERAL
+    #define MK_LITERAL(name) MK_TOKEN(name ## _literal)
+#endif
+
+#ifndef MK_TOKEN_BEGIN
+    #define MK_TOKEN_BEGIN(name)
+#endif
+
+#ifndef MK_TOKEN_END
+    #define MK_TOKEN_END(name)
+#endif
+
+MK_TOKEN(identifier)
+
+MK_TOKEN_BEGIN(keyword_begin)
+    MK_KEYWORD(int)
+    MK_KEYWORD(bool)
+    MK_KEYWORD(string)
+    
+    MK_KEYWORD(fn)
+    MK_KEYWORD(let)
+    
+    MK_KEYWORD(for)
+    MK_KEYWORD(while)
+    MK_KEYWORD(if)
+    MK_KEYWORD(else)
+    MK_KEYWORD(return)
+MK_TOKEN_END(keyword_end)
+
+MK_TOKEN_BEGIN(literal_begin)
+    MK_LITERAL(int)
+    MK_LITERAL(string)
+    MK_LITERAL(bool)
+MK_TOKEN_END(literal_end)
+
+MK_TOKEN_BEGIN(punctuator_begin)
+    MK_PUNCTUATOR_SINGLE_CHAR(open_paren, '(')
+    MK_PUNCTUATOR_SINGLE_CHAR(close_paren, ')')
+    MK_PUNCTUATOR_SINGLE_CHAR(open_brace, '{')
+    MK_PUNCTUATOR_SINGLE_CHAR(close_brace, '}')
+    MK_PUNCTUATOR_SINGLE_CHAR(open_bracket, '[')
+    MK_PUNCTUATOR_SINGLE_CHAR(close_bracket, ']')
+    MK_PUNCTUATOR_SINGLE_CHAR(comma, ',')
+    MK_PUNCTUATOR_SINGLE_CHAR(dot, '.')
+    MK_PUNCTUATOR_SINGLE_CHAR(semicolon, ';')
+    MK_PUNCTUATOR_SINGLE_CHAR(colon, ':')
+    MK_PUNCTUATOR_SINGLE_CHAR(question_mark, '?')
+    MK_PUNCTUATOR_SINGLE_CHAR(plus, '+')
+    MK_PUNCTUATOR_SINGLE_CHAR(minus, '-')
+    MK_PUNCTUATOR_SINGLE_CHAR(star, '*')
+    MK_PUNCTUATOR_SINGLE_CHAR(slash, '/')
+    MK_PUNCTUATOR_SINGLE_CHAR(percent, '%')
+    MK_PUNCTUATOR_SINGLE_CHAR(ampersand, '&')
+    MK_PUNCTUATOR_SINGLE_CHAR(pipe, '|')
+    MK_PUNCTUATOR_SINGLE_CHAR(caret, '^')
+    MK_PUNCTUATOR_SINGLE_CHAR(tilde, '~')
+    MK_PUNCTUATOR_SINGLE_CHAR(exclamation_mark, '!')
+    MK_PUNCTUATOR_SINGLE_CHAR(equal, '=')
+    MK_PUNCTUATOR_SINGLE_CHAR(less_than, '<')
+    MK_PUNCTUATOR_SINGLE_CHAR(greater_than, '>')
+    
+    // For larger lookahead, keep them on the top so that they are matched first
+    MK_PUNCTUATOR_MULTI_CHAR(right_arrow, "->", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(equal_equal, "==", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(not_equal, "!=", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(less_than_equal, "<=", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(greater_than_equal, ">=", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(less_than_less_than, "<<", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(greater_than_greater_than, ">>", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(ampersand_ampersand, "&&", 1)
+    MK_PUNCTUATOR_MULTI_CHAR(pipe_pipe, "||", 1)
+MK_TOKEN_END(punctuator_end)
+
+MK_TOKEN_BEGIN(misc_begin)
+    MK_MISC(whitespace)
+    MK_MISC(newline)
+    MK_MISC(comment)
+    MK_MISC(illegal)
+    MK_MISC(eof)
+    MK_MISC(unknown) // It is used as sentinel value for the lexer
+MK_TOKEN_END(misc_end)
+
+#undef MK_TOKEN
+#undef MK_KEYWORD
+#undef MK_PUNCTUATOR
+#undef MK_MISC
+#undef MK_LITERAL
+#undef MK_TOKEN_BEGIN
+#undef MK_TOKEN_END
+#undef MK_PUNCTUATOR_SINGLE_CHAR
+#undef MK_PUNCTUATOR_MULTI_CHAR
