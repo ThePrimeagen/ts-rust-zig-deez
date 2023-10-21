@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 
 WORKDIR /deez
-RUN mkdir /deez/lexer
+RUN mkdir /deez/deez
 
 ENV threedays="/deez/3days"
 

@@ -1,36 +1,60 @@
 // "Entertain God and your ass will follow." - Terry A. Davis
 
-#define TOKEN_ILLEGAL       ( 0)
-#define TOKEN_EOF           ( 1)
-#define TOKEN_ASSIGN        ( 2)
-#define TOKEN_IDENT         ( 3)
-#define TOKEN_INT           ( 4)
-#define TOKEN_EQUAL         ( 5)
-#define TOKEN_PLUS          ( 6)
-#define TOKEN_COMMA         ( 7)
-#define TOKEN_SEMICOLON     ( 8)
-#define TOKEN_L_PAREN       ( 9)
-#define TOKEN_R_PAREN       (10)
-#define TOKEN_L_SQUIRLY     (11)
-#define TOKEN_R_SQUIRLY     (12)
-#define TOKEN_FUNCTION      (13)
+class Token
+{
+	U64 type;
+	U8 *literal;
+};
 
-#define TOKEN_BANG          (14)
-#define TOKEN_DASH          (15)
-#define TOKEN_FORWARD_SLASH (16)
-#define TOKEN_ASTERISK      (17)
-#define TOKEN_LESS_THAN     (18)
-#define TOKEN_GREATER_THAN  (19)
+U8 *TOKEN_STR = "ILLEGAL\0"
+	"EOF\0"
+	"ASSIGN\0"
+	"IDENT\0"
+	"INT\0"
+	"PLUS\0"
+	"COMMA\0"
+	"SEMICOLON\0"
+	"L_PAREN\0"
+	"R_PAREN\0"
+	"L_SQUIRLY\0"
+	"R_SQUIRLY\0"
+	"FUNCTION\0"
+	"BANG\0"
+	"DASH\0"
+	"FORWARD_SLASH\0"
+	"ASTERISK\0"
+	"LESS_THAN\0"
+	"GREATER_THAN\0"
+	"LESS_THAN_EQUAL\0"
+	"GREATER_THAN_EQUAL\0"
+	"EQUAL\0"
+	"NOT_EQUAL\0"
+	"LET\0"
+	"IF\0"
+	"ELSE\0"
+	"RETURN\0"
+	"FALSE\0"
+	"TRUE\0"
+	"NIL\0";
 
-#define TOKEN_EQUAL         (20)
-#define TOKEN_NOT_EQUAL     (21)
+#exe {
+	I64 offset;
+	I64 i = 0;
+	for (offset=0;TOKEN_STR[offset+1];offset+=StrLen(TOKEN_STR+offset)+1)
+		StreamPrint("#define TOKEN_%s (%d)\n", TOKEN_STR+offset, i++);
+};
 
-#define TOKEN_LET           (22)
-#define TOKEN_IF            (23)
-#define TOKEN_ELSE          (24)
-#define TOKEN_RETURN        (25)
-#define TOKEN_FALSE         (26)
-#define TOKEN_TRUE          (27)
+U8 *TokenPretty(U64 type)
+{
+	switch (type) {
+#exe {
+	I64 offset;
+	for (offset=0;TOKEN_STR[offset+1];offset+=StrLen(TOKEN_STR+offset)+1)
+		StreamPrint("\tcase TOKEN_%s: return \"%s\";\n", TOKEN_STR+offset, TOKEN_STR+offset);
+}
+	}
+	return "ERROR";
+}
 
 class Lexer {
 	U8 *input;
@@ -38,11 +62,6 @@ class Lexer {
 	U64 position;
 	U64 read_position;
 	U8 ch;
-};
-
-class Token {
-	U64 type;
-	U8 *literal;
 };
 
 U8 *StrNewN(U8 *buf, U64 sz)
@@ -76,7 +95,7 @@ U8 LexerPeekChar(Lexer *l)
 
 U0 LexerSkipWhitespace(Lexer *l)
 {
-	while (l->ch == ' ' || l->ch == '\t' || l->ch == '\n')
+	while (l->ch == ' ' || l->ch == '\t' || l->ch == '\n' || l->ch == '')
 		LexerReadChar(l);
 }
 
@@ -117,6 +136,8 @@ U64 GetTokenTypeFromLiteral(U8 *ident)
     type = TOKEN_FALSE;
 	else if (StrCmp(ident, "true") == 0)
     type = TOKEN_TRUE;
+	else if (StrCmp(ident, "null") == 0)
+    type = TOKEN_NIL;
 	else
 		type = TOKEN_IDENT;
 	return type;
@@ -150,8 +171,20 @@ Token *LexerNextToken(Lexer *l)
 		case '-':  tok = TokenCreate(TOKEN_DASH         ); break;
 		case '/':  tok = TokenCreate(TOKEN_FORWARD_SLASH); break;
 		case '*':  tok = TokenCreate(TOKEN_ASTERISK     ); break;
-		case '<':  tok = TokenCreate(TOKEN_LESS_THAN    ); break;
-		case '>':  tok = TokenCreate(TOKEN_GREATER_THAN ); break;
+		case '<':
+      if (LexerPeekChar(l) == '=') {
+        LexerReadChar(l);
+		    tok = TokenCreate(TOKEN_LESS_THAN_EQUAL);
+      } else
+		    tok = TokenCreate(TOKEN_LESS_THAN);
+      break;
+		case '>':
+      if (LexerPeekChar(l) == '=') {
+        LexerReadChar(l);
+		    tok = TokenCreate(TOKEN_GREATER_THAN_EQUAL);
+      } else
+		    tok = TokenCreate(TOKEN_GREATER_THAN);
+      break;
 		case '\0': tok = TokenCreate(TOKEN_EOF          ); break;
 		case '!':
       if (LexerPeekChar(l) == '=') {
@@ -193,7 +226,7 @@ Token *LexerNextToken(Lexer *l)
 	return tok;
 }
 
-Lexer *LexerInit(U8 *input)
+Lexer *LexerNew(U8 *input)
 {
 	Lexer *l = MAlloc(sizeof(Lexer));
 	l->input = input;
@@ -207,7 +240,8 @@ Lexer *LexerInit(U8 *input)
 	return l;
 }
 
-U0 TokenFree(Token **tok) {
+U0 TokenFree(Token **tok)
+{
 	if (*tok && (*tok)->literal)
 		Free((*tok)->literal);
 	Free(*tok);
