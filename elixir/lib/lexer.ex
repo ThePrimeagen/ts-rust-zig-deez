@@ -52,7 +52,7 @@ defmodule Monkey.Lexer do
 
   ## Example
 
-      iex> Lexer.init("let five = 5;")
+      iex> Monkey.Lexer.init("let five = 5;")
       [
         :let,
         {:ident, "five"},
@@ -68,84 +68,110 @@ defmodule Monkey.Lexer do
     lex(input, [])
   end
 
-  # Recursive base-case. When the input is empty, we add an EOF token.
-  #
-  # It is more efficient to prepend to a list and reverse it than to append to
-  # the list while building it. Lists here are linked-lists, so the whole list
-  # would be copied each time we append to it.
-  # See: https://www.erlang.org/doc/efficiency_guide/listhandling
   @spec lex(input :: String.t(), [token()]) :: [token()]
-  defp lex(<<>>, tokens) do
-    [:eof | tokens] |> Enum.reverse()
+  def lex(input, tokens) do
+    # Tail-recursively go through the input, tokenizing the character(s).
+    #
+    # We are using pure tail recursion, rather than a tail recursive main function with a helper to extract tokens.
+    # Everything gets given `tokens`, and is responsible for calling `lex/2` to continue iterating over `input`, and
+    # does not return until :eof is hit.
+    # This improves performance in these ways:
+    # - avoid work to assemble a tuple of {token, rest} to allow multiple return values
+    # - avoid work to pattern match to extract values from the {token, rest} return tuple
+    # - not allocating that tuple on the heap - so 0 heap memory is allocated at all (or needs to GCed later)
+    # - BEAM uses `call_only` instructions only, so no stack allocation needed, or continuation pointer management etc
+    #   needed, and all arguments are passed via BEAM registers
+    #
+    # By doing all matching in one place here, the compiler will generate optimised lookup on the matched input. If
+    # this is spread out between a main function, and a helper to tokenize, it needs to do the match multiple times, and
+    # it won't be as well optimised due to having less context on what the execution paths would be
+    #
+    # It is more efficient to prepend to a list and reverse it than to append to
+    # the list while building it. Lists here are linked-lists, so the whole list
+    # would be copied each time we append to it.
+    # See: https://www.erlang.org/doc/efficiency_guide/listhandling
+    #
+    # Uses binary pattern-matching to match on the first character(s).
+    # e.g. `<<c::8, rest::binary>>` matches on the first 8 bits and assigns it
+    # to `c`, then assigns the rest of the binary to `rest`.
+    # For more details, see: https://hexdocs.pm/elixir/Kernel.SpecialForms.html#<<>>/1
+    #
+    # this logic works equivalent if done as multiple function heads, or a case statement (the compiled BEAM code is
+    # identical either way). The benefit of a case statement is each case clause only has to worry about the string
+    # match, and doesn't have to cart around `tokens`, as we've already done that when we entered the function.
+    case input do
+      # Recursive base-case. When the input is empty, we add an EOF token.
+      <<>> -> [:eof | tokens] |> Enum.reverse()
+      # Ignore whitespace.
+      <<c::8, rest::binary>> when is_whitespace(c) -> lex(rest, tokens)
+      <<"==", rest::binary>> -> lex(rest, [:equal | tokens])
+      <<"!=", rest::binary>> -> lex(rest, [:not_equal | tokens])
+      <<";", rest::binary>> -> lex(rest, [:semicolon | tokens])
+      <<",", rest::binary>> -> lex(rest, [:comma | tokens])
+      <<"(", rest::binary>> -> lex(rest, [:lparen | tokens])
+      <<")", rest::binary>> -> lex(rest, [:rparen | tokens])
+      <<"{", rest::binary>> -> lex(rest, [:lsquirly | tokens])
+      <<"}", rest::binary>> -> lex(rest, [:rsquirly | tokens])
+      <<"=", rest::binary>> -> lex(rest, [:assign | tokens])
+      <<"+", rest::binary>> -> lex(rest, [:plus | tokens])
+      <<"-", rest::binary>> -> lex(rest, [:minus | tokens])
+      <<"!", rest::binary>> -> lex(rest, [:bang | tokens])
+      <<"/", rest::binary>> -> lex(rest, [:slash | tokens])
+      <<"*", rest::binary>> -> lex(rest, [:asterisk | tokens])
+      <<">", rest::binary>> -> lex(rest, [:greater_than | tokens])
+      <<"<", rest::binary>> -> lex(rest, [:less_than | tokens])
+      <<"fn", rest::binary>> -> maybe_keyword(rest, byte_size("fn"), input, :function, tokens)
+      <<"let", rest::binary>> -> maybe_keyword(rest, byte_size("let"), input, :let, tokens)
+      <<"if", rest::binary>> -> maybe_keyword(rest, byte_size("if"), input, :if, tokens)
+      <<"else", rest::binary>> -> maybe_keyword(rest, byte_size("else"), input, :else, tokens)
+      <<"true", rest::binary>> -> maybe_keyword(rest, byte_size("true"), input, true, tokens)
+      <<"false", rest::binary>> -> maybe_keyword(rest, byte_size("false"), input, false, tokens)
+      <<"return", rest::binary>> -> maybe_keyword(rest, byte_size("return"), input, :return, tokens)
+      <<c::8, rest::binary>> when is_letter(c) -> identifier(rest, 1, input, tokens)
+      <<c::8, rest::binary>> when is_digit(c) -> number(rest, 1, input, tokens)
+      <<c::8, rest::binary>> -> lex(rest, [{:illegal, <<c>>} | tokens])
+    end
   end
 
-  # Ignore whitespace.
-  defp lex(<<c::8, rest::binary>>, tokens) when is_whitespace(c) do
-    lex(rest, tokens)
+  # we have already matched that we have the start of a keyword. Check the next character to see if it indicates the
+  # keyword token end. If so, then we can just return the token directly. If not, then it's a plain identifier, and
+  @spec maybe_keyword(String.t(), integer(), String.t(), token(), [token()]) :: [token()]
+  defp maybe_keyword(<<c::8, rest::binary>>, ident_len, input, _keyword, tokens)
+       when is_letter(c) do
+    # we have another letter, so this isn't a keyword - but an identifier that starts with the same characters. Tokenize it as such.
+    identifier(rest, ident_len + 1, input, tokens)
   end
 
-  # Tail-recursively go through the input, tokenizing the character(s).
-  defp lex(input, tokens) do
-    {token, rest} = tokenize(input)
-    lex(rest, [token | tokens])
+  defp maybe_keyword(rest, _ident_len, _input, keyword, tokens) do
+    # next char wasn't a letter, so this is actually a keyword
+    lex(rest, [keyword | tokens])
   end
 
-  # Uses binary pattern-matching to match on the first character(s).
-  # e.g. `<<c::8, rest::binary>>` matches on the first 8 bits and assigns it
-  # to `c`, then assigns the rest of the binary to `rest`.
-  # For more details, see: https://hexdocs.pm/elixir/Kernel.SpecialForms.html#<<>>/1
-  @spec tokenize(input :: String.t()) :: {token(), rest :: String.t()}
-  defp tokenize(<<"==", rest::binary>>), do: {:equal, rest}
-  defp tokenize(<<"!=", rest::binary>>), do: {:not_equal, rest}
-  defp tokenize(<<";", rest::binary>>), do: {:semicolon, rest}
-  defp tokenize(<<",", rest::binary>>), do: {:comma, rest}
-  defp tokenize(<<"(", rest::binary>>), do: {:lparen, rest}
-  defp tokenize(<<")", rest::binary>>), do: {:rparen, rest}
-  defp tokenize(<<"{", rest::binary>>), do: {:lsquirly, rest}
-  defp tokenize(<<"}", rest::binary>>), do: {:rsquirly, rest}
-  defp tokenize(<<"=", rest::binary>>), do: {:assign, rest}
-  defp tokenize(<<"+", rest::binary>>), do: {:plus, rest}
-  defp tokenize(<<"-", rest::binary>>), do: {:minus, rest}
-  defp tokenize(<<"!", rest::binary>>), do: {:bang, rest}
-  defp tokenize(<<"/", rest::binary>>), do: {:slash, rest}
-  defp tokenize(<<"*", rest::binary>>), do: {:asterisk, rest}
-  defp tokenize(<<">", rest::binary>>), do: {:greater_than, rest}
-  defp tokenize(<<"<", rest::binary>>), do: {:less_than, rest}
-  defp tokenize(<<c::8, rest::binary>>) when is_letter(c), do: read_identifier(rest, <<c>>)
-  defp tokenize(<<c::8, rest::binary>>) when is_digit(c), do: read_number(rest, <<c>>)
-  defp tokenize(<<c::8, rest::binary>>), do: {{:illegal, <<c>>}, rest}
-
-  # Recursively read the input until we hit a non-letter character. Builds an
-  # iolist, then tokenizes the word.
-  @spec read_identifier(String.t(), iodata()) :: {token(), String.t()}
-  defp read_identifier(<<c::8, rest::binary>>, acc) when is_letter(c) do
-    read_identifier(rest, [acc | <<c>>])
+  # Recursively read the input until we hit a non-letter character.
+  #
+  # Rather than extracting a single character at a time via pattern matching and storing them in an accumulator,
+  # instead track how many characters we are into the original input as we go. Then, when the token end is detected,
+  # do a single binary pattern match of the specified length to pull out a sub binary. This means we don't accumulate
+  # garbage or allocate anything on the heap as we go. The sub binary will be a simple reference into the original
+  # input, which is very fast, and memory efficient.
+  @spec identifier(String.t(), integer(), String.t(), [token()]) :: [token()]
+  defp identifier(<<c::8, rest::binary>>, ident_len, input, tokens) when is_letter(c) do
+    identifier(rest, ident_len + 1, input, tokens)
   end
 
-  defp read_identifier(rest, acc) do
-    {IO.iodata_to_binary(acc) |> tokenize_word(), rest}
+  defp identifier(_rest, ident_len, input, tokens) do
+    <<ident::bytes-size(ident_len), rest::binary>> = input
+    lex(rest, [{:ident, ident} | tokens])
   end
 
-  # Recursively read the input until we hit a non-digit character. Builds an
-  # iolist, then tokenizes the number.
-  @spec read_number(String.t(), iodata()) :: {token(), String.t()}
-  defp read_number(<<c::8, rest::binary>>, acc) when is_digit(c) do
-    read_number(rest, [acc | <<c>>])
+  # Recursively read the input until we hit a non-digit character.
+  @spec number(String.t(), integer(), String.t(), [token()]) :: [token()]
+  defp number(<<c::8, rest::binary>>, number_len, input, tokens) when is_digit(c) do
+    number(rest, number_len + 1, input, tokens)
   end
 
-  defp read_number(rest, acc) do
-    {{:int, IO.iodata_to_binary(acc)}, rest}
+  defp number(_rest, number_len, input, tokens) do
+    <<number::bytes-size(number_len), rest::binary>> = input
+    lex(rest, [{:int, number} | tokens])
   end
-
-  # Tokenize the word. Checks if it is a keyword, otherwise it is an
-  # identifier.
-  @spec tokenize_word(String.t()) :: keyword_token() | {:ident, String.t()}
-  defp tokenize_word("fn"), do: :function
-  defp tokenize_word("let"), do: :let
-  defp tokenize_word("if"), do: :if
-  defp tokenize_word("else"), do: :else
-  defp tokenize_word("true"), do: true
-  defp tokenize_word("false"), do: false
-  defp tokenize_word("return"), do: :return
-  defp tokenize_word(ident), do: {:ident, ident}
 end
