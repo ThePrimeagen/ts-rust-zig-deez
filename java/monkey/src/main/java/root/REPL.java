@@ -1,6 +1,12 @@
 package root;
 
-import root.lexer.LexerIterable;
+import root.ast.Program;
+import root.evaluation.Evaluator;
+import root.evaluation.EvaluationException;
+import root.evaluation.objects.MonkeyObject;
+import root.lexer.Lexer;
+import root.parser.ParseProgramException;
+import root.parser.Parser;
 
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -12,19 +18,40 @@ public class REPL {
 
     private final InputStream inputStream;
     private final PrintStream printStream;
+    private final boolean shouldPrintPrompt;
 
-    public REPL(InputStream inputStream, PrintStream printStream) {
+    public REPL(InputStream inputStream, PrintStream printStream, boolean shouldPrintPrompt) {
         this.inputStream = inputStream;
         this.printStream = printStream;
+        this.shouldPrintPrompt = shouldPrintPrompt;
     }
 
     public void start() {
         var scanner = new Scanner(inputStream);
+        var evaluator = new Evaluator();
 
-        printStream.print(PROMPT);
+        printPrompt();
         while (scanner.hasNextLine()) {
             var line = scanner.nextLine();
-            LexerIterable.fromString(line).forEachRemaining(this::printToken);
+            var lexer = new Lexer(line);
+            var parser = new Parser(lexer);
+
+            try {
+                Program program = parser.parseProgram();
+                MonkeyObject<?> evaluated = evaluator.eval(program);
+
+                printStream.println(evaluated.inspect());
+            } catch (ParseProgramException | EvaluationException e) {
+                printStream.println(e.getMessage());
+            }
+
+            printStream.println();
+            printPrompt();
+        }
+    }
+
+    private void printPrompt() {
+        if (shouldPrintPrompt) {
             printStream.print(PROMPT);
         }
     }

@@ -1,34 +1,34 @@
 package root.lexer;
 
-import root.Token;
+import root.LocalizedToken;
 
 import java.util.Iterator;
 
-public class LexerIterable implements Iterable<Token> {
+class LexerIterable implements Iterable<LocalizedToken> {
     private final Lexer lexer;
 
     private LexerIterable(Lexer lexer) {
         this.lexer = lexer;
     }
 
-    public static Iterator<Token> fromString(String input) {
-        return new LexerIterable(new Lexer(input)).iterator();
+    static Iterator<LocalizedToken> fromLexer(Lexer lexer) {
+        return new LexerIterable(lexer).iterator();
     }
 
     @Override
-    public Iterator<Token> iterator() {
-        return new LexerIterator(this.lexer);
+    public Iterator<LocalizedToken> iterator() {
+        return new LexerIterator(lexer);
     }
 
-    private record LexerIterator(Lexer lexer) implements Iterator<Token> {
+    record LexerIterator(Lexer lexer) implements Iterator<LocalizedToken> {
         @Override
         public boolean hasNext() {
             return lexer.getCc() != '\0';
         }
 
         @Override
-        public Token next() {
-            return lexer.nextToken();
+        public LocalizedToken next() {
+            return lexer.nextLocalized();
         }
     }
 }

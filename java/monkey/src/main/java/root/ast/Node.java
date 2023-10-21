@@ -1,20 +1,27 @@
 package root.ast;
 
-import root.Token;
+import root.LocalizedToken;
 
 public abstract class Node {
 
-    protected Token token;
+    private final LocalizedToken token;
 
-    public Token getToken() {
-        return token;
-    }
-
-    public void setToken(Token token) {
+    public Node(LocalizedToken token) {
         this.token = token;
     }
 
+    public LocalizedToken getToken() {
+        return token;
+    }
+
     public String tokenLiteral() {
-        return token.literal();
+        return token.token().literal();
+    }
+
+    abstract public String stringRep();
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + " " + stringRep();
     }
 }

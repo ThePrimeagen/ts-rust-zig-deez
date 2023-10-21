@@ -1,15 +1,45 @@
 package root.lexer;
 
+import root.LocalizedToken;
 import root.Token;
 import root.TokenType;
 
+import java.util.Iterator;
+import java.util.Map;
+
 public class Lexer {
 
+    private static final Map<Character, String> VALID_ESCAPES = Map.of(
+            'n', "\n",
+            't', "\t",
+            '\\', "\\",
+            '"', "\"",
+            '\'', "'"
+    );
+
     private final String input;
+    private final String[] lines;
     private int pos = 0;
+    private int line = 0;
+    private int column = 0;
 
     public Lexer(String input) {
         this.input = input;
+        this.lines = input.split("\n");
+    }
+
+    public Iterator<LocalizedToken> iter() {
+        return LexerIterable.fromLexer(this);
+    }
+
+    public LocalizedToken nextLocalized() {
+        this.skipWhitespace();
+
+        var start = this.column;
+        var lineStart = this.line;
+        var codeLine = lineStart >= this.lines.length ? "" : this.lines[lineStart];
+
+        return this.nextToken().localize(lineStart, start, codeLine);
     }
 
     public Token nextToken() {
@@ -22,6 +52,8 @@ public class Lexer {
             case '}' -> TokenType.RSQIRLY.token();
             case '(' -> TokenType.LPAREN.token();
             case ')' -> TokenType.RPAREN.token();
+            case '[' -> TokenType.LBRACKET.token();
+            case ']' -> TokenType.RBRACKET.token();
             case ',' -> TokenType.COMMA.token();
             case ';' -> TokenType.SEMI.token();
             case '+' -> TokenType.PLUS.token();
@@ -46,6 +78,24 @@ public class Lexer {
             case '/' -> TokenType.SLASH.token();
             case '>' -> TokenType.GT.token();
             case '<' -> TokenType.LT.token();
+            case ':' -> TokenType.COLON.token();
+            case '&' -> {
+                if (this.getCc() == '&') {
+                    this.advance();
+                    yield TokenType.AND.token();
+                }
+
+                yield TokenType.ILLEGAL.createToken("&");
+            }
+            case '|' -> {
+                if (this.getCc() == '|') {
+                    this.advance();
+                    yield TokenType.OR.token();
+                }
+
+                yield TokenType.ILLEGAL.createToken("|");
+            }
+            case '"', '\'' -> readString(currentChar);
             case '\0' -> TokenType.EOF.token();
 
             case Character c when isLetter(c) -> {
@@ -58,7 +108,8 @@ public class Lexer {
                     case "if" -> TokenType.IF.token();
                     case "else" -> TokenType.ELSE.token();
                     case "return" -> TokenType.RETURN.token();
-                    default -> TokenType.IDENT.createToken(ident);
+                    case "null" -> TokenType.NULL.token();
+                    default -> TokenType.IDENTIFIER.createToken(ident);
                 };
             }
             case Character c when Character.isDigit(c) -> TokenType.INT.createToken(this.number(currentChar));
@@ -66,12 +117,51 @@ public class Lexer {
         };
     }
 
+    private Token readString(Character startingChar) {
+        char character;
+        var stringBuilder = new StringBuilder();
+
+        while ((character = this.readCc()) != '\0') {
+            // Support for escape characters
+            if (character == '\\') {
+                char escaped = this.readCc();
+
+                if (VALID_ESCAPES.containsKey(escaped)) {
+                    stringBuilder.append(VALID_ESCAPES.get(escaped));
+                    continue;
+                } else {
+                    stringBuilder.append(character).append(escaped);
+                    // skipping to the end of the string
+                    Token rest = readString(startingChar);
+                    stringBuilder.append(rest.literal());
+
+                    // TODO maybe create a Lexing exception to better explain errors like this
+                    return TokenType.ILLEGAL.createToken(stringBuilder.toString());
+                }
+            }
+
+            if (character == startingChar) {
+                break;
+            }
+
+            stringBuilder.append(character);
+        }
+
+        String string = stringBuilder.toString();
+
+        if (character != startingChar) {
+            return TokenType.ILLEGAL.createToken(string);
+        }
+
+        return TokenType.STRING.createToken(string);
+    }
+
     private void advance() {
         if (this.pos >= this.input.length()) {
-            this.pos = -1;
             return;
         }
         this.pos++;
+        this.column++;
     }
 
     protected char getCc() {
@@ -113,6 +203,10 @@ public class Lexer {
 
     private void skipWhitespace() {
         while (Character.isWhitespace(this.getCc())) {
+            if (this.getCc() == '\n') {
+                this.column = -1;
+                this.line++;
+            }
             this.advance();
         }
     }

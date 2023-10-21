@@ -1,23 +1,23 @@
 package root.ast.statements;
 
-import root.Token;
+import root.LocalizedToken;
 import root.ast.expressions.Expression;
-import root.ast.expressions.IdentiferExpression;
+import root.ast.expressions.IdentifierExpression;
 
 public class LetStatement extends Statement {
 
-    private IdentiferExpression name;
+    private IdentifierExpression name;
     private Expression value;
 
-    public LetStatement(Token token) {
-        this.token = token;
+    public LetStatement(LocalizedToken token) {
+        super(token);
     }
 
-    public IdentiferExpression getName() {
+    public IdentifierExpression getName() {
         return name;
     }
 
-    public void setName(IdentiferExpression name) {
+    public void setName(IdentifierExpression name) {
         this.name = name;
     }
 
@@ -30,7 +30,7 @@ public class LetStatement extends Statement {
     }
 
     @Override
-    public String toString() {
-        return "%s %s = %s;".formatted(tokenLiteral(), name, value);
+    public String stringRep() {
+        return "%s %s = %s;".formatted(tokenLiteral(), name.stringRep(), value.stringRep());
     }
 }
