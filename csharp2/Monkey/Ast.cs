@@ -57,7 +57,7 @@ class IntegerLiteral : IExpression {
     public required Token Token { get; set; }
     public required long Value { get; set; }
 
-    public override string ToString() => Value.ToString();
+    public override string ToString() => Token.Literal;
 }
 
 class PrefixExpression : IExpression {
@@ -93,6 +93,13 @@ class InfixExpression : IExpression {
         builder.Append(')');
         return builder.ToString();
     }
+}
+
+class BooleanExpression : IExpression {
+    public required Token Token { get; set; }
+    public required bool Value { get; set; }
+
+    public override string ToString() => Token.Literal;
 }
 
 class Ast {

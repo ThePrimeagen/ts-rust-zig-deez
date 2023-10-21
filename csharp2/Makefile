@@ -29,7 +29,7 @@ clean:
 
 fmt:
 	@echo "===> Formatting"
-	@dotnet format Monkey -v n
+	@dotnet format -v m
 
 lint:
 	@echo "===> Linting"
