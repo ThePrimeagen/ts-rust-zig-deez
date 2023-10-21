@@ -20,6 +20,37 @@ func TestGetNextToken(t *testing.T) {
 	}
 }
 
+const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+const numbers = "0123456789"
+const symbols = "!@#$%^&*()-=+[]{}\\|;:'\",.<>/?`~"
+const spicyNonLetters = "Щø囧(╯°□°）╯︵ ┻━┻ ̸̨̨̡̢̛̙͓̣̺͕̎̃̚͠"
+
+func TestIsLetter(t *testing.T) {
+	for _, letter := range letters {
+		if !isLetter(letter) {
+			t.Errorf("Character %v should be a letter", string(letter))
+		}
+	}
+	for _, nonLetter := range numbers + symbols + spicyNonLetters {
+		if isLetter(nonLetter) {
+			t.Errorf("Character %v should not be a letter, but considered as one", string(nonLetter))
+		}
+	}
+}
+
+func TestIsNumber(t *testing.T) {
+	for _, number := range numbers {
+		if !isNumber(number) {
+			t.Errorf("Character %v should be a number", string(number))
+		}
+	}
+	for _, nonNumber := range letters + symbols + spicyNonLetters {
+		if isNumber(nonNumber) {
+			t.Errorf("Character %v should not be a number, but considered as one", string(nonNumber))
+		}
+	}
+}
+
 func TestGetNextTokenComplete(t *testing.T) {
 	const input = `let five = 5;
 	let ten = 10;
