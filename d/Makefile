@@ -19,14 +19,20 @@ docker-ready: docker-build
 
 fmt:
 	@echo "===> Formatting"
-	dfmt -i source/*
+	dfmt --brace_style=knr -i source/*
 
 lint:
 	@echo "===> Linting"
-	dscanner --syntaxCheck source/*
-	dscanner --styleCheck source/*
+	dscanner --syntaxCheck --config dscanner.ini source/*
+	# skipping due to broken unused parameter check for mixins
+	#dscanner --styleCheck --config dscanner.ini source/*
 
 test:
 	@echo "===> Testing"
-	dub test
+	DFLAGS="-L-L/usr/local/lib/" dub test -b unittest
+
+repl:
+	@echo "===> Repl"
+	#DFLAGS="-L-L/usr/local/lib/" dub -b release
+	DFLAGS="-L-L/usr/local/lib/" dub -b debug
 

@@ -41,17 +41,23 @@
 
 :"fmt"
 	@echo "===> Formatting"
-	dfmt -i source/*
+	dfmt --brace_style=knr -i source/*
 	@if %ready%=="yes" goto "lint" else goto exit
 
 :"lint"
 	@echo "===> Linting"
-	dscanner --syntaxCheck source/*
-	dscanner --styleCheck source/*
+	dscanner --syntaxCheck --config dscanner.ini source/*
+	@rem skipping due to broken unused parameter check for mixins
+	@rem dscanner --styleCheck --config dscanner.ini source/*
 	@if %ready%=="yes" goto "test" else goto exit
 
 :"test"
 	@echo "===> Testing"
-	dub test
+	dub test -b unittest
+	@goto exit
+
+:"repl"
+	@echo "===> Repl"
+	dub -b release
 	@goto exit
 
