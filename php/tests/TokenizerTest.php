@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class TokenizerTest extends TestCase
-{
-    public function testTokenizer(): void
-    {
+final class TokenizerTest extends TestCase {
+    public function testTokenizer(): void {
         $expected = [
             new Token(TokenType::Let),
             new Token(TokenType::Identifier, "five"),

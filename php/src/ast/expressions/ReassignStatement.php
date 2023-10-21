@@ -1,9 +1,8 @@
 <?php
 
-readonly class LetStatement implements Statement {
+readonly class ReassignStatement implements Statement {
 
     public function __construct(
-        public Token      $token,
         public Identifier $identifier,
         public Expression $value
     ) {
@@ -13,10 +12,10 @@ readonly class LetStatement implements Statement {
     }
 
     public function tokenLiteral(): string {
-        return $this->token->literal;
+        return $this->identifier->value;
     }
 
     public function __toString(): string {
-        return "let " . $this->identifier . " = " . $this->value . ";";
+        return $this->identifier . " = " . $this->value . ";";
     }
 }

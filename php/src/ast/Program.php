@@ -1,20 +1,15 @@
 <?php
 
-require 'vendor/autoload.php';
-
-class Program implements Node
-{
+class Program implements Node {
     /** @var Statement[] */
     public array $statements;
 
-    public function __construct()
-    {
+    public function __construct() {
         $this->statements = [];
     }
 
 
-    public function tokenLiteral(): string
-    {
+    public function tokenLiteral(): string {
         if (count($this->statements) > 0) {
             return $this->statements[0]->tokenLiteral();
         } else {
@@ -22,13 +17,11 @@ class Program implements Node
         }
     }
 
-    public function appendStatement(Statement $statement): void
-    {
+    public function appendStatement(Statement $statement): void {
         $this->statements[] = $statement;
     }
 
-    public function __toString(): string
-    {
+    public function __toString(): string {
         return implode("", $this->statements);
     }
 }

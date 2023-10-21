@@ -1,9 +1,6 @@
 <?php
 
-require_once "Parser.php";
-require_once "Tokenizer.php";
-require_once "Evaluator.php";
-require_once "Scope.php";
+require_once __DIR__ . "/vendor/autoload.php";
 
 function printParserErrors(array $errors): void {
     echo "Parser errors:", PHP_EOL;
