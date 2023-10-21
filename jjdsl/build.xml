@@ -8,37 +8,31 @@
 
     <target name="buildJJDSL">
         <antcall target="createSource"/>
-        <!--    Base Classes   -->
         <antcall target="loadFile">
             <param name="commit" value="ade14fa068f28050615fa3960d37f6a5ab39a979"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/1.js"/>
         </antcall>
-        <!--    Helper Function   -->
         <antcall target="loadFile">
             <param name="commit" value="5b6d62abce322cdb13d0da0b1bd4f7aaf4d86808"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/2.js"/>
         </antcall>
-        <!--   Lexer Definition    -->
         <antcall target="loadFile">
             <param name="commit" value="c3e8715e618c38c71a0931282a027dc1c5ef7ddb"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/3.js"/>
         </antcall>
-        <!--   Token Helper Functions   -->
         <antcall target="loadFile">
             <param name="commit" value="7032f131feb73dc4febd8d35a4ccb6d988b47c8b"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/4.js"/>
         </antcall>
-        <!--   Test Suit Functions   -->
         <antcall target="loadFile">
             <param name="commit" value="093a07c7af20de30cf01f7344ca7938cf2d73f22"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/index.js"/>
             <param name="targetLocation" value="${basedir}/out/scripts/99.js"/>
         </antcall>
-        <!--   Java Engine Loader     -->
         <antcall target="loadFile">
             <param name="commit" value="f341d0dfa0e2f424ea790bebaa4938180e5c084f"/>
             <param name="fileLocation" value="${basedir}/source/jjdsl/Loader.java"/>
