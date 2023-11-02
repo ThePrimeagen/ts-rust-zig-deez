@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public enum ObjectType {
 
-    NULL(MonkeyReturn.class),
+    NULL(MonkeyNull.class),
     BOOLEAN(MonkeyBoolean.class),
     INTEGER(MonkeyInteger.class),
     RETURN_VALUE_OBJ(MonkeyReturn.class),
@@ -23,6 +23,9 @@ public enum ObjectType {
     }
 
     public static ObjectType getTypeFromClass(Class<?> tClass) {
-        return Arrays.stream(values()).filter(it -> it.monkeyClass == tClass).findFirst().orElseThrow();
+        return Arrays.stream(values())
+                .filter(it -> it.monkeyClass == tClass)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("INTERPRETER BUG: No ObjectType associated with class " + tClass));
     }
 }
