@@ -15,14 +15,19 @@ public abstract class AbstractMonkeyFunction extends MonkeyObject<MonkeyFunction
         }
     }
 
-    public static void checkArgumentType(
+    @SuppressWarnings("unchecked") // It is checked
+    public static <T extends MonkeyObject<?>> T checkArgumentType(
             LocalizedToken callToken,
             MonkeyObject<?> argument,
-            ObjectType expected,
+            Class<T> expected,
             String functionName
     ) throws EvaluationException {
-        if (argument.getType() != expected) {
-            throw new EvaluationException(callToken, "Argument to `%s` must be %s, got %s", functionName, expected, argument.getType());
+        if (expected.isAssignableFrom(argument.getClass())) {
+            return (T) argument;
         }
+
+        ObjectType expectedType = ObjectType.getTypeFromClass(expected);
+
+        throw new EvaluationException(callToken, "Argument to `%s` must be %s, got %s", functionName, expectedType, argument.getType());
     }
 }
