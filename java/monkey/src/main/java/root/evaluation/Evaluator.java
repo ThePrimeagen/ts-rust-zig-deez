@@ -11,7 +11,9 @@ import root.evaluation.objects.MonkeyHashable;
 import root.evaluation.objects.MonkeyObject;
 import root.evaluation.objects.impl.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class Evaluator {
 
@@ -308,15 +310,10 @@ public class Evaluator {
     }
 
     private MonkeyObject<?> evalIdentifierExpression(IdentifierExpression identifier) throws EvaluationException {
-        Optional<MonkeyObject<?>> value = environment.get(identifier.getValue());
-
-        if (value.isEmpty()) {
-            return BuiltinFunctions.getFunction(identifier.getValue()).orElseThrow(() ->
-                    new EvaluationException(identifier.getToken(), "Variable %s is not declared", identifier.getValue())
-            );
-        }
-
-        return value.get();
+        return environment
+                .get(identifier.getValue())
+                .or(() -> BuiltinFunctions.getFunction(identifier.getValue()))
+                .orElseThrow(() -> new EvaluationException(identifier.getToken(), "Variable %s is not declared", identifier.getValue()));
     }
 
     private MonkeyObject<?> evalLetStatement(LetStatement letStatement) throws EvaluationException {

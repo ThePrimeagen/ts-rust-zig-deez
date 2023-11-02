@@ -312,6 +312,13 @@ public class EvaluatorTest {
                                 Error evaluating the program: Index to an hash must be an Expression that yields an Int, String or Boolean
                                 01: { fn(x) { x }: 'func' }
                                 ------^--------------------"""
+                ),
+                List.of(
+                        "push (10, 10)",
+                        """
+                                Error evaluating the program: Argument to `push` must be ARRAY, got INTEGER
+                                01: push (10, 10)
+                                ---------^-------"""
                 )
         );
 

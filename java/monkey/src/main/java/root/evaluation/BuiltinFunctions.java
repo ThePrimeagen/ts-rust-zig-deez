@@ -43,21 +43,19 @@ public enum BuiltinFunctions {
     }),
     UPPERCASE("uppercase", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.STRING, "uppercase");
+        var string = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyString.class, "uppercase");
 
-        return new MonkeyString(((MonkeyString) arguments.get(0)).getValue().toUpperCase());
+        return new MonkeyString(string.getValue().toUpperCase());
     }),
     LOWERCASE("lowercase", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.STRING, "lowercase");
+        var string = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyString.class, "lowercase");
 
-        return new MonkeyString(((MonkeyString) arguments.get(0)).getValue().toLowerCase());
+        return new MonkeyString(string.getValue().toLowerCase());
     }),
     FIRST("first", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "first");
-
-        var array = (MonkeyArray) arguments.get(0);
+        var array = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyArray.class, "first");
 
         if (array.getValue().isEmpty()) {
             return MonkeyNull.INSTANCE;
@@ -66,9 +64,7 @@ public enum BuiltinFunctions {
     }),
     LAST("last", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "last");
-
-        var array = (MonkeyArray) arguments.get(0);
+        var array = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyArray.class, "last");
 
         if (array.getValue().isEmpty()) {
             return MonkeyNull.INSTANCE;
@@ -77,9 +73,7 @@ public enum BuiltinFunctions {
     }),
     REST("rest", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "rest");
-
-        var array = (MonkeyArray) arguments.get(0);
+        var array = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyArray.class, "rest");
 
         if (array.getValue().isEmpty()) {
             return MonkeyNull.INSTANCE;
@@ -95,9 +89,7 @@ public enum BuiltinFunctions {
     }),
     PUSH("push", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 2, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.ARRAY, "rest");
-
-        var array = (MonkeyArray) arguments.get(0);
+        var array = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyArray.class, "push");
 
         var elementsCopy = new ArrayList<>(array.getValue());
         elementsCopy.add(arguments.get(1));
@@ -106,13 +98,11 @@ public enum BuiltinFunctions {
     }),
     CHARS("chars", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.STRING, "chars");
+        var string = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyString.class, "chars");
 
-        var string = (MonkeyString) arguments.get(0);
-        char[] chars = string.getValue().toCharArray();
         var monkeyChars = new ArrayList<MonkeyObject<?>>();
 
-        for (char c : chars) {
+        for (char c : string.getValue().toCharArray()) {
             monkeyChars.add(new MonkeyString(String.valueOf(c)));
         }
 
@@ -183,9 +173,8 @@ public enum BuiltinFunctions {
     }),
     AS_LIST("asList", (callToken, arguments) -> {
         AbstractMonkeyFunction.checkArgumentCount(callToken, 1, arguments.size());
-        AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), ObjectType.HASH, "asList");
+        var hash = AbstractMonkeyFunction.checkArgumentType(callToken, arguments.get(0), MonkeyHash.class, "asList");
 
-        var hash = (MonkeyHash) arguments.get(0);
         List<MonkeyObject<?>> asList = hash
                 .getValue()
                 .entrySet()
