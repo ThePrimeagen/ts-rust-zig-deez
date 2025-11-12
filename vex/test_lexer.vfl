@@ -1,0 +1,72 @@
+/*
+let five = 5;
+let ten = 10;
+
+let add = fn(x, y) {
+  x + y;
+};
+
+let result = add(five, ten);
+!-/*5;
+5 < 10 > 5;
+
+if (5 < 10) {
+  return true;
+} else {
+  return false;
+}
+*/
+
+string expected_types[] = array(
+    "LET", "IDENT", "ASSIGN", "INT", "SEMICOLON",
+    "LET", "IDENT", "ASSIGN", "INT", "SEMICOLON",
+    "LET", "IDENT", "ASSIGN", "FUNCTION", "LPAREN", "IDENT", "COMMA", "IDENT", "RPAREN", "LBRACE",
+    "IDENT", "PLUS", "IDENT", "SEMICOLON",
+    "RBRACE", "SEMICOLON",
+    "LET", "IDENT", "ASSIGN", "IDENT", "LPAREN", "IDENT", "COMMA", "IDENT", "RPAREN", "SEMICOLON",
+    "BANG", "MINUS", "SLASH", "ASTERISK", "INT", "SEMICOLON",
+    "INT", "LT", "INT", "GT", "INT", "SEMICOLON",
+    "IF", "LPAREN", "INT", "LT", "INT", "RPAREN", "LBRACE",
+    "RETURN", "TRUE", "SEMICOLON",
+    "RBRACE", "ELSE", "LBRACE",
+    "RETURN", "FALSE", "SEMICOLON",
+    "RBRACE",
+    "INT", "EQ", "INT", "SEMICOLON",
+    "INT", "NOT_EQ", "INT", "SEMICOLON",
+    "EOF"
+);
+
+string expected_literals[] = array(
+    "let", "five", "=", "5", ";",
+    "let", "ten", "=", "10", ";",
+    "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{",
+    "x", "+", "y", ";",
+    "}", ";",
+    "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";",
+    "!", "-", "/", "*", "5", ";",
+    "5", "<", "10", ">", "5", ";",
+    "if", "(", "5", "<", "10", ")", "{",
+    "return", "true", ";",
+    "}", "else", "{",
+    "return", "false", ";",
+    "}"
+);
+
+string type = s@type;
+string literal = s@literal;
+int index = i@index;
+
+if (index < len(expected_types)) {
+    string expected_type = expected_types[index];
+    if (type != expected_type) {
+        error("Expected %s, got %s", expected_type, type);
+    }
+}
+
+if (index < len(expected_literals)) {
+    string expected_literal = expected_literals[index];
+    if (literal != expected_literal) {
+        error("Expected %s, got %s", expected_literal, literal);
+    }
+}
+

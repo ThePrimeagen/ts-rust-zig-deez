@@ -1,0 +1,170 @@
+void readChar(string input; export int position, readPosition; string ch) {
+    if (readPosition >= len(input)) {
+        ch = "\0";
+    } else {
+        ch = input[readPosition];
+    }
+    position = readPosition;
+    readPosition += 1;
+}
+
+string peekChar(string input; int readPosition) {
+    if (readPosition >= len(input)) {
+        return "\0";
+    } else {
+        return input[readPosition];
+    }
+}
+
+string newToken(string tokenType, ch) {
+    return concat(tokenType, '_', ch);;
+}
+
+int isLetter(string ch) {
+    return isalpha(ch) || ch == "_";
+}
+
+string lookupIdent(string ident) {
+    dict keywords;
+    keywords = set(
+        "fn", "FUNCTION",
+        "let", "LET",
+        "true", "TRUE",
+        "false", "FALSE",
+        "if", "IF",
+        "else", "ELSE",
+        "return", "RETURN"
+    );
+    if (isvalidindex(keywords, ident)) {
+        return keywords[ident];
+    }
+    return "IDENT";
+}
+
+string readIdentifier(string input; export int position, readPosition; string ch) {
+    int _position = position;
+    while (isLetter(ch)) {
+        readChar(input, position, readPosition, ch);
+    }
+    return input[_position:position];
+}
+
+string readNumber(string input; export int position, readPosition; string ch) {
+    int _position = position;
+    while (isdigit(ch)) {
+        readChar(input, position, readPosition, ch);
+    }
+    return input[_position:position];    
+}
+
+void skipWhitespace(string input; export int position, readPosition; string ch) {
+    while (ch == " " || ch == "\t" || ch == "\n" || ch == "\r") {
+        readChar(input, position, readPosition, ch);
+    }
+}
+
+string nextToken(string input; export int position, readPosition; string ch) {
+    string tok;
+    
+    skipWhitespace(input, position, readPosition, ch);
+    
+    if (ch == "=") {
+        if (peekChar(input, readPosition) == "=") {
+            string _ch = ch;
+            readChar(input, position, readPosition, ch);
+            string literal = _ch + ch;
+            tok = newToken("EQ", literal);
+        } else {
+            tok = newToken("ASSIGN", ch);
+        }
+    } else if (ch == "+") {
+        tok = newToken("PLUS", ch);
+    } else if (ch == "-") {
+        tok = newToken("MINUS", ch);
+    } else if (ch == "!") {
+        if (peekChar(input, readPosition) == "=") {
+            string _ch = ch;
+            readChar(input, position, readPosition, ch);
+            string literal = _ch + ch;
+            tok = newToken("NOT_EQ", literal);
+        } else {
+            tok = newToken("BANG", ch);
+        }
+    } else if (ch == "/") {
+        tok = newToken("SLASH", ch);
+    } else if (ch == "*") {
+        tok = newToken("ASTERISK", ch);
+    } else if (ch == "<") {
+        tok = newToken("LT", ch);
+    } else if (ch == ">") {
+        tok = newToken("GT", ch);
+    } else if (ch == ";") {
+        tok = newToken("SEMICOLON", ch);
+    } else if (ch == ",") {
+        tok = newToken("COMMA", ch);
+    } else if (ch == "(") {
+        tok = newToken("LPAREN", ch);
+    } else if (ch == ")") {
+        tok = newToken("RPAREN", ch);
+    } else if (ch == "{") {
+        tok = newToken("LBRACE", ch);
+    } else if (ch == "}") {
+        tok = newToken("RBRACE", ch);
+    } else if (ch == "\0") {
+        tok = newToken("EOF", "");
+    } else {
+        if (isLetter(ch)) {
+            string literal = readIdentifier(input, position, readPosition, ch);
+            string type = lookupIdent(literal);
+            return newToken(type, literal);
+        } else if (isdigit(ch)) {
+            string literal = readNumber(input, position, readPosition, ch);
+            return newToken("INT", literal);
+        } else {
+            tok = newToken("ILLEGAL", ch);
+        }
+    }
+    
+    readChar(input, position, readPosition, ch);
+    return tok;
+} 
+
+string input = chs("input"); // s@input;
+int position = 0;
+int readPosition = 0;
+string ch = "\0";
+readChar(input, position, readPosition, ch);
+
+string token;
+string parts[], type, literal;
+vector pos;
+int new;
+int i = 0;
+while (1) {
+    token = nextToken(input, position, readPosition, ch);
+    parts = split(token, "_");
+    if (startswith(token, "EOF")) {
+        type = "EOF";
+        literal = "";
+    } else if (startswith(token, "NOT_EQ")) {
+        type = "NOT_EQ";
+        literal = parts[-1];
+    } else {
+        type = parts[0];
+        literal = parts[1];
+    }
+    pos = set(i, 0, 0);
+    new = addpoint(0, pos);
+    setpointattrib(0, "type", new, type);
+    setpointattrib(0, "literal", new, literal);
+    setpointattrib(0, "index", new, i);
+    
+    if (startswith(token, "EOF")) { break; }
+    i += 1;
+}
+
+s@input = input;
+i@position = position;
+i@readPosition = readPosition;
+s@ch = ch;
+
